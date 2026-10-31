@@ -1,0 +1,14 @@
+{
+  "name": "mahjong-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pure, deterministic core for Thompson & Maloney Chinese/Australian mahjong.",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.ts",
+    "test:watch": "node --test --watch test/*.test.ts"
+  }
+}
