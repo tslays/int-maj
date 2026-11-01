@@ -1,3 +1,6 @@
 node_modules/
 .DS_Store
 rules/pages/
+rules/companion-ocr.txt
+rules/pages-text.txt
+rules/ocr-boxes.tsv
