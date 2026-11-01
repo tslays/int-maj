@@ -35,6 +35,7 @@ const STATIC_FILES: Readonly<Record<string, string>> = Object.freeze({
   "/app.js": "app.js",
   "/tiles.js": "tiles.js",
   "/app.css": "app.css",
+  "/table.jpg": "table.jpg",
 });
 
 const CONTENT_TYPES: Readonly<Record<string, string>> = Object.freeze({
@@ -42,6 +43,7 @@ const CONTENT_TYPES: Readonly<Record<string, string>> = Object.freeze({
   "app.js": "text/javascript; charset=utf-8",
   "tiles.js": "text/javascript; charset=utf-8",
   "app.css": "text/css; charset=utf-8",
+  "table.jpg": "image/jpeg",
 });
 
 class HttpError extends Error {
