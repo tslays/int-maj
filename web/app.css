@@ -266,10 +266,6 @@ kbd {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 1px solid #b7ab8c;
-  border-radius: 5px;
-  background: linear-gradient(180deg, #fffdf4, #e9e0c8);
-  box-shadow: 0 1px 0 #a89b7b;
 }
 
 .tile img {
@@ -281,6 +277,10 @@ kbd {
 }
 
 .tile-missing {
+  border: 1px solid #b7ab8c;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #fffdf4, #e9e0c8);
+  box-shadow: 0 1px 0 #a89b7b;
   color: #8a2a20;
   font-weight: 700;
 }
@@ -293,8 +293,6 @@ kbd {
 .tile-large {
   width: var(--large-w);
   height: var(--large-h);
-  border-radius: 8px;
-  box-shadow: 0 3px 0 #a89b7b;
 }
 
 .tile-back {
@@ -302,8 +300,6 @@ kbd {
   width: var(--small-w);
   height: var(--small-h);
   overflow: hidden;
-  border-radius: 5px;
-  background: #c03535;
 }
 
 .tile-back img {
@@ -383,7 +379,7 @@ kbd {
 
 .gallery-tile .tile-large {
   width: 72px;
-  height: 101px;
+  height: 96px;
 }
 
 .gallery-tile figcaption {
