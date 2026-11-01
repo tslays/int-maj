@@ -1,4 +1,4 @@
-# AGENTS.md — mahjong
+# AGENTS.md — int-maj
 
 Thompson & Maloney international mahjong: 144 tiles (3 suits × 9 × 4 = 108, 4 winds × 4, 3 dragons × 4, 4 flowers, 4 seasons).
 
