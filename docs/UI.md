@@ -78,6 +78,10 @@ The rules, the hands and the scoring are the Companion's and nothing else: no ri
 > of that, backs ~0.33, four rivers meeting in the middle six to a row, centre
 > carrying round/wall/scores, racks on the edges, two action buttons low right.
 
+## Align to the reference with an overlay
+
+Placement is checked by superposition, not by guessing: the reference screenshot is dropped into the page behind the board (`?overlay=1`, or the `o` key) at exactly its own size, the board is rendered on top, and every element is moved until the tiles land on the reference tiles. Once they line up, the overlay is hidden and stays available as a debug view so a later change can be checked the same way.
+
 ## Prefer Tenhou's plainness for the arrangement
 
 Of the two references, Tenhou is the closer model for us because it carries no decoration at all, and its arrangement is simpler to hit:
