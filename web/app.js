@@ -42,6 +42,8 @@ let selected = null;
 let cursor = 0;
 let busy = false;
 let railOpen = true;
+let referenceShown = false;
+let referenceMissing = false;
 
 let handInitialized = false;
 let tableInitialized = false;
@@ -656,13 +658,14 @@ function bonusRow(entry) {
 
 /* The screen footprint of each river. A discard is at row r, column c in
    its own player's reading order; this maps that to the screen cell, so
-   every player reads their own river left to right, top to bottom and the
-   rows grow away from their seat toward the centre. */
+   every player reads their own river left to right, top to bottom. The
+   first row sits flush against the centre panel and later rows grow back
+   toward the seat, which is how Tenhou fills the four blocks. */
 const RIVER_GRID = {
-  bottom: { cols: 6, rows: 3, flat: true, cell: (r, c) => [c, 2 - r] },
-  top: { cols: 6, rows: 3, flat: true, cell: (r, c) => [5 - c, r] },
-  left: { cols: 3, rows: 6, flat: false, cell: (r, c) => [r, c] },
-  right: { cols: 3, rows: 6, flat: false, cell: (r, c) => [2 - r, 5 - c] },
+  bottom: { cols: 6, rows: 3, flat: true, cell: (r, c) => [c, r] },
+  top: { cols: 6, rows: 3, flat: true, cell: (r, c) => [5 - c, 2 - r] },
+  left: { cols: 3, rows: 6, flat: false, cell: (r, c) => [2 - r, c] },
+  right: { cols: 3, rows: 6, flat: false, cell: (r, c) => [r, 5 - c] },
 };
 
 function riverWrapper(entry) {
@@ -688,9 +691,11 @@ function riverWrapper(entry) {
     const slot = div("river-slot");
     const key = index === undefined ? undefined : entry.discards[index];
     if (key !== undefined) {
-      slot.append(
-        riverTile(key, index === last, index >= previous, entry.seat, claimWindow),
-      );
+      const tile = riverTile(key, index === last, index >= previous, entry.seat, claimWindow);
+      // The first discard is the block's row flush against the centre; the
+      // layout check uses the marker to prove the growth direction.
+      if (index === 0) tile.classList.add("first");
+      slot.append(tile);
     } else {
       slot.setAttribute("aria-hidden", "true");
     }
@@ -722,8 +727,6 @@ function riverTile(key, isLast, isNew, seat, claimWindow) {
 function renderSeat(entry) {
   const place = PLACE[entry.seat];
   if (place === "bottom") return;
-  const labelSlot = $(`#label-${place}`);
-  if (labelSlot !== null) fillSeatLabel(labelSlot, entry);
 
   const root = $(`#seat-${place}`);
   root.className = `seat seat-${place}${seatIsTurn(entry.seat) ? " is-turn" : ""}`;
@@ -1984,6 +1987,14 @@ function onKeydown(event) {
   if (target instanceof HTMLElement && target.closest("input, textarea, select")) return;
   if (event.metaKey || event.ctrlKey || event.altKey) return;
   if (document.querySelector("dialog[open]") !== null) return;
+
+  // The overlay is a debug view, so it stays reachable in every table state.
+  if (event.key === "o" || event.key === "O") {
+    event.preventDefault();
+    toggleReference();
+    return;
+  }
+
   if (payload === null) return;
 
   if (event.key === "m" || event.key === "M") {
@@ -2117,6 +2128,24 @@ function applyRail() {
   $("#rail-show").hidden = railOpen;
 }
 
+/** Debug view only: the Tenhou screenshot at native size behind the board. */
+function applyReference() {
+  const overlay = $("#reference-overlay");
+  const ready = overlay.naturalWidth > 0;
+  overlay.hidden = !(referenceShown && ready);
+  $("#board").classList.toggle("overlay-on", referenceShown);
+  $("#app").classList.toggle("overlay-on", referenceShown);
+  if (referenceShown && !ready && !referenceMissing) {
+    referenceMissing = true;
+    log("Reference screenshot missing: web/reference3.png is gitignored.");
+  }
+}
+
+function toggleReference() {
+  referenceShown = !referenceShown;
+  applyReference();
+}
+
 function setRail(open) {
   railOpen = open;
   applyRail();
@@ -2131,6 +2160,9 @@ function bindEvents() {
   $("#rail-show").addEventListener("click", () => setRail(true));
   $("#help-dialog").addEventListener("close", () => $("#help-button").focus());
   document.addEventListener("keydown", onKeydown);
+  const overlay = $("#reference-overlay");
+  overlay.addEventListener("load", applyReference);
+  overlay.addEventListener("error", applyReference);
   window.addEventListener("pointerdown", unlockAudio, { capture: true });
   window.addEventListener("keydown", unlockAudio, { capture: true });
 }
@@ -2151,6 +2183,8 @@ async function boot() {
   bindEvents();
   railOpen = initialRail();
   applyRail();
+  referenceShown = new URLSearchParams(window.location.search).get("overlay") === "1";
+  applyReference();
 
   if (new URLSearchParams(window.location.search).get("gallery") === "1") {
     renderGallery();

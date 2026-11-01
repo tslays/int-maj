@@ -53,6 +53,12 @@ interface Measurement {
   readonly handCount: number;
   readonly drawGap: number;
   readonly overflow: readonly [number, number, number, number];
+  readonly overlay: {
+    readonly hidden: boolean;
+    readonly naturalWidth: number;
+    readonly naturalHeight: number;
+    readonly rect: Rect;
+  };
 }
 
 const VIEWPORTS = [
@@ -71,9 +77,6 @@ const LABELS: Record<string, string> = {
   riverRight: "river east",
   riverBottom: "river south",
   centre: "centre panel",
-  labelTop: "north label",
-  labelLeft: "west label",
-  labelRight: "east label",
   selfLabel: "your label",
   rackTop: "north rack",
   rackLeft: "west rack",
@@ -119,6 +122,33 @@ function printMeasurement(label: string, measurement: Measurement, viewportWidth
   );
   console.log(
     `  river slots      ${RIVERS.map((river) => `${river} ${measurement.slots[river]}`).join(", ")}`,
+  );
+}
+
+/* ------------------------------------------------------------ anchors */
+
+const REFERENCE_VIEWPORT = { width: 1512, height: 894 } as const;
+
+/** One row of the anchor table: reference (page px), ours, delta. */
+function anchorRow(name: string, reference: number | null, ours: number, note = ""): void {
+  const tail = note ? `  ${note}` : "";
+  if (reference === null) {
+    console.log(`  ${name.padEnd(24)} ${"—".padStart(9)} ${ours.toFixed(1).padStart(8)}${tail}`);
+    return;
+  }
+  const delta = ours - reference;
+  console.log(
+    `  ${name.padEnd(24)} ${reference.toFixed(1).padStart(9)} ${ours.toFixed(1).padStart(8)} ` +
+      `${(delta >= 0 ? "+" : "") + delta.toFixed(1)}${tail}`,
+  );
+}
+
+/** An anchor that must be inside the ±4px tolerance of the reference. */
+function assertAnchor(label: string, name: string, reference: number, ours: number): void {
+  anchorRow(name, reference, ours);
+  assert.ok(
+    Math.abs(ours - reference) <= 4,
+    `${label}: ${name} is ${ours.toFixed(1)}, reference ${reference}, delta ${(ours - reference).toFixed(1)} (tolerance 4)`,
   );
 }
 
@@ -357,13 +387,14 @@ const FILL_RIVERS = (count: number): string => `
 (() => {
   const template = document.querySelector(".hand-tile .tile");
   if (template === null) throw new Error("no tile to copy into the rivers");
-  // Same mapping as the client: increase index away from each seat, columns
-  // left to right as that player reads them.
+  // Same mapping as the client: the first row is flush against the centre
+  // and later rows grow back toward the seat, columns left to right as that
+  // player reads them.
   const layouts = {
-    top: { cols: 6, rows: 3, cell: (r, c) => [5 - c, r] },
-    bottom: { cols: 6, rows: 3, cell: (r, c) => [c, 2 - r] },
-    left: { cols: 3, rows: 6, cell: (r, c) => [r, c] },
-    right: { cols: 3, rows: 6, cell: (r, c) => [2 - r, 5 - c] },
+    top: { cols: 6, rows: 3, cell: (r, c) => [5 - c, 2 - r] },
+    bottom: { cols: 6, rows: 3, cell: (r, c) => [c, r] },
+    left: { cols: 3, rows: 6, cell: (r, c) => [2 - r, c] },
+    right: { cols: 3, rows: 6, cell: (r, c) => [r, 5 - c] },
   };
   for (const river of document.querySelectorAll(".river")) {
     const place = ["top", "bottom", "left", "right"].find((name) =>
@@ -426,9 +457,6 @@ const MEASURE = String.raw`
       riverRight: rect("#river-right .river"),
       riverBottom: rect("#river-bottom .river"),
       centre: rect(".center"),
-      labelTop: rect("#label-top"),
-      labelLeft: rect("#label-left"),
-      labelRight: rect("#label-right"),
       selfLabel: rect("#self-label"),
       rackTop: rect(".seat-top .rack"),
       rackLeft: rect(".seat-left .rack"),
@@ -453,6 +481,17 @@ const MEASURE = String.raw`
         ? 0
         : lastHand.x - (penultimateHand.x + penultimateHand.width),
     overflow: [board.scrollWidth, board.clientWidth, board.scrollHeight, board.clientHeight],
+    overlay: (() => {
+      const image = document.querySelector("#reference-overlay");
+      if (image === null) throw new Error("missing #reference-overlay");
+      const box = image.getBoundingClientRect();
+      return {
+        hidden: image.hidden,
+        naturalWidth: image.naturalWidth,
+        naturalHeight: image.naturalHeight,
+        rect: [box.x, box.y, box.width, box.height],
+      };
+    })(),
   };
 })()
 `;
@@ -538,6 +577,118 @@ async function finishedGame(base: string): Promise<string> {
   throw new Error("hand never finished");
 }
 
+/* -------------------------------------------------- reference anchors */
+
+/**
+ * The fit is measured at the reference's own page: 1512x894 with the rail
+ * closed, so the board is the page and reference3.png (whose Safari chrome
+ * is cropped at y 88) lands on it one-to-one. Every row prints the
+ * reference's number, ours and the delta; the reachable anchors must be
+ * inside ±4px, the ones the reference does not draw are reported.
+ */
+async function referencePass(
+  cdp: Cdp,
+  sessionId: string,
+  base: string,
+  shots: string,
+): Promise<void> {
+  await evaluate(cdp, sessionId, `localStorage.setItem("mahjong-rail", "closed")`);
+  await setViewport(cdp, sessionId, REFERENCE_VIEWPORT.width, REFERENCE_VIEWPORT.height);
+  await navigate(cdp, sessionId, `${base}/?overlay=1`);
+
+  const label = "1512x894 (reference page, rail closed)";
+  const measurement = await evaluate<Measurement>(cdp, sessionId, MEASURE);
+  printMeasurement(label, measurement, REFERENCE_VIEWPORT.width);
+
+  const board = measurement.rects.board!;
+  const frame = measurement.rects.playfield!;
+  const centre = measurement.rects.centre!;
+  const hand = measurement.rects.hand!;
+  const actions = measurement.rects.actions!;
+  const rackTop = measurement.rects.rackTop!;
+  const rackLeft = measurement.rects.rackLeft!;
+  const rackRight = measurement.rects.rackRight!;
+  const riverTop = measurement.rects.riverTop!;
+
+  assert.ok(
+    Math.abs(board[0]) <= 1 &&
+      Math.abs(board[1]) <= 1 &&
+      Math.abs(board[2] - REFERENCE_VIEWPORT.width) <= 1 &&
+      Math.abs(board[3] - REFERENCE_VIEWPORT.height) <= 1,
+    `${label}: the board ${formatRect(board)} is not the reference's page 1512x894`,
+  );
+
+  console.log("\n  anchor                   reference     ours    delta");
+  assertAnchor(label, "hand left", 405, hand[0]);
+  assertAnchor(label, "hand right", 1106, hand[0] + hand[2]);
+  assertAnchor(label, "hand bottom", 823, hand[1] + hand[3]);
+  assertAnchor(label, "centre left", 634, centre[0]);
+  assertAnchor(label, "centre right", 885, centre[0] + centre[2]);
+  assertAnchor(label, "centre top", 302, centre[1]);
+  assertAnchor(label, "centre bottom", 465, centre[1] + centre[3]);
+  assertAnchor(label, "north rack top", 17, rackTop[1]);
+  assertAnchor(label, "north rack height", 45, rackTop[3]);
+  assertAnchor(label, "action top", 853, actions[1]);
+  assertAnchor(label, "action bottom", 890, actions[1] + actions[3]);
+  assertAnchor(label, "felt frame top", 9, frame[1]);
+
+  // Anchors whose reference object differs from ours: reported, not fitted.
+  anchorRow("north rack left", 515, rackTop[0], "13 concealed backs vs 14 wall tiles");
+  anchorRow("north rack right", 996, rackTop[0] + rackTop[2], "same");
+  anchorRow("west rack outer", 249, rackLeft[0], "reference skews 40px; the table is symmetric");
+  anchorRow("east rack outer", 1303, rackRight[0] + rackRight[2], "same");
+  anchorRow("felt frame left", 227, frame[0], "reference felt is a trapezoid");
+  anchorRow("felt frame right", 1285, frame[0] + frame[2], "same");
+  anchorRow("action bar right", 1090, actions[0] + actions[2], "Tenhou's tool bar, not the turn action");
+  anchorRow("river block outer", null, riverTop[1], "the reserved block is not drawn");
+
+  const overlay = measurement.overlay;
+  if (overlay.naturalWidth > 0) {
+    assert.equal(overlay.naturalWidth, 1512, `${label}: reference3.png is not 1512 wide`);
+    assert.equal(overlay.naturalHeight, 982, `${label}: reference3.png is not 982 tall`);
+    assert.equal(overlay.hidden, false, `${label}: ?overlay=1 did not show the reference`);
+    assertAnchor(label, "overlay left", 0, overlay.rect[0] - board[0]);
+    assertAnchor(label, "overlay top", -88, overlay.rect[1] - board[1]);
+    assert.ok(
+      Math.abs(overlay.rect[2] - 1512) <= 0.5 && Math.abs(overlay.rect[3] - 982) <= 0.5,
+      `${label}: the overlay is ${formatRect(overlay.rect)}, expected 1512x982 at native size`,
+    );
+  } else {
+    assert.equal(overlay.hidden, true, `${label}: a missing reference must stay hidden`);
+    console.log(
+      "  (web/reference3.png is absent — the overlay rect assertions were skipped)",
+    );
+  }
+
+  // `o` hides and shows the debug view and moves nothing on the board.
+  await evaluate(
+    cdp,
+    sessionId,
+    `document.dispatchEvent(new KeyboardEvent("keydown", { key: "o" }))`,
+  );
+  const off = await evaluate<Measurement>(cdp, sessionId, MEASURE);
+  assert.equal(off.overlay.hidden, true, `${label}: o did not hide the overlay`);
+  assert.ok(
+    sameRect(off.rects.hand!, hand) && sameRect(off.rects.centre!, centre),
+    `${label}: hiding the overlay moved the board`,
+  );
+  await evaluate(
+    cdp,
+    sessionId,
+    `document.dispatchEvent(new KeyboardEvent("keydown", { key: "o" }))`,
+  );
+  const on = await evaluate<Measurement>(cdp, sessionId, MEASURE);
+  assert.equal(
+    on.overlay.hidden,
+    overlay.naturalWidth === 0,
+    `${label}: o did not show the overlay again`,
+  );
+
+  const path = join(shots, `1512x894-overlay.png`);
+  await screenshot(cdp, sessionId, path);
+  console.log(`  screenshot       ${path}`);
+}
+
 /* ----------------------------------------------------------------- main */
 
 async function main(): Promise<void> {
@@ -569,28 +720,48 @@ async function main(): Promise<void> {
           );
         }
 
-        const { w, h, gap, handW, handH, backW, backH, centreW } = measurement.tile;
-        // Mahjong Soul's scale, expressed only in ratios of the hand unit.
+        const { w, h, gap, handW, handH, backW, backH } = measurement.tile;
+        const board = measurement.rects.board!;
+        const frame = measurement.rects.playfield!;
+        const centre = measurement.rects.centre!;
+        const top = measurement.rects.riverTop!;
+        const bottom = measurement.rects.riverBottom!;
+        const left = measurement.rects.riverLeft!;
+        const right = measurement.rects.riverRight!;
+        const rackTop = measurement.rects.rackTop!;
+        const rackLeft = measurement.rects.rackLeft!;
+        const rackRight = measurement.rects.rackRight!;
+        const hand = measurement.rects.hand!;
+        const actions = measurement.rects.actions!;
+
+        // The hand is the unit: 14 tiles, their gaps and the drawn tile's
+        // gap make 46.43% of the board (the reference's 405..1106).
         assert.ok(
-          handW / viewport.width >= 0.06 && handW / viewport.width <= 0.07,
-          `${label}: hand tile is ${handW}px (${((handW / viewport.width) * 100).toFixed(2)}% of the viewport), expected about 7%`,
+          Math.abs(hand[2] / board[2] - 0.4643) <= 0.01,
+          `${label}: hand row is ${(hand[2] / board[2]).toFixed(4)} of the board, expected 0.4643`,
         );
         assert.ok(
           Math.abs(handH / handW - 4 / 3) <= 0.02,
           `${label}: hand tile is ${handW}x${handH}, not the 3:4 tile`,
         );
         assert.ok(
-          Math.abs(w / handW - 0.62) <= 0.01,
-          `${label}: river tile is ${w}px, expected 0.62 of ${handW}`,
+          Math.abs(w / handW - 0.874) <= 0.01,
+          `${label}: river tile is ${w}px, expected 0.874 of ${handW}`,
         );
         assert.ok(gap <= 1.5, `${label}: river rows are ${gap}px apart, not flush`);
         assert.ok(
-          Math.abs(Math.max(backW, backH) / handW - 0.33) <= 0.012,
-          `${label}: concealed back is ${backW}x${backH}, expected 0.33 of ${handW}`,
+          Math.abs(Math.max(backW, backH) / handW - 0.96) <= 0.012,
+          `${label}: concealed back is ${backW}x${backH}, expected 0.96 of ${handW}`,
+        );
+        // The centre is the hole: one six-tile river block wide, three
+        // river rows tall, so the four blocks meet it on every side.
+        assert.ok(
+          Math.abs(centre[2] - (6 * w + 5 * gap)) <= 1,
+          `${label}: centre is ${centre[2]}px wide, expected the six-tile river block ${6 * w + 5 * gap}px`,
         );
         assert.ok(
-          Math.abs(centreW / handW - 1.9) <= 0.02,
-          `${label}: centre is ${centreW}px wide, expected 1.9 of ${handW}`,
+          Math.abs(centre[3] - (3 * h + 2 * gap)) <= 1,
+          `${label}: centre is ${centre[3]}px tall, expected three river rows ${3 * h + 2 * gap}px`,
         );
 
         const expected: Record<(typeof RIVERS)[number], readonly [number, number]> = {
@@ -617,75 +788,78 @@ async function main(): Promise<void> {
           }
         }
 
-        const board = measurement.rects.board!;
-        const frame = measurement.rects.playfield!;
-        const centre = measurement.rects.centre!;
-        const top = measurement.rects.riverTop!;
-        const bottom = measurement.rects.riverBottom!;
-        const left = measurement.rects.riverLeft!;
-        const right = measurement.rects.riverRight!;
-
-        // The frame: 3% in from the sides, 12% from the top, 2% from the
-        // bottom, a one-tile-wide band of felt outside it.
+        // The frame marks the reference's felt edge: 1% from the top, 14.5%
+        // from the sides, 4.6% from the bottom.
         assert.ok(
-          Math.abs(frame[0] - (board[0] + board[2] * 0.03)) <= 1.5 &&
-            Math.abs(board[0] + board[2] - (frame[0] + frame[2]) - board[2] * 0.03) <= 1.5,
-          `${label}: frame sides are not 3% from the board (${formatRect(frame)} in ${formatRect(board)})`,
+          Math.abs(frame[1] - (board[1] + board[3] * 0.01)) <= 1.5 &&
+            Math.abs(board[1] + board[3] - (frame[1] + frame[3]) - board[3] * 0.046) <= 1.5,
+          `${label}: frame top/bottom are not 1%/4.6% from the board (${formatRect(frame)} in ${formatRect(board)})`,
         );
         assert.ok(
-          Math.abs(frame[1] - (board[1] + board[3] * 0.12)) <= 1.5 &&
-            Math.abs(board[1] + board[3] - (frame[1] + frame[3]) - board[3] * 0.02) <= 1.5,
-          `${label}: frame top/bottom are not 12%/2% from the board (${formatRect(frame)} in ${formatRect(board)})`,
+          Math.abs(frame[0] - (board[0] + board[2] * 0.145)) <= 1.5 &&
+            Math.abs(board[0] + board[2] - (frame[0] + frame[2]) - board[2] * 0.145) <= 1.5,
+          `${label}: frame sides are not 14.5% from the board (${formatRect(frame)} in ${formatRect(board)})`,
         );
 
-        // The centre is dead centre of the play area, and the four rivers
-        // are centred in front of their seats, meeting around it.
-        const frameCx = frame[0] + frame[2] / 2;
-        const frameCy = frame[1] + frame[3] / 2;
+        // The centre is the board's centre column; the four rivers meet its
+        // own edges, and the side blocks are centred on its row.
         assert.ok(
-          Math.abs(centre[0] + centre[2] / 2 - frameCx) <= 1 &&
-            Math.abs(centre[1] + centre[3] / 2 - frameCy) <= 1,
-          `${label}: centre ${formatRect(centre)} is not the centre of the frame ${formatRect(frame)}`,
+          Math.abs(centre[0] + centre[2] / 2 - (board[0] + board[2] / 2)) <= 1,
+          `${label}: centre ${formatRect(centre)} is not centred on the board`,
         );
         for (const river of ["riverTop", "riverBottom"] as const) {
           const rect = measurement.rects[river]!;
           assert.ok(
-            Math.abs(rect[0] + rect[2] / 2 - frameCx) <= 1,
-            `${label}: ${river} ${formatRect(rect)} is not centred on the table`,
+            Math.abs(rect[0] + rect[2] / 2 - (centre[0] + centre[2] / 2)) <= 1,
+            `${label}: ${river} ${formatRect(rect)} is not centred on the centre column`,
           );
         }
         for (const river of ["riverLeft", "riverRight"] as const) {
           const rect = measurement.rects[river]!;
           assert.ok(
-            Math.abs(rect[1] + rect[3] / 2 - frameCy) <= 1,
-            `${label}: ${river} ${formatRect(rect)} is not centred on the table`,
+            Math.abs(rect[1] + rect[3] / 2 - (centre[1] + centre[3] / 2)) <= 1,
+            `${label}: ${river} ${formatRect(rect)} is not centred on the centre panel`,
           );
         }
-        assert.ok(
-          Math.abs(top[0] - (left[0] + left[2])) <= 1 &&
-            Math.abs(top[0] + top[2] - right[0]) <= 1,
-          `${label}: north/side rivers do not meet at their corners`,
-        );
         assert.ok(
           Math.abs(top[1] + top[3] - centre[1]) <= 1 &&
             Math.abs(centre[1] + centre[3] - bottom[1]) <= 1,
           `${label}: north/south rivers do not meet the centre`,
         );
+        assert.ok(
+          Math.abs(left[0] + left[2] - centre[0]) <= 1 &&
+            Math.abs(centre[0] + centre[2] - right[0]) <= 1,
+          `${label}: east/west rivers do not meet the centre`,
+        );
 
-        // Racks are one line per seat, not a block.
-        const rackTop = measurement.rects.rackTop!;
-        const rackLeft = measurement.rects.rackLeft!;
-        const rackRight = measurement.rects.rackRight!;
+        // Racks are one line per seat, just inside the felt frame.
         assert.ok(
           rackTop[2] > rackTop[3] && rackLeft[3] > rackLeft[2] && rackRight[3] > rackRight[2],
           `${label}: a concealed rack is not a single line`,
         );
-
-        // The hand is one row at the bottom, the drawn tile apart.
-        const hand = measurement.rects.hand!;
         assert.ok(
-          Math.abs(hand[0] + hand[2] / 2 - viewport.width / 2) <= 2,
-          `${label}: hand is not centred (${formatRect(hand)})`,
+          rackTop[1] >= frame[1] - 1 && rackTop[1] < frame[1] + frame[3] && rackTop[0] > frame[0],
+          `${label}: north rack ${formatRect(rackTop)} is not inside the felt frame`,
+        );
+        assert.ok(
+          rackLeft[0] >= frame[0] - 1 && rackLeft[0] < frame[0] + frame[2] / 2 &&
+            rackRight[0] + rackRight[2] <= frame[0] + frame[2] + 1,
+          `${label}: a side rack is not inside the felt frame`,
+        );
+
+        // The hand is one row on the bottom edge of the board, above the
+        // action row, the drawn tile apart.
+        assert.ok(
+          Math.abs(hand[0] + hand[2] / 2 - (board[0] + board[2] / 2)) <= 2,
+          `${label}: hand is not centred on the board (${formatRect(hand)})`,
+        );
+        assert.ok(
+          hand[0] >= board[0] - 1 && hand[0] + hand[2] <= board[0] + board[2] + 1,
+          `${label}: hand ${formatRect(hand)} leaves the board column ${formatRect(board)}`,
+        );
+        assert.ok(
+          hand[1] + hand[3] <= actions[1] + 1,
+          `${label}: the hand ${formatRect(hand)} runs into the action row ${formatRect(actions)}`,
         );
         assert.equal(measurement.handCount, 14, `${label}: expected 13 tiles plus the drawn tile`);
         assert.ok(
@@ -693,11 +867,10 @@ async function main(): Promise<void> {
           `${label}: drawn tile gap is ${measurement.drawGap}px, expected a visible break`,
         );
 
-        // Two actions at the bottom right, on the felt, never over the hand.
-        const actions = measurement.rects.actions!;
+        // Two plain buttons at the bottom right, in the action row.
         assert.ok(
           Math.abs(actions[0] + actions[2] - (board[0] + board[2] - 14)) <= 1 &&
-            Math.abs(actions[1] + actions[3] - (board[1] + board[3] - 12)) <= 1,
+            Math.abs(actions[1] + actions[3] - (board[1] + board[3] - 4)) <= 1,
           `${label}: action cluster ${formatRect(actions)} is not pinned to the felt's bottom right`,
         );
         assert.ok(
@@ -705,8 +878,8 @@ async function main(): Promise<void> {
           `${label}: action cluster ${formatRect(actions)} is over the hand`,
         );
 
-        // The board contains its playfield, seats and rivers; the hand band
-        // sits below it. The frame and the band themselves are containers.
+        // The board contains its playfield, seats, rivers and hand. The
+        // frame and the hand band themselves are containers.
         const keys = Object.keys(measurement.rects).filter(
           (key) => key !== "board" && key !== "playfield" && key !== "handBand",
         );
@@ -722,13 +895,7 @@ async function main(): Promise<void> {
         }
 
         for (const [key, rect] of Object.entries(measurement.rects)) {
-          if (
-            key === "board" ||
-            key === "playfield" ||
-            key === "handBand" ||
-            key === "selfLabel" ||
-            key === "hand"
-          ) {
+          if (key === "board" || key === "playfield" || key === "handBand") {
             continue;
           }
           assert.ok(
@@ -739,25 +906,14 @@ async function main(): Promise<void> {
             `${label}: ${key} ${formatRect(rect)} leaves the board ${formatRect(board)}`,
           );
         }
-        const handBand = measurement.rects.handBand!;
         assert.ok(
           measurement.overflow[0] <= measurement.overflow[1] + 1 &&
             measurement.overflow[2] <= measurement.overflow[3] + 1,
           `${label}: board content overflows ${measurement.overflow.join("/")}`,
         );
         assert.ok(
-          handBand[1] >= board[1] + board[3] - 1,
-          `${label}: hand band ${formatRect(handBand)} overlaps the board ${formatRect(board)}`,
-        );
-        const selfLabel = measurement.rects.selfLabel!;
-        assert.ok(
-          selfLabel[0] >= handBand[0] - 1 &&
-            selfLabel[1] >= handBand[1] - 1 &&
-            selfLabel[1] + selfLabel[3] <= handBand[1] + handBand[3] + 1 &&
-            hand[0] >= handBand[0] - 1 &&
-            hand[1] >= handBand[1] - 1 &&
-            hand[1] + hand[3] <= handBand[1] + handBand[3] + 1,
-          `${label}: the hand or your label leaves the hand band`,
+          actions[1] + actions[3] <= board[1] + board[3] + 1,
+          `${label}: the action row leaves the board`,
         );
         for (const [key, rect] of Object.entries(measurement.rects)) {
           assert.ok(
@@ -775,6 +931,9 @@ async function main(): Promise<void> {
         console.log(`  screenshot       ${path}`);
       }
     }
+
+    // The fit itself: the reference's page, rail closed, overlay on.
+    await referencePass(cdp, sessionId, server.url, shots);
 
     // A real finished hand so the result modal is measured, not imagined.
     const game = await finishedGame(server.url);
