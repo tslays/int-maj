@@ -265,6 +265,7 @@ kbd {
   color: var(--fg);
   font: inherit;
   font-size: var(--fs-label);
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -492,6 +493,12 @@ kbd {
   cursor: pointer;
 }
 
+.log-block summary:focus-visible,
+.log:focus-visible {
+  outline: 2px solid var(--indicator-bg);
+  outline-offset: 2px;
+}
+
 .log {
   max-height: 150px;
   padding: 8px;
@@ -583,7 +590,7 @@ kbd {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--indicator-bg);
 }
 
 .seat-dealer[hidden] {
@@ -1059,11 +1066,13 @@ kbd {
 
 .hand {
   display: flex;
+  grid-column: 1;
   gap: var(--hand-gap);
   align-items: flex-end;
   justify-content: center;
   min-width: 0;
-  perspective: 1400px;
+  transform: perspective(1500px) rotateX(4deg);
+  transform-origin: 50% 100%;
 }
 
 .hand-tile {
@@ -1105,6 +1114,11 @@ kbd {
   animation: hand-in var(--hand-enter) var(--ease);
 }
 
+.hand-tile.is-leaving .tile {
+  animation: hand-out 140ms ease-in forwards;
+  pointer-events: none;
+}
+
 @keyframes hand-in {
   from {
     opacity: 0;
@@ -1113,6 +1127,17 @@ kbd {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes hand-out {
+  from {
+    opacity: 1;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.96);
   }
 }
 
@@ -1184,6 +1209,7 @@ kbd {
 
 .own-melds {
   display: flex;
+  grid-column: 2;
   gap: 8px;
   align-items: flex-end;
 }
@@ -1199,6 +1225,7 @@ kbd {
 
 .own-bonus {
   display: flex;
+  grid-column: 3;
   flex-direction: column;
   gap: 3px;
   align-items: flex-end;
@@ -1563,6 +1590,7 @@ kbd {
 
   .action-cluster {
     right: 10px;
+    max-width: 190px;
   }
 
   .hand-band {
@@ -1600,15 +1628,30 @@ kbd {
   .action-cluster {
     bottom: 9px;
   }
-}
-
-@media (max-width: 900px) {
-  .app {
-    grid-template-columns: minmax(0, 1fr) 0;
-  }
 
   .rail {
-    display: none;
+    gap: 10px;
+  }
+
+  .rail-block {
+    padding-top: 8px;
+  }
+
+  .rail-block h2 {
+    margin-bottom: 6px;
+  }
+
+  .score-row {
+    padding: 3px 7px;
+  }
+
+  .turn-wrap {
+    gap: 4px;
+  }
+
+  .rail-actions {
+    gap: 6px;
+    padding-top: 8px;
   }
 }
 

@@ -286,23 +286,36 @@ npm run serve                       # http://127.0.0.1:8080, seed "web"
 npm run serve -- --port 8081 --seed table-7
 ```
 
-The table is a square felt board. The three bots sit on the north, west and
-east sides with their public melds, discards, bonus tiles and concealed-hand
-count; the wall count, East round and current turn sit in the middle; your
-hand is at the bottom as large tiles. A status line names the current decision
-and the legal actions. The wait panel is the `npm run check` checker built
-in: while you hold 13 effective tiles it lists every completing tile, the
-copies left (or `dead`), and the catalogue hands each wait would make.
+The table fills the viewport. The three bots sit on the top, left and right
+edges with a compact wind/name/points chip, a rack of concealed backs, their
+public melds and a six-wide discard river; the wall count and round/dealer
+sit in the quiet centre; your hand is one large bottom row of 84x112 tiles,
+with your river directly above it and melds and the bonus tray to its right.
+A collapsible 260px rail holds the scorecard, a moving turn highlight, the
+wait panel and the event log. The game actions are a fixed cluster low on the
+right; claims appear as a bottom-centre bar, with chow variants on a second
+row. Nothing is recomputed in the browser: the table-side checker is the
+`npm run check` checker built in, listing every completing tile, the copies
+left (or `dead`), and the catalogue hands each wait would make.
 
-Click a tile to discard, or click a claim/draw/pass button when offered.
-`f` declares fishing and shows the fixed wait under your hand; `u` undoes
-the previous decision by replaying from the seed; `n` deals a new game;
-`?` lists the keys. Keyboard-only works end to end: `1`-`9` picks a hand
-tile, `Enter` confirms (or draws when nothing is picked), `Space` passes,
-`d` draws and `m` declares mahjong. After a hand the result panel shows the
-winning hand (yours; another seat's concealed tiles stay hidden), every
-matched pattern, the tier, the fishing settlements, the per-seat totals and a
-Next hand button.
+Click a tile to select it, then click it again or press `Enter` to discard;
+arrow keys move the hand cursor and `1`-`9` jump to a tile. `d` draws, `m`
+declares mahjong, `p`/`k`/`c` claim pung/kong/chow, `Space` passes or picks
+`Pass`, `f` declares fishing, `u` undoes the previous decision by replaying
+from the seed, `n` deals a new game and `?` lists the keys. The whole hand is
+playable keyboard-only. While a claim is open the bar shows every legal claim
+and always keeps Pass; `1`-`9` picks a chow variant. After a hand the result
+panel overlays the felt with the winning pattern and tier, the composed
+tiles, every settlement, each seat's before/delta/now score and a Next hand
+button; the rail stays where it was. Another seat's concealed tiles stay
+hidden at the result: only public melds and the winning tile are shown.
+
+The table is quiet by default: a soft felt vignette, warm ivory SVG tiles and
+seat tints used only as two-pixel edge marks. Motion is 140ms for lifts and
+slides and 220ms for the hand entering; `prefers-reduced-motion` removes all
+of it. Light and dark colour schemes both keep the felt dark and adapt the
+rail and result panel, with visible focus rings on every tile and button. The
+layout stays playable at 1024x700, where the rail scrolls above the hand.
 
 Every tile is an SVG image loaded from its canonical key in `web/tiles/`:
 characters, circles, bamboo, winds, dragons, flowers and seasons all share the
