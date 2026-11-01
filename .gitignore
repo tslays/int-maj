@@ -4,3 +4,8 @@ rules/pages/
 rules/companion-ocr.txt
 rules/pages-text.txt
 rules/ocr-boxes.tsv
+
+# Local design references: the owner's screenshots and the derived overlay.
+reference/
+web/reference.png
+web/reference2.png
