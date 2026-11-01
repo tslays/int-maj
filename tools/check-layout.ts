@@ -542,6 +542,237 @@ async function startServer(): Promise<{ url: string; stop: () => Promise<void> }
   };
 }
 
+/* --------------------------------------------------------------- states */
+
+/**
+ * Every review state must be the same table. The board, the felt frame, the
+ * hand band, the centre panel and the four reserved river blocks are measured
+ * against a plain board at the same viewport, so a state that moved the table
+ * fails here rather than in a screenshot nobody compared. The result states
+ * are the three that open the overlay; the tab names the state.
+ */
+const STATE_NAMES = ["turn", "claim", "wait", "fishing", "win", "drawn", "result"] as const;
+
+const RESULT_STATES: Readonly<Record<string, true>> = {
+  win: true,
+  drawn: true,
+  result: true,
+};
+
+/** Rectangles a review state must not move: everything pinned to the board. */
+const FIXED_RECTS = [
+  "board",
+  "playfield",
+  "handBand",
+  "centre",
+  "riverTop",
+  "riverLeft",
+  "riverRight",
+  "riverBottom",
+] as const;
+
+interface StateMeasurement {
+  readonly title: string;
+  readonly tag: string;
+  readonly errors: readonly string[];
+  readonly overlay: boolean;
+  readonly card: Rect | null;
+  readonly rects: Record<string, Rect | null>;
+  readonly scroll: readonly [number, number];
+}
+
+const STATE_PROBE = String.raw`
+(() => {
+  window.__pageErrors = [];
+  window.addEventListener("error", (event) => window.__pageErrors.push(String(event.message)));
+  window.addEventListener("unhandledrejection", (event) => {
+    window.__pageErrors.push(String(event.reason));
+  });
+  const report = console.error.bind(console);
+  console.error = (...args) => {
+    window.__pageErrors.push(args.map((value) => String(value)).join(" "));
+    report(...args);
+  };
+})();
+`;
+
+const MEASURE_STATE = String.raw`
+(() => {
+  const rect = (selector) => {
+    const element = document.querySelector(selector);
+    if (element === null) return null;
+    const box = element.getBoundingClientRect();
+    return [box.x, box.y, box.width, box.height];
+  };
+  const tag = document.querySelector("#state-tag");
+  return {
+    title: document.title,
+    tag: tag !== null && !tag.hidden
+      ? (tag.querySelector(".state-tag-name")?.textContent ?? "")
+      : "",
+    errors: window.__pageErrors ?? [],
+    overlay: document.querySelector("#outcome")?.hidden === false,
+    card: rect("#outcome .result-card"),
+    rects: {
+      board: rect(".board"),
+      playfield: rect(".playfield"),
+      handBand: rect(".hand-band"),
+      centre: rect(".center"),
+      riverTop: rect("#river-top .river"),
+      riverLeft: rect("#river-left .river"),
+      riverRight: rect("#river-right .river"),
+      riverBottom: rect("#river-bottom .river"),
+      rackTop: rect(".seat-top .rack"),
+      rackLeft: rect(".seat-left .rack"),
+      rackRight: rect(".seat-right .rack"),
+      selfLabel: rect("#self-label"),
+      hand: rect("#hand"),
+      ownMelds: rect("#own-melds"),
+    },
+    scroll: [
+      document.documentElement.scrollWidth,
+      document.documentElement.scrollHeight,
+    ],
+  };
+})()
+`;
+
+async function statePass(
+  cdp: Cdp,
+  sessionId: string,
+  base: string,
+  shots: string,
+): Promise<void> {
+  await evaluate(
+    cdp,
+    sessionId,
+    `localStorage.setItem("mahjong-rail", "open"); sessionStorage.removeItem("mahjong-game"); true`,
+  );
+
+  // A plain board at each size is the shape every state has to match.
+  const plain = new Map<number, StateMeasurement>();
+  for (const viewport of VIEWPORTS) {
+    await setViewport(cdp, sessionId, viewport.width, viewport.height);
+    await navigate(cdp, sessionId, base);
+    plain.set(viewport.width, await evaluate<StateMeasurement>(cdp, sessionId, MEASURE_STATE));
+  }
+
+  console.log("\nreview states");
+  console.log("  size      state     title                          overlay");
+  for (const viewport of VIEWPORTS) {
+    await setViewport(cdp, sessionId, viewport.width, viewport.height);
+    const reference = plain.get(viewport.width)!;
+    for (const state of STATE_NAMES) {
+      const label = `${viewport.width}x${viewport.height} ${state}`;
+      await navigate(cdp, sessionId, `${base}/?state=${state}`);
+      await waitFor(
+        cdp,
+        sessionId,
+        `document.querySelector("#state-tag")?.hidden === false`,
+      );
+      const measurement = await evaluate<StateMeasurement>(cdp, sessionId, MEASURE_STATE);
+
+      assert.equal(
+        measurement.title,
+        `Mahjong — ${state}`,
+        `${label}: the tab does not name the state`,
+      );
+      assert.ok(
+        measurement.tag.toLowerCase().includes(state),
+        `${label}: the rail does not name the state (${measurement.tag})`,
+      );
+      assert.deepEqual(measurement.errors, [], `${label}: the page raised a script error`);
+      assert.equal(
+        measurement.overlay,
+        RESULT_STATES[state] === true,
+        `${label}: the result overlay is ${measurement.overlay ? "open" : "closed"}`,
+      );
+      assert.ok(
+        measurement.scroll[0] <= viewport.width + 1 &&
+          measurement.scroll[1] <= viewport.height + 1,
+        `${label}: the page scrolls to ${measurement.scroll.join("x")} in a ${viewport.width}x${viewport.height} window`,
+      );
+
+      for (const key of FIXED_RECTS) {
+        const rect = measurement.rects[key];
+        const expected = reference.rects[key];
+        assert.ok(rect !== undefined && rect !== null, `${label}: ${key} is missing`);
+        assert.ok(expected !== undefined && expected !== null, `${label}: plain ${key} is missing`);
+        assert.ok(
+          sameRect(rect, expected),
+          `${label}: ${key} moved from ${formatRect(expected)} to ${formatRect(rect)}`,
+        );
+      }
+
+      // Your wind and name sit at the band's left edge; how tall the tray
+      // below them is depends on the bonus tiles held, so only x is fixed.
+      const selfLabel = measurement.rects.selfLabel!;
+      assert.ok(
+        Math.abs(selfLabel[0] - reference.rects.selfLabel![0]) <= 0.5,
+        `${label}: your label moved off the band's corner (${formatRect(selfLabel)})`,
+      );
+
+      // Racks keep their pinned edge even as a meld changes their length.
+      const rackTop = measurement.rects.rackTop!;
+      const rackLeft = measurement.rects.rackLeft!;
+      const rackRight = measurement.rects.rackRight!;
+      const frame = measurement.rects.playfield!;
+      const board = measurement.rects.board!;
+      assert.ok(
+        Math.abs(rackTop[1] - reference.rects.rackTop![1]) <= 0.5 &&
+          Math.abs(rackLeft[0] - reference.rects.rackLeft![0]) <= 0.5 &&
+          Math.abs(rackRight[0] + rackRight[2] - (reference.rects.rackRight![0] + reference.rects.rackRight![2])) <= 0.5,
+        `${label}: a rack left its line`,
+      );
+      for (const rect of [rackTop, rackLeft, rackRight]) {
+        assert.ok(
+          rect[0] >= frame[0] - 1 &&
+            rect[1] >= frame[1] - 1 &&
+            rect[0] + rect[2] <= board[0] + board[2] + 1 &&
+            rect[1] + rect[3] <= board[1] + board[3] + 1,
+          `${label}: a rack ${formatRect(rect)} left the felt`,
+        );
+      }
+
+      if (measurement.card !== null) {
+        const card = measurement.card;
+        assert.ok(
+          card[0] >= 0 &&
+            card[1] >= 0 &&
+            card[0] + card[2] <= viewport.width + 1 &&
+            card[1] + card[3] <= viewport.height + 1,
+          `${label}: the result card ${formatRect(card)} leaves the viewport`,
+        );
+      }
+
+      // A hand without melds is centred on the board, exactly as a plain
+      // board's is; with melds the row is centred as a group, so only the
+      // hand's own edge is reported.
+      const hand = measurement.rects.hand!;
+      const melds = measurement.rects.ownMelds!;
+      if (melds[2] === 0) {
+        assert.ok(
+          Math.abs(hand[0] + hand[2] / 2 - (board[0] + board[2] / 2)) <= 2,
+          `${label}: the hand ${formatRect(hand)} is not centred on the board`,
+        );
+      }
+      assert.ok(
+        hand[1] + hand[3] <= board[1] + board[3] + 1 && hand[1] >= board[1] - 1,
+        `${label}: the hand ${formatRect(hand)} left the board`,
+      );
+
+      console.log(
+        `  ${`${viewport.width}x${viewport.height}`.padEnd(9)} ${state.padEnd(9)} ` +
+          `${measurement.title.padEnd(30)} ${measurement.overlay ? "open" : "closed"} ` +
+          `hand ${formatRect(hand)} melds ${formatRect(melds)}`,
+      );
+      const path = join(shots, `${viewport.width}x${viewport.height}-state-${state}.png`);
+      await screenshot(cdp, sessionId, path);
+    }
+  }
+  console.log("  PASS: every state is the plain table at both sizes");
+}
+
 /* ---------------------------------------------------------- finish game */
 
 /**
@@ -695,6 +926,11 @@ async function main(): Promise<void> {
   const server = await startServer();
   const chromePath = await findChrome();
   const { cdp, sessionId, browser, profile } = await connectChrome(chromePath);
+  await cdp.send({
+    method: "Page.addScriptToEvaluateOnNewDocument",
+    params: { source: STATE_PROBE },
+    sessionId,
+  });
   const shots = await mkdtemp(join(tmpdir(), "maj-layout-shots-"));
 
   try {
@@ -968,6 +1204,9 @@ async function main(): Promise<void> {
       await screenshot(cdp, sessionId, path);
       console.log(`  screenshot       ${path}`);
     }
+
+    // Every review state, at both sizes: same table, no script error.
+    await statePass(cdp, sessionId, server.url, shots);
 
     console.log("\nPASS: no measured rectangles intersect at either size.");
     console.log(`Screenshots: ${shots}`);
