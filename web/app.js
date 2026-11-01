@@ -1483,11 +1483,13 @@ function onHandClick(index) {
   if (payload === null || busy) return;
   if (index < 0 || index >= payload.view.player.hand.length) return;
   cursor = index;
-  if (selected === index) {
+  selected = index;
+  // A click throws the tile: nothing about a mahjong hand needs a two-step
+  // "select, then confirm" gesture. Keyboard keeps Enter for the same act.
+  if (isYourDiscardPhase()) {
     discardSelected();
     return;
   }
-  selected = index;
   renderHand();
   focusHand(index);
 }
