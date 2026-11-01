@@ -24,6 +24,8 @@ import { spawn, type ChildProcess } from "node:child_process";
 
 import { createAppServer } from "../src/server/server.ts";
 import { GameStore } from "../src/server/session.ts";
+import { chooseAction } from "../src/core/game/bot.ts";
+import type { GameView } from "../src/core/game/view.ts";
 
 type Rect = readonly [x: number, y: number, width: number, height: number];
 
@@ -437,6 +439,12 @@ async function startServer(): Promise<{ url: string; stop: () => Promise<void> }
 
 /* ---------------------------------------------------------- finish game */
 
+/**
+ * Play the human seat with the same pure policy the bots use, so the finished
+ * hand is reproducible and is a win rather than a wall exhaustion. `win-252`
+ * deals a self-drawn Seven Twins (half limit, 500) with two fishing
+ * declarations, which exercises the whole result card.
+ */
 async function finishedGame(base: string): Promise<string> {
   const post = async (path: string, body: unknown) => {
     const response = await fetch(base + path, {
@@ -448,18 +456,16 @@ async function finishedGame(base: string): Promise<string> {
     return (await response.json()) as ApiPayload;
   };
 
-  let payload = await post("/api/new", { seed: "layout-finish" });
+  let payload = await post("/api/new", { seed: "win-252" });
   if (typeof payload.game !== "string") throw new Error("/api/new returned no game id");
   const game: string = payload.game;
   for (let step = 0; step < 2000; step++) {
-    if (payload.view.phase === "finished" || payload.outcome !== null) return game;
-    const actions: Array<Record<string, unknown>> = payload.legalActions ?? [];
-    const action =
-      actions.find((item) => item.type === "Draw") ??
-      actions.find((item) => item.type === "Discard") ??
-      actions.find((item) => item.type === "Pass") ??
-      actions[0];
-    if (action === undefined) throw new Error(`no legal action at step ${step}`);
+    if (payload.view.phase === "finished" || payload.outcome !== null) {
+      if (payload.outcome === null) throw new Error("finished without an outcome");
+      return game;
+    }
+    const action = chooseAction(payload.view as unknown as GameView, "E");
+    if (action === null) throw new Error(`no legal action at step ${step}`);
     payload = await post("/api/move", { game, action });
     if (payload.error !== undefined) throw new Error(payload.error);
   }

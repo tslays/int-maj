@@ -333,6 +333,37 @@ function changeClass(value) {
   return value > 0 ? "is-up" : value < 0 ? "is-down" : "";
 }
 
+/** The book's tier names, printed as they are. `calculate` has no figure. */
+const TIER_NAME = {
+  half: "half limit",
+  limit: "limit",
+  middle: "middle limit",
+  double: "double limit",
+  calculate: "calculate",
+};
+
+function tierName(tier) {
+  return tier === null || tier === undefined ? null : (TIER_NAME[tier] ?? tier);
+}
+
+/** A tier and its printed winner points on one badge; calculate stays a word. */
+function scoreBadge(outcome) {
+  const tier = tierName(outcome.tier);
+  if (outcome.points === null || outcome.points === undefined) {
+    return { text: tier ?? "calculate", note: "the book gives no fixed value" };
+  }
+  return {
+    text: tier === null ? `${outcome.points}` : `${tier} · ${outcome.points}`,
+    note: `${outcome.points} points`,
+  };
+}
+
+function totalsSum(totals) {
+  let sum = 0;
+  for (const seat of SEATS) sum += totals[seat] ?? 0;
+  return sum;
+}
+
 function randomSeed() {
   if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
     return globalThis.crypto.randomUUID();
@@ -439,6 +470,11 @@ function seatLabel(seat) {
   if (seat === payload.seat) return "You";
   const entry = seatEntry(seat);
   return entry === null ? `${seat} seat` : `${WIND_NAME[entry.wind]} bot`;
+}
+
+/** "You" starts a row; inside a sentence the table reads "you". */
+function seatInSentence(seat) {
+  return seat === payload.seat ? "you" : seatLabel(seat);
 }
 
 function seatColor(seat) {
@@ -1322,47 +1358,129 @@ function resultScoreTable(outcome) {
     row.append(name, start, delta, end);
     body.append(row);
   }
-  table.append(head, body);
+
+  // The four deltas close to zero; a total row makes that visible, and a
+  // non-zero total would be a ledger bug rather than something to hide.
+  const total = totalsSum(outcome.totals);
+  const foot = document.createElement("tfoot");
+  const footRow = document.createElement("tr");
+  footRow.className = "result-total";
+  const totalLabel = document.createElement("th");
+  totalLabel.colSpan = 2;
+  totalLabel.scope = "row";
+  totalLabel.textContent = "Total";
+  const totalDelta = document.createElement("td");
+  totalDelta.className = `delta ${changeClass(total)}${total === 0 ? "" : " is-invalid"}`;
+  totalDelta.textContent = signed(total);
+  const totalNow = document.createElement("td");
+  totalNow.textContent = "";
+  totalNow.setAttribute("aria-hidden", "true");
+  footRow.append(totalLabel, totalDelta, totalNow);
+  foot.append(footRow);
+
+  table.append(head, body, foot);
   return table;
 }
 
 function resultPayments(outcome) {
   const list = document.createElement("ul");
-  list.className = "result-list";
-  if (outcome.ledger.length === 0) {
+  list.className = "result-list result-payments";
+  // Fishing is settled independently and gets its own group below.
+  const entries = outcome.ledger.filter((entry) => !entry.reason.startsWith("fishing"));
+  if (entries.length === 0) {
     const item = document.createElement("li");
     item.textContent = "No payments.";
     list.append(item);
     return list;
   }
-  for (const entry of outcome.ledger) {
+  for (const entry of entries) {
     const item = document.createElement("li");
-    const from = seatLabel(entry.from);
+    const amount = span(
+      "result-amount",
+      entry.points === null ? "calculate" : String(entry.points),
+    );
+    const from = seatInSentence(entry.from);
     const verb = entry.from === payload.seat ? "pay" : "pays";
-    item.textContent =
-      `${from} ${verb} ${seatLabel(entry.to)} ` +
-      `${entry.points === null ? "calculate" : entry.points} — ${entry.reason}`;
-    if (entry.reason.startsWith("fishing")) item.classList.add("is-fishing-payment");
+    const text = span(
+      "result-entry",
+      `${from} ${verb} ${seatInSentence(entry.to)} · ${entry.reason}`,
+    );
+    item.append(amount, text);
     list.append(item);
   }
   return list;
 }
 
+/** Fishing is a mini win: each declaration collects from the other three. */
+function resultFishing(outcome) {
+  if (outcome.fishing.length === 0) return null;
+  const settled = new Map();
+  for (const entry of outcome.fishing) {
+    const current = settled.get(entry.to) ?? { points: 0, unknown: false };
+    if (entry.points === null) current.unknown = true;
+    else current.points += entry.points;
+    settled.set(entry.to, current);
+  }
+  const declarations = new Map(payload.view.fishing.map((entry) => [entry.seat, entry]));
+  const block = div("result-fishing");
+  for (const seat of SEATS) {
+    const row = settled.get(seat);
+    if (row === undefined) continue;
+    const item = div("result-fishing-row");
+    item.dataset.seat = seat;
+    item.style.setProperty("--seat-color", seatColor(seat));
+    const name = span("result-fishing-seat", seatLabel(seat));
+    const waits = span("result-fishing-waits");
+    const declaration = declarations.get(seat);
+    for (const key of declaration?.wait ?? []) waits.append(tileElement(key));
+    const value = span(
+      "result-fishing-points",
+      row.unknown ? "calculate" : signed(row.points),
+    );
+    const tier = span("result-fishing-tier", tierName(declaration?.tier ?? null) ?? "fishing");
+    item.append(name, waits, tier, value);
+    item.setAttribute(
+      "aria-label",
+      `${seatLabel(seat)} fishing on ${(declaration?.wait ?? []).map(tileName).join(", ")}, ` +
+        `${tier.textContent}, ${row.unknown ? "calculate" : signed(row.points)}`,
+    );
+    block.append(item);
+  }
+  return block;
+}
+
 function composeResultTiles(outcome) {
   const tiles = div("result-tiles");
-  if (outcome.hand !== null) {
-    for (const key of outcome.hand) tiles.append(tileElement(key));
-  } else if (outcome.winningTile !== null) {
-    tiles.append(tileElement(outcome.winningTile));
+  const winning = outcome.winningTile;
+  const hand = outcome.hand;
+  const winningIndex =
+    hand === null || winning === null ? -1 : hand.lastIndexOf(winning);
+
+  const add = (key, isWinning) => {
+    const tile = tileElement(key);
+    if (isWinning) {
+      tile.classList.add("is-winning");
+      tile.title = `Winning tile — ${tileName(key)}`;
+      tile.setAttribute("aria-label", `${tileName(key)}, winning tile`);
+    }
+    return tile;
+  };
+
+  if (hand !== null) {
+    hand.forEach((key, index) => tiles.append(add(key, index === winningIndex)));
   }
   if (outcome.melds !== null) {
     for (const meld of outcome.melds) {
       const group = div("meld");
       if (!meld.exposed) group.classList.add("is-concealed");
-      for (const key of meld.tiles) group.append(tileElement(key));
+      group.title = `${meld.kind}${meld.exposed ? "" : " (concealed)"}`;
+      for (const key of meld.tiles) group.append(add(key, false));
       tiles.append(group);
     }
   }
+  // Another seat's concealed hand is never in the payload: the winning tile
+  // and the public melds are the whole composing evidence.
+  if (hand === null && winning !== null) tiles.append(add(winning, true));
   return tiles;
 }
 
@@ -1399,70 +1517,78 @@ function renderOutcome() {
   card.append(sub, title);
 
   if (outcome.kind === "win") {
-    const source = div("result-sub");
-    source.textContent =
-      `${outcome.selfDrawn ? "self-drawn" : `on ${seatLabel(outcome.from)}'s discard`}` +
-      (outcome.winningTile === null ? "" : " · winning tile ");
+    const source = div("result-source");
+    if (outcome.selfDrawn) source.append(document.createTextNode("Self-drawn"));
+    else if (outcome.from === payload.seat) {
+      source.append(document.createTextNode("On your discard"));
+    } else {
+      source.append(document.createTextNode(`On ${seatLabel(outcome.from)}'s discard`));
+    }
     if (outcome.winningTile !== null) {
+      source.append(span("result-source-sep", "·"), document.createTextNode("winning tile"));
       source.append(tileElement(outcome.winningTile));
     }
     card.append(source);
+  } else {
+    const reason = div("result-source");
+    reason.textContent = outcome.reason;
+    card.append(reason);
+  }
+
+  if (outcome.kind === "win") {
+    const badge = scoreBadge(outcome);
+    const patternTitle = document.createElement("h3");
+    patternTitle.textContent = "Pattern";
+    const pattern = div("result-pattern");
+    pattern.append(document.createTextNode(outcome.patternName ?? outcome.patternId ?? "—"));
+    const tierBadge = span("tier-badge", badge.text);
+    tierBadge.title = badge.note;
+    pattern.append(tierBadge);
+    if (outcome.points === null) {
+      pattern.append(span("result-pattern-note", `· ${badge.note}`));
+    }
+    card.append(patternTitle, pattern);
+
+    const handTitle = document.createElement("h3");
+    handTitle.textContent = "Composed tiles";
+    const tiles = composeResultTiles(outcome);
+    card.append(handTitle, tiles);
+    if (outcome.hand === null) {
+      const hidden = div("result-sub");
+      hidden.textContent =
+        `${outcome.handCount} concealed tiles stay hidden; public melds and the ` +
+        "winning tile are shown.";
+      card.append(hidden);
+    }
+
+    if (outcome.matches.length > 1) {
+      const matchesTitle = document.createElement("h3");
+      matchesTitle.textContent = "Also matched";
+      const matches = document.createElement("ul");
+      matches.className = "result-list result-matches";
+      for (const match of outcome.matches.slice(1)) {
+        const item = document.createElement("li");
+        item.textContent = `${match.name} (${match.id})`;
+        matches.append(item);
+      }
+      card.append(matchesTitle, matches);
+    }
   }
 
   const grid = div("result-grid");
   const left = div();
   const right = div();
 
-  if (outcome.kind === "win") {
-    const patternTitle = document.createElement("h3");
-    patternTitle.textContent = "Pattern";
-    const pattern = div("result-pattern");
-    pattern.append(document.createTextNode(outcome.patternName ?? outcome.patternId ?? "—"));
-    if (outcome.tier !== null) pattern.append(span("tier-badge", outcome.tier));
-    pattern.append(
-      span("tier-badge", outcome.points === null ? "calculate" : String(outcome.points)),
-    );
-    left.append(patternTitle, pattern);
-
-    const handTitle = document.createElement("h3");
-    handTitle.textContent = "Composed tiles";
-    left.append(handTitle, composeResultTiles(outcome));
-    if (outcome.hand === null) {
-      const hidden = div("result-sub");
-      hidden.textContent =
-        `${outcome.handCount} concealed tiles stay hidden; public melds and the ` +
-        "winning tile are shown.";
-      left.append(hidden);
-    }
-
-    const matchesTitle = document.createElement("h3");
-    matchesTitle.textContent = "Patterns matched";
-    left.append(matchesTitle);
-    const matches = document.createElement("ul");
-    matches.className = "result-list";
-    if (outcome.matches.length === 0) {
-      const item = document.createElement("li");
-      item.textContent = "None";
-      matches.append(item);
-    } else {
-      for (const match of outcome.matches) {
-        const item = document.createElement("li");
-        item.textContent = `${match.name} (${match.id})`;
-        matches.append(item);
-      }
-    }
-    left.append(matches);
-  } else {
-    const reasonTitle = document.createElement("h3");
-    reasonTitle.textContent = "Reason";
-    const reason = div("result-sub");
-    reason.textContent = outcome.reason;
-    left.append(reasonTitle, reason);
-  }
-
   const paymentsTitle = document.createElement("h3");
-  paymentsTitle.textContent = "Settlements";
-  right.append(paymentsTitle, resultPayments(outcome));
+  paymentsTitle.textContent = "Payments";
+  left.append(paymentsTitle, resultPayments(outcome));
+
+  const fishing = resultFishing(outcome);
+  if (fishing !== null) {
+    const fishingTitle = document.createElement("h3");
+    fishingTitle.textContent = "Fishing";
+    left.append(fishingTitle, fishing);
+  }
 
   const scoreTitle = document.createElement("h3");
   scoreTitle.textContent = "Score";
@@ -1473,7 +1599,10 @@ function renderOutcome() {
 
   if (outcome.unknown > 0) {
     const note = div("result-note");
-    note.textContent = `${outcome.unknown} calculate entries are not scored.`;
+    note.textContent =
+      outcome.unknown === 1
+        ? "1 calculate entry is not scored."
+        : `${outcome.unknown} calculate entries are not scored.`;
     card.append(note);
   }
 
