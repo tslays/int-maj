@@ -71,6 +71,13 @@ Taken from how these tables read in play (AJ Martinez, worldsbe.st, on Mahjong S
 
 The rules, the hands and the scoring are the Companion's and nothing else: no riichi yaku, no dora, no furiten, no riichi sticks. What may be borrowed from Riichi City and Mahjong Soul is **interface and game-feel** — the shape of a turn, how a claim is offered, how a result is presented, how the table waits for you, what the player can see at a glance. Research those clients (public screenshots, articles, wikis) for interaction patterns, then translate them onto our rules. When the two disagree about a rule, the Companion wins; when they disagree about how something *feels*, the reference wins.
 
+> **Reference update (owner, 2026-11-01): copy Tenhou only.** The board's layout,
+> spacing, tile placement and chrome are Tenhou's, full stop — the Mahjong Soul
+> sections below are kept only as history and must not be mixed in. Scale from
+> the Tenhou screenshot: hand tiles ~7% of the viewport width, river tiles ~0.62
+> of that, backs ~0.33, four rivers meeting in the middle six to a row, centre
+> carrying round/wall/scores, racks on the edges, two action buttons low right.
+
 ## Prefer Tenhou's plainness for the arrangement
 
 Of the two references, Tenhou is the closer model for us because it carries no decoration at all, and its arrangement is simpler to hit:
