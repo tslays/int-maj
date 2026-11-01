@@ -45,6 +45,17 @@ Full viewport, no max-width box. Three bands:
 2. **Own hand** (bottom, full width): tiles 84x112 (SVG art scales), sorted by suit then rank with honours last, 6px gaps, hover lift 6px and brighten, click selects and lifts 10px, Enter/click discards. Melds sit to the right of the hand, kongs showing all four. Bonus tiles sit in a small tray at the far right.
 3. **Rail** (right, 260px, collapsible): scorecard (four rows: seat, wind, points, dealer dot), a turn indicator that is a moving highlight rather than a sentence, the wait panel ("waiting on b6 - 3 left"), and a collapsible event log.
 
+### The reserved river grid
+
+Every seat owns a discard board of **six columns by six rows, 36 slots**, reserved before the first draw. A slot is always in the layout, so a river never grows, reflows or moves another element:
+
+- tiles fill slots left to right, then top to bottom, in throw order;
+- empty slots are invisible but keep their space;
+- the four boards sit in one field between the seat HUDs, the wall and the action shelf; none may overlap the hand band, the centre panel or a seat chip;
+- the own board follows the hand's centreline (the rail is part of the window, not the felt), so your discards stay under your hand instead of drifting toward the rail.
+
+The field is a fixed grid, not per-seat absolute positioning: the four boards cannot be pushed around by a long river.
+
 ## Affordances both clients have that we should match
 
 Taken from how these tables read in play (AJ Martinez, worldsbe.st, on Mahjong Soul and Riichi City), each is a small, quiet signal rather than a new panel:
@@ -58,6 +69,17 @@ Taken from how these tables read in play (AJ Martinez, worldsbe.st, on Mahjong S
 ## Where the game design comes from
 
 The rules, the hands and the scoring are the Companion's and nothing else: no riichi yaku, no dora, no furiten, no riichi sticks. What may be borrowed from Riichi City and Mahjong Soul is **interface and game-feel** — the shape of a turn, how a claim is offered, how a result is presented, how the table waits for you, what the player can see at a glance. Research those clients (public screenshots, articles, wikis) for interaction patterns, then translate them onto our rules. When the two disagree about a rule, the Companion wins; when they disagree about how something *feels*, the reference wins.
+
+## How the reference arranges tiles (from the Mahjong Soul board)
+
+Looking at a live Mahjong Soul table, the arrangement rules that make it read instantly — adopt these:
+
+- **A river is a compact block, not a scatter.** Each seat's discards are six to a row with the tiles *touching* (1px, no gaps between them), rows stacked flush, and the whole block aligned toward the centre of the table.
+- **Each river faces its own player.** The top seat's river is turned 180 degrees, the side seats' rivers 90 degrees, so every player reads their own river left to right, top to bottom. Ours may keep one orientation if rotation is too costly, but the compact 6-wide block and the centre alignment are not optional.
+- **The drawn tile sits apart.** Your hand is 13 tiles with a small gap before the tile you just drew, so "this is new" needs no marker.
+- **Melds live at the right end of the hand**, outside the 13, never mixed into the river.
+- **The centre is a small panel**, not empty felt: round, wall count and the four scores, with the dealer marked. Everything else stays quiet.
+- **Tile size is the budget**: about fourteen tiles across for the hand, about six across for a river, and the seat panels never larger than a tile's width pair.
 
 ## The arrangement reference
 
