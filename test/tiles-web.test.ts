@@ -1,44 +1,26 @@
 /**
- * The web table's face table is data, so the whole set can be checked without
- * a browser: every canonical key must have a face, no key may fall through to
- * the question-mark placeholder, and each suited rank must carry the printed
- * number of marks.
+ * The table renders one SVG file per canonical key. These tests walk the
+ * mapping, the asset directory and the tile name table without a browser:
+ * every key must resolve to a real, non-empty SVG, no key may fall through
+ * to the missing-art placeholder, and the back must ship too.
  */
 
 import assert from "node:assert/strict";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
+  artFile,
+  artUrl,
+  BACK_ART,
   BONUS_NAMES,
   BONUS_TILE_KEYS,
-  FACES_TABLE,
   PLAY_TILE_KEYS,
-  VIEW_HEIGHT,
-  VIEW_WIDTH,
-  faceFor,
+  TILE_ART,
 } from "../web/tiles.js";
 
-interface Dot {
-  readonly x: number;
-  readonly y: number;
-  readonly r: number;
-}
-
-interface Stick {
-  readonly x: number;
-  readonly y: number;
-  readonly h: number;
-  readonly red: boolean;
-}
-
-interface Face {
-  readonly kind: string;
-  readonly rank?: number;
-  readonly dots?: readonly Dot[];
-  readonly sticks?: readonly Stick[];
-  readonly bird?: boolean;
-  readonly glyph?: string | null;
-}
+const TILE_DIR = fileURLToPath(new URL("../web/tiles/", import.meta.url));
 
 const playKeys = PLAY_TILE_KEYS as readonly string[];
 const bonusKeys = BONUS_TILE_KEYS as readonly string[];
@@ -68,37 +50,60 @@ const EXPECTED_BONUS_KEYS = [
   "s4",
 ];
 
-/** Validate the boundary once: the face table is plain JS data. */
-function readFace(key: string): Face {
-  const value: unknown = faceFor(key);
-  if (typeof value !== "object" || value === null) {
-    throw new Error(`${key} has no face`);
-  }
-  return value as Face;
+function readAsset(file: string): string {
+  return readFileSync(`${TILE_DIR}${file}`, "utf8");
 }
 
-describe("web tile faces", () => {
+describe("web tile art", () => {
   it("lists the 34 playable keys and the 8 bonus keys", () => {
     assert.deepEqual([...playKeys], EXPECTED_PLAY_KEYS);
     assert.deepEqual([...bonusKeys], EXPECTED_BONUS_KEYS);
     assert.equal(new Set(allKeys).size, 42);
   });
 
-  it("maps every canonical key to a face", () => {
+  it("maps every canonical key to a file that exists on disk", () => {
     for (const key of allKeys) {
-      assert.notEqual(faceFor(key), null, `${key} has no face`);
-      assert.equal(
-        FACES_TABLE[key],
-        faceFor(key),
-        `${key} is missing from the exported face table`,
-      );
-      assert.notEqual(readFace(key).kind, "placeholder", `${key} is a placeholder`);
+      const file = artFile(key);
+      assert.equal(file, `${key}.svg`, `${key} has no art file`);
+      assert.equal(artUrl(key), `/tiles/${key}.svg`, `${key} art URL`);
+      assert.ok(statSync(`${TILE_DIR}${file}`).isFile(), `${file} is missing`);
+      assert.ok(statSync(`${TILE_DIR}${file}`).size > 0, `${file} is empty`);
+    }
+  });
+
+  it("never falls through to the missing-art placeholder", () => {
+    for (const key of allKeys) {
+      assert.notEqual(artUrl(key), null, `${key} would render a placeholder`);
+    }
+    assert.equal(new Set(allKeys.map((key) => artFile(key))).size, allKeys.length);
+  });
+
+  it("ships the tile back named by the table", () => {
+    assert.equal(BACK_ART, "back.svg");
+    assert.ok(statSync(`${TILE_DIR}${BACK_ART}`).isFile());
+  });
+
+  it("has no orphaned SVG files in web/tiles", () => {
+    const onDisk = readdirSync(TILE_DIR)
+      .filter((name) => name.endsWith(".svg"))
+      .sort();
+    const mapped = [...allKeys.map((key) => TILE_ART[key]), BACK_ART].sort();
+    assert.deepEqual(onDisk, mapped);
+  });
+
+  it("keeps every asset a 3:4 SVG with a matching viewBox", () => {
+    for (const file of [...allKeys.map((key) => TILE_ART[key]), BACK_ART]) {
+      const source = readAsset(file);
+      assert.match(source, /<svg\b/, `${file} is not SVG`);
+      assert.match(source, /viewBox="0 0 300 400"/, `${file} viewBox`);
+      assert.match(source, /width="300"/, `${file} width`);
+      assert.match(source, /height="400"/, `${file} height`);
     }
   });
 
   it("names every bonus mark for its tooltip and caption", () => {
     for (const key of bonusKeys) {
-      const name = BONUS_NAMES[key];
+      const name = BONUS_NAMES[key as keyof typeof BONUS_NAMES];
       assert.equal(typeof name, "string");
       assert.ok(name.length > 0, `${key} has no name`);
     }
@@ -119,74 +124,10 @@ describe("web tile faces", () => {
       "s0",
       "s5",
       "B1",
+      "back",
     ]) {
-      assert.equal(faceFor(key), null, `${key} should not have a face`);
+      assert.equal(artFile(key), null, `${key} should not have art`);
+      assert.equal(artUrl(key), null, `${key} should not have a URL`);
     }
-  });
-
-  it("keeps all 42 faces visually distinct", () => {
-    const signatures = new Set(
-      allKeys.map((key) => JSON.stringify(faceFor(key))),
-    );
-    assert.equal(signatures.size, allKeys.length);
-  });
-
-  it("gives each circle rank its printed number of dots", () => {
-    for (let rank = 1; rank <= 9; rank++) {
-      const face = readFace(`o${rank}`);
-      assert.equal(face.kind, "circles");
-      assert.equal(face.rank, rank);
-      const dots = face.dots ?? [];
-      assert.equal(dots.length, rank, `o${rank} dot count`);
-      for (const dot of dots) {
-        assert.ok(dot.x - dot.r >= 0, `o${rank} dot leaves the left edge`);
-        assert.ok(dot.x + dot.r <= VIEW_WIDTH, `o${rank} dot leaves the right edge`);
-        assert.ok(dot.y - dot.r >= 0, `o${rank} dot leaves the top edge`);
-        assert.ok(dot.y + dot.r <= VIEW_HEIGHT, `o${rank} dot leaves the bottom edge`);
-      }
-    }
-  });
-
-  it("gives each bamboo rank its printed number of sticks, or the bird", () => {
-    for (let rank = 1; rank <= 9; rank++) {
-      const face = readFace(`b${rank}`);
-      assert.equal(face.kind, "bamboo");
-      assert.equal(face.rank, rank);
-      if (rank === 1) {
-        assert.equal(face.bird, true, "b1 is the bird");
-        assert.equal((face.sticks ?? []).length, 0);
-        continue;
-      }
-      assert.equal(face.bird, false);
-      const sticks = face.sticks ?? [];
-      assert.equal(sticks.length, rank, `b${rank} stick count`);
-      for (const stick of sticks) {
-        assert.ok(stick.x - 1.7 >= 0, `b${rank} stick leaves the left edge`);
-        assert.ok(stick.x + 1.7 <= VIEW_WIDTH, `b${rank} stick leaves the right edge`);
-        assert.ok(stick.y >= 0, `b${rank} stick leaves the top edge`);
-        assert.ok(stick.y + stick.h <= VIEW_HEIGHT, `b${rank} stick leaves the bottom edge`);
-      }
-    }
-    const five = readFace("b5");
-    assert.equal(
-      (five.sticks ?? []).filter((stick) => stick.red).length,
-      1,
-      "b5 prints one red stick",
-    );
-  });
-
-  it("uses the traditional glyphs for winds and dragons", () => {
-    const glyphs = {
-      wE: "東",
-      wS: "南",
-      wW: "西",
-      wN: "北",
-      dR: "中",
-      dG: "發",
-    };
-    for (const [key, glyph] of Object.entries(glyphs)) {
-      assert.equal(readFace(key).glyph, glyph);
-    }
-    assert.equal(readFace("dW").glyph, null);
   });
 });
