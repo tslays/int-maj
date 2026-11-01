@@ -1493,15 +1493,29 @@ kbd {
   font-size: var(--fs-label);
 }
 
+.result-source {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  margin-top: 2px;
+  color: var(--on-felt);
+  font-size: var(--fs-body);
+}
+
+.result-source-sep {
+  color: var(--on-felt-muted);
+}
+
+.result-source .tile,
 .result-sub .tile {
-  width: 22px;
-  height: 29px;
-  margin-left: 3px;
+  width: 24px;
+  height: 32px;
   vertical-align: middle;
 }
 
-.result-list .is-fishing-payment {
-  color: var(--accent);
+.result-card > h3 {
+  margin: 14px 0 5px;
 }
 
 .result-grid {
@@ -1528,6 +1542,12 @@ kbd {
   font-weight: 650;
 }
 
+.result-pattern-note {
+  color: var(--on-felt-muted);
+  font-size: var(--fs-label);
+  font-weight: 400;
+}
+
 .tier-badge {
   padding: 1px 7px;
   border: 1px solid rgba(231, 198, 91, 0.4);
@@ -1535,12 +1555,13 @@ kbd {
   color: var(--accent);
   font-size: var(--fs-label);
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .result-tiles {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
+  gap: 4px;
   align-items: flex-end;
 }
 
@@ -1549,8 +1570,16 @@ kbd {
   height: 45px;
 }
 
+.result-tiles .tile.is-winning {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+
 .result-tiles .meld {
   display: inline-flex;
+  gap: 1px;
+  margin-left: 7px;
 }
 
 .result-list {
@@ -1563,6 +1592,66 @@ kbd {
 
 .result-list li + li {
   margin-top: 3px;
+}
+
+.result-payments li {
+  display: flex;
+  gap: 7px;
+  align-items: baseline;
+}
+
+.result-amount {
+  min-width: 4.2em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: right;
+}
+
+.result-entry {
+  color: var(--on-felt);
+}
+
+.result-fishing {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.result-fishing-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding-left: 6px;
+  border-left: 2px solid var(--accent-soft);
+  font-size: var(--fs-label);
+}
+
+.result-fishing-seat {
+  min-width: 5.5em;
+  font-weight: 650;
+}
+
+.result-fishing-waits {
+  display: inline-flex;
+  gap: 1px;
+}
+
+.result-fishing-waits .tile {
+  width: 20px;
+  height: 26px;
+}
+
+.result-fishing-tier {
+  color: var(--on-felt-muted);
+}
+
+.result-fishing-points {
+  margin-left: auto;
+  color: var(--positive-fg);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
 }
 
 .result-score {
@@ -1610,6 +1699,22 @@ kbd {
   box-shadow: inset 2px 0 var(--seat-color, var(--accent));
 }
 
+.result-score tfoot tr.result-total th,
+.result-score tfoot tr.result-total td {
+  padding-top: 6px;
+  border-bottom: 0;
+  color: var(--on-felt-muted);
+  font-weight: 650;
+}
+
+.result-score tfoot td.delta {
+  color: var(--on-felt);
+}
+
+.result-score tfoot td.delta.is-invalid {
+  color: var(--danger);
+}
+
 .result-next {
   display: inline-flex;
   gap: 7px;
@@ -1632,8 +1737,8 @@ kbd {
 }
 
 .result-note {
-  margin-top: 12px;
-  color: var(--muted);
+  margin: 12px 0 10px;
+  color: var(--on-felt-muted);
   font-size: var(--fs-label);
 }
 
