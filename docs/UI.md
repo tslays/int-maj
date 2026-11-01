@@ -55,6 +55,10 @@ Taken from how these tables read in play (AJ Martinez, worldsbe.st, on Mahjong S
 - **Wall always visible** — the remaining wall is a first-class counter the whole hand (Riichi City shows the whole wall; we need only the count and a shrinking ring).
 - **Our equivalents of their dora/furiten warnings**: the bonus tiles you hold are shown in the tray at all times, and an announced fishing wait is highlighted where it sits in the rail.
 
+## Where the game design comes from
+
+The rules, the hands and the scoring are the Companion's and nothing else: no riichi yaku, no dora, no furiten, no riichi sticks. What may be borrowed from Riichi City and Mahjong Soul is **interface and game-feel** — the shape of a turn, how a claim is offered, how a result is presented, how the table waits for you, what the player can see at a glance. Research those clients (public screenshots, articles, wikis) for interaction patterns, then translate them onto our rules. When the two disagree about a rule, the Companion wins; when they disagree about how something *feels*, the reference wins.
+
 ## The arrangement reference
 
 The composition to match is the Riichi City table screenshot the owner nominated: <https://worldsbe.st/content/images/2022/11/riichicity.jpg> (1920x1080). Match its **proportions and positions**, never its art:
