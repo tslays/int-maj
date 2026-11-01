@@ -70,6 +70,8 @@ export interface WaitPanelEntry {
   readonly tile: string;
   readonly remaining: number;
   readonly dead: boolean;
+  /** The tile completes the hand only when drawn, never off a discard. */
+  readonly selfDrawnOnly: boolean;
   readonly matches: readonly MatchSummary[];
   readonly best: MatchSummary | null;
 }
@@ -198,6 +200,7 @@ function checkerFor(player: PlayerView): CheckerPayload {
         tile: tileKey(wait.tile),
         remaining: wait.remaining,
         dead: wait.dead,
+        selfDrawnOnly: wait.selfDrawnOnly,
         matches: wait.matches.map(summarizeMatch),
         best: wait.matches[0] === undefined ? null : summarizeMatch(wait.matches[0]),
       })),

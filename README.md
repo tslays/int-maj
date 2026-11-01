@@ -511,6 +511,7 @@ curl -s 'http://127.0.0.1:8080/api/state?game=g1&pretty=1'
         "tile": "c2",
         "remaining": 4,
         "dead": false,
+        "selfDrawnOnly": false,
         "matches": [
           {
             "id": "crazy-chows",
@@ -532,6 +533,7 @@ curl -s 'http://127.0.0.1:8080/api/state?game=g1&pretty=1'
         "tile": "c5",
         "remaining": 4,
         "dead": false,
+        "selfDrawnOnly": false,
         "matches": [
           {
             "id": "crazy-chows",
