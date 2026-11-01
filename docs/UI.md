@@ -51,10 +51,11 @@ Every seat owns a discard board of **six columns by six rows, 36 slots**, reserv
 
 - tiles fill slots left to right, then top to bottom, in throw order;
 - empty slots are invisible but keep their space;
-- the four boards sit in one field between the seat HUDs, the wall and the action shelf; none may overlap the hand band, the centre panel or a seat chip;
-- the own board follows the hand's centreline (the rail is part of the window, not the felt), so your discards stay under your hand instead of drifting toward the rail.
+- the four boards are named items in **one board grid**, not absolutely placed boxes: `seat-left / seat-top / seat-right` columns and `river-top / centre / river-bottom` rows are explicit tracks derived from `--tile-w`, `--tile-h` and `--tile-gap`;
+- the side seats span the full height of their own columns, so a rack or a meld can never reach a river;
+- your own river occupies the board's bottom row and shares its centre column with the wall; the hand band is a separate row of the app grid.
 
-The field is a fixed grid, not per-seat absolute positioning: the four boards cannot be pushed around by a long river.
+The board is a CSS grid, not per-seat absolute positioning: the four boards cannot be pushed around by a long river, and the layout checker (`tools/check-layout.ts`) measures the rectangles at 1440x900 and 1280x800 with 0, 13 and 36 discards.
 
 ## Affordances both clients have that we should match
 
@@ -101,7 +102,7 @@ What we do not take: riichi-only furniture (dora indicators, riichi sticks, furi
 
 The discard area of every seat is allocated **before the first discard**: a fixed 6-wide grid of 36 slots (six rows), sized from the tile size, and it never reflows, grows, shrinks or moves for the rest of the hand. Thrown tiles fill the slots in throw order — left to right, then top to bottom — and empty slots are invisible but still occupy their space, so the board's geometry is decided once and nothing ever jumps.
 
-Consequences: no absolute positioning of the river, no per-discard layout pass, no overlap with the hand band, the centre panel or the seat chips, and the same rule for all four seats.
+Consequences: no absolute positioning of a seat, river or the centre, no per-discard layout pass, no overlap with the hand band, the centre panel or a seat chip, and the same rule for all four seats. Overlays (the action cluster, the claim bar and the result modal) are the only floating pieces.
 
 ## Claims are two decisions, not four
 

@@ -604,11 +604,16 @@ function renderSeat(entry) {
   if (place === "top") {
     const line = div("seat-line");
     line.append(seatChip(entry), rackLine(entry));
-    const melds = meldRow(entry.melds);
-    if (melds !== null) line.append(melds);
-    const bonuses = bonusRow(entry);
-    if (bonuses !== null) line.append(bonuses);
     root.append(line);
+
+    // Melds and bonuses stay under the north rack, inside the seat's own
+    // grid row. They never share a line that could push into a side seat.
+    const extras = div("seat-extras");
+    const melds = meldRow(entry.melds);
+    if (melds !== null) extras.append(melds);
+    const bonuses = bonusRow(entry);
+    if (bonuses !== null) extras.append(bonuses);
+    if (extras.childElementCount > 0) root.append(extras);
     return;
   }
 
