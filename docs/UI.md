@@ -66,6 +66,11 @@ The composition to match is the Riichi City table screenshot the owner nominated
 - wall and round: the quiet centre;
 - actions: a fixed cluster low on the right, adjacent to the hand, not across the board.
 
+What we take from that picture is exactly three things: **the viewing angle** (a slight top-down perspective with the hand angled toward the player, not a flat diagram), **the arrangement** of elements above, and **the crispness** — every tile and label sharp at any size, generous but tight spacing, nothing blurred by effects.
+
+What we do not take: riichi-only furniture (dora indicators, riichi sticks, furiten warnings, seat boxes, round/timer bars, avatars) and none of the flash — no glow, no gradients on the felt, no character art, no orchestrated animation. Ours is quieter than the reference on purpose.
+
+
 ## Interaction contract
 
 - Exactly one primary action is emphasised at any moment; secondary ones are inline with keycaps (D, 1-9, Enter, Space).
