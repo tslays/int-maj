@@ -624,9 +624,11 @@ kbd {
   transition: transform var(--fast) var(--ease);
 }
 
+/* The two side seats show their hand as one line of backs, never a block. */
 .rack.side {
-  display: grid;
-  grid-template-columns: repeat(2, auto);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .rack .tile-back {
