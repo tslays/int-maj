@@ -188,3 +188,8 @@ The event log is the replay contract: `stepsFromEvents` rebuilds the action
 list, auto-passing seats that lost a precedence race (they emit no `Claimed`
 event), and `replayEventLog(seed, log)` regenerates the identical state and
 byte-identical log. `bin/replay.ts` exposes both modes.
+
+- **Console policy details**: hand numbers are positions in the canonical sorted
+  hand, `u` replays the seed to just before the last typed decision, and the bot
+  fishes whenever legal and claims a pung/kong only when another pair remains
+  in its hand (a kong is preferred when both calls are offered).

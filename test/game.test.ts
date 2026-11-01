@@ -142,6 +142,28 @@ describe("draw and replacement", () => {
     assert.equal(result.state.wall.back, 2);
   });
 
+  it("keeps the last bonus tile when the wall cannot replace it", () => {
+    const state = fixture({
+      hands: {
+        E: "b1 b2 b3 b4 b5 b6 c1 c2 c3 c4 c5 c6 c7",
+        S: "b7 b8 b9 c7 c8 c9 o1 o2 o3 wE wS wW wN",
+        W: "b1 b2 b3 b4 b5 b6 c1 c2 c3 c4 c5 c6 c7",
+        N: "b7 b8 b9 c7 c8 c9 o1 o2 o3 wE wS wW wN",
+      },
+      wall: ["f1"],
+      phase: "draw",
+      turn: "E",
+    });
+    const result = play(state, { type: "Draw", seat: "E" });
+    assert.equal(result.state.phase, "finished");
+    assert.equal(result.state.result?.kind, "drawn");
+    assert.deepEqual(result.state.players[0]!.flowers, ["f1"]);
+    assert.deepEqual(
+      result.events.map((event) => event.type),
+      ["Drew", "DrawnHand"],
+    );
+  });
+
   it("takes a kong replacement from the back while ordinary draws use the front", () => {
     const state = fixture({
       hands: {
