@@ -35,12 +35,12 @@
   --hand-w: 84px;
   --hand-gap: 6px;
   --river-gap: 3px;
-  --river-w: 30px;
-  --river-h: 40px;
-  --own-river-w: 44px;
-  --own-river-h: 59px;
-  --side-river-w: 28px;
-  --side-river-h: 37px;
+  --river-w: 36px;
+  --river-h: 48px;
+  --own-river-w: 52px;
+  --own-river-h: 69px;
+  --side-river-w: 36px;
+  --side-river-h: 48px;
 
   --fast: 140ms;
   --hand-enter: 220ms;
@@ -630,8 +630,8 @@ kbd {
 }
 
 .rack .tile-back {
-  width: 20px;
-  height: 27px;
+  width: 28px;
+  height: 37px;
   overflow: hidden;
 }
 
@@ -702,8 +702,8 @@ kbd {
 }
 
 .meld .tile {
-  width: 22px;
-  height: 29px;
+  width: 32px;
+  height: 43px;
 }
 
 .bonus-row {
@@ -770,8 +770,8 @@ kbd {
 }
 
 .river-wrap.north {
-  --river-w: 30px;
-  --river-h: 40px;
+  --river-w: 36px;
+  --river-h: 48px;
 }
 
 .river-wrap.side {
@@ -1601,10 +1601,10 @@ kbd {
 
 @media (max-height: 760px) {
   :root {
-    --own-river-w: 37px;
-    --own-river-h: 49px;
-    --side-river-w: 24px;
-    --side-river-h: 32px;
+    --own-river-w: 44px;
+    --own-river-h: 59px;
+    --side-river-w: 30px;
+    --side-river-h: 40px;
   }
 
   .hand-layout {
