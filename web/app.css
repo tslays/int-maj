@@ -736,6 +736,12 @@ kbd {
   max-width: 180px;
 }
 
+.seat-left .meld .tile,
+.seat-right .meld .tile {
+  width: 22px;
+  height: 29px;
+}
+
 .meld {
   display: inline-flex;
   gap: 1px;
@@ -1740,6 +1746,12 @@ kbd {
     height: 30px;
   }
 
+  .seat-left .meld .tile,
+  .seat-right .meld .tile {
+    width: 20px;
+    height: 27px;
+  }
+
   .wall-dial {
     width: 76px;
     height: 76px;
@@ -1794,6 +1806,12 @@ kbd {
   .rack .tile-back {
     width: 20px;
     height: 25px;
+  }
+
+  .seat-left .meld .tile,
+  .seat-right .meld .tile {
+    width: 18px;
+    height: 24px;
   }
 
   .meld .tile {
