@@ -58,6 +58,12 @@ export interface GameView {
   readonly opponents: readonly OpponentView[];
   readonly wallRemaining: number;
   readonly lastDiscard: { readonly seat: Seat; readonly tile: string } | null;
+  /** The viewer's own last drawn tile, for the just-drawn marker. */
+  readonly lastDraw: {
+    readonly seat: Seat;
+    readonly tile: string;
+    readonly end: "front" | "back";
+  } | null;
   readonly claimWindow: ClaimWindowView | null;
   readonly fishing: readonly FishingState[];
   readonly ledger: readonly LedgerEntry[];
@@ -108,6 +114,8 @@ export function viewFor(state: GameState, seat: Seat): GameView {
     opponents,
     wallRemaining: wallRemaining(state),
     lastDiscard: state.lastDiscard === null ? null : { ...state.lastDiscard },
+    lastDraw:
+      state.lastDraw === null ? null : { ...state.lastDraw },
     claimWindow:
       state.claimWindow === null
         ? null

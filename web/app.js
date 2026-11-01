@@ -16,30 +16,54 @@ import {
 } from "./tiles.js";
 
 const SEATS = ["E", "S", "W", "N"];
-const POSITION = { E: "south", S: "east", W: "north", N: "west" };
 const WIND_NAME = { E: "East", S: "South", W: "West", N: "North" };
 const SUIT_NAME = { b: "bamboo", c: "characters", o: "circles" };
 const DRAGON_NAME = { R: "Red", G: "Green", W: "White" };
 
+/** Seat id -> screen place. East sits at the bottom, then anticlockwise. */
+const PLACE = {
+  E: "bottom",
+  S: "right",
+  W: "top",
+  N: "left",
+};
+
+const RAIL_KEY = "mahjong-rail";
+const GAME_KEY = "mahjong-game";
+const STARTING_WALL = 92;
+const RING_RADIUS = 31;
+const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
+
 let payload = null;
 let selected = null;
+let cursor = 0;
 let busy = false;
+let railOpen = true;
+
+let handInitialized = false;
+let tableInitialized = false;
+let previousHand = [];
+let previousDiscards = { E: 0, S: 0, W: 0, N: 0 };
+let announced = "";
+
 const logLines = [];
 
 const $ = (selector) => document.querySelector(selector);
 
-function signed(value) {
-  return value > 0 ? `+${value}` : String(value);
+/* ------------------------------------------------------------ elements */
+
+function div(className = "") {
+  const element = document.createElement("div");
+  if (className) element.className = className;
+  return element;
 }
 
-function randomSeed() {
-  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
-    return globalThis.crypto.randomUUID();
-  }
-  return `web-${Date.now()}`;
+function span(className = "", text = "") {
+  const element = document.createElement("span");
+  if (className) element.className = className;
+  if (text) element.textContent = text;
+  return element;
 }
-
-/* ---------------------------------------------------------------- tiles */
 
 function tileName(key) {
   const suited = /^([bco])([1-9])$/.exec(key);
@@ -50,9 +74,9 @@ function tileName(key) {
   return key;
 }
 
-function tileElement(key, size = "small") {
+function tileElement(key) {
   const element = document.createElement("span");
-  element.className = `tile tile-${size}`;
+  element.className = "tile";
   element.dataset.key = key;
   element.title = `${key} — ${tileName(key)}`;
   element.setAttribute("aria-label", `${tileName(key)}, key ${key}`);
@@ -66,6 +90,18 @@ function tileElement(key, size = "small") {
 
   const image = document.createElement("img");
   image.src = url;
+  image.alt = "";
+  image.decoding = "async";
+  image.draggable = false;
+  element.append(image);
+  return element;
+}
+
+function backElement() {
+  const element = document.createElement("span");
+  element.className = "tile-back";
+  const image = document.createElement("img");
+  image.src = BACK_ART_URL;
   image.alt = "";
   image.decoding = "async";
   image.draggable = false;
@@ -102,6 +138,7 @@ function log(line) {
   logLines.push(line);
   if (logLines.length > 400) logLines.splice(0, logLines.length - 400);
   const element = $("#log");
+  if (element === null) return;
   element.textContent = logLines.join("\n");
   element.scrollTop = element.scrollHeight;
 }
@@ -109,20 +146,14 @@ function log(line) {
 function applyResponse(data, note, replaceLog = false) {
   payload = data;
   if (typeof data.game === "string") {
-    sessionStorage.setItem("mahjong-game", data.game);
+    sessionStorage.setItem(GAME_KEY, data.game);
   }
   if (replaceLog || data.replaceLog === true) logLines.length = 0;
   if (note) log(note);
   if (Array.isArray(data.events)) {
     for (const line of data.events) log(line);
   }
-  if (
-    selected !== null &&
-    (selected >= payload.view.player.hand.length ||
-      !payload.legalActions.some((action) => action.type === "Discard"))
-  ) {
-    selected = null;
-  }
+  selected = null;
   render();
 }
 
@@ -159,7 +190,46 @@ function sendDiscard(tile) {
   return true;
 }
 
-/* -------------------------------------------------------------- render */
+/* -------------------------------------------------------------- helpers */
+
+function signed(value) {
+  return value > 0 ? `+${value}` : String(value);
+}
+
+function randomSeed() {
+  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+  return `web-${Date.now()}`;
+}
+
+function ledgerTotals(ledger) {
+  const totals = { E: 0, S: 0, W: 0, N: 0 };
+  for (const entry of ledger) {
+    if (entry.points === null) continue;
+    totals[entry.to] += entry.points;
+    totals[entry.from] -= entry.points;
+  }
+  return totals;
+}
+
+function seatEntry(seat) {
+  return payload.table.find((entry) => entry.seat === seat) ?? null;
+}
+
+function seatLabel(seat) {
+  if (seat === payload.seat) return "You";
+  const entry = seatEntry(seat);
+  return entry === null ? `${seat} seat` : `${WIND_NAME[entry.wind]} seat`;
+}
+
+function seatColor(seat) {
+  return `var(--seat-${seat.toLowerCase()})`;
+}
+
+function seatIsTurn(seat) {
+  return payload.view.phase !== "finished" && payload.view.turn === seat;
+}
 
 function legalAction(type, predicate = () => true) {
   return payload.legalActions.find(
@@ -167,117 +237,330 @@ function legalAction(type, predicate = () => true) {
   );
 }
 
+function isYourDiscardPhase() {
+  return (
+    payload.view.turn === payload.view.seat &&
+    payload.view.phase === "discard" &&
+    payload.legalActions.some((action) => action.type === "Discard")
+  );
+}
+
+function chunk(items, size) {
+  const rows = [];
+  for (let index = 0; index < items.length; index += size) {
+    rows.push(items.slice(index, index + size));
+  }
+  return rows;
+}
+
+function actionRank(action) {
+  if (action.type === "Win") return 0;
+  if (action.type === "Claim" && action.kind === "mahjong") return 0;
+  if (action.type === "Draw") return 10;
+  if (action.type === "Discard") return 15;
+  if (action.type === "Claim" && action.kind === "pung") return 20;
+  if (action.type === "Claim" && action.kind === "kong") return 21;
+  if (action.type === "ConcealedKong" || action.type === "AddedKong") return 25;
+  if (action.type === "Claim" && action.kind === "chow") return 30;
+  if (action.type === "DeclareFishing") return 35;
+  return 40;
+}
+
+function actionKey(action) {
+  if (action.type === "Claim") {
+    return `${action.type}|${action.kind}|${action.tiles.join(" ")}`;
+  }
+  return action.type;
+}
+
+function orderedActions(actions) {
+  const seen = new Set();
+  const unique = [];
+  for (const action of actions) {
+    if (action.type === "Discard") continue;
+    const key = actionKey(action);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(action);
+  }
+  if (unique.some((action) => action.type === "Win")) {
+    return unique.filter(
+      (action) => !(action.type === "Claim" && action.kind === "mahjong"),
+    ).sort((a, b) => actionRank(a) - actionRank(b));
+  }
+  return unique.sort((a, b) => actionRank(a) - actionRank(b));
+}
+
+function actionLabel(action) {
+  switch (action.type) {
+    case "Draw":
+      return "Draw";
+    case "Claim":
+      if (action.kind === "mahjong") return "Mahjong";
+      return `${action.kind[0].toUpperCase()}${action.kind.slice(1)} ${action.tiles.join(" ")}`;
+    case "DeclareFishing":
+      return `Fishing ${action.wait.join(" ")}`;
+    case "ConcealedKong":
+      return `Kong ${action.tile}`;
+    case "AddedKong":
+      return `Add kong ${action.tile}`;
+    case "Win":
+      return "Mahjong";
+    case "Pass":
+      return "Pass";
+    default:
+      return action.type;
+  }
+}
+
+function actionKeycap(action) {
+  switch (action.type) {
+    case "Draw":
+      return "d";
+    case "Win":
+      return "m";
+    case "Claim":
+      if (action.kind === "mahjong") return "m";
+      if (action.kind === "pung") return "p";
+      if (action.kind === "kong") return "k";
+      return "c";
+    case "DeclareFishing":
+      return "f";
+    case "ConcealedKong":
+    case "AddedKong":
+      return "k";
+    case "Pass":
+      return "space";
+    default:
+      return "";
+  }
+}
+
+/* -------------------------------------------------------------- rendering */
+
 function renderMeta() {
   const view = payload.view;
   $("#meta").textContent =
-    `Hand ${view.handNumber} · dealer ${view.dealer} · ${view.prevailingWind} round · ` +
-    `seed ${payload.seed} · game ${payload.game}`;
+    `Hand ${view.handNumber} · ${view.prevailingWind} round · dealer ${view.dealer} · ` +
+    `seed ${payload.seed}`;
+}
+
+function seatChip(entry) {
+  const chip = div("seat-chip");
+  chip.dataset.seat = entry.seat;
+  chip.style.setProperty("--seat-color", seatColor(entry.seat));
+  chip.setAttribute(
+    "aria-label",
+    `${entry.isYou ? "You" : `${WIND_NAME[entry.wind]} bot`}, ${entry.wind} wind` +
+      `${entry.dealer ? ", dealer" : ""}`,
+  );
+
+  const wind = span("seat-wind", entry.wind);
+  const name = span("seat-name", entry.isYou ? "You" : `${WIND_NAME[entry.wind]} bot`);
+  const points = span("seat-points");
+  const totals = ledgerTotals(payload.view.ledger);
+  const value = totals[entry.seat] ?? 0;
+  points.textContent = value === 0 ? "0" : signed(value);
+  const dealer = span("seat-dealer");
+  dealer.title = entry.dealer ? "Dealer" : "";
+  if (!entry.dealer) dealer.hidden = true;
+
+  chip.append(wind, name, points, dealer);
+  return chip;
+}
+
+function rackLine(entry) {
+  const line = div("rack-line");
+  const rack = div("rack");
+  if (PLACE[entry.seat] === "left" || PLACE[entry.seat] === "right") {
+    rack.classList.add("side");
+  }
+  rack.setAttribute("aria-label", `${entry.handCount} concealed tiles`);
+  for (let index = 0; index < entry.handCount; index++) rack.append(backElement());
+  const count = span("rack-count", String(entry.handCount));
+  line.append(rack, count);
+  return line;
+}
+
+function meldRow(melds) {
+  if (melds.length === 0) return null;
+  const row = div("meld-row");
+  for (const meld of melds) {
+    const group = div("meld");
+    if (!meld.exposed) group.classList.add("is-concealed");
+    group.title = `${meld.kind}${meld.exposed ? "" : " (concealed)"}`;
+    group.setAttribute("aria-label", `${meld.kind} ${meld.tiles.join(" ")}`);
+    for (const key of meld.tiles) group.append(tileElement(key));
+    row.append(group);
+  }
+  return row;
+}
+
+function bonusRow(entry) {
+  const bonuses = [...entry.flowers, ...entry.seasons];
+  if (bonuses.length === 0) return null;
+  const row = div("bonus-row");
+  row.setAttribute("aria-label", "bonus tiles");
+  for (const key of bonuses) row.append(tileElement(key));
+  return row;
+}
+
+function riverWrapper(entry, kind) {
+  const wrap = div(`river-wrap ${kind}`);
+  const river = div("river");
+  if (kind === "east" || kind === "west") river.classList.add("side");
+
+  const claimWindow = payload.view.claimWindow;
+  const last = entry.discards.length - 1;
+  const previous = tableInitialized ? (previousDiscards[entry.seat] ?? 0) : entry.discards.length;
+
+  if (kind === "east" || kind === "west") {
+    entry.discards.forEach((key, index) => {
+      const tile = riverTile(key, index === last, index >= previous, entry.seat, claimWindow);
+      river.append(tile);
+    });
+  } else {
+    const rows = [];
+    for (let start = 0; start < entry.discards.length; start += 6) {
+      rows.push({ start, keys: entry.discards.slice(start, start + 6) });
+    }
+    if (kind === "own") rows.reverse();
+    for (const { start, keys } of rows) {
+      const row = div("river-row");
+      keys.forEach((key, column) => {
+        const index = start + column;
+        const tile = riverTile(key, index === last, index >= previous, entry.seat, claimWindow);
+        row.append(tile);
+      });
+      river.append(row);
+    }
+  }
+
+  wrap.append(river);
+  wrap.setAttribute(
+    "aria-label",
+    `${entry.isYou ? "Your" : `${WIND_NAME[entry.wind]} seat`} ${entry.discards.length} discards`,
+  );
+  return wrap;
+}
+
+function riverTile(key, isLast, isNew, seat, claimWindow) {
+  const tile = tileElement(key);
+  if (isLast) tile.classList.add("last");
+  if (
+    isLast &&
+    claimWindow !== null &&
+    claimWindow.discarder === seat &&
+    claimWindow.tile === key
+  ) {
+    tile.classList.add("claimable");
+  }
+  if (isNew) tile.classList.add("is-new");
+  return tile;
 }
 
 function renderSeat(entry) {
-  const element = $(`#pos-${POSITION[entry.seat]}`);
-  element.replaceChildren();
+  const place = PLACE[entry.seat];
+  if (place === "bottom") return;
+  const root = $(`#seat-${place}`);
+  root.className = `seat seat-${place}${seatIsTurn(entry.seat) ? " is-turn" : ""}`;
+  root.style.setProperty("--seat-color", seatColor(entry.seat));
+  root.replaceChildren(seatChip(entry));
 
-  const head = document.createElement("div");
-  head.className = "seat-head";
-  const wind = document.createElement("span");
-  wind.className = "seat-wind";
-  wind.textContent = entry.wind;
-  const name = document.createElement("span");
-  name.className = "seat-name";
-  name.textContent = `${WIND_NAME[entry.wind]} seat`;
-  const role = document.createElement("span");
-  role.className = "seat-role";
-  role.textContent = entry.isYou ? "you" : "bot";
-  head.append(wind, name, role);
-  if (entry.dealer) {
-    const badge = document.createElement("span");
-    badge.className = "badge";
-    badge.textContent = "dealer";
-    head.append(badge);
-  }
-  element.append(head);
-
-  if (!entry.isYou) {
-    const concealed = document.createElement("div");
-    concealed.className = "concealed";
-    concealed.setAttribute("aria-label", `${entry.handCount} concealed tiles`);
-    for (let index = 0; index < entry.handCount; index++) {
-      const back = document.createElement("span");
-      back.className = "tile-back";
-      const image = document.createElement("img");
-      image.src = BACK_ART_URL;
-      image.alt = "";
-      image.decoding = "async";
-      image.draggable = false;
-      back.append(image);
-      concealed.append(back);
-    }
-    const count = document.createElement("span");
-    count.className = "concealed-count";
-    count.textContent = String(entry.handCount);
-    concealed.append(count);
-    element.append(concealed);
+  if (place === "top") {
+    root.append(rackLine(entry));
+    const melds = meldRow(entry.melds);
+    if (melds !== null) root.append(melds);
+    const bonuses = bonusRow(entry);
+    if (bonuses !== null) root.append(bonuses);
+    root.append(riverWrapper(entry, "north"));
+    return;
   }
 
-  if (entry.melds.length > 0) {
-    const melds = document.createElement("div");
-    melds.className = "tile-row melds";
-    for (const meld of entry.melds) {
-      const group = document.createElement("span");
-      group.className = "meld";
-      group.title = `${meld.kind}${meld.exposed ? "" : " (concealed)"}`;
-      group.setAttribute("aria-label", `${meld.kind} ${meld.tiles.join(" ")}`);
-      for (const key of meld.tiles) group.append(tileElement(key));
-      melds.append(group);
-    }
-    element.append(melds);
-  }
+  const body = div("side-body");
+  const rack = rackLine(entry);
+  const river = riverWrapper(entry, place === "left" ? "west" : "east");
+  if (place === "left") body.append(rack, river);
+  else body.append(river, rack);
+  root.append(body);
 
-  if (entry.discards.length > 0) {
-    const discards = document.createElement("div");
-    discards.className = "tile-row discards";
-    discards.setAttribute("aria-label", `${entry.discards.length} discards`);
-    for (const key of entry.discards) discards.append(tileElement(key));
-    element.append(discards);
-  }
-
-  const bonuses = [...entry.flowers, ...entry.seasons];
-  if (bonuses.length > 0) {
-    const row = document.createElement("div");
-    row.className = "tile-row bonus";
-    row.setAttribute("aria-label", "bonus tiles");
-    for (const key of bonuses) row.append(tileElement(key));
-    element.append(row);
-  }
+  const melds = meldRow(entry.melds);
+  if (melds !== null) root.append(melds);
+  const bonuses = bonusRow(entry);
+  if (bonuses !== null) root.append(bonuses);
 }
 
-function renderTable() {
-  for (const entry of payload.table) renderSeat(entry);
+function renderSelf(entry) {
+  const slot = $("#self-chip");
+  slot.replaceChildren(seatChip(entry));
+  const own = $("#own-river");
+  own.replaceChildren(riverWrapper(entry, "own"));
+  own.dataset.turn = seatIsTurn(entry.seat) ? "true" : "false";
+  slot.style.setProperty("--seat-color", seatColor(entry.seat));
+}
+
+function renderSeats() {
+  for (const entry of payload.table) {
+    if (entry.isYou) renderSelf(entry);
+    else renderSeat(entry);
+  }
 }
 
 function renderCenter() {
   const view = payload.view;
   $("#wall-count").textContent = String(view.wallRemaining);
-  $("#round-wind").textContent = view.prevailingWind;
-  $("#turn-indicator").textContent =
-    view.phase === "finished"
-      ? "hand finished"
-      : `turn: ${view.turn}${view.turn === view.seat ? " (you)" : ""}`;
+  const fraction = Math.max(0, Math.min(1, view.wallRemaining / STARTING_WALL));
+  const ring = $("#wall-ring");
+  ring.style.strokeDasharray = String(RING_LENGTH);
+  ring.style.strokeDashoffset = String(RING_LENGTH * (1 - fraction));
+  const dial = $("#wall-dial");
+  dial.setAttribute("aria-label", `${view.wallRemaining} tiles left in the wall`);
+  dial.title = `${view.wallRemaining} tiles left`;
+
+  const meta = $("#center-meta");
+  meta.replaceChildren();
+  const round = document.createElement("strong");
+  round.textContent = view.prevailingWind;
+  const dealer = document.createElement("strong");
+  dealer.textContent = view.dealer;
+  meta.append(
+    round,
+    document.createTextNode(" round · dealer "),
+    dealer,
+  );
 }
 
 function renderHand() {
   const view = payload.view;
   const hand = view.player.hand;
   const element = $("#hand");
+  const hadFocus =
+    document.activeElement instanceof HTMLElement &&
+    document.activeElement.classList.contains("hand-tile")
+      ? Number(document.activeElement.dataset.index)
+      : null;
+
+  if (cursor >= hand.length) cursor = Math.max(0, hand.length - 1);
   element.replaceChildren();
+  element.classList.toggle("has-selection", selected !== null);
 
   if (hand.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "hint";
+    const empty = div("hand-placeholder");
     empty.textContent = "No tiles in hand.";
     element.append(empty);
     return;
+  }
+
+  const drawnKey =
+    view.lastDraw !== undefined && view.lastDraw !== null && view.lastDraw.seat === view.seat
+      ? view.lastDraw.tile
+      : null;
+  const drawnIndex = drawnKey === null ? -1 : hand.lastIndexOf(drawnKey);
+  if (
+    drawnIndex >= 0 &&
+    (hand.length > previousHand.length || !handInitialized)
+  ) {
+    cursor = drawnIndex;
   }
 
   hand.forEach((key, index) => {
@@ -285,200 +568,317 @@ function renderHand() {
     button.type = "button";
     button.className = "hand-tile";
     button.dataset.index = String(index);
+    if (index === cursor) button.dataset.cursor = "true";
+    button.tabIndex = index === cursor ? 0 : -1;
     button.title = `${key} — ${tileName(key)}`;
     button.setAttribute(
       "aria-label",
       `Tile ${index + 1}: ${tileName(key)}, key ${key}.`,
     );
-    button.append(tileElement(key, "large"));
-    const number = document.createElement("span");
-    number.className = "tile-number";
-    number.textContent = String(index + 1);
-    button.append(number);
-
-    if (selected === index) {
+    if (index === selected) {
       button.classList.add("selected");
       button.setAttribute("aria-pressed", "true");
+      button.setAttribute("aria-current", "true");
     }
-    button.addEventListener("click", () => {
-      if (sendDiscard(key)) return;
-      selected = index;
-      renderHand();
+    if (index === drawnIndex) {
+      button.classList.add("is-drawn");
+      const dot = span("drawn-dot");
+      dot.title = "Just drawn";
+      button.append(dot);
+    }
+    if (
+      handInitialized &&
+      drawnIndex >= 0 &&
+      index === drawnIndex &&
+      hand.length > previousHand.length
+    ) {
+      button.classList.add("is-new");
+    }
+
+    button.append(tileElement(key));
+    const number = span("tile-index", index < 9 ? String(index + 1) : "");
+    number.setAttribute("aria-hidden", "true");
+    button.append(number);
+
+    button.addEventListener("click", () => onHandClick(index));
+    button.addEventListener("focus", () => {
+      cursor = index;
+      syncCursorDom();
     });
     element.append(button);
   });
 
-  const melds = view.player.melds.length;
-  const bonuses = view.player.flowers.length + view.player.seasons.length;
-  $("#hand-hint").textContent =
-    `${hand.length} tiles · ${melds} ${melds === 1 ? "meld" : "melds"} · ` +
-    `${bonuses} ${bonuses === 1 ? "bonus" : "bonuses"}`;
+  if (hadFocus !== null) {
+    const button = element.querySelector(`.hand-tile[data-index="${Math.min(hadFocus, hand.length - 1)}"]`);
+    if (button instanceof HTMLElement) button.focus({ preventScroll: true });
+  }
 }
 
-function actionLabel(action) {
-  switch (action.type) {
-    case "Draw":
-      return "Draw (d)";
-    case "Claim":
-      if (action.kind === "mahjong") return "Mahjong! (m)";
-      return `${action.kind[0].toUpperCase()}${action.kind.slice(1)} ${action.tiles.join(" ")}`;
-    case "DeclareFishing":
-      return `Declare fishing (f) — ${action.wait.join(" ")}`;
-    case "ConcealedKong":
-      return `Concealed kong ${action.tile}`;
-    case "AddedKong":
-      return `Add to kong ${action.tile}`;
-    case "Win":
-      return "Mahjong! (m)";
-    case "Pass":
-      return "Pass (space)";
-    default:
-      return action.type;
-  }
+function syncCursorDom() {
+  const buttons = document.querySelectorAll(".hand-tile");
+  buttons.forEach((button, index) => {
+    button.tabIndex = index === cursor ? 0 : -1;
+    if (index === cursor) button.dataset.cursor = "true";
+    else delete button.dataset.cursor;
+  });
+}
+
+function renderOwnMelds() {
+  const slot = $("#own-melds");
+  const melds = meldRow(payload.view.player.melds);
+  if (melds === null) slot.replaceChildren();
+  else slot.replaceChildren(melds);
+}
+
+function renderOwnBonus() {
+  const slot = $("#own-bonus");
+  slot.replaceChildren();
+  const bonuses = [...payload.view.player.flowers, ...payload.view.player.seasons];
+  const label = div("bonus-empty");
+  label.textContent = bonuses.length === 0 ? "Bonus" : `Bonus ${bonuses.length}`;
+  slot.append(label);
+  if (bonuses.length === 0) return;
+  const row = div("bonus-row");
+  for (const key of bonuses) row.append(tileElement(key));
+  slot.append(row);
 }
 
 function renderActions() {
   const element = $("#actions");
   element.replaceChildren();
 
-  for (const action of payload.legalActions) {
-    if (action.type === "Discard") continue;
+  const view = payload.view;
+  const actions = orderedActions(payload.legalActions);
+  const discardTile =
+    isYourDiscardPhase() && view.player.hand.length > 0
+      ? view.player.hand[selected ?? cursor]
+      : undefined;
+  if (discardTile !== undefined) {
+    actions.push({ type: "Discard", seat: view.seat, tile: discardTile });
+    actions.sort((a, b) => actionRank(a) - actionRank(b));
+  }
+
+  if (actions.length === 0) {
+    const note = div("action-note");
+    if (view.phase === "finished") note.textContent = "";
+    else if (view.turn !== view.seat) note.textContent = "Waiting for the table.";
+    else if (view.phase === "discard" && selected === null) {
+      note.textContent = "Pick a tile, then press Enter.";
+    } else if (view.phase === "discard") {
+      note.textContent = "Press Enter to discard the picked tile.";
+    } else if (view.phase === "claim") {
+      note.textContent = "Waiting for the claim to resolve.";
+    } else {
+      note.textContent = "";
+    }
+    if (note.textContent) element.append(note);
+    return;
+  }
+
+  actions.forEach((action, index) => {
+    if (action.type === "Discard") {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `action-button${index === 0 ? " primary" : ""}`;
+      button.append(document.createTextNode("Discard"));
+      button.title = selected === null
+        ? `Discard ${tileName(action.tile)} (tile ${cursor + 1})`
+        : `Discard ${tileName(action.tile)}`;
+      const key = document.createElement("kbd");
+      key.textContent = "enter";
+      button.append(key);
+      button.addEventListener("click", () => discardCandidate());
+      element.append(button);
+      return;
+    }
+
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "action";
-    button.textContent = actionLabel(action);
+    button.className = `action-button${index === 0 ? " primary" : ""}`;
+    button.append(document.createTextNode(actionLabel(action)));
+    const key = document.createElement("kbd");
+    key.textContent = actionKeycap(action);
+    if (actionKeycap(action)) button.append(key);
     button.addEventListener("click", () => sendAction(action));
     element.append(button);
-  }
+  });
+}
 
-  if (element.childElementCount === 0) {
-    const waiting = document.createElement("p");
-    waiting.className = "hint";
-    waiting.textContent = payload.outcome === null ? "Waiting for the table…" : "";
-    element.append(waiting);
+function renderScorecard() {
+  const slot = $("#scorecard");
+  slot.replaceChildren();
+  const totals = ledgerTotals(payload.view.ledger);
+
+  for (const entry of payload.table) {
+    const row = div(`score-row${seatIsTurn(entry.seat) ? " is-turn" : ""}`);
+    row.dataset.seat = entry.seat;
+    row.style.setProperty("--seat-color", seatColor(entry.seat));
+    const wind = span("score-wind", entry.wind);
+    const name = span(
+      "score-name",
+      entry.isYou ? "You" : `${WIND_NAME[entry.wind]} bot`,
+    );
+    const points = span("score-points");
+    const value = totals[entry.seat] ?? 0;
+    points.textContent = value === 0 ? "0" : signed(value);
+    const dealer = span("score-dealer");
+    dealer.title = entry.dealer ? "Dealer" : "";
+    if (!entry.dealer) dealer.hidden = true;
+    row.append(wind, name, points, dealer);
+    slot.append(row);
   }
 }
 
-function legalHint() {
-  if (payload.outcome !== null) return "";
-  const types = new Set(payload.legalActions.map((action) => action.type));
-  if (types.has("Win")) return "Press m to declare mahjong, or discard a tile.";
-  if (types.has("Draw")) return "Press d or click Draw.";
-  if (types.has("Discard")) return "Click a tile, or press 1–9 then Enter.";
-  if (types.has("DeclareFishing")) return "Press f to fish, space to pass.";
-  if (types.has("Claim")) return "Choose a claim, or press space to pass.";
-  if (types.has("Pass")) return "Press space to pass.";
-  if (types.has("ConcealedKong") || types.has("AddedKong")) return "A kong is available.";
-  return "";
-}
-
-function renderStatus() {
+function turnSentence() {
   const view = payload.view;
-  let text;
+  if (view.phase === "finished") return "Hand finished.";
+  if (view.turn === view.seat) {
+    if (view.phase === "draw") return "Your turn — draw a tile.";
+    if (view.phase === "discard") return "Your turn — discard a tile.";
+    if (view.phase === "announce") return "Your turn — declare fishing or pass.";
+    if (view.phase === "claim") return "Your turn — answer the claim.";
+    return "Your turn.";
+  }
+  if (view.phase === "claim") {
+    return `${seatLabel(view.turn)} is answering the claim.`;
+  }
+  if (view.phase === "announce") {
+    return `${seatLabel(view.turn)} is deciding on fishing.`;
+  }
+  return `${seatLabel(view.turn)} is playing.`;
+}
 
-  if (payload.outcome !== null) {
-    text =
-      payload.outcome.kind === "drawn"
-        ? "Hand finished — drawn."
-        : `Hand finished — ${payload.outcome.winner} won.`;
-  } else if (view.turn === view.seat) {
-    if (view.phase === "draw") text = "Your turn: draw a tile.";
-    else if (view.phase === "discard") text = "Your turn: discard a tile.";
-    else if (view.phase === "announce") text = "Fishing offer: declare the wait or pass.";
-    else if (view.phase === "claim") {
-      const window = view.claimWindow;
-      text = window
-        ? `Claim window: ${window.discarder} discarded ${window.tile} — claim or pass.`
-        : "Claim window — claim or pass.";
-    } else text = `Your turn (${view.phase}).`;
-  } else if (view.phase === "claim") {
-    const window = view.claimWindow;
-    text = `${view.turn} is answering the claim${window ? ` on ${window.tile}` : ""}…`;
-  } else {
-    text = `${view.turn} is deciding (${view.phase})…`;
+function renderTurn() {
+  const view = payload.view;
+  const track = $("#turn-track");
+  track.replaceChildren();
+  const indicator = span("turn-indicator");
+  const turnIndex = SEATS.indexOf(view.turn);
+  indicator.style.transform = `translateX(calc(${Math.max(0, turnIndex)} * 100%))`;
+  if (view.phase === "finished") indicator.hidden = true;
+  track.append(indicator);
+
+  for (const seat of SEATS) {
+    const item = document.createElement("li");
+    item.textContent = seat;
+    item.dataset.seat = seat;
+    if (seatIsTurn(seat)) item.classList.add("is-active");
+    track.append(item);
   }
 
-  const hint = legalHint();
-  $("#status").textContent = hint ? `${text} ${hint}` : text;
+  const text = turnSentence();
+  $("#turn-text").textContent = text;
+
+  const announceKey = `${view.turn}|${view.phase}|${view.claimWindow?.tile ?? ""}|${
+    payload.outcome?.kind ?? ""
+  }`;
+  if (announceKey !== announced) {
+    announced = announceKey;
+    $("#live-turn").textContent = text;
+  }
+
+  const band = document.querySelector(".hand-band");
+  band.classList.toggle("is-turn", seatIsTurn(view.seat));
 }
 
 function renderFishing() {
+  const block = $("#fishing-block");
   const view = payload.view;
-  $("#fishing").textContent = view.fishing
-    .map(
-      (entry) =>
-        `${entry.seat}${entry.seat === payload.seat ? " (you)" : ""} fishes ` +
-        `${entry.wait.join(" ")} — ${entry.tier}`,
-    )
-    .join(" · ");
+  if (view.fishing.length === 0) {
+    block.hidden = true;
+    $("#fishing").replaceChildren();
+    return;
+  }
+  block.hidden = false;
+  const slot = $("#fishing");
+  slot.replaceChildren();
+  for (const entry of view.fishing) {
+    const line = div();
+    line.textContent =
+      `${entry.seat}${entry.seat === view.seat ? " (you)" : ""} — ` +
+      `${entry.wait.join(" ")} · ${entry.tier}`;
+    slot.append(line);
+  }
 }
 
 function renderWaits() {
-  const element = $("#waits");
-  element.replaceChildren();
+  const slot = $("#waits");
+  slot.replaceChildren();
   const checker = payload.checker;
+  const view = payload.view;
+  const ownFishing =
+    view.fishing.find((entry) => entry.seat === view.seat)?.wait ?? [];
 
   if (checker.size === 13) {
     if (checker.waits.length === 0) {
-      const empty = document.createElement("p");
-      empty.className = "hint";
+      const empty = div("hint");
       empty.textContent = "No catalogue hand completes from these 13 tiles.";
-      element.append(empty);
+      slot.append(empty);
       return;
     }
     for (const wait of checker.waits) {
-      const row = document.createElement("div");
-      row.className = `wait${wait.dead ? " dead" : ""}`;
+      const fishing = ownFishing.includes(wait.tile);
+      const row = div(
+        `wait${wait.dead ? " is-dead" : ""}${fishing ? " is-fishing" : ""}`,
+      );
       row.append(tileElement(wait.tile));
-
-      const body = document.createElement("div");
-      body.className = "wait-body";
-      const head = document.createElement("p");
-      head.className = "wait-head";
-      head.textContent = wait.dead
-        ? `${wait.tile} — dead wait`
-        : `${wait.tile} — ${wait.remaining} left`;
-      const hands = document.createElement("p");
-      hands.className = "wait-hands";
-      hands.textContent = wait.matches
-        .map(
-          (match) =>
-            `${match.name} (${match.tier}${match.points === null ? "" : ` ${match.points}`})`,
-        )
-        .join(" · ");
+      const body = div("wait-body");
+      const head = div("wait-head");
+      const key = span("", wait.tile);
+      const left = span("wait-left", wait.dead ? "dead wait" : `${wait.remaining} left`);
+      head.append(key, left);
+      if (fishing) head.append(span("fishing-badge", "fishing"));
+      const hands = div("wait-hands");
+      if (wait.dead) {
+        hands.textContent = "every copy is visible";
+      } else {
+        hands.textContent =
+          wait.matches.length === 0
+            ? "no catalogue hand"
+            : wait.matches
+                .slice(0, 2)
+                .map((match) => `${match.name} · ${match.tier}`)
+                .join(" · ");
+      }
       body.append(head, hands);
       row.append(body);
-      element.append(row);
+      slot.append(row);
     }
     return;
   }
 
   if (checker.size === 14) {
-    const note = document.createElement("p");
-    note.className = "hint";
+    const note = div("hint");
     note.textContent =
       checker.matches.length > 0
-        ? `Complete hand: ${checker.matches
-            .map((match) => `${match.name} (${match.tier})`)
+        ? `You hold 14 tiles. ${checker.matches
+            .slice(0, 3)
+            .map((match) => `${match.name} · ${match.tier}`)
             .join(" · ")}`
-        : "14 effective tiles; no catalogue hand yet.";
-    element.append(note);
+        : "You hold 14 tiles. Discard one to see the waits.";
+    slot.append(note);
     return;
   }
 
-  const errors = document.createElement("p");
-  errors.className = "hint";
+  const errors = div("hint");
   errors.textContent = checker.errors.join(" ");
-  element.append(errors);
+  slot.append(errors);
 }
 
 function renderOutcome() {
   const panel = $("#outcome");
   const outcome = payload.outcome;
-  panel.hidden = outcome === null;
+  if (outcome === null) {
+    panel.hidden = true;
+    panel.replaceChildren();
+    return;
+  }
+  panel.hidden = false;
   panel.replaceChildren();
-  if (outcome === null) return;
 
+  const card = div("result-card");
+  const sub = div("result-sub");
+  sub.textContent = `Hand ${payload.view.handNumber} · ${payload.view.prevailingWind} round`;
   const title = document.createElement("h2");
   if (outcome.kind === "drawn") {
     title.textContent = `Drawn hand — ${outcome.reason}`;
@@ -487,54 +887,62 @@ function renderOutcome() {
       outcome.points === null
         ? (outcome.tier ?? "unscored")
         : `${outcome.tier ?? "unscored"}, ${outcome.points}`;
-    title.textContent =
-      `${outcome.winner} wins — ${outcome.patternName ?? outcome.patternId} (${value})`;
+    title.textContent = `${seatLabel(outcome.winner)} wins — ${
+      outcome.patternName ?? outcome.patternId
+    } (${value})`;
   }
-  panel.append(title);
+  card.append(sub, title);
 
   if (outcome.kind === "win") {
-    const source = document.createElement("p");
-    source.className = "hint";
+    const source = div("result-sub");
     source.textContent =
-      `${outcome.selfDrawn ? "self-drawn" : `on ${outcome.from}'s discard`} · ` +
+      `${outcome.selfDrawn ? "self-drawn" : `on ${seatLabel(outcome.from)}'s discard`} · ` +
       `winning tile ${outcome.winningTile ?? "?"}`;
-    panel.append(source);
+    card.append(source);
+
+    const grid = div("result-grid");
+    const left = div();
+    const right = div();
+
+    const patternTitle = document.createElement("h3");
+    patternTitle.textContent = "Pattern";
+    const pattern = div("result-pattern");
+    pattern.append(document.createTextNode(outcome.patternName ?? outcome.patternId ?? "—"));
+    if (outcome.tier !== null) pattern.append(span("tier-badge", outcome.tier));
+    if (outcome.points !== null) pattern.append(span("tier-badge", String(outcome.points)));
+    left.append(patternTitle, pattern);
 
     const handTitle = document.createElement("h3");
-    handTitle.textContent = "Winning hand";
-    panel.append(handTitle);
-
+    handTitle.textContent = "Composed tiles";
+    left.append(handTitle);
+    const tiles = div("result-tiles");
     if (outcome.hand !== null) {
-      const row = document.createElement("div");
-      row.className = "tile-row";
-      for (const key of outcome.hand) row.append(tileElement(key, "large"));
-      panel.append(row);
-    } else {
-      const hidden = document.createElement("p");
-      hidden.className = "hint";
-      hidden.textContent =
-        `${outcome.winner}'s ${outcome.handCount} concealed tiles stay hidden; ` +
-        "only the public melds and the winning tile are shown.";
-      panel.append(hidden);
+      for (const key of outcome.hand) tiles.append(tileElement(key));
     }
-
-    if (outcome.melds !== null && outcome.melds.length > 0) {
-      const row = document.createElement("div");
-      row.className = "tile-row";
+    if (outcome.melds !== null) {
       for (const meld of outcome.melds) {
-        for (const key of meld.tiles) row.append(tileElement(key));
+        const group = div("meld");
+        for (const key of meld.tiles) group.append(tileElement(key));
+        tiles.append(group);
       }
-      panel.append(row);
     }
+    if (outcome.hand === null) {
+      const hidden = div("result-sub");
+      hidden.textContent =
+        `${outcome.handCount} concealed tiles stay hidden; public melds and the ` +
+        "winning tile are shown.";
+      left.append(hidden);
+    }
+    left.append(tiles);
 
     const matchesTitle = document.createElement("h3");
     matchesTitle.textContent = "Patterns matched";
-    panel.append(matchesTitle);
+    left.append(matchesTitle);
     const matches = document.createElement("ul");
-    matches.className = "matches";
+    matches.className = "result-list";
     if (outcome.matches.length === 0) {
       const item = document.createElement("li");
-      item.textContent = "none";
+      item.textContent = "None";
       matches.append(item);
     } else {
       for (const match of outcome.matches) {
@@ -543,60 +951,123 @@ function renderOutcome() {
         matches.append(item);
       }
     }
-    panel.append(matches);
-  }
+    left.append(matches);
 
-  const fishingTitle = document.createElement("h3");
-  fishingTitle.textContent = "Fishing settlements";
-  panel.append(fishingTitle);
-  const settlements = document.createElement("ul");
-  settlements.className = "settlements";
-  if (outcome.fishing.length === 0) {
-    const item = document.createElement("li");
-    item.textContent = "No fishing settlements.";
-    settlements.append(item);
-  } else {
-    for (const entry of outcome.fishing) {
+    const settlementsTitle = document.createElement("h3");
+    settlementsTitle.textContent = "Fishing settlements";
+    right.append(settlementsTitle);
+    const settlements = document.createElement("ul");
+    settlements.className = "result-list";
+    if (outcome.fishing.length === 0) {
       const item = document.createElement("li");
-      item.textContent =
-        `${entry.from} pays ${entry.to} ` +
-        `${entry.points === null ? "calculate" : entry.points} — ${entry.reason}`;
+      item.textContent = "No fishing settlements.";
       settlements.append(item);
+    } else {
+      for (const entry of outcome.fishing) {
+        const item = document.createElement("li");
+        item.textContent =
+          `${entry.from} pays ${entry.to} ` +
+          `${entry.points === null ? "calculate" : entry.points} — ${entry.reason}`;
+        settlements.append(item);
+      }
     }
-  }
-  panel.append(settlements);
+    right.append(settlements);
 
-  const totalsTitle = document.createElement("h3");
-  totalsTitle.textContent = "Totals";
-  panel.append(totalsTitle);
-  const totals = document.createElement("p");
-  totals.className = "totals";
-  totals.textContent =
-    SEATS.map((seat) => `${seat} ${signed(outcome.totals[seat])}`).join("   ") +
-    (outcome.unknown > 0
-      ? `   (${outcome.unknown} calculate entries unscored)`
-      : "");
-  panel.append(totals);
+    const totalsTitle = document.createElement("h3");
+    totalsTitle.textContent = "Points this hand";
+    right.append(totalsTitle);
+    const table = document.createElement("table");
+    table.className = "result-score";
+    const head = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    for (const label of ["Seat", "Δ"]) {
+      const th = document.createElement("th");
+      th.textContent = label;
+      headRow.append(th);
+    }
+    head.append(headRow);
+    const body = document.createElement("tbody");
+    for (const seat of SEATS) {
+      const row = document.createElement("tr");
+      const name = document.createElement("td");
+      name.textContent = seatLabel(seat);
+      const delta = document.createElement("td");
+      delta.className = "delta";
+      delta.textContent = signed(outcome.totals[seat] ?? 0);
+      row.append(name, delta);
+      body.append(row);
+    }
+    table.append(head, body);
+    right.append(table);
+
+    grid.append(left, right);
+    card.append(grid);
+  } else {
+    const note = div("result-sub");
+    note.textContent = "The wall is exhausted; no seat won this hand.";
+    card.append(note);
+  }
+
+  if (outcome.unknown > 0) {
+    const note = div("result-note");
+    note.textContent = `${outcome.unknown} calculate entries are not scored.`;
+    card.append(note);
+  }
 
   const next = document.createElement("button");
   next.type = "button";
-  next.className = "action primary";
+  next.id = "result-next";
+  next.className = "result-next";
   next.textContent = "Next hand";
+  const key = document.createElement("kbd");
+  key.textContent = "enter";
+  next.append(key);
   next.addEventListener("click", () => void request("/api/next", { game: payload.game }));
-  panel.append(next);
+  card.append(next);
+
+  panel.append(card);
+}
+
+function positionOwnRiver() {
+  const hand = $("#hand");
+  const own = $("#own-river");
+  const board = $(".board");
+  if (hand === null || own === null || board === null) return;
+  const handBox = hand.getBoundingClientRect();
+  const boardBox = board.getBoundingClientRect();
+  if (handBox.width === 0 || boardBox.width === 0) return;
+  const offset = handBox.left + handBox.width / 2 - (boardBox.left + boardBox.width / 2);
+  own.style.transform = `translateX(calc(-50% + ${offset}px))`;
 }
 
 function render() {
   if (payload === null) return;
   renderMeta();
-  renderTable();
+  renderSeats();
   renderCenter();
   renderHand();
+  positionOwnRiver();
+  renderOwnMelds();
+  renderOwnBonus();
   renderActions();
-  renderStatus();
-  renderFishing();
+  renderScorecard();
+  renderTurn();
   renderWaits();
+  renderFishing();
   renderOutcome();
+
+  previousHand = [...payload.view.player.hand];
+  if (tableInitialized) {
+    for (const seat of SEATS) {
+      previousDiscards[seat] = seatEntry(seat)?.discards.length ?? 0;
+    }
+  } else {
+    for (const seat of SEATS) {
+      previousDiscards[seat] = seatEntry(seat)?.discards.length ?? 0;
+    }
+    tableInitialized = true;
+  }
+  handInitialized = true;
 }
 
 /* -------------------------------------------------------------- gallery */
@@ -615,21 +1086,18 @@ const GALLERY_GROUPS = [
 function renderGallery() {
   document.title = "Mahjong tile gallery";
   document.body.classList.add("gallery-mode");
-  const page = $(".page");
-  page.replaceChildren();
+  const app = $("#app");
+  app.replaceChildren();
 
   const gallery = document.createElement("section");
   gallery.id = "tile-gallery";
   gallery.setAttribute("aria-label", "Tile gallery");
 
-  const head = document.createElement("div");
-  head.className = "gallery-head";
+  const head = div("gallery-head");
   const title = document.createElement("h2");
   title.textContent = "Tile gallery";
-  const hint = document.createElement("p");
-  hint.className = "hint";
-  hint.textContent =
-    "All 34 play tiles and the 8 bonus marks, one SVG per canonical key.";
+  const hint = div("hint");
+  hint.textContent = "All 34 play tiles and the 8 bonus marks, one SVG per canonical key.";
   head.append(title, hint);
   gallery.append(head);
 
@@ -640,24 +1108,41 @@ function renderGallery() {
     heading.textContent = group.title;
     section.append(heading);
 
-    const grid = document.createElement("div");
-    grid.className = "gallery-grid";
+    const grid = div("gallery-grid");
     for (const key of group.keys) {
       const figure = document.createElement("figure");
       figure.className = "gallery-tile";
       const caption = document.createElement("figcaption");
       caption.textContent = `${key} · ${tileName(key)}`;
-      figure.append(tileElement(key, "large"), caption);
+      figure.append(tileElement(key), caption);
       grid.append(figure);
     }
     section.append(grid);
     gallery.append(section);
   }
 
-  page.append(gallery);
+  app.append(gallery);
 }
 
-/* ------------------------------------------------------------ commands */
+/* ------------------------------------------------------------- commands */
+
+function focusHand(index) {
+  const button = document.querySelector(`#hand .hand-tile[data-index="${index}"]`);
+  if (button instanceof HTMLElement) button.focus({ preventScroll: true });
+}
+
+function onHandClick(index) {
+  if (payload === null) return;
+  if (index < 0 || index >= payload.view.player.hand.length) return;
+  cursor = index;
+  if (selected === index) {
+    discardSelected();
+    return;
+  }
+  selected = index;
+  renderHand();
+  focusHand(index);
+}
 
 function selectTile(index) {
   if (payload === null) return;
@@ -666,15 +1151,47 @@ function selectTile(index) {
     return;
   }
   selected = index;
+  cursor = index;
   renderHand();
+  focusHand(index);
+}
+
+function clearSelection() {
+  selected = null;
+  renderHand();
+}
+
+function discardSelected() {
+  if (payload === null) return;
+  if (selected === null) {
+    log("Pick a tile with 1–9 first.");
+    return;
+  }
+  const tile = payload.view.player.hand[selected];
+  if (tile !== undefined && sendDiscard(tile)) return;
+  log("That tile cannot be discarded now.");
+}
+
+function discardCandidate() {
+  if (payload === null) return;
+  if (selected !== null) {
+    discardSelected();
+    return;
+  }
+  if (!isYourDiscardPhase()) return;
+  const tile = payload.view.player.hand[cursor];
+  if (tile !== undefined && sendDiscard(tile)) return;
+  log("That tile cannot be discarded now.");
 }
 
 function confirmSelection() {
   if (payload === null) return;
+  if (!document.getElementById("outcome").hidden) {
+    document.getElementById("result-next")?.click();
+    return;
+  }
   if (selected !== null) {
-    const tile = payload.view.player.hand[selected];
-    if (tile !== undefined && sendDiscard(tile)) return;
-    log("That tile cannot be discarded now.");
+    discardSelected();
     return;
   }
   const draw = legalAction("Draw");
@@ -682,7 +1199,20 @@ function confirmSelection() {
     sendAction(draw);
     return;
   }
+  if (isYourDiscardPhase()) {
+    discardCandidate();
+    return;
+  }
   log("Pick a tile with 1–9 first.");
+}
+
+function moveCursor(delta) {
+  if (payload === null) return;
+  const hand = payload.view.player.hand;
+  if (hand.length === 0) return;
+  cursor = (cursor + delta + hand.length) % hand.length;
+  syncCursorDom();
+  focusHand(cursor);
 }
 
 function drawTile() {
@@ -696,10 +1226,7 @@ function drawTile() {
 
 function pass() {
   const action = legalAction("Pass");
-  if (action === undefined) {
-    log("There is nothing to pass.");
-    return;
-  }
+  if (action === undefined) return;
   sendAction(action);
 }
 
@@ -709,7 +1236,6 @@ function declareFishing() {
     log("Fishing is not legal now.");
     return;
   }
-  log(`Fixing the fishing wait on ${action.wait.join(" ")}.`);
   sendAction(action);
 }
 
@@ -724,12 +1250,32 @@ function declareWin() {
   sendAction(action);
 }
 
+function declareClaim(kind) {
+  const action = legalAction(
+    "Claim",
+    (candidate) => candidate.kind === kind,
+  );
+  if (action === undefined) {
+    log(`There is no ${kind} to claim.`);
+    return;
+  }
+  sendAction(action);
+}
+
 function undo() {
   if (payload === null) return;
+  selected = null;
   void request("/api/undo", { game: payload.game }, null, true);
 }
 
 function newGame(seed) {
+  selected = null;
+  cursor = 0;
+  handInitialized = false;
+  tableInitialized = false;
+  previousHand = [];
+  previousDiscards = { E: 0, S: 0, W: 0, N: 0 };
+  announced = "";
   void request(
     "/api/new",
     seed === undefined ? {} : { seed },
@@ -737,7 +1283,7 @@ function newGame(seed) {
   );
 }
 
-/* -------------------------------------------------------------- events */
+/* --------------------------------------------------------------- events */
 
 function onKeydown(event) {
   const target = event.target;
@@ -746,11 +1292,24 @@ function onKeydown(event) {
   if (document.querySelector("dialog[open]") !== null) return;
   if (payload === null) return;
 
-  const nativeActivation =
-    (event.key === "Enter" || event.key === " " || event.key === "Spacebar") &&
+  const isHand = target instanceof HTMLElement && target.closest(".hand-tile") !== null;
+  const isButton =
     target instanceof HTMLElement &&
     target.closest("button, a, summary") !== null;
+  const nativeActivation =
+    (event.key === "Enter" || event.key === " " || event.key === "Spacebar") &&
+    isButton &&
+    !isHand;
   if (nativeActivation) return;
+
+  const outcomeOpen = !document.getElementById("outcome").hidden;
+  if (outcomeOpen) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      document.getElementById("result-next")?.click();
+    }
+    return;
+  }
 
   switch (event.key) {
     case "?":
@@ -782,6 +1341,21 @@ function onKeydown(event) {
       event.preventDefault();
       declareWin();
       break;
+    case "p":
+    case "P":
+      event.preventDefault();
+      declareClaim("pung");
+      break;
+    case "k":
+    case "K":
+      event.preventDefault();
+      declareClaim("kong");
+      break;
+    case "c":
+    case "C":
+      event.preventDefault();
+      declareClaim("chow");
+      break;
     case " ":
     case "Spacebar":
       event.preventDefault();
@@ -790,6 +1364,24 @@ function onKeydown(event) {
     case "Enter":
       event.preventDefault();
       confirmSelection();
+      break;
+    case "ArrowLeft":
+    case "ArrowUp":
+      event.preventDefault();
+      moveCursor(-1);
+      break;
+    case "ArrowRight":
+    case "ArrowDown":
+      event.preventDefault();
+      moveCursor(1);
+      break;
+    case "Home":
+      event.preventDefault();
+      moveCursor(-cursor);
+      break;
+    case "End":
+      event.preventDefault();
+      moveCursor(payload.view.player.hand.length - 1 - cursor);
       break;
     case "Escape":
       selected = null;
@@ -808,30 +1400,66 @@ function openHelp() {
   if (!dialog.open) dialog.showModal();
 }
 
+function persistRail() {
+  try {
+    localStorage.setItem(RAIL_KEY, railOpen ? "open" : "closed");
+  } catch {
+    // A private window can refuse storage; the rail still works for this visit.
+  }
+}
+
+function applyRail() {
+  const app = $("#app");
+  app.classList.toggle("rail-closed", !railOpen);
+  $("#rail-show").hidden = railOpen;
+}
+
+function setRail(open) {
+  railOpen = open;
+  applyRail();
+  persistRail();
+}
+
 function bindEvents() {
   $("#new-game").addEventListener("click", () => newGame(randomSeed()));
   $("#undo").addEventListener("click", undo);
   $("#help-button").addEventListener("click", openHelp);
+  $("#rail-hide").addEventListener("click", () => setRail(false));
+  $("#rail-show").addEventListener("click", () => setRail(true));
   $("#help-dialog").addEventListener("close", () => $("#help-button").focus());
   document.addEventListener("keydown", onKeydown);
+  window.addEventListener("resize", positionOwnRiver);
+}
+
+function initialRail() {
+  try {
+    const stored = localStorage.getItem(RAIL_KEY);
+    if (stored === "open") return true;
+    if (stored === "closed") return false;
+  } catch {
+    // Fall through to the viewport default.
+  }
+  return window.innerWidth >= 1180;
 }
 
 async function boot() {
   bindEvents();
+  railOpen = initialRail();
+  applyRail();
 
   if (new URLSearchParams(window.location.search).get("gallery") === "1") {
     renderGallery();
     return;
   }
 
-  const stored = sessionStorage.getItem("mahjong-game");
+  const stored = sessionStorage.getItem(GAME_KEY);
   if (stored !== null) {
     try {
       const data = await api(`/api/state?game=${encodeURIComponent(stored)}`);
       applyResponse(data, "Resumed the open game.");
       return;
     } catch {
-      sessionStorage.removeItem("mahjong-game");
+      sessionStorage.removeItem(GAME_KEY);
     }
   }
 
