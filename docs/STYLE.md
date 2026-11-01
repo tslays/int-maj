@@ -140,12 +140,14 @@ board's width alone decides every tile, river, rack and dial.
 | `--hand-row-frac` | `0.4643` | The 14-tile row's share of the board |
 | `--hand-units` | `14.4` | 14 tiles + the 0.4-unit drawn-tile break |
 | `--hand-w` | derived | One hand tile's width |
-| `--hand-h` | `hand-w * 4/3` | Its height |
+| `--hand-aspect` | `4 / 3` | The tile's height over its width |
+| `--hand-h` | `hand-w * hand-aspect` | Its height |
 | `--hand-gap` | `2px` | Between hand tiles |
 | `--tile-gap` | `1px` | Between river tiles |
 | `--tile-ratio` | `0.874` | River tile / hand tile |
 | `--tile-w` / `--tile-h` | derived | River tile |
-| `--back-ratio-w` / `-h` | `0.73` / `0.96` | A concealed back |
+| `--back-ratio-w` | `0.73` | A concealed back's width |
+| `--back-ratio-h` | `0.96` | A concealed back's height |
 | `--meld-ratio` | `0.45` | A meld tile |
 | `--draw-gap-ratio` | `0.4` | The drawn tile's extra break |
 | `--art-sm-w` | `hand-w * 0.22` | Wait, variant art |
@@ -171,25 +173,36 @@ they are used rather than snapped to the spacing scale.
 | `--ring-gap` | `8.3%` | Felt between the north rack and the rivers |
 | `--hand-lift` | `3.4%` | Felt between the hand and the action row |
 | `--action-row` | `4.6%` | The action row's own height |
-| `--action-inset-x` / `-y` | `14px` / `4px` | Action cluster's corner |
+| `--action-inset-x` | `14px` | Action cluster's right inset |
+| `--action-inset-y` | `4px` | Action cluster's bottom inset |
 | `--action-column-frac` | `0.19` | Its widest column |
 | `--dial-y` | `56%` | The wall dial's seat in the centre |
 | `--dial-stroke` | `4.5px` | Wall ring's stroke |
+| `--dial-label-ratio` | `0.1` | The wall label's offset, as a share of a hand tile |
+| `--self-ratio` | `0.5` | Your label's column, as a share of a hand tile |
 | `--rail-w` / `--rail-w-narrow` | `260px` / `230px` | The rail |
 | `--control-h-sm` | `32px` | Ghost buttons |
 | `--control-h` | `37px` | Action buttons (Tenhou's height) |
 | `--control-h-lg` | `48px` | Claim buttons, next hand |
 | `--claim-min-w` | `148px` | The two claim buttons |
-| `--rail-tile-w` / `-h` | `26px` / `35px` | Wait panel art |
-| `--fishing-tile-w` / `-h` | `22px` / `29px` | Rail fishing art |
-| `--result-tile-w` / `-h` | `34px` / `45px` | Composed hand |
-| `--source-tile-w` / `-h` | `24px` / `32px` | Result source line |
-| `--settle-tile-w` / `-h` | `20px` / `26px` | Result fishing art |
-| `--control-tile-w` / `-h` | `20px` / `27px` | Discard button art |
-| `--gallery-tile-w` / `-h` | `52px` / `69px` | Tile gallery |
+| `--rail-tile-w` | `26px` | Wait panel art, width |
+| `--rail-tile-h` | `35px` | Wait panel art, height |
+| `--fishing-tile-w` | `22px` | Rail fishing art, width |
+| `--fishing-tile-h` | `29px` | Rail fishing art, height |
+| `--result-tile-w` | `34px` | Composed hand, width |
+| `--result-tile-h` | `45px` | Composed hand, height |
+| `--source-tile-w` | `24px` | Result source line, width |
+| `--source-tile-h` | `32px` | Result source line, height |
+| `--settle-tile-w` | `20px` | Result fishing art, width |
+| `--settle-tile-h` | `26px` | Result fishing art, height |
+| `--control-tile-w` | `20px` | Control art (discard, claim, chow variants), width |
+| `--control-tile-h` | `27px` | Control art, height |
+| `--gallery-tile-w` | `52px` | Tile gallery, width |
+| `--gallery-tile-h` | `69px` | Tile gallery, height |
 | `--log-h` | `150px` | The log |
 | `--note-w` | `190px` | Action note wrap |
-| `--result-card-w` / `-h` | `780px` / `760px` | Result card |
+| `--result-card-w` | `780px` | Result card, width |
+| `--result-card-h` | `760px` | Result card's height cap |
 | `--dialog-w` | `620px` | Help dialog |
 | `--gallery-w` | `1000px` | Gallery column |
 | `--reference-w` / `-h` / `-crop` | `1512px` / `982px` / `88px` | Debug overlay |
@@ -216,16 +229,21 @@ entry and exit cannot drift apart.
 
 ## What is allowed to stay a literal
 
-Inside rules, only these non-`var()` lengths appear:
+Inside rules, only these non-`var()` values appear:
 
-- `0`, and structural fractions (`100%`, `50%`, `minmax(0, 1fr)`), including
-  the `translate(-50%, -50%)` centering idiom;
-- `em` lengths that intentionally scale with their own font
-  (`kbd` min-width, the payment column);
+- `0`, and fractions of the element's own box (`100%`, `50%`,
+  `minmax(0, 1fr)`, `translate(-50%, -50%)`);
+- unitless factors: opacity, `scale`, `brightness`, line-height numbers, grid
+  `repeat` counts, `min()`/`max()` comparisons;
+- `em` lengths that intentionally follow their own font (`kbd`'s min-width and
+  padding, the payment column, the fishing seat column);
 - media-query breakpoints (`1100px`, `820px`, `760px`), because a custom
   property cannot be read in a media condition;
-- `1px` / `2px` in `stroke-dasharray`-free SVG facts replaced by
-  `--dial-stroke`, and the reference overlay's own pixels, which are tokens.
+- the wall dial's SVG geometry — its `viewBox`, the ring's `r="31"` and the
+  dash length the client computes with it — which are drawing coordinates,
+  not layout lengths;
+- the reference overlay's native pixels, which are tokens
+  (`--reference-w`, `--reference-h`, `--reference-crop`).
 
 `npm run test:layout` re-measures the result at 1440x900 and 1280x800, and
 re-fits the reference anchors at 1512x894, so a token change that moves the
