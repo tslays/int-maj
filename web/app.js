@@ -612,7 +612,8 @@ function renderSeat(entry) {
     return;
   }
 
-  root.append(seatChip(entry), rackLine(entry));
+  root.append(seatChip(entry));
+  root.append(rackLine(entry));
   const melds = meldRow(entry.melds);
   if (melds !== null) root.append(melds);
 }
