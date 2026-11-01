@@ -227,17 +227,12 @@ function sendDiscard(tile) {
     (candidate) => candidate.type === "Discard" && candidate.tile === tile,
   );
   if (action === undefined) return false;
-  const reduced =
-    typeof globalThis.matchMedia === "function" &&
-    globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const index = selected ?? cursor;
   const button = document.querySelector(`#hand .hand-tile[data-index="${index}"]`);
-  if (!reduced && button instanceof HTMLElement) {
-    button.classList.add("is-leaving");
-    sendAction(action, 140);
-  } else {
-    sendAction(action);
-  }
+  // Instant: the tile leaves the hand the moment it is thrown, no confirmation
+  // and no animation hold.
+  if (button instanceof HTMLElement) button.classList.add("is-leaving");
+  sendAction(action);
   return true;
 }
 
@@ -931,15 +926,6 @@ function renderActions() {
 
   const view = payload.view;
   const actions = orderedActions(payload.legalActions);
-  const discardTile =
-    isYourDiscardPhase() && view.player.hand.length > 0
-      ? view.player.hand[selected ?? cursor]
-      : undefined;
-  if (discardTile !== undefined) {
-    actions.push({ type: "Discard", seat: view.seat, tile: discardTile });
-    actions.sort((a, b) => actionRank(a) - actionRank(b));
-  }
-
   if (actions.length === 0) {
     const note = div("action-note");
     if (view.phase === "finished") note.textContent = "";
@@ -1421,7 +1407,9 @@ function render() {
   }
   handInitialized = true;
 
-  autoDraw();
+  // Deferred: render() runs while a request is still in flight, so the draw
+  // must wait for `busy` to clear or it is dropped.
+  setTimeout(autoDraw, 0);
 }
 
 /* -------------------------------------------------------------- gallery */
