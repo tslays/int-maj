@@ -45,6 +45,16 @@ Full viewport, no max-width box. Three bands:
 2. **Own hand** (bottom, full width): tiles 84x112 (SVG art scales), sorted by suit then rank with honours last, 6px gaps, hover lift 6px and brighten, click selects and lifts 10px, Enter/click discards. Melds sit to the right of the hand, kongs showing all four. Bonus tiles sit in a small tray at the far right.
 3. **Rail** (right, 260px, collapsible): scorecard (four rows: seat, wind, points, dealer dot), a turn indicator that is a moving highlight rather than a sentence, the wait panel ("waiting on b6 - 3 left"), and a collapsible event log.
 
+## Affordances both clients have that we should match
+
+Taken from how these tables read in play (AJ Martinez, worldsbe.st, on Mahjong Soul and Riichi City), each is a small, quiet signal rather than a new panel:
+
+- **Wait preview** — while you hold 13 tiles, the tiles that would finish you are always visible (our wait panel), not something you open.
+- **Selected-tile highlight** — the tile you are about to throw is unmistakable: raised, and the rest of the hand steps back in contrast.
+- **Just-drawn marker** — the tile you drew this turn is marked (a small dot or a lift), so you can see what is new before you throw it. If you discard it untouched, it is plainly the drawn tile that went down.
+- **Wall always visible** — the remaining wall is a first-class counter the whole hand (Riichi City shows the whole wall; we need only the count and a shrinking ring).
+- **Our equivalents of their dora/furiten warnings**: the bonus tiles you hold are shown in the tray at all times, and an announced fishing wait is highlighted where it sits in the rail.
+
 ## Interaction contract
 
 - Exactly one primary action is emphasised at any moment; secondary ones are inline with keycaps (D, 1-9, Enter, Space).
