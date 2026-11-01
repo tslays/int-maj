@@ -144,6 +144,11 @@ describe("web API", () => {
       action: { type: "Draw", seat: "E" },
     });
     assert.equal(drawn.status, 200);
+    assert.equal(drawn.body.view.lastDraw?.seat, "E");
+    assert.ok(
+      drawn.body.view.player.hand.includes(drawn.body.view.lastDraw?.tile ?? ""),
+      "the just-drawn tile must be one of the viewer's own tiles",
+    );
     const discard = drawn.body.legalActions.find(
       (action) => action.type === "Discard",
     );

@@ -180,21 +180,47 @@ async function request(path, body, note, replaceLog = false) {
   }
 }
 
-function sendAction(action) {
-  if (action === null || payload === null) return;
-  void request(
-    "/api/move",
-    { game: payload.game, action },
-    action.type === "Pass" ? "You pass." : null,
-  );
+function sendAction(action, delay = 0) {
+  if (action === null || payload === null || busy) return;
+  const note = action.type === "Pass" ? "You pass." : null;
+  if (delay > 0) {
+    busy = true;
+    const game = payload.game;
+    setTimeout(async () => {
+      try {
+        const data = await api("/api/move", { game, action });
+        applyResponse(data, note);
+      } catch (error) {
+        log(`Error: ${error.message}`);
+        for (const button of document.querySelectorAll(".hand-tile.is-leaving")) {
+          button.classList.remove("is-leaving");
+        }
+      } finally {
+        busy = false;
+      }
+    }, delay);
+    return;
+  }
+  void request("/api/move", { game: payload.game, action }, note);
 }
 
 function sendDiscard(tile) {
+  if (payload === null || busy) return false;
   const action = payload.legalActions.find(
     (candidate) => candidate.type === "Discard" && candidate.tile === tile,
   );
   if (action === undefined) return false;
-  sendAction(action);
+  const reduced =
+    typeof globalThis.matchMedia === "function" &&
+    globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const index = selected ?? cursor;
+  const button = document.querySelector(`#hand .hand-tile[data-index="${index}"]`);
+  if (!reduced && button instanceof HTMLElement) {
+    button.classList.add("is-leaving");
+    sendAction(action, 140);
+  } else {
+    sendAction(action);
+  }
   return true;
 }
 
@@ -429,9 +455,9 @@ function actionKeycap(action) {
 
 function renderMeta() {
   const view = payload.view;
-  $("#meta").textContent =
-    `Hand ${view.handNumber} · ${view.prevailingWind} round · dealer ${view.dealer} · ` +
-    `seed ${payload.seed}`;
+  const meta = $("#meta");
+  meta.textContent = `Hand ${view.handNumber} · ${view.prevailingWind} round`;
+  meta.title = `Seed ${payload.seed} · game ${payload.game} · dealer ${view.dealer}`;
 }
 
 function seatChip(entry) {
@@ -662,7 +688,9 @@ function renderHand() {
     button.title = `${key} — ${tileName(key)}`;
     button.setAttribute(
       "aria-label",
-      `Tile ${index + 1}: ${tileName(key)}, key ${key}.`,
+      `Tile ${index + 1}: ${tileName(key)}, key ${key}${
+        index === drawnIndex ? ", just drawn" : ""
+      }.`,
     );
     if (index === selected) {
       button.classList.add("selected");
@@ -947,6 +975,7 @@ function renderScorecard() {
     const row = div(`score-row${seatIsTurn(entry.seat) ? " is-turn" : ""}`);
     row.dataset.seat = entry.seat;
     row.style.setProperty("--seat-color", seatColor(entry.seat));
+    if (seatIsTurn(entry.seat)) row.setAttribute("aria-current", "true");
     const wind = span("score-wind", entry.wind);
     const name = span(
       "score-name",
@@ -994,9 +1023,15 @@ function renderTurn() {
 
   for (const seat of SEATS) {
     const item = document.createElement("li");
-    item.textContent = seat;
+    const entry = seatEntry(seat);
+    const wind = entry === null ? seat : entry.wind;
+    item.textContent = wind;
     item.dataset.seat = seat;
-    if (seatIsTurn(seat)) item.classList.add("is-active");
+    item.title = WIND_NAME[wind] ?? wind;
+    if (seatIsTurn(seat)) {
+      item.classList.add("is-active");
+      item.setAttribute("aria-current", "true");
+    }
     track.append(item);
   }
 
@@ -1099,6 +1134,13 @@ function renderWaits() {
   slot.append(errors);
 }
 
+function setTableInert(inert) {
+  const board = $("#board");
+  const band = document.querySelector(".hand-band");
+  if (board !== null) board.inert = inert;
+  if (band !== null) band.inert = inert;
+}
+
 function resultScoreTable(outcome) {
   const handKey = `${payload.game}:${payload.view.handNumber}`;
   const applied =
@@ -1180,13 +1222,14 @@ function renderOutcome() {
   if (outcome === null) {
     panel.hidden = true;
     panel.replaceChildren();
+    setTableInert(false);
     focusedOutcomeKey = null;
     return;
   }
   panel.hidden = false;
   panel.replaceChildren();
+  setTableInert(true);
   panel.setAttribute("role", "dialog");
-  panel.setAttribute("aria-modal", "true");
   panel.setAttribute("aria-labelledby", "outcome-title");
   panel.setAttribute("tabindex", "-1");
 
@@ -1422,7 +1465,7 @@ function focusHand(index) {
 }
 
 function onHandClick(index) {
-  if (payload === null) return;
+  if (payload === null || busy) return;
   if (index < 0 || index >= payload.view.player.hand.length) return;
   cursor = index;
   if (selected === index) {
@@ -1435,7 +1478,7 @@ function onHandClick(index) {
 }
 
 function selectTile(index) {
-  if (payload === null) return;
+  if (payload === null || busy) return;
   if (index < 0 || index >= payload.view.player.hand.length) {
     log(`There is no tile ${index + 1}.`);
     return;
@@ -1452,7 +1495,7 @@ function clearSelection() {
 }
 
 function discardSelected() {
-  if (payload === null) return;
+  if (payload === null || busy) return;
   if (selected === null) {
     log("Pick a tile with 1–9 first.");
     return;
@@ -1463,7 +1506,7 @@ function discardSelected() {
 }
 
 function discardCandidate() {
-  if (payload === null) return;
+  if (payload === null || busy) return;
   if (selected !== null) {
     discardSelected();
     return;
@@ -1475,7 +1518,7 @@ function discardCandidate() {
 }
 
 function confirmSelection() {
-  if (payload === null) return;
+  if (payload === null || busy) return;
   if (!document.getElementById("outcome").hidden) {
     document.getElementById("result-next")?.click();
     return;
@@ -1774,6 +1817,7 @@ function setRail(open) {
   railOpen = open;
   applyRail();
   persistRail();
+  requestAnimationFrame(positionOwnRiver);
 }
 
 function bindEvents() {
@@ -1795,7 +1839,7 @@ function initialRail() {
   } catch {
     // Fall through to the viewport default.
   }
-  return window.innerWidth >= 1180;
+  return window.innerWidth >= 1024;
 }
 
 async function boot() {
