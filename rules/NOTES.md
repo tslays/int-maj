@@ -129,6 +129,13 @@ inference, not a transcribed diagram. The reasoning is repeated in
   paired", confirming the 14th tile.
 - **Odds & Evens / Robin**: the printed lines are complete; the readings are
   5+5+4 and 1/2/1 chows + pair.
+- **Table-checker input**: parentheses can only mean one exposed meld, so
+  `(b1 b2 b3)` is declared rather than typed as loose tiles; flowers and
+  seasons go to `bonuses` and are stripped before the 13/14 count because the
+  book never puts them in a hand shape. `tiles` keeps input order and
+  `exposedMelds` records each group's start index so the CLI can reprint it.
+  A bare `W` is the West wind and a bare `w` the White dragon; exact case wins
+  only where those aliases collide.
 
 ## Still unresolved (not composition)
 
