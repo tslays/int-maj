@@ -84,6 +84,19 @@ Placement is checked by superposition, not by guessing: the reference screenshot
 
 Two local references are used: `reference/reference.tiff` (1030x793, converted to `web/reference.png`) is the one to fit against, and `reference/reference2.tiff` (768x576, converted to `web/reference2.png`) is the smaller window to sanity-check that the same proportions hold. Both stay out of git.
 
+## How to work this task (a procedure, not a vibe)
+
+The model matters less than the loop. Follow this exactly, one anchor at a time:
+
+1. **Measure, don't guess.** With the overlay on, read the reference's own numbers first (crop the browser chrome: page content starts at y≈88 of the 1512x982 image, the felt frame at y≈97). Write down the anchors you will fit: hand row left/right edges and its bottom, the four river blocks' outer edges, the centre panel's box, each rack's line, the two buttons.
+2. **One anchor per change.** Move the grid track or the one variable that owns that anchor; never nudge several at once, or you cannot tell which change helped.
+3. **Verify by measurement, then by eye.** After each change run `npm run test:layout` (it prints every rect) and compare the anchor's number with the reference's; only then screenshot and look.
+4. **Tolerance ±4 px** at 1512×982 for each anchor. Outside that, keep going; inside it, move to the next anchor.
+5. **Commit at each checkpoint** (one anchor or one group that passed), sentence case, with the numbers in the message body.
+6. When every anchor is inside tolerance at the reference size, re-check at 1440×900 and 1280×800 that nothing overlaps and the proportions still hold, then hide the overlay.
+
+Report the anchor table (reference value, ours, delta) — not adjectives.
+
 ## Prefer Tenhou's plainness for the arrangement
 
 Of the two references, Tenhou is the closer model for us because it carries no decoration at all, and its arrangement is simpler to hit:
