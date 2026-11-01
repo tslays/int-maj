@@ -784,28 +784,16 @@ kbd {
   --river-h: var(--own-river-h);
 }
 
+/* Every river reads the same way: six to a row, filled left to right and
+   top to bottom in throw order, exactly as a printed scoresheet or a riichi
+   table shows discards. No rotation, no reversed rows. */
 .river {
-  display: flex;
-  flex-direction: column;
-  gap: var(--river-gap);
-}
-
-.river.side {
   display: grid;
-  grid-auto-flow: column;
-  grid-template-rows: repeat(6, var(--river-w));
-  grid-auto-columns: var(--river-h);
+  grid-template-columns: repeat(6, var(--river-w));
+  grid-auto-rows: var(--river-h);
   gap: var(--river-gap);
-}
-
-.river-wrap.east .river {
-  direction: rtl;
-}
-
-.river-row {
-  display: flex;
-  gap: var(--river-gap);
-  align-items: flex-start;
+  align-content: start;
+  justify-content: start;
 }
 
 .river .tile {
@@ -814,20 +802,7 @@ kbd {
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
 }
 
-.river.side .tile {
-  position: relative;
-  width: var(--river-h);
-  height: var(--river-w);
-}
 
-.river.side .tile img {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: var(--river-w);
-  height: var(--river-h);
-  transform: translate(-50%, -50%) rotate(90deg);
-}
 
 .river .tile.last {
   outline: 1px solid var(--accent);

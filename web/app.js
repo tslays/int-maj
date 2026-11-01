@@ -537,33 +537,16 @@ function bonusRow(entry) {
 function riverWrapper(entry, kind) {
   const wrap = div(`river-wrap ${kind}`);
   const river = div("river");
-  if (kind === "east" || kind === "west") river.classList.add("side");
 
   const claimWindow = payload.view.claimWindow;
   const last = entry.discards.length - 1;
   const previous = tableInitialized ? (previousDiscards[entry.seat] ?? 0) : entry.discards.length;
 
-  if (kind === "east" || kind === "west") {
-    entry.discards.forEach((key, index) => {
-      const tile = riverTile(key, index === last, index >= previous, entry.seat, claimWindow);
-      river.append(tile);
-    });
-  } else {
-    const rows = [];
-    for (let start = 0; start < entry.discards.length; start += 6) {
-      rows.push({ start, keys: entry.discards.slice(start, start + 6) });
-    }
-    if (kind === "own") rows.reverse();
-    for (const { start, keys } of rows) {
-      const row = div("river-row");
-      keys.forEach((key, column) => {
-        const index = start + column;
-        const tile = riverTile(key, index === last, index >= previous, entry.seat, claimWindow);
-        row.append(tile);
-      });
-      river.append(row);
-    }
-  }
+  // One grid for every seat: six to a row, throw order, left to right then
+  // top to bottom.
+  entry.discards.forEach((key, index) => {
+    river.append(riverTile(key, index === last, index >= previous, entry.seat, claimWindow));
+  });
 
   wrap.append(river);
   wrap.setAttribute(
