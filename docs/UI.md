@@ -71,6 +71,20 @@ Taken from how these tables read in play (AJ Martinez, worldsbe.st, on Mahjong S
 
 The rules, the hands and the scoring are the Companion's and nothing else: no riichi yaku, no dora, no furiten, no riichi sticks. What may be borrowed from Riichi City and Mahjong Soul is **interface and game-feel** — the shape of a turn, how a claim is offered, how a result is presented, how the table waits for you, what the player can see at a glance. Research those clients (public screenshots, articles, wikis) for interaction patterns, then translate them onto our rules. When the two disagree about a rule, the Companion wins; when they disagree about how something *feels*, the reference wins.
 
+## The geometry to copy (measured off a Mahjong Soul board)
+
+Copying their *layout* is fine; copying their art is not. These are the proportions that make that board read, expressed against one hand tile as 1 unit:
+
+- **Hand tile** = 1.0 unit wide (about 7% of the viewport width, 13 tiles plus the drawn tile across the bottom edge).
+- **River tile** = 0.62 unit; a river is six per row, rows stacked flush, the block centred in front of its seat.
+- **Concealed back** = 0.33 unit; the top seat shows one horizontal line of them, the side seats one vertical line each, set in from the edge.
+- **Table frame**: a one-tile-wide band of felt inside a thin lighter outline, inset about 3% from the sides and 12% from the top, marking the play area.
+- **Centre panel** = about 1.9 units wide, sitting dead centre, with the round and wall in the middle and the four scores in its corners, the dealer's corner marked.
+- **Meld row** sits outside the hand, on the side away from the drawn tile.
+- **Two large action pills** at the bottom right, on the felt, not over the hand.
+
+Everything else in that screenshot (avatars, emotes, gacha frames, dora, sticks, timers) is theirs and stays out.
+
 ## How the reference arranges tiles (from the Mahjong Soul board)
 
 Looking at a live Mahjong Soul table, the arrangement rules that make it read instantly — adopt these:
