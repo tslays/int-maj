@@ -204,6 +204,17 @@ function sendAction(action, delay = 0) {
   void request("/api/move", { game: payload.game, action }, note);
 }
 
+/**
+ * Drawing is not a decision: a mahjong table hands you the tile. Whenever the
+ * only thing between you and a discard is the draw, take it for the player.
+ */
+function autoDraw() {
+  if (payload === null || busy || payload.outcome !== null) return;
+  const draw = payload.legalActions.find((action) => action.type === "Draw");
+  if (draw === undefined) return;
+  sendAction(draw, 160);
+}
+
 function sendDiscard(tile) {
   if (payload === null || busy) return false;
   const action = payload.legalActions.find(
@@ -1401,6 +1412,8 @@ function render() {
     tableInitialized = true;
   }
   handInitialized = true;
+
+  autoDraw();
 }
 
 /* -------------------------------------------------------------- gallery */
