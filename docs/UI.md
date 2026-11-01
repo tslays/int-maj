@@ -20,6 +20,21 @@ This is a design brief, not a wish list: each phase has acceptance criteria that
 - **Motion**: 140 ms ease-out for lifts and slides, 220 ms for the hand entering; `prefers-reduced-motion` kills all of it. Nothing bounces, nothing spins.
 - **Focus**: every interactive tile is a real button with a visible focus ring; keyboard alone must play a hand.
 
+## Borrowed from the north star, concretely
+
+What Mahjong Soul and Riichi City get right — take these mechanics of layout, not their art:
+
+- **The hand is the hero.** A wide, bottom-centred row of large tiles, always the brightest thing on screen; everything else steps back in contrast and size.
+- **One river per seat, six to a row.** Discards sit in a fixed grid belonging to each seat, in throw order, so you can read who discarded what without a log. Melds sit beside the river, not mixed into it, and a claimed tile is visibly absent from the river.
+- **Seat HUDs are compact and identical**, one per corner/edge: wind, name, points, dealer dot, and their melds. Nothing per-seat is a different shape from the others.
+- **Turn is positional.** The active seat's area lights up (edge glow + slightly raised hand or rack), so you know whose turn it is before you read a word.
+- **Actions are a fixed low cluster**, always in the same place, big enough to hit without aiming, with a keycap legend; the primary one (Mahjong, then Pung/Kong, then Chow, then Pass) is visually dominant and the rest follow in a strict order.
+- **The wall is a quiet counter**, a number and a shrinking ring in the middle, never a table.
+- **Results are an overlay with deltas**, showing each seat's change against its previous points, then a single primary "next hand".
+- **Selection is physical**: hover lifts a tile a few px, selecting raises it further and dims the rest of the hand slightly, so what you are about to throw is unmistakable.
+
+Do **not** copy: avatars, emotes, sound, backgrounds, gacha frames, or any decorative animation. Our surface is felt, our type is system sans, our only ornament is the tiles.
+
 ## Layout (target)
 
 Full viewport, no max-width box. Three bands:
