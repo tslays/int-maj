@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mahjong table</title>
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <h1>Mahjong</h1>
+        <p id="meta" class="meta"></p>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+      <nav class="top-actions" aria-label="Table controls">
+        <button id="new-game" type="button">New game <kbd>n</kbd></button>
+        <button id="undo" type="button">Undo <kbd>u</kbd></button>
+        <button id="help-button" type="button" aria-label="Show the key list">Keys <kbd>?</kbd></button>
+      </nav>
+    </header>
+
+    <main class="page">
+      <section class="table" aria-label="Mahjong table">
+        <section class="seat pos-north" id="pos-north" aria-label="North side of the table"></section>
+        <section class="seat pos-west" id="pos-west" aria-label="West side of the table"></section>
+        <section class="center" aria-label="Table centre">
+          <div class="wall"><span id="wall-count">0</span><span class="center-label">wall</span></div>
+          <div class="round"><span id="round-wind">E</span><span class="center-label">round</span></div>
+          <div id="turn-indicator" class="turn"></div>
+        </section>
+        <section class="seat pos-east" id="pos-east" aria-label="East side of the table"></section>
+        <section class="seat pos-south" id="pos-south" aria-label="South side of the table"></section>
+      </section>
+
+      <section id="outcome" class="outcome" hidden aria-live="polite"></section>
+
+      <div id="actions" class="actions" aria-label="Available actions"></div>
+
+      <section class="hand-area" aria-label="Your hand">
+        <div class="hand-head">
+          <h2>Your hand</h2>
+          <p id="hand-hint" class="hint"></p>
+        </div>
+        <p id="fishing" class="fishing"></p>
+        <div id="hand" class="hand"></div>
+      </section>
+
+      <div class="lower">
+        <section class="panel wait-panel" aria-labelledby="waits-title">
+          <h2 id="waits-title">Waits</h2>
+          <p class="hint">The table-side checker: every tile that completes this 13-tile hand.</p>
+          <div id="waits"></div>
+        </section>
+        <section class="panel log-panel" aria-labelledby="log-title">
+          <h2 id="log-title">Table log</h2>
+          <pre id="log" class="log" tabindex="0"></pre>
+        </section>
+      </div>
+    </main>
+
+    <dialog id="help-dialog" class="dialog">
+      <form method="dialog">
+        <h2>Keys and tiles</h2>
+        <dl class="keys">
+          <dt><kbd>1</kbd>–<kbd>9</kbd></dt>
+          <dd>Pick a hand tile.</dd>
+          <dt><kbd>Enter</kbd></dt>
+          <dd>Confirm the picked tile, or draw when nothing is picked.</dd>
+          <dt><kbd>Space</kbd></dt>
+          <dd>Pass when a claim or fishing offer is open.</dd>
+          <dt><kbd>f</kbd></dt>
+          <dd>Declare fishing; the fixed wait is shown in the log and under your hand.</dd>
+          <dt><kbd>u</kbd></dt>
+          <dd>Undo the previous decision by replaying from the seed.</dd>
+          <dt><kbd>n</kbd></dt>
+          <dd>Deal a new game.</dd>
+          <dt><kbd>d</kbd></dt>
+          <dd>Draw a tile when it is your turn.</dd>
+          <dt><kbd>m</kbd></dt>
+          <dd>Declare mahjong when a win is legal.</dd>
+          <dt><kbd>Esc</kbd></dt>
+          <dd>Clear the picked tile, or close this dialog.</dd>
+          <dt><kbd>?</kbd></dt>
+          <dd>Show this key list.</dd>
+        </dl>
+        <h3>Tile keys</h3>
+        <p class="hint">Every tile keeps its canonical key in the tooltip and aria-label.</p>
+        <ul class="legend">
+          <li><code>b1</code>–<code>b9</code> bamboo, green</li>
+          <li><code>c1</code>–<code>c9</code> characters, red</li>
+          <li><code>o1</code>–<code>o9</code> circles, blue</li>
+          <li><code>wE</code> <code>wS</code> <code>wW</code> <code>wN</code> winds</li>
+          <li><code>dR</code> <code>dG</code> <code>dW</code> dragons</li>
+        </ul>
+        <button type="submit" class="action">Close</button>
+      </form>
+    </dialog>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
