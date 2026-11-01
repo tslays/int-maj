@@ -304,12 +304,14 @@ winning hand (yours; another seat's concealed tiles stay hidden), every
 matched pattern, the tier, the fishing settlements, the per-seat totals and a
 Next hand button.
 
-Every tile is an inline SVG drawn from its canonical key: characters carry
-their numeral over `萬`, circles use the printed dot layouts, bamboo uses the
-stick patterns (the b1 sparrow for the bird), and the winds, dragons, flowers
-and seasons have their own marks. Faces stay crisp at any zoom and keep their
-key in the tooltip and aria-label. `?gallery=1` replaces the table with
-`#tile-gallery`, a grid of all 34 playable faces and the 8 bonus marks:
+Every tile is an SVG image loaded from its canonical key in `web/tiles/`:
+characters, circles, bamboo, winds, dragons, flowers and seasons all share the
+same paper tile body, and the faces stay crisp at any zoom and keep their key
+in the tooltip and aria-label. The 34 play tiles and the tile back come from
+the public-domain [riichi-mahjong-tiles](https://github.com/FluffyStuff/riichi-mahjong-tiles)
+set (CC0); `web/tiles/LICENSE.md` records the file mapping. `?gallery=1`
+replaces the table with `#tile-gallery`, a grid of all 34 playable faces and
+the 8 bonus marks:
 
 ```sh
 open "http://127.0.0.1:8080/?gallery=1"
@@ -321,6 +323,7 @@ open "http://127.0.0.1:8080/?gallery=1"
 | --- | --- | --- |
 | `GET /` | | the table page |
 | `GET /app.js`, `/app.css` | | the plain ES module and stylesheet |
+| `GET /tiles/<key>.svg`, `/tiles/back.svg` | | one tile face or the tile back |
 | `GET /api/state` | `game=<id>` (`&pretty=1` indents the JSON) | the `viewFor` view, legal actions, wall count, per-seat table, ledger, wait panel and result |
 | `POST /api/new` | `{ "seed": "..." }` | a new game and its first state |
 | `POST /api/move` | `{ "game": "...", "action": {...} }` | the new state plus `events` as text lines |

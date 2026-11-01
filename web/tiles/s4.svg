@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400">
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#ffffff" stroke-width="30">
+      <path d="M150 44 L150 356"/>
+      <path d="M58 98 L242 302"/>
+      <path d="M242 98 L58 302"/>
+      <path d="M150 116 L112 72 M150 116 L188 72"/>
+      <path d="M150 284 L112 328 M150 284 L188 328"/>
+      <path d="M99 122 L80 70 M99 122 L47 140"/>
+      <path d="M201 278 L220 330 M201 278 L253 260"/>
+      <path d="M201 122 L220 70 M201 122 L253 140"/>
+      <path d="M99 278 L80 330 M99 278 L47 260"/>
+    </g>
+    <g stroke="#142896" stroke-width="16">
+      <path d="M150 44 L150 356"/>
+      <path d="M58 98 L242 302"/>
+      <path d="M242 98 L58 302"/>
+      <path d="M150 116 L112 72 M150 116 L188 72"/>
+      <path d="M150 284 L112 328 M150 284 L188 328"/>
+      <path d="M99 122 L80 70 M99 122 L47 140"/>
+      <path d="M201 278 L220 330 M201 278 L253 260"/>
+      <path d="M201 122 L220 70 M201 122 L253 140"/>
+      <path d="M99 278 L80 330 M99 278 L47 260"/>
+    </g>
+    <circle cx="150" cy="200" r="30" fill="#142896" stroke="#ffffff" stroke-width="10"/>
+    <circle cx="150" cy="200" r="10" fill="#ffffff"/>
+  </g>
+</svg>

@@ -8,15 +8,13 @@
  */
 
 import {
+  artUrl,
+  BACK_ART_URL,
   BONUS_NAMES,
   BONUS_TILE_KEYS,
-  drawTileFace,
   PLAY_TILE_KEYS,
-  VIEW_HEIGHT,
-  VIEW_WIDTH,
 } from "./tiles.js";
 
-const NS = "http://www.w3.org/2000/svg";
 const SEATS = ["E", "S", "W", "N"];
 const POSITION = { E: "south", S: "east", W: "north", N: "west" };
 const WIND_NAME = { E: "East", S: "South", W: "West", N: "North" };
@@ -43,28 +41,6 @@ function randomSeed() {
 
 /* ---------------------------------------------------------------- tiles */
 
-function svgNode(name, attributes = {}) {
-  const node = document.createElementNS(NS, name);
-  for (const [key, value] of Object.entries(attributes)) {
-    node.setAttribute(key, String(value));
-  }
-  return node;
-}
-
-/**
- * Draw a tile face from its canonical key. The face table and the shapes live
- * in tiles.js; this only supplies the tile-shaped viewport.
- */
-function tileSvg(key) {
-  const svg = svgNode("svg", {
-    viewBox: `0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`,
-    "aria-hidden": "true",
-    focusable: "false",
-  });
-  drawTileFace(svg, key);
-  return svg;
-}
-
 function tileName(key) {
   const suited = /^([bco])([1-9])$/.exec(key);
   if (suited !== null) return `${suited[2]} ${SUIT_NAME[suited[1]]}`;
@@ -80,7 +56,20 @@ function tileElement(key, size = "small") {
   element.dataset.key = key;
   element.title = `${key} — ${tileName(key)}`;
   element.setAttribute("aria-label", `${tileName(key)}, key ${key}`);
-  element.append(tileSvg(key));
+
+  const url = artUrl(key);
+  if (url === null) {
+    element.classList.add("tile-missing");
+    element.textContent = "?";
+    return element;
+  }
+
+  const image = document.createElement("img");
+  image.src = url;
+  image.alt = "";
+  image.decoding = "async";
+  image.draggable = false;
+  element.append(image);
   return element;
 }
 
@@ -216,6 +205,12 @@ function renderSeat(entry) {
     for (let index = 0; index < entry.handCount; index++) {
       const back = document.createElement("span");
       back.className = "tile-back";
+      const image = document.createElement("img");
+      image.src = BACK_ART_URL;
+      image.alt = "";
+      image.decoding = "async";
+      image.draggable = false;
+      back.append(image);
       concealed.append(back);
     }
     const count = document.createElement("span");
@@ -634,7 +629,7 @@ function renderGallery() {
   const hint = document.createElement("p");
   hint.className = "hint";
   hint.textContent =
-    "All 34 play tiles and the 8 bonus marks, drawn from their canonical keys.";
+    "All 34 play tiles and the 8 bonus marks, one SVG per canonical key.";
   head.append(title, hint);
   gallery.append(head);
 

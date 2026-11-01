@@ -27,6 +27,8 @@ import { GameStore, statePayload, type SessionUpdate } from "./session.ts";
 const WEB_ROOT = fileURLToPath(new URL("../../web/", import.meta.url));
 const MAX_BODY_BYTES = 1_000_000;
 
+const TILE_ART_PATH = /^\/tiles\/([A-Za-z0-9]+\.svg)$/;
+
 const STATIC_FILES: Readonly<Record<string, string>> = Object.freeze({
   "/": "index.html",
   "/index.html": "index.html",
@@ -69,6 +71,7 @@ async function serveStatic(
   res: ServerResponse,
   webRoot: string,
   file: string,
+  contentType = CONTENT_TYPES[file] ?? "application/octet-stream",
 ): Promise<void> {
   let data: Buffer;
   try {
@@ -78,7 +81,7 @@ async function serveStatic(
     return;
   }
   res.writeHead(200, {
-    "content-type": CONTENT_TYPES[file] ?? "application/octet-stream",
+    "content-type": contentType,
     "cache-control": "no-store",
   });
   res.end(data);
@@ -170,6 +173,17 @@ async function handle(
     const file = STATIC_FILES[url.pathname];
     if (file !== undefined) {
       await serveStatic(res, webRoot, file);
+      return;
+    }
+
+    const art = TILE_ART_PATH.exec(url.pathname);
+    if (art !== null) {
+      await serveStatic(
+        res,
+        join(webRoot, "tiles"),
+        art[1]!,
+        "image/svg+xml; charset=utf-8",
+      );
       return;
     }
     sendJson(res, 404, { error: "not found" });

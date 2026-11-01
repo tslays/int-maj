@@ -10,9 +10,9 @@
   --accent: #e7c65b;
   --error: #e06c5a;
   --small-w: 30px;
-  --small-h: 42px;
+  --small-h: 40px;
   --large-w: 60px;
-  --large-h: 84px;
+  --large-h: 80px;
 }
 
 * {
@@ -272,10 +272,17 @@ kbd {
   box-shadow: 0 1px 0 #a89b7b;
 }
 
-.tile svg {
+.tile img {
   display: block;
   width: 100%;
   height: 100%;
+  object-fit: contain;
+  user-select: none;
+}
+
+.tile-missing {
+  color: #8a2a20;
+  font-weight: 700;
 }
 
 .tile-small {
@@ -294,9 +301,17 @@ kbd {
   flex: none;
   width: var(--small-w);
   height: var(--small-h);
-  border: 1px solid #0d2c1d;
+  overflow: hidden;
   border-radius: 5px;
-  background: repeating-linear-gradient(45deg, #1f5a3c 0 3px, #17462f 3px 6px);
+  background: #c03535;
+}
+
+.tile-back img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
 }
 
 .concealed-count {
@@ -676,14 +691,14 @@ kbd {
 @media (max-width: 780px) {
   :root {
     --small-w: 22px;
-    --small-h: 31px;
+    --small-h: 29px;
     --large-w: 42px;
-    --large-h: 59px;
+    --large-h: 56px;
   }
 
   .gallery-tile .tile-large {
     width: 56px;
-    height: 78px;
+    height: 75px;
   }
 
   .topbar {

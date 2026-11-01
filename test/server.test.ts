@@ -90,7 +90,16 @@ describe("web API", () => {
     const tiles = await fetch(`${baseUrl}/tiles.js`);
     assert.equal(tiles.status, 200);
     assert.match(tiles.headers.get("content-type") ?? "", /text\/javascript/);
-    assert.match(await tiles.text(), /export function faceFor/);
+    assert.match(await tiles.text(), /export function artUrl/);
+
+    const art = await fetch(`${baseUrl}/tiles/b1.svg`);
+    assert.equal(art.status, 200);
+    assert.match(art.headers.get("content-type") ?? "", /image\/svg\+xml/);
+    assert.match(await art.text(), /<svg\b/);
+
+    const honour = await fetch(`${baseUrl}/tiles/wE.svg`);
+    assert.equal(honour.status, 200);
+    assert.match(honour.headers.get("content-type") ?? "", /image\/svg\+xml/);
   });
 
   it("returns the seat view, legal actions, table, ledger and wait panel", async () => {
