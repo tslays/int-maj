@@ -5,6 +5,7 @@
  *   GET  /                 the table page
  *   GET  /app.js, /app.css the client's plain ES module and stylesheet
  *   GET  /api/state?game=  one seat's view, legal actions and wait panel
+ *   GET  /api/scenario?state= a fixed review board (turn, claim, win, ...)
  *   POST /api/new          deal a game from `{ seed }`
  *   POST /api/move         apply `{ game, action }`, return events as text
  *   POST /api/undo         replay to before the previous human decision
@@ -23,6 +24,12 @@ import { fileURLToPath } from "node:url";
 import { describeEvent } from "../core/game/console.ts";
 import type { Action } from "../core/game/actions.ts";
 import { GameStore, statePayload, type SessionUpdate } from "./session.ts";
+import {
+  isScenarioName,
+  SCENARIOS,
+  scenarioSession,
+  type ScenarioName,
+} from "./scenarios.ts";
 
 const WEB_ROOT = fileURLToPath(new URL("../../web/", import.meta.url));
 const MAX_BODY_BYTES = 1_000_000;
@@ -157,10 +164,27 @@ async function handle(
   res: ServerResponse,
   store: GameStore,
   webRoot: string,
+  scenarios: Map<ScenarioName, string>,
 ): Promise<void> {
   const url = new URL(req.url ?? "/", "http://127.0.0.1");
 
   if (req.method === "GET" || req.method === "HEAD") {
+    if (url.pathname === "/api/scenario") {
+      const name = url.searchParams.get("state") ?? "";
+      if (!isScenarioName(name)) {
+        sendJson(res, 400, { error: `unknown state: ${name}` });
+        return;
+      }
+      const session = scenarioSession(store, scenarios, name);
+      sendJson(res, 200, {
+        ...statePayload(session),
+        state: name,
+        title: SCENARIOS[name].title,
+        events: session.events.flatMap((event) => describeEvent(event).split("\n")),
+      });
+      return;
+    }
+
     if (url.pathname === "/api/state") {
       const id = url.searchParams.get("game");
       if (id === null || id.length === 0) {
@@ -261,8 +285,10 @@ async function handle(
 export function createAppServer(options: AppServerOptions = {}): Server {
   const store = options.store ?? new GameStore();
   const webRoot = options.webRoot ?? WEB_ROOT;
+  // Scenario id per name: reloading a state reuses its board until it moves.
+  const scenarios = new Map<ScenarioName, string>();
   return createServer((req, res) => {
-    void handle(req, res, store, webRoot).catch((error: unknown) => {
+    void handle(req, res, store, webRoot, scenarios).catch((error: unknown) => {
       if (error instanceof HttpError) {
         sendJson(res, error.status, { error: error.message });
         return;

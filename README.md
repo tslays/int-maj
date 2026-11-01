@@ -333,6 +333,27 @@ the 8 bonus marks:
 open "http://127.0.0.1:8080/?gallery=1"
 ```
 
+Review states freeze one board each, so a screen can be looked at, screenshotted
+and compared without playing to it: `?state=turn|claim|wait|fishing|win|drawn|result`
+replays a fixed seed through the same reducer and the same bot policy the table
+uses, and stops at the state named. The tab and a tag on the rail carry the
+state's name, so a screenshot identifies itself, and `npm run test:layout`
+re-measures every state against a plain table at 1440x900 and 1280x800:
+
+```sh
+open "http://127.0.0.1:8080/?state=claim"
+```
+
+| State | The board it shows |
+| --- | --- |
+| `turn` | Your turn, fourteen tiles, the drawn tile apart, Discard offered |
+| `claim` | A claim window on a North discard, with two chow runs to choose from |
+| `wait` | Thirteen tiles (a kong, three melds) with one live completing tile |
+| `fishing` | Your fishing declared on c6 and c9, both waits badged in the rail |
+| `win` | A win on West's discard: Robin, half limit 500, composed tiles |
+| `drawn` | The wall exhausted: a drawn hand and its reason |
+| `result` | A self-drawn Seven Twins with payments, a fishing settlement and the score |
+
 ### API
 
 | Route | Body / query | Returns |
@@ -341,6 +362,7 @@ open "http://127.0.0.1:8080/?gallery=1"
 | `GET /app.js`, `/app.css` | | the plain ES module and stylesheet |
 | `GET /tiles/<key>.svg`, `/tiles/back.svg` | | one tile face or the tile back |
 | `GET /api/state` | `game=<id>` (`&pretty=1` indents the JSON) | the `viewFor` view, legal actions, wall count, per-seat table, ledger, wait panel and result |
+| `GET /api/scenario` | `state=<name>` | one fixed review board, its tab title (`title`) and the hand's events |
 | `POST /api/new` | `{ "seed": "..." }` | a new game and its first state |
 | `POST /api/move` | `{ "game": "...", "action": {...} }` | the new state plus `events` as text lines |
 | `POST /api/undo` | `{ "game": "..." }` | the state before the previous human decision; the log is replaced |

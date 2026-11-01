@@ -189,10 +189,17 @@ function advanceBots(session: WebSession): WebSession {
   return current;
 }
 
-function checkerFor(player: PlayerView): CheckerPayload {
-  // The checker's input syntax: exposed melds in parentheses, then the hand.
+/**
+ * The checker's input for one seat: exposed melds in parentheses, then the
+ * concealed hand — the same string a player would type at the table.
+ */
+export function handCheck(player: PlayerView) {
   const melds = player.melds.map((meld) => `(${meld.tiles.join(" ")})`);
-  const result = checkHand([...melds, ...player.hand].join(" "));
+  return checkHand([...melds, ...player.hand].join(" "));
+}
+
+function checkerFor(player: PlayerView): CheckerPayload {
+  const result = handCheck(player);
   if (result.size === 13) {
     return {
       size: 13,
@@ -347,6 +354,17 @@ export class GameStore {
 
   get(id: string): WebSession | undefined {
     return this.sessions.get(id);
+  }
+
+  /**
+   * Keep a session built outside `create` — a review scenario replayed from
+   * its seed — under a fresh id, so the browser can read and play it exactly
+   * like a dealt game.
+   */
+  adopt(session: Omit<WebSession, "id">): WebSession {
+    const stored: WebSession = { ...session, id: `g${++this.nextId}` };
+    this.sessions.set(stored.id, stored);
+    return stored;
   }
 
   /** Read-only inspection for tests; never serialised to a client. */
