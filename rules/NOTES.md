@@ -148,3 +148,43 @@ inference, not a transcribed diagram. The reasoning is repeated in
 - Who pays fishing points, and whether a fishing player may still claim, are
   open in `rules/PLAY.md`.
 - No synopsis hand is left without a pattern.
+
+## Turn engine (2026-11-01)
+
+The reducer in `src/core/game/` is the first place the book's play rules meet
+the catalogue. It does not re-derive any hand: scoring still comes from
+`matchHand`/`scoreHand`, and fishing still comes from `fishing.ts`.
+
+Readings recorded in `rules/PLAY.md` entries 11-19:
+
+- **Flower replacement end**: the back end, because p. 34 names the back as
+  the loose-tile end and a flower replacement is a replacement draw. Kong
+  replacements use the same end; ordinary draws use the front.
+- **Fishing wait**: the announcement names the full wait set. The dead-tile
+  census is discards + every meld + the declarer's own hand; other concealed
+  hands are unknown to the table and are not counted.
+- **Fishing tier**: derived from the best tier among the hands the wait
+  completes. A Calculate wait stays Calculate and its settlement is left as a
+  null ledger entry for the caller.
+- **Dealer self-draw**: the dealer pays double only when the dealer is a
+  payer. A dealer win therefore collects the base from each of the three.
+- **Claim window**: every eligible seat answers once; the recorded claims are
+  resolved by mah jong > pung/kong > chow, ties nearest after the discarder.
+  The same discard can only produce one winner.
+- **Seat winds**: the dealer is East for the hand and the other winds follow
+  in turn order, so own-wind patterns see the rotated wind.
+- **Claimed discard**: removed from the discarder's pile; the `Discarded`
+  event remains the public record.
+- **Wall exhaustion**: checked when the next seat cannot draw; the dealer
+  keeps the deal. A kong with no loose tile is illegal rather than a drawn
+  hand.
+- **Self-drawn-only waits**: a tile that wins only when drawn (for example
+  a Seven Twins completion) still counts as a wait for the fishing
+  announcement, because the announcement is about being one tile from mah
+  jong, not about what can be claimed off a discard. Such a tile is never a
+  legal mahjong claim on a discard.
+
+The event log is the replay contract: `stepsFromEvents` rebuilds the action
+list, auto-passing seats that lost a precedence race (they emit no `Claimed`
+event), and `replayEventLog(seed, log)` regenerates the identical state and
+byte-identical log. `bin/replay.ts` exposes both modes.

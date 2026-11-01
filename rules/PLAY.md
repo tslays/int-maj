@@ -87,3 +87,22 @@ Correction from the owner (2026-10-31): "if the dealer wins, he keeps his slot" 
 
 ### DECIDED - drawn hand (2026-10-31)
 Wall exhausted with no winner: the dealer keeps the deal (consistent with p. 34, where the East of the drawn hand stays East for the first goulash).
+
+## Turn-engine readings (DECIDED 2026-11-01)
+
+The table above settles the play rules; building the reducer exposed nine
+smaller points the table does not name. Each is read as literally as the
+printed words allow; none changes a value in the table.
+
+| # | Question | Decided | Why |
+|---|---|---|---|
+| 11 | Which end replaces a flower or season | The back end (loose tiles), the same end as a kong replacement | p. 34 calls the back the loose-tile end and replacement draws are replacements; the book does not give flowers a different end |
+| 12 | What a fishing announcement names | The full wait set: every tile that would complete the 13-tile hand, deduped | "When you are one tile from going mah jong you announce it" — the announcement is the wait, and a fixed wait must be complete |
+| 13 | Which fishing tier is announced | The highest tier among the hands the declared wait completes; Calculate stays Calculate | The printed Fishing column is per tier, so a wait with several completions takes its best one |
+| 14 | Dealer is the self-drawn winner | The three non-dealers each pay the base; no dealer payer, so no doubling | #8 says the dealer pays double; when the dealer wins there is no dealer among the payers |
+| 15 | Several seats claim one discard | Every eligible seat answers once, then the window resolves | A race needs both answers; the precedence rule in #6 then chooses the winner |
+| 16 | Seat winds after the deal passes | The dealer is East for the hand; the next seat is South, then West, North | #9 passes the deal; own-wind patterns (Red Lantern, Little Brother, …) need a seat wind |
+| 17 | Kong when no loose tile remains | Illegal, named "no replacement tile available" | p. 34's kong takes a loose tile; a kong with no tile to take cannot be completed |
+| 18 | Bonus replacement exhausts the wall | Drawn hand, dealer keeps the deal | #9's drawn-hand rule; there is no tile left to draw and no winner |
+| 19 | The last discard and a claim | A claimed discard leaves the discarder's pile and joins the meld or winning hand | The tile is no longer on the table; the `Discarded` event keeps the public record |
+

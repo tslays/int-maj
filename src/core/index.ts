@@ -9,3 +9,4 @@ export * from "./patterns/table.ts";
 export * from "./match.ts";
 export * from "./score.ts";
 export * from "./fishing.ts";
+export * from "./game/index.ts";

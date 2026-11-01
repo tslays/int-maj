@@ -31,7 +31,9 @@ ruleset; tile set, deal, claims and payments come from standard Chinese play.
   String seeds are hashed with xmur3. No `Math.random`, clock or I/O is used.
 - A deal gives 13 tiles to each of four seats (E, S, W, N), round-robin. Flower
   and season replacement is intentionally left to the turn engine.
-- Dealer, prevailing wind rotation and payments are not implemented yet.
+- Dealer rotation, prevailing wind and payments are implemented in
+  `src/core/game/`; the readings the book does not state are recorded in
+  `rules/PLAY.md` entries 11-19 and summarised in `rules/NOTES.md`.
 
 ## Hand and win representation
 
