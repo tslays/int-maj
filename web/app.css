@@ -37,11 +37,13 @@
   /* One tile unit sizes the whole table: rivers, seat columns and racks all
      derive their tracks from these numbers, so no element is placed at a
      hand-tuned pixel offset. */
-  --tile-w: 34px;
-  --tile-h: 44px;
+  --back-w: 22px;
+  --back-h: 29px;
+  --tile-w: 44px;
+  --tile-h: 58px;
   /* Four rows are enough for a hand's discards (about 20 throws); reserving
      six wasted the board's height and forced the tiles to stay small. */
-  --river-rows: 4;
+  --river-rows: 3;
   --tile-gap: 2px;
   --hand-w: 84px;
   --hand-h: 112px;
@@ -802,8 +804,10 @@ kbd {
 }
 
 .rack .tile-back {
-  width: var(--tile-w);
-  height: var(--tile-h);
+  /* A concealed hand is a rack of backs, not a second river: it uses its own
+     smaller unit so thirteen of them fit beside a seat. */
+  width: var(--back-w, 22px);
+  height: var(--back-h, 29px);
   overflow: hidden;
 }
 
@@ -2037,8 +2041,8 @@ kbd {
 
 @media (max-width: 1300px) {
   :root {
-    --tile-w: 30px;
-    --tile-h: 39px;
+    --tile-w: 38px;
+    --tile-h: 50px;
     --tile-gap: 2px;
     --hand-w: 76px;
     --hand-h: 101px;
@@ -2056,8 +2060,8 @@ kbd {
 
 @media (max-width: 1100px) {
   :root {
-    --tile-w: 26px;
-    --tile-h: 34px;
+    --tile-w: 32px;
+    --tile-h: 42px;
     --tile-gap: 2px;
     --hand-w: 68px;
     --hand-h: 91px;
