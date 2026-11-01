@@ -74,15 +74,16 @@ The rules, the hands and the scoring are the Companion's and nothing else: no ri
 > **Reference update (owner, 2026-11-01): copy Tenhou only.** The board's layout,
 > spacing, tile placement and chrome are Tenhou's, full stop — the Mahjong Soul
 > sections below are kept only as history and must not be mixed in. Scale from
-> the Tenhou screenshot: hand tiles ~7% of the viewport width, river tiles ~0.62
-> of that, backs ~0.33, four rivers meeting in the middle six to a row, centre
-> carrying round/wall/scores, racks on the edges, two action buttons low right.
+> `web/reference3.png`: hand tiles 46.43% of the board width, river tiles 0.874
+> of the hand unit, backs 0.73x0.96, four rivers meeting in the middle six to a
+> row, centre carrying round/wall/scores, racks on the edges, two plain buttons
+> low right.
 
 ## Align to the reference with an overlay
 
-Placement is checked by superposition, not by guessing: the reference screenshot is dropped into the page behind the board (`?overlay=1`, or the `o` key) at exactly its own size, the board is rendered on top, and every element is moved until the tiles land on the reference tiles. Once they line up, the overlay is hidden and stays available as a debug view so a later change can be checked the same way.
+Placement is checked by superposition, not by guessing: `web/reference3.png` is dropped into the page behind the board (`?overlay=1`, or the `o` key) at exactly its own size — the Safari chrome cropped, so the image's page starts at the board's top edge — the board is rendered on top, and every element is moved until it lands on the reference. Once they line up the overlay is hidden and stays available as a debug view so a later change can be checked the same way.
 
-Two local references are used: `reference/reference.tiff` (1030x793, converted to `web/reference.png`) is the one to fit against, and `reference/reference2.tiff` (768x576, converted to `web/reference2.png`) is the smaller window to sanity-check that the same proportions hold. Both stay out of git.
+The fit is measured at the reference's own page, 1512x894 (the 1512x982 screenshot less 88px of chrome), with the rail closed so the board is the page. The anchor table and the ±4px tolerance are in `tools/check-layout.ts`, which prints reference, ours and delta for every anchor at that size; the same tracks scale to 1440x900 and 1280x800. `reference/` and `web/reference*.png` stay out of git.
 
 ## How to work this task (a procedure, not a vibe)
 
@@ -101,7 +102,7 @@ Report the anchor table (reference value, ours, delta) — not adjectives.
 
 Of the two references, Tenhou is the closer model for us because it carries no decoration at all, and its arrangement is simpler to hit:
 
-- No avatars or portrait panels. Each seat is its wind and name, set into the felt in its own corner, nothing else.
+- No avatars or portrait panels. A seat is its rack line, its river, and its wind and score in the centre panel: no name chips on the felt.
 - Racks live on the edges, one line per seat: top horizontal, left and right vertical, the concealed backs slightly inset from the border.
 - Wall on the edge: one row of face-down tiles along the felt above your hand; for us a quiet counter is enough.
 - Rivers in the middle, six per row, each turned to face its own player, the four blocks meeting around the centre.
@@ -109,23 +110,23 @@ Of the two references, Tenhou is the closer model for us because it carries no d
 - Hand at the very bottom: one plain row, drawn tile apart, no meld mixing, no ornament.
 - Two plain action buttons bottom-right with their key hints, on the felt.
 
-So: take scale and tile proportion from Mahjong Soul, and structure, spacing and plainness from Tenhou.
+So: take scale, tile proportion, structure and spacing from Tenhou, and nothing decorative from anyone.
 
-## The geometry to copy (measured off a Mahjong Soul board)
+## The geometry to copy (measured off the Tenhou reference)
 
-Copying their *layout* is fine; copying their art is not. These are the proportions that make that board read, expressed against one hand tile as 1 unit:
+Copying their *layout* is fine; copying their art is not. These are the proportions that make the reference board read, expressed against one hand tile as 1 unit, measured off `web/reference3.png`'s page (1512x894):
 
-- **Hand tile** = 1.0 unit wide (about 7% of the viewport width, 13 tiles plus the drawn tile across the bottom edge).
-- **River tile** = 0.62 unit; a river is six per row, rows stacked flush, the block centred in front of its seat.
-- **Concealed back** = 0.33 unit; the top seat shows one horizontal line of them, the side seats one vertical line each, set in from the edge.
-- **Table frame**: a one-tile-wide band of felt inside a thin lighter outline, inset about 3% from the sides and 12% from the top, marking the play area.
-- **Centre panel** = about 1.9 units wide, sitting dead centre, with the round and wall in the middle and the four scores in its corners, the dealer's corner marked.
+- **Hand tile** = 1.0 unit. The 14-tile row is 46.43% of the board width (405..1106), on the bottom edge: 46.94px tiles at the reference size, the drawn tile separated by a 0.4-unit break.
+- **River tile** = 0.874 unit (41x55); a river is six per row, rows flush at 1px, the block 251x166. North and south read six across, east and west are the same block turned and rotated to face their player.
+- **Concealed back** = 0.73 x 0.96 unit (34.4x45); one line per seat, the north line inset 1.9% of the board height, the side lines 15.15% of its width, just inside the felt frame.
+- **Table frame** = the felt's edge: 1% from the top, 14.5% from the sides, 4.6% from the bottom.
+- **Centre panel** = one river block wide and three river rows tall (251x166): round/hand at the top, the wall count in the middle, the four scores in its corners, the dealer's corner marked.
 - **Meld row** sits outside the hand, on the side away from the drawn tile.
-- **Two large action pills** at the bottom right, on the felt, not over the hand.
+- **Two plain action buttons** in the action row at the bottom right: 37px tall, its bottom 4px above the board's edge.
 
-Everything else in that screenshot (avatars, emotes, gacha frames, dora, sticks, timers) is theirs and stays out.
+Everything else in that screenshot (avatars, emotes, gacha frames, dora, sticks, timers, Tenhou's tool bar) is theirs and stays out.
 
-**Where the 7% is capped.** The ratios above are exact (measured: river 0.620, concealed back 0.330, centre 1.900 of the hand unit). The hand's *absolute* width is capped at 6.2vw on a 16:10 screen: fourteen 7vw tiles alone would be 98vw before a single gap, and the four rotated three-row rivers, the 12%-top frame and the hand must all fit the viewport height at 1440x900 and 1280x800. A literal 7vw hand would need about 70px more height than 900px allows once the side rivers are turned six tall. The layout therefore takes the *proportions* from Mahjong Soul and lets the width and height budgets set the unit; the remaining ~0.3vw of slack keeps the name and bonus tray clear of the hand's left edge. Measured at both target sizes: hand tile 6.20vw, river tile 0.62 hand, back 0.33 hand, centre 1.90 hand.
+**Where the board is bounded.** All board tracks are fractions of the board, so they scale with the window; the px lengths are all ratios of the hand unit. With the rail open the board is `100vw - 260px` — at 1440x900 that is 1180x900 and the hand tile is 36px; with the rail closed at 1440 it is 45px. The reference fit itself is read at 1512x894 with the rail closed, where the board is the reference's page; `npm run test:layout` prints the anchor table there and asserts ±4px, then checks 1440x900 and 1280x800 for overlap and proportion.
 
 
 ## How the reference arranges tiles (from the Mahjong Soul board)
