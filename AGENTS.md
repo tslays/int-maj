@@ -1,9 +1,9 @@
 # AGENTS.md — mahjong
 
-Thompson & Maloney "Chinese/Australian" variant: 144 tiles (3 suits × 9 × 4 = 108, 4 winds × 4, 3 dragons × 4, 4 flowers, 4 seasons).
+Thompson & Maloney international mahjong: 144 tiles (3 suits × 9 × 4 = 108, 4 winds × 4, 3 dragons × 4, 4 flowers, 4 seasons).
 
 ## Variant — do not substitute another ruleset
-This is the Thompson & Maloney "Mah Jong" school (Kangaroo Press, Australian/Chinese family): limit tiers half limit 500 / limit 1000 / middle 1500 / double 2000, plus "fishing". It is NOT MCR (Chinese Official / "international" rules, World Mahjong Organization, fan-pattern scoring with a point minimum) and NOT Riichi. Never import MCR fan values, Riichi yaku, or their minimums; where the book is silent, record the decision in rules/ASSUMPTIONS.md instead.
+This is the Thompson & Maloney "Mah Jong" school (Kangaroo Press, 1997), which the book itself calls "a Western version of Mah Jong" collecting hands "already played in many countries" — an international set drawn from many regional games, not one country's ruleset: limit tiers half limit 500 / limit 1000 / middle 1500 / double 2000, plus "fishing". It is NOT MCR (Chinese Official, World Mahjong Organization, fan-pattern scoring with a point minimum) and NOT Riichi. Never import MCR fan values, Riichi yaku, or their minimums; where the book is silent, record the decision in rules/ASSUMPTIONS.md instead.
 
 KNOWN ONLY FROM THIS COMMUNITY: this ruleset is played in a small expat circle and the book is effectively the only written source. Treat that book as the NORMATIVE spec, not as a sample of some larger standard — there is no outside authority to settle a dispute. Consequence for the code: every point the book leaves open (deal, flower handling, kong replacement, payment, minimum) becomes a named, defaulted flag in a variant profile object, with its rationale in rules/ASSUMPTIONS.md, so a house-rule change is a config edit and never a code change.
 
