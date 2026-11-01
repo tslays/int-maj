@@ -196,7 +196,7 @@ kbd {
 
 .hand-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto 96px;
+  grid-template-columns: minmax(0, 1fr) auto 176px;
   gap: 12px;
   align-items: end;
   width: 100%;
@@ -713,8 +713,8 @@ kbd {
 }
 
 .bonus-row .tile {
-  width: 18px;
-  height: 24px;
+  width: 28px;
+  height: 37px;
 }
 
 /* --------------------------------------------------------------- tiles */
@@ -1204,18 +1204,18 @@ kbd {
   flex-direction: column;
   gap: 3px;
   align-items: flex-end;
-  min-width: 96px;
+  min-width: 176px;
 }
 
 .own-bonus .bonus-row {
   display: grid;
-  grid-template-columns: repeat(4, 22px);
+  grid-template-columns: repeat(4, 40px);
   gap: 2px;
 }
 
 .own-bonus .tile {
-  width: 22px;
-  height: 30px;
+  width: 40px;
+  height: 53px;
 }
 
 .bonus-empty {
