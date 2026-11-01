@@ -3,7 +3,7 @@
  * Numeric proof that the table's geometry holds.
  *
  * The tool starts the real server, drives a real headless Chrome over CDP,
- * fills all four reserved rivers to 0, 13 and 36 tiles, and measures every
+ * fills all four reserved rivers to 0, 13 and 24 tiles, and measures every
  * board element with getBoundingClientRect(). Two rectangles may not overlap
  * by more than one pixel at 1440x900 or 1280x800. It then opens a finished
  * hand so the result modal is measured too (a modal is expected to cover the
@@ -93,7 +93,7 @@ function printMeasurement(label: string, measurement: Measurement): void {
   const expectedRiver = `6*${tile.w} + 5*${tile.gap} = ${6 * tile.w + 5 * tile.gap}`;
   console.log(
     `  tile unit        ${tile.w}x${tile.h}, gap ${tile.gap}; ` +
-      `river width ${expectedRiver}, height ${6 * tile.h + 5 * tile.gap}`,
+      `river width ${expectedRiver}, height ${4 * tile.h + 3 * tile.gap}`,
   );
   console.log(
     `  river slots      ${RIVERS.map((river) => `${river} ${measurement.slots[river]}`).join(", ")}`,
@@ -337,7 +337,7 @@ const FILL_RIVERS = (count: number): string => `
   if (template === null) throw new Error("no tile to copy into the rivers");
   for (const river of document.querySelectorAll(".river")) {
     const children = [];
-    for (let index = 0; index < 36; index++) {
+    for (let index = 0; index < 24; index++) {
       if (index < ${count}) {
         children.push(template.cloneNode(true));
       } else {
@@ -487,7 +487,7 @@ async function main(): Promise<void> {
     const baseline = new Map<string, Rect>();
     for (const viewport of VIEWPORTS) {
       await setViewport(cdp, sessionId, viewport.width, viewport.height);
-      for (const count of [0, 13, 36]) {
+      for (const count of [0, 13, 24]) {
         await evaluate(cdp, sessionId, FILL_RIVERS(count));
         await evaluate(cdp, sessionId, "new Promise((resolve) => requestAnimationFrame(resolve))");
 
@@ -498,13 +498,13 @@ async function main(): Promise<void> {
         for (const river of RIVERS) {
           assert.equal(
             measurement.slots[river],
-            36,
-            `${label}: river ${river} must reserve 36 slots`,
+            24,
+            `${label}: river ${river} must reserve 24 slots`,
           );
         }
 
         const expectedWidth = 6 * measurement.tile.w + 5 * measurement.tile.gap;
-        const expectedHeight = 6 * measurement.tile.h + 5 * measurement.tile.gap;
+        const expectedHeight = 4 * measurement.tile.h + 3 * measurement.tile.gap;
         for (const river of RIVERS) {
           const rect = measurement.rects[`river${river[0]!.toUpperCase()}${river.slice(1)}`]!;
           assert.ok(

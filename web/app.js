@@ -32,7 +32,7 @@ const RAIL_KEY = "mahjong-rail";
 const GAME_KEY = "mahjong-game";
 const MUTE_KEY = "mahjong-mute";
 const STARTING_WALL = 92;
-const RIVER_SLOTS = 36;
+const RIVER_SLOTS = 24;
 const RING_RADIUS = 31;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 

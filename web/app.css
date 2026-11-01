@@ -37,14 +37,17 @@
   /* One tile unit sizes the whole table: rivers, seat columns and racks all
      derive their tracks from these numbers, so no element is placed at a
      hand-tuned pixel offset. */
-  --tile-w: 24px;
-  --tile-h: 31px;
+  --tile-w: 34px;
+  --tile-h: 44px;
+  /* Four rows are enough for a hand's discards (about 20 throws); reserving
+     six wasted the board's height and forced the tiles to stay small. */
+  --river-rows: 4;
   --tile-gap: 2px;
   --hand-w: 84px;
   --hand-h: 112px;
   --hand-gap: 6px;
   --river-w6: calc(6 * var(--tile-w) + 5 * var(--tile-gap));
-  --river-h6: calc(6 * var(--tile-h) + 5 * var(--tile-gap));
+  --river-h6: calc(var(--river-rows) * var(--tile-h) + (var(--river-rows) - 1) * var(--tile-gap));
   --seat-col: calc(2 * var(--tile-w) + 4 * var(--tile-gap));
   --board-pad: 10px;
   --board-gap: var(--tile-gap);
@@ -947,7 +950,7 @@ kbd {
 .river {
   display: grid;
   grid-template-columns: repeat(6, var(--tile-w));
-  grid-template-rows: repeat(6, var(--tile-h));
+  grid-template-rows: repeat(var(--river-rows), var(--tile-h));
   gap: var(--tile-gap);
   align-content: start;
   justify-content: start;
@@ -2034,8 +2037,8 @@ kbd {
 
 @media (max-width: 1300px) {
   :root {
-    --tile-w: 22px;
-    --tile-h: 28px;
+    --tile-w: 30px;
+    --tile-h: 39px;
     --tile-gap: 2px;
     --hand-w: 76px;
     --hand-h: 101px;
@@ -2053,8 +2056,8 @@ kbd {
 
 @media (max-width: 1100px) {
   :root {
-    --tile-w: 20px;
-    --tile-h: 26px;
+    --tile-w: 26px;
+    --tile-h: 34px;
     --tile-gap: 2px;
     --hand-w: 68px;
     --hand-h: 91px;
