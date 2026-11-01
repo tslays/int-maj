@@ -290,7 +290,7 @@ The table fills the viewport. The three bots sit on the top, left and right
 edges with a compact wind/name/points chip, a rack of concealed backs, their
 public melds and a six-wide discard river; the wall count and round/dealer
 sit in the quiet centre; your hand is one large bottom row of 84x112 tiles,
-with your river directly above it and melds and the bonus tray to its right.
+with your river in the board's own bottom row and melds and the bonus tray to the right of the hand.
 A collapsible 260px rail holds the scorecard, a moving turn highlight, the
 wait panel and the event log. The game actions are a fixed cluster low on the
 right; claims appear as a bottom-centre bar, with chow variants on a second
@@ -564,3 +564,15 @@ step is required. `npm test` self-plays a couple of dozen seeded hands in
 conservation, the zero-sum ledger, legal-action membership, serialisation,
 event-log replay and termination. `npm run soak` runs the full 300 hands (about
 a minute), and `SOAK_SEEDS=1000 npm run soak` raises it further.
+
+The board's geometry has its own measurable check:
+
+```sh
+npm run test:layout
+```
+
+It starts the real server, drives headless Chrome, fills the reserved rivers
+with 0, 13 and 36 tiles, and asserts that no river, centre panel, seat chip or
+rack, or hand band intersects at 1440x900 and 1280x800. It also opens a real
+finished hand to verify the result modal fits the viewport. Screenshots are
+written to a temporary directory and printed.

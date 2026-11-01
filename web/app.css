@@ -34,18 +34,21 @@
   --fs-body: 15px;
   --fs-heading: 18px;
 
+  /* One tile unit sizes the whole table: rivers, seat columns and racks all
+     derive their tracks from these numbers, so no element is placed at a
+     hand-tuned pixel offset. */
+  --tile-w: 24px;
+  --tile-h: 31px;
+  --tile-gap: 2px;
   --hand-w: 84px;
+  --hand-h: 112px;
   --hand-gap: 6px;
-  --river-gap: 3px;
-  --river-w: 28px;
-  --river-h: 37px;
-  --river-w6: calc(6 * var(--river-w) + 5 * var(--river-gap));
-  --river-h6: calc(6 * var(--river-h) + 5 * var(--river-gap));
-  --field-top: 60px;
-  --field-bottom: 92px;
-  --field-side: 96px;
+  --river-w6: calc(6 * var(--tile-w) + 5 * var(--tile-gap));
+  --river-h6: calc(6 * var(--tile-h) + 5 * var(--tile-gap));
+  --seat-col: calc(2 * var(--tile-w) + 4 * var(--tile-gap));
+  --board-pad: 10px;
+  --board-gap: var(--tile-gap);
   --rail-w: 260px;
-  --hand-offset: 130px;
 
   --fast: 140ms;
   --hand-enter: 220ms;
@@ -165,17 +168,35 @@ kbd {
 
 .app.rail-closed {
   grid-template-columns: minmax(0, 1fr) 0;
-  --hand-offset: 0px;
 }
 
 .app.rail-closed .rail {
   display: none;
 }
 
+/* The board is one grid. Its four rows are the north rack, the north river,
+   the middle band (left seat | left river | centre | right river | right
+   seat) and your own river. The side seats span the full height in their
+   own columns, so a rack or a meld can never reach a river. */
 .board {
   position: relative;
+  display: grid;
   grid-column: 1;
   grid-row: 1;
+  grid-template-columns:
+    var(--seat-col) var(--river-w6) minmax(0, 1fr) var(--river-w6) var(--seat-col);
+  grid-template-rows:
+    auto
+    var(--river-h6)
+    minmax(var(--river-h6), 1fr)
+    var(--river-h6);
+  grid-template-areas:
+    "seat-left  seat-top    seat-top    seat-top    seat-right"
+    "seat-left  river-top   river-top   river-top   seat-right"
+    "seat-left  river-left  centre      river-right seat-right"
+    "seat-left  river-bottom river-bottom river-bottom seat-right";
+  gap: var(--board-gap);
+  padding: var(--board-pad);
   overflow: hidden;
   background:
     radial-gradient(ellipse at 50% 38%, var(--felt-high) 0%, var(--felt) 52%, var(--felt-low) 100%);
@@ -204,11 +225,11 @@ kbd {
 
 .hand-layout {
   display: grid;
-  grid-template-columns: 88px minmax(0, 1fr) auto 88px;
+  grid-template-columns: 120px minmax(0, 1fr) auto 88px;
   gap: 12px;
   align-items: end;
   width: 100%;
-  min-height: calc(var(--hand-w) * 4 / 3 + 14px);
+  min-height: calc(var(--hand-h) + 22px);
 }
 
 /* -------------------------------------------------------------- rail */
@@ -525,19 +546,18 @@ kbd {
 /* --------------------------------------------------------- seat chips */
 
 .seat {
-  position: absolute;
-  z-index: 2;
   display: flex;
   flex-direction: column;
   gap: 7px;
+  align-items: center;
+  justify-self: center;
+  min-width: 0;
   pointer-events: none;
 }
 
 .seat-top {
-  top: 10px;
-  left: 50%;
-  align-items: center;
-  transform: translateX(-50%);
+  grid-area: seat-top;
+  width: 100%;
 }
 
 .seat-line {
@@ -548,18 +568,25 @@ kbd {
   white-space: nowrap;
 }
 
+.seat-extras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+}
+
 .seat-left {
-  top: 50%;
-  left: 18px;
-  align-items: flex-start;
-  transform: translateY(-50%);
+  grid-area: seat-left;
+  align-self: center;
+  width: 100%;
 }
 
 .seat-right {
-  top: 50%;
-  right: 18px;
-  align-items: flex-end;
-  transform: translateY(-50%);
+  grid-area: seat-right;
+  align-self: center;
+  width: 100%;
 }
 
 .seat-chip {
@@ -578,6 +605,8 @@ kbd {
   white-space: nowrap;
 }
 
+/* The active seat marks itself with its chip and rack outline. No edge
+   bar: a seat is a grid item now, and its turn state must not add geometry. */
 .seat.is-turn .seat-chip {
   border-color: var(--accent-soft);
   border-left-color: var(--accent);
@@ -585,40 +614,6 @@ kbd {
   box-shadow:
     inset 0 0 0 1px rgba(231, 198, 91, 0.24),
     0 0 16px rgba(231, 198, 91, 0.16);
-}
-
-/* The active seat also marks its edge of the table: a short, quiet bar in
-   the seat's own colour. You can see whose turn it is without reading. */
-.seat.is-turn::before {
-  position: absolute;
-  border-radius: 2px;
-  background: var(--accent);
-  box-shadow: 0 0 10px rgba(231, 198, 91, 0.4);
-  content: "";
-}
-
-.seat-top.is-turn::before {
-  top: -9px;
-  left: 50%;
-  width: 120px;
-  height: 3px;
-  transform: translateX(-50%);
-}
-
-.seat-left.is-turn::before {
-  top: 50%;
-  left: -14px;
-  width: 3px;
-  height: 120px;
-  transform: translateY(-50%);
-}
-
-.seat-right.is-turn::before {
-  top: 50%;
-  right: -14px;
-  width: 3px;
-  height: 120px;
-  transform: translateY(-50%);
 }
 
 .seat-wind {
@@ -674,14 +669,32 @@ kbd {
   visibility: hidden;
 }
 
-.seat.is-turn .rack,
-.seat.is-turn .river-wrap {
+.seat.is-turn .rack {
   transform: translateY(-2px);
 }
 
 .seat.is-turn .rack {
   outline: 1px solid var(--accent-soft);
   outline-offset: 2px;
+}
+
+/* The two side seats are narrow columns: their chip stacks, their hand is a
+   vertical line of backs and every meld fits inside the same two-tile
+   track. */
+.seat-left .seat-chip,
+.seat-right .seat-chip {
+  flex-direction: column;
+  gap: 1px;
+  align-items: center;
+  max-width: 100%;
+  padding: 4px;
+  text-align: center;
+  white-space: normal;
+}
+
+.seat-left .seat-name,
+.seat-right .seat-name {
+  display: none;
 }
 
 .rack-line {
@@ -708,8 +721,8 @@ kbd {
 }
 
 .rack .tile-back {
-  width: 28px;
-  height: 37px;
+  width: var(--tile-w);
+  height: var(--tile-h);
   overflow: hidden;
 }
 
@@ -732,14 +745,14 @@ kbd {
 
 .seat-left .meld-row,
 .seat-right .meld-row {
-  justify-content: flex-start;
-  max-width: 180px;
+  justify-content: center;
+  max-width: 100%;
 }
 
 .seat-left .meld .tile,
 .seat-right .meld .tile {
-  width: 22px;
-  height: 29px;
+  width: calc(var(--tile-w) * 0.5);
+  height: calc(var(--tile-h) * 0.53);
 }
 
 .meld {
@@ -819,59 +832,33 @@ kbd {
   user-select: none;
 }
 
-/* The four discard rivers and the centre are one fixed grid. Every river
-   owns a 6x6 slot board before the first discard; empty slots keep their
-   space, so nothing reflows into the hand, the rail or another seat. */
-.field {
-  position: absolute;
-  z-index: 1;
-  top: var(--field-top);
-  right: var(--field-side);
-  bottom: var(--field-bottom);
-  left: var(--field-side);
-  display: grid;
-  grid-template-columns: var(--river-w6) minmax(0, 1fr) var(--river-w6);
-  grid-template-rows: var(--river-h6) minmax(0, 1fr) var(--river-h6);
-  pointer-events: none;
-}
-
+/* Every river is a reserved 6x6 slot board at mount time: empty slots keep
+   their space, so a river's box is known before the first discard and its
+   contents can never reflow into the centre or another seat. */
 .river-zone {
-  z-index: 2;
+  display: grid;
+  align-items: center;
+  justify-items: center;
   pointer-events: auto;
 }
 
 .zone-top {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: start;
-  justify-self: center;
+  grid-area: river-top;
 }
 
 .zone-left {
-  grid-column: 1;
-  grid-row: 2;
-  align-self: center;
-  justify-self: start;
+  grid-area: river-left;
 }
 
 .zone-right {
-  grid-column: 3;
-  grid-row: 2;
-  align-self: center;
-  justify-self: end;
+  grid-area: river-right;
 }
 
 .zone-bottom {
-  grid-column: 2;
-  grid-row: 3;
-  align-self: end;
-  justify-self: center;
-  transform: translateX(var(--hand-offset));
+  grid-area: river-bottom;
 }
 
 .river-wrap {
-  position: relative;
-  z-index: 2;
   width: var(--river-w6);
   height: var(--river-h6);
 }
@@ -881,21 +868,21 @@ kbd {
    table shows discards. No rotation, no reversed rows. */
 .river {
   display: grid;
-  grid-template-columns: repeat(6, var(--river-w));
-  grid-template-rows: repeat(6, var(--river-h));
-  gap: var(--river-gap);
+  grid-template-columns: repeat(6, var(--tile-w));
+  grid-template-rows: repeat(6, var(--tile-h));
+  gap: var(--tile-gap);
   align-content: start;
   justify-content: start;
 }
 
 .river-slot {
-  width: var(--river-w);
-  height: var(--river-h);
+  width: var(--tile-w);
+  height: var(--tile-h);
 }
 
 .river .tile {
-  width: var(--river-w);
-  height: var(--river-h);
+  width: var(--tile-w);
+  height: var(--tile-h);
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
 }
 
@@ -926,11 +913,12 @@ kbd {
   }
 }
 
+/* Your own seat chip lives in the hand band's first track, so no board
+   element has to float over the felt. */
 .self-chip {
-  position: absolute;
-  z-index: 3;
-  bottom: 13px;
-  left: 18px;
+  grid-column: 1;
+  align-self: end;
+  min-width: 0;
 }
 
 .self-chip.is-turn .seat-chip {
@@ -943,30 +931,20 @@ kbd {
 /* -------------------------------------------------------------- centre */
 
 .center {
-  position: relative;
-  z-index: 1;
-  grid-column: 2;
-  grid-row: 2;
-  align-self: center;
-  justify-self: center;
-}
-
-.center::before {
-  position: absolute;
-  z-index: -1;
-  top: 50%;
-  left: 50%;
-  width: 250px;
-  height: 250px;
-  border-radius: 50%;
+  display: grid;
+  grid-area: centre;
+  width: 100%;
+  height: 100%;
+  max-width: 190px;
+  max-height: 190px;
   background: radial-gradient(
     circle,
     rgba(4, 12, 8, 0.28) 0%,
     rgba(4, 12, 8, 0) 68%
   );
-  content: "";
-  transform: translate(-50%, -50%);
-  pointer-events: none;
+  place-items: center;
+  justify-self: center;
+  align-self: center;
 }
 
 .center-hud {
@@ -1245,8 +1223,7 @@ kbd {
 
 .hand-tile .tile {
   width: 100%;
-  height: auto;
-  aspect-ratio: 3 / 4;
+  height: var(--hand-h);
   border-radius: 4px;
   filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45));
   transition:
@@ -1733,23 +1710,11 @@ kbd {
 
 @media (max-width: 1300px) {
   :root {
-    --river-w: 24px;
-    --river-h: 30px;
-    --river-gap: 2px;
-    --field-top: 60px;
-    --field-bottom: 96px;
-    --field-side: 96px;
-  }
-
-  .rack .tile-back {
-    width: 24px;
-    height: 30px;
-  }
-
-  .seat-left .meld .tile,
-  .seat-right .meld .tile {
-    width: 20px;
-    height: 27px;
+    --tile-w: 22px;
+    --tile-h: 28px;
+    --tile-gap: 2px;
+    --hand-w: 76px;
+    --hand-h: 101px;
   }
 
   .wall-dial {
@@ -1764,14 +1729,12 @@ kbd {
 
 @media (max-width: 1100px) {
   :root {
-    --river-w: 20px;
-    --river-h: 25px;
-    --river-gap: 2px;
-    --field-top: 56px;
-    --field-bottom: 88px;
-    --field-side: 96px;
+    --tile-w: 20px;
+    --tile-h: 26px;
+    --tile-gap: 2px;
+    --hand-w: 68px;
+    --hand-h: 91px;
     --rail-w: 230px;
-    --hand-offset: 60px;
   }
 
   .app {
@@ -1786,32 +1749,9 @@ kbd {
     padding: 12px;
   }
 
-  .seat-left {
-    left: 10px;
-  }
-
-  .seat-right {
-    right: 10px;
-  }
-
-  .self-chip {
-    left: 10px;
-  }
-
   .action-cluster {
     right: 10px;
     max-width: 190px;
-  }
-
-  .rack .tile-back {
-    width: 20px;
-    height: 25px;
-  }
-
-  .seat-left .meld .tile,
-  .seat-right .meld .tile {
-    width: 18px;
-    height: 24px;
   }
 
   .meld .tile {
@@ -1855,10 +1795,6 @@ kbd {
     height: 27px;
   }
 
-  .board.is-claiming .self-chip {
-    visibility: hidden;
-  }
-
   .wall-dial {
     width: 68px;
     height: 68px;
@@ -1870,7 +1806,7 @@ kbd {
   }
 
   .hand-layout {
-    grid-template-columns: 62px minmax(0, 1fr) auto 62px;
+    grid-template-columns: 96px minmax(0, 1fr) auto 76px;
     gap: 8px;
   }
 
@@ -1910,17 +1846,11 @@ kbd {
 
 @media (max-height: 760px) {
   :root {
-    --river-w: 20px;
-    --river-h: 25px;
-    --river-gap: 2px;
-    --field-top: 60px;
-    --field-bottom: 88px;
-    --field-side: 96px;
-  }
-
-  .rack .tile-back {
-    width: 20px;
-    height: 25px;
+    --tile-w: 19px;
+    --tile-h: 24px;
+    --tile-gap: 2px;
+    --hand-w: 68px;
+    --hand-h: 91px;
   }
 
   .wall-dial {
@@ -1929,20 +1859,12 @@ kbd {
   }
 
   .hand-layout {
-    min-height: calc(var(--hand-w) * 4 / 3 + 8px);
+    min-height: calc(var(--hand-h) + 14px);
   }
 
   .hand-band {
     padding-top: 7px;
     padding-bottom: 8px;
-  }
-
-  .seat-top {
-    top: 6px;
-  }
-
-  .self-chip {
-    bottom: 9px;
   }
 
   .action-cluster {
