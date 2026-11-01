@@ -22,7 +22,10 @@ variant. The synopsis's printed Winning/Fishing values are transcribed;
   replay. Rules the book leaves open are in `rules/PLAY.md` entries 11-19.
 - Console table: `npm run play` seats you against three bots, with a pure
   policy in `src/core/game/bot.ts` and the table text in `console.ts`.
-- Not started: server, persistence.
+- Web table: `npm run serve` serves a plain HTML/ES-module table from a
+  zero-dependency `node:http` server; every response is a `viewFor`
+  projection, and the table-side checker is built into the page.
+- Not started: persistence.
 - Sources: `rules/companion-ocr.txt` (index only), page renders in
   `rules/pages/` (tile diagrams), assumptions in `rules/ASSUMPTIONS.md`,
   unresolved/provisional notes in `rules/NOTES.md`.
@@ -268,6 +271,257 @@ hand's last pair, draws otherwise and discards the least useful tile: pairs,
 triplets and same-suit neighbours are kept, isolated tiles go first. A kong
 is preferred to a pung when both are offered, because its replacement tile is
 free. The bot never chows and never sees another seat's hand.
+
+## Web table
+
+`npm run serve` starts a zero-dependency `node:http` server bound to
+127.0.0.1. It seats you at East against the same three bots as the console:
+every move still goes through `apply`, and the browser receives only
+`viewFor` plus the table-side checker.
+
+```sh
+npm run serve                       # http://127.0.0.1:8080, seed "web"
+npm run serve -- --port 8081 --seed table-7
+```
+
+The table is a square felt board. The three bots sit on the north, west and
+east sides with their public melds, discards, bonus tiles and concealed-hand
+count; the wall count, East round and current turn sit in the middle; your
+hand is at the bottom as large tiles. A status line names the current decision
+and the legal actions. The wait panel is the `npm run check` checker built
+in: while you hold 13 effective tiles it lists every completing tile, the
+copies left (or `dead`), and the catalogue hands each wait would make.
+
+Click a tile to discard, or click a claim/draw/pass button when offered.
+`f` declares fishing and shows the fixed wait under your hand; `u` undoes
+the previous decision by replaying from the seed; `n` deals a new game;
+`?` lists the keys. Keyboard-only works end to end: `1`-`9` picks a hand
+tile, `Enter` confirms (or draws when nothing is picked), `Space` passes,
+`d` draws and `m` declares mahjong. After a hand the result panel shows the
+winning hand (yours; another seat's concealed tiles stay hidden), every
+matched pattern, the tier, the fishing settlements, the per-seat totals and a
+Next hand button.
+
+### API
+
+| Route | Body / query | Returns |
+| --- | --- | --- |
+| `GET /` | | the table page |
+| `GET /app.js`, `/app.css` | | the plain ES module and stylesheet |
+| `GET /api/state` | `game=<id>` (`&pretty=1` indents the JSON) | the `viewFor` view, legal actions, wall count, per-seat table, ledger, wait panel and result |
+| `POST /api/new` | `{ "seed": "..." }` | a new game and its first state |
+| `POST /api/move` | `{ "game": "...", "action": {...} }` | the new state plus `events` as text lines |
+| `POST /api/undo` | `{ "game": "..." }` | the state before the previous human decision; the log is replaced |
+| `POST /api/next` | `{ "game": "..." }` | the next hand after a finished one |
+
+An illegal move returns HTTP 400 with `{ "error": "..." }` using the
+reducer's own wording, and the game is unchanged. `POST /api/move` accepts
+exactly the actions `legalActions` offered for the human seat.
+
+### Why the browser never learns another seat's hand
+
+The server holds the `GameState`; it never serialises it. Every response is
+built by `statePayload` from `viewFor(state, seat)`, which gives the viewer
+their own hand and reduces the other three seats to a hand count, public
+melds, discards and bonus tiles. The wait panel is computed from the viewer's
+own tiles through `check.ts`. At a win by another seat the result panel names
+the pattern and the public melds but keeps the concealed hand hidden. The
+server tests walk a live payload and assert every opponent tile key appears
+only under a public path, and that no opponent object has a `hand` field.
+
+A real `curl` of `/api/state` (seed `api-waits-91`, which deals a hand
+waiting on `c2` or `c5`):
+
+```sh
+curl -s -X POST http://127.0.0.1:8080/api/new \
+  -H 'content-type: application/json' -d '{"seed":"api-waits-91"}'
+curl -s 'http://127.0.0.1:8080/api/state?game=g1&pretty=1'
+```
+
+```json
+{
+  "game": "g1",
+  "seat": "E",
+  "seed": "api-waits-91",
+  "view": {
+    "seat": "E",
+    "handNumber": 1,
+    "dealer": "E",
+    "prevailingWind": "E",
+    "turn": "E",
+    "phase": "draw",
+    "player": {
+      "seat": "E",
+      "hand": [
+        "b1",
+        "b3",
+        "b4",
+        "b5",
+        "b8",
+        "c1",
+        "c1",
+        "c4",
+        "c7",
+        "o2",
+        "o3",
+        "o6",
+        "o9"
+      ],
+      "melds": [],
+      "flowers": [],
+      "seasons": [],
+      "discards": []
+    },
+    "opponents": [
+      {
+        "seat": "S",
+        "handCount": 13,
+        "melds": [],
+        "flowers": [],
+        "seasons": [],
+        "discards": []
+      },
+      {
+        "seat": "W",
+        "handCount": 13,
+        "melds": [],
+        "flowers": [],
+        "seasons": [],
+        "discards": []
+      },
+      {
+        "seat": "N",
+        "handCount": 13,
+        "melds": [],
+        "flowers": [],
+        "seasons": [
+          "s1",
+          "s3"
+        ],
+        "discards": []
+      }
+    ],
+    "wallRemaining": 90,
+    "lastDiscard": null,
+    "claimWindow": null,
+    "fishing": [],
+    "ledger": [],
+    "result": null,
+    "legalActions": [
+      {
+        "type": "Draw",
+        "seat": "E"
+      }
+    ],
+    "fishingTier": null
+  },
+  "legalActions": [
+    {
+      "type": "Draw",
+      "seat": "E"
+    }
+  ],
+  "wallRemaining": 90,
+  "ledger": [],
+  "table": [
+    {
+      "seat": "E",
+      "wind": "E",
+      "dealer": true,
+      "isYou": true,
+      "handCount": 13,
+      "melds": [],
+      "discards": [],
+      "flowers": [],
+      "seasons": []
+    },
+    {
+      "seat": "S",
+      "wind": "S",
+      "dealer": false,
+      "isYou": false,
+      "handCount": 13,
+      "melds": [],
+      "discards": [],
+      "flowers": [],
+      "seasons": []
+    },
+    {
+      "seat": "W",
+      "wind": "W",
+      "dealer": false,
+      "isYou": false,
+      "handCount": 13,
+      "melds": [],
+      "discards": [],
+      "flowers": [],
+      "seasons": []
+    },
+    {
+      "seat": "N",
+      "wind": "N",
+      "dealer": false,
+      "isYou": false,
+      "handCount": 13,
+      "melds": [],
+      "discards": [],
+      "flowers": [],
+      "seasons": [
+        "s1",
+        "s3"
+      ]
+    }
+  ],
+  "checker": {
+    "size": 13,
+    "waits": [
+      {
+        "tile": "c2",
+        "remaining": 4,
+        "dead": false,
+        "matches": [
+          {
+            "id": "crazy-chows",
+            "name": "Crazy Chows",
+            "tier": "half",
+            "points": 500,
+            "concealed": true
+          }
+        ],
+        "best": {
+          "id": "crazy-chows",
+          "name": "Crazy Chows",
+          "tier": "half",
+          "points": 500,
+          "concealed": true
+        }
+      },
+      {
+        "tile": "c5",
+        "remaining": 4,
+        "dead": false,
+        "matches": [
+          {
+            "id": "crazy-chows",
+            "name": "Crazy Chows",
+            "tier": "half",
+            "points": 500,
+            "concealed": true
+          }
+        ],
+        "best": {
+          "id": "crazy-chows",
+          "name": "Crazy Chows",
+          "tier": "half",
+          "points": 500,
+          "concealed": true
+        }
+      }
+    ]
+  },
+  "outcome": null
+}
+```
 
 ## Test
 
