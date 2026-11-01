@@ -403,7 +403,9 @@ function orderedActions(actions) {
   const seen = new Set();
   const unique = [];
   for (const action of actions) {
-    if (action.type === "Discard") continue;
+    // Draw and Discard are gestures on the hand, not buttons: the table draws
+    // for you and a click (or Enter) throws.
+    if (action.type === "Discard" || action.type === "Draw") continue;
     const key = actionKey(action);
     if (seen.has(key)) continue;
     seen.add(key);
@@ -1561,14 +1563,6 @@ function moveCursor(delta) {
   focusHand(cursor);
 }
 
-function drawTile() {
-  const draw = legalAction("Draw");
-  if (draw === undefined) {
-    log("It is not your draw.");
-    return;
-  }
-  sendAction(draw);
-}
 
 function pass() {
   const action = legalAction("Pass");
@@ -1742,11 +1736,6 @@ function onKeydown(event) {
     case "F":
       event.preventDefault();
       declareFishing();
-      break;
-    case "d":
-    case "D":
-      event.preventDefault();
-      drawTile();
       break;
     case "m":
     case "M":
