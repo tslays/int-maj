@@ -1,0 +1,60 @@
+# Plan
+
+Written down so every slice is judged against the same target: a quiet, crisp
+international-mahjong table that reads like Tenhou's, plays by the Companion's
+rules, and behaves like a finished game.
+
+## Done so far
+
+Hand-pattern catalogue (85), table-side checker, deterministic turn engine,
+soak test, console table, web table (server + client), Tenhou-scale board, the
+reference overlay, claims/wait/result panels.
+
+## M1 — Reviewable states and design tokens
+
+*Why:* we can only see one mid-game board, and every CSS number is invented in
+place. Nothing after this can be judged until each state can be seen alone.
+
+- `?state=turn|claim|wait|fishing|win|drawn|result` renders a deterministic
+  board for that state (fixed seed, fixed hand), so each screen can be looked
+  at, screenshotted and diffed.
+- A `docs/STYLE.md` of tokens: one spacing scale, one type scale, one colour
+  set, one tile unit — and the CSS rewritten to use only those.
+- *Accept:* every state renders without errors at 1440x900 and 1280x800; the
+  layout proof still passes; the tokens file is the only place numbers live.
+
+## M2 — Components and motion
+
+*Why:* `render()` rebuilds the board each action, so tiles cannot move and
+states flash.
+
+- Split the client into components (tile, river, seat, hand, actions, result)
+  that create their DOM once and update in place.
+- Motion from the tokens: tile lifts, discard slides hand→river, draw lifts,
+  claim bar enters; all under `prefers-reduced-motion`.
+- *Accept:* playing a hand shows no full-board flash; a discard animates from
+  the hand to its slot; layout proof unaffected.
+
+## M3 — A game, not a demo
+
+- Persistence: the server writes the session (seed, actions, scores) and
+  resumes it after reload or restart.
+- Multi-hand rounds: dealer rotation, East round progression, running
+  scorecard, hand history.
+- *Accept:* close the tab mid-hand, reopen, continue exactly; a round of four
+  hands rotates the dealer correctly and the scorecard sums to zero.
+
+## M4 — Teach and include
+
+- A keys/help sheet in-app, first-run hint, `aria-live` turn announcements,
+  focus order, contrast checked in both themes.
+
+## M5 — Ship
+
+- Sound set (the claim cue plus discard/win), final motion pass, README with
+  screenshots, a `npm run serve -- --demo` that plays itself.
+
+## Out of scope, deliberately
+
+Avatars, emotes, gacha, timers, riichi furniture; any change to the rules or
+the pattern catalogue.
