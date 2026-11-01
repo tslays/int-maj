@@ -2,7 +2,8 @@
 
 Every rule below is an assumption unless it is explicitly attributed to a
 source. The book is a special-hands catalogue and scoring table, not a complete
-ruleset; tile set, deal, claims and payments come from standard Chinese play.
+ruleset; tile set, deal, claims and payments are the owner's rulings in
+`rules/PLAY.md`, read as literally as the book allows.
 
 ## Sources
 

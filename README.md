@@ -1,7 +1,8 @@
 # mahjong
 
-Pure, deterministic core for the Thompson & Maloney "Chinese/Australian"
-variant. Zero runtime dependencies; TypeScript runs directly on Node 24+ via
+Pure, deterministic core for international mahjong as Patricia Thompson and
+Betty Maloney print it: the hands of *The Mah Jong Player's Companion*, gathered
+from games played in many countries. Zero runtime dependencies; TypeScript runs directly on Node 24+ via
 type stripping.
 
 ## Status
@@ -26,8 +27,9 @@ variant. The synopsis's printed Winning/Fishing values are transcribed;
   zero-dependency `node:http` server; every response is a `viewFor`
   projection, and the table-side checker is built into the page.
 - Not started: persistence.
-- Sources: `rules/companion-ocr.txt` (index only), page renders in
-  `rules/pages/` (tile diagrams), assumptions in `rules/ASSUMPTIONS.md`,
+- Sources: local OCR working files (untracked, regenerable with the
+  extractor tools in `rules/`), page renders in `rules/pages/` (tile diagrams,
+  also local only), assumptions in `rules/ASSUMPTIONS.md`,
   unresolved/provisional notes in `rules/NOTES.md`.
 
 ## Coverage

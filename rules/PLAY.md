@@ -6,13 +6,13 @@ The Companion is a hand catalogue: it never states the tile set, the deal, the w
 |---|---|---|---|
 | 1 | Tile set | 144: 108 suited + 16 winds + 12 dragons + 4 flowers + 4 seasons | The book's tournament notes mention Flower and Season tiles, so the set has them |
 | 2 | Flowers/Seasons | Never part of a hand; draw a replacement tile immediately; score as a bonus only | They cannot appear in any of the ~120 hand compositions |
-| 3 | Deal | Dealer 14, others 13; wall 144 minus the dealt tiles | Universal in the Chinese family |
+| 3 | Deal | Dealer 14, others 13; wall 144 minus the dealt tiles | Universal in the variants the book draws on |
 | 4 | Kong replacement | Draw from the back end of the wall (the loose-tile end) | Page 34 says a kong takes a loose tile and a hand may reach 15-18 tiles |
 | 5 | Minimum hand | None — any legal 14-tile hand may go out | The book's short list includes plain "Ordinary Mah Jong"; no minimum is ever mentioned |
 | 6 | Claim precedence | Mah jong > pung/kong > chow; two identical claims: nearest in turn order | Page 34 has a "Tile Precedence" section; this is the standard order |
 | 7 | Chow eligibility | Only from the player to your left, and never to complete a hand | Standard, and it keeps "fishing" meaningful (you call the discard) |
 | 8 | Payment | Discarder pays the winner; self-draw pays from all three, dealer pays double | The book scores hands, not settlements; this is the smallest consistent rule |
-| 9 | Round/dealer wind | East round; dealer repeats on a win, wind passes otherwise | Standard Chinese play; page 34 discusses East passing after a drawn hand |
+| 9 | Round/dealer wind | East round; dealer repeats on a win, wind passes otherwise | Common to most variants; page 34 discusses East passing after a drawn hand |
 | 10 | "Fishing" | **DECIDED (owner, 2026-10-31):** fishing is an ANNOUNCEMENT, not a win type. When you are one tile from going mah jong you announce it to the table; the announced wait is fixed. If someone else wins, every fishing player still collects the fishing score — "a mini win". Page 34's rule follows from this: you cannot fish for a tile that is already dead, because the announcement must come before your needed tile is gone. | Told by the owner |
 
 ## Also worth settling before the engine

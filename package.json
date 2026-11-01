@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Pure, deterministic core for Thompson & Maloney Chinese/Australian mahjong.",
+  "description": "Pure, deterministic core for international mahjong (Thompson & Maloney).",
   "engines": {
     "node": ">=24"
   },

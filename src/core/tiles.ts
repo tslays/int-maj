@@ -1,5 +1,5 @@
 /**
- * Tile model for the 144-tile Chinese/Australian set.
+ * Tile model for the 144-tile international set.
  *
  * Canonical tile keys:
  *   b1..b9  bamboo
