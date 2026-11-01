@@ -45,6 +45,12 @@ let tableInitialized = false;
 let previousHand = [];
 let previousDiscards = { E: 0, S: 0, W: 0, N: 0 };
 let announced = "";
+let focusedOutcomeKey = null;
+let focusHandOnRender = false;
+
+let scoresKey = null;
+let sessionScores = { E: 0, S: 0, W: 0, N: 0 };
+let appliedOutcome = null;
 
 const logLines = [];
 
@@ -148,6 +154,8 @@ function applyResponse(data, note, replaceLog = false) {
   if (typeof data.game === "string") {
     sessionStorage.setItem(GAME_KEY, data.game);
   }
+  loadScores(data.game, data.seed);
+  settleScores();
   if (replaceLog || data.replaceLog === true) logLines.length = 0;
   if (note) log(note);
   if (Array.isArray(data.events)) {
@@ -211,6 +219,87 @@ function ledgerTotals(ledger) {
     totals[entry.from] -= entry.points;
   }
   return totals;
+}
+
+function zeroScores() {
+  return { E: 0, S: 0, W: 0, N: 0 };
+}
+
+function loadScores(game, seed) {
+  const key = `mahjong-scores:${game}:${seed}`;
+  if (key === scoresKey) return;
+  scoresKey = key;
+  sessionScores = zeroScores();
+  appliedOutcome = null;
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (raw === null) return;
+    const stored = JSON.parse(raw);
+    if (stored && typeof stored === "object" && stored.scores) {
+      for (const seat of SEATS) {
+        const value = Number(stored.scores[seat]);
+        if (Number.isFinite(value)) sessionScores[seat] = value;
+      }
+    }
+    if (stored && stored.applied && typeof stored.applied === "object") {
+      appliedOutcome = stored.applied;
+    }
+  } catch {
+    // A corrupt or unavailable store starts the scorecard at zero.
+  }
+}
+
+function persistScores() {
+  if (scoresKey === null) return;
+  try {
+    sessionStorage.setItem(
+      scoresKey,
+      JSON.stringify({ scores: sessionScores, applied: appliedOutcome }),
+    );
+  } catch {
+    // Storage can be unavailable; the scorecard still works for this render.
+  }
+}
+
+function settleScores() {
+  const outcome = payload.outcome;
+  if (outcome === null) return;
+  const handKey = `${payload.game}:${payload.view.handNumber}`;
+  if (appliedOutcome !== null && appliedOutcome.key === handKey) return;
+
+  const before = { ...sessionScores };
+  for (const seat of SEATS) {
+    sessionScores[seat] += outcome.totals[seat] ?? 0;
+  }
+  appliedOutcome = {
+    key: handKey,
+    game: payload.game,
+    handNumber: payload.view.handNumber,
+    before,
+    totals: { ...outcome.totals },
+    after: { ...sessionScores },
+  };
+  persistScores();
+}
+
+function displayTotals() {
+  const totals = { ...sessionScores };
+  if (payload.view.phase !== "finished") {
+    const current = ledgerTotals(payload.view.ledger);
+    for (const seat of SEATS) totals[seat] += current[seat];
+  }
+  return totals;
+}
+
+function revertScores() {
+  if (payload === null || appliedOutcome === null) return;
+  if (appliedOutcome.game !== payload.game) return;
+  if (appliedOutcome.handNumber !== payload.view.handNumber) return;
+  for (const seat of SEATS) {
+    sessionScores[seat] -= appliedOutcome.totals[seat] ?? 0;
+  }
+  appliedOutcome = null;
+  persistScores();
 }
 
 function seatEntry(seat) {
@@ -358,7 +447,7 @@ function seatChip(entry) {
   const wind = span("seat-wind", entry.wind);
   const name = span("seat-name", entry.isYou ? "You" : `${WIND_NAME[entry.wind]} bot`);
   const points = span("seat-points");
-  const totals = ledgerTotals(payload.view.ledger);
+  const totals = displayTotals();
   const value = totals[entry.seat] ?? 0;
   points.textContent = value === 0 ? "0" : signed(value);
   const dealer = span("seat-dealer");
@@ -612,6 +701,18 @@ function renderHand() {
     const button = element.querySelector(`.hand-tile[data-index="${Math.min(hadFocus, hand.length - 1)}"]`);
     if (button instanceof HTMLElement) button.focus({ preventScroll: true });
   }
+  updateDiscardHint();
+}
+
+function updateDiscardHint() {
+  if (payload === null) return;
+  const button = document.querySelector('.action-button[data-action="discard"]');
+  if (button === null) return;
+  const index = selected ?? cursor;
+  const tile = payload.view.player.hand[index];
+  if (tile !== undefined) {
+    button.title = `Discard ${tileName(tile)} (tile ${index + 1})`;
+  }
 }
 
 function syncCursorDom() {
@@ -621,6 +722,7 @@ function syncCursorDom() {
     if (index === cursor) button.dataset.cursor = "true";
     else delete button.dataset.cursor;
   });
+  updateDiscardHint();
 }
 
 function renderOwnMelds() {
@@ -643,8 +745,141 @@ function renderOwnBonus() {
   slot.append(row);
 }
 
+function isOwnClaimWindow() {
+  const view = payload.view;
+  return view.phase === "claim" && view.turn === view.seat;
+}
+
+function chowActions() {
+  return payload.legalActions.filter(
+    (action) => action.type === "Claim" && action.kind === "chow",
+  );
+}
+
+function makeClaimButton(action, { primary = false, label = "", tiles = null, keycap = "" } = {}) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `claim-button${primary ? " primary" : ""}`;
+  if (label) button.append(document.createTextNode(label));
+  if (tiles !== null) {
+    for (const key of tiles) button.append(tileElement(key));
+  }
+  if (keycap) {
+    const key = document.createElement("kbd");
+    key.textContent = keycap;
+    button.append(key);
+  }
+  button.title = actionLabel(action);
+  button.addEventListener("click", () => sendAction(action));
+  return button;
+}
+
+function renderClaimBar() {
+  const bar = $("#claim-bar");
+  bar.hidden = false;
+  bar.replaceChildren();
+  const view = payload.view;
+  const window = view.claimWindow;
+  if (window === null) return;
+
+  const head = div("claim-row");
+  const label = span("claim-label", "Claim on");
+  head.append(label, tileElement(window.tile));
+  const from = span("claim-label", `from ${seatLabel(window.discarder)}`);
+  head.append(from);
+  bar.append(head);
+
+  const actions = payload.legalActions.filter(
+    (action) => action.type === "Win" || action.type === "Claim" || action.type === "Pass",
+  );
+  const win = actions.find(
+    (action) => action.type === "Win" || (action.type === "Claim" && action.kind === "mahjong"),
+  );
+  const pung = actions.find(
+    (action) => action.type === "Claim" && action.kind === "pung",
+  );
+  const kong = actions.find(
+    (action) => action.type === "Claim" && action.kind === "kong",
+  );
+  const chows = actions.filter(
+    (action) => action.type === "Claim" && action.kind === "chow",
+  );
+  const pass =
+    actions.find((action) => action.type === "Pass") ?? {
+      type: "Pass",
+      seat: view.seat,
+    };
+
+  const row = div("claim-row");
+  const primaryWin = win !== undefined;
+  if (win !== undefined) {
+    row.append(makeClaimButton(win, { primary: true, label: "Mahjong", keycap: "m" }));
+  }
+  if (pung !== undefined) {
+    row.append(
+      makeClaimButton(pung, {
+        primary: !primaryWin,
+        label: "Pung",
+        tiles: pung.tiles,
+        keycap: "p",
+      }),
+    );
+  }
+  if (kong !== undefined) {
+    row.append(
+      makeClaimButton(kong, {
+        primary: !primaryWin && pung === undefined,
+        label: "Kong",
+        tiles: kong.tiles,
+        keycap: "k",
+      }),
+    );
+  }
+  row.append(
+    makeClaimButton(pass, {
+      primary:
+        !primaryWin &&
+        pung === undefined &&
+        kong === undefined &&
+        chows.length === 0,
+      label: "Pass",
+      keycap: "space",
+    }),
+  );
+  bar.append(row);
+
+  if (chows.length > 0) {
+    const chowRow = div("claim-row");
+    chowRow.append(span("claim-label", "Chow"));
+    chows.forEach((action, index) => {
+      const primary =
+        !primaryWin && pung === undefined && kong === undefined && index === 0;
+      chowRow.append(
+        makeClaimButton(action, {
+          primary,
+          tiles: action.tiles,
+          keycap: String(index + 1),
+        }),
+      );
+    });
+    bar.append(chowRow);
+  }
+}
+
 function renderActions() {
   const element = $("#actions");
+  const bar = $("#claim-bar");
+
+  if (isOwnClaimWindow()) {
+    renderClaimBar();
+    element.replaceChildren();
+    element.hidden = true;
+    return;
+  }
+
+  bar.hidden = true;
+  bar.replaceChildren();
+  element.hidden = false;
   element.replaceChildren();
 
   const view = payload.view;
@@ -679,11 +914,9 @@ function renderActions() {
     if (action.type === "Discard") {
       const button = document.createElement("button");
       button.type = "button";
+      button.dataset.action = "discard";
       button.className = `action-button${index === 0 ? " primary" : ""}`;
       button.append(document.createTextNode("Discard"));
-      button.title = selected === null
-        ? `Discard ${tileName(action.tile)} (tile ${cursor + 1})`
-        : `Discard ${tileName(action.tile)}`;
       const key = document.createElement("kbd");
       key.textContent = "enter";
       button.append(key);
@@ -702,12 +935,13 @@ function renderActions() {
     button.addEventListener("click", () => sendAction(action));
     element.append(button);
   });
+  updateDiscardHint();
 }
 
 function renderScorecard() {
   const slot = $("#scorecard");
   slot.replaceChildren();
-  const totals = ledgerTotals(payload.view.ledger);
+  const totals = displayTotals();
 
   for (const entry of payload.table) {
     const row = div(`score-row${seatIsTurn(entry.seat) ? " is-turn" : ""}`);
@@ -865,21 +1099,102 @@ function renderWaits() {
   slot.append(errors);
 }
 
+function resultScoreTable(outcome) {
+  const handKey = `${payload.game}:${payload.view.handNumber}`;
+  const applied =
+    appliedOutcome !== null && appliedOutcome.key === handKey ? appliedOutcome : null;
+  const before = applied?.before ?? zeroScores();
+  const after = applied?.after ?? outcome.totals;
+
+  const table = document.createElement("table");
+  table.className = "result-score";
+  const head = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  for (const label of ["Seat", "Before", "Δ", "Now"]) {
+    const th = document.createElement("th");
+    th.textContent = label;
+    headRow.append(th);
+  }
+  head.append(headRow);
+
+  const body = document.createElement("tbody");
+  for (const seat of SEATS) {
+    const row = document.createElement("tr");
+    const name = document.createElement("td");
+    name.textContent = seatLabel(seat);
+    const start = document.createElement("td");
+    start.textContent = signed(before[seat] ?? 0);
+    const delta = document.createElement("td");
+    delta.className = "delta";
+    delta.textContent = signed(outcome.totals[seat] ?? 0);
+    const end = document.createElement("td");
+    end.textContent = signed(after[seat] ?? 0);
+    row.append(name, start, delta, end);
+    body.append(row);
+  }
+  table.append(head, body);
+  return table;
+}
+
+function resultPayments(outcome) {
+  const list = document.createElement("ul");
+  list.className = "result-list";
+  if (outcome.ledger.length === 0) {
+    const item = document.createElement("li");
+    item.textContent = "No payments.";
+    list.append(item);
+    return list;
+  }
+  for (const entry of outcome.ledger) {
+    const item = document.createElement("li");
+    item.textContent =
+      `${seatLabel(entry.from)} pays ${seatLabel(entry.to)} ` +
+      `${entry.points === null ? "calculate" : entry.points} — ${entry.reason}`;
+    if (entry.reason.startsWith("fishing")) item.classList.add("is-fishing-payment");
+    list.append(item);
+  }
+  return list;
+}
+
+function composeResultTiles(outcome) {
+  const tiles = div("result-tiles");
+  if (outcome.hand !== null) {
+    for (const key of outcome.hand) tiles.append(tileElement(key));
+  } else if (outcome.winningTile !== null) {
+    tiles.append(tileElement(outcome.winningTile));
+  }
+  if (outcome.melds !== null) {
+    for (const meld of outcome.melds) {
+      const group = div("meld");
+      if (!meld.exposed) group.classList.add("is-concealed");
+      for (const key of meld.tiles) group.append(tileElement(key));
+      tiles.append(group);
+    }
+  }
+  return tiles;
+}
+
 function renderOutcome() {
   const panel = $("#outcome");
   const outcome = payload.outcome;
   if (outcome === null) {
     panel.hidden = true;
     panel.replaceChildren();
+    focusedOutcomeKey = null;
     return;
   }
   panel.hidden = false;
   panel.replaceChildren();
+  panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-modal", "true");
+  panel.setAttribute("aria-labelledby", "outcome-title");
+  panel.setAttribute("tabindex", "-1");
 
   const card = div("result-card");
   const sub = div("result-sub");
   sub.textContent = `Hand ${payload.view.handNumber} · ${payload.view.prevailingWind} round`;
   const title = document.createElement("h2");
+  title.id = "outcome-title";
   if (outcome.kind === "drawn") {
     title.textContent = `Drawn hand — ${outcome.reason}`;
   } else {
@@ -887,45 +1202,43 @@ function renderOutcome() {
       outcome.points === null
         ? (outcome.tier ?? "unscored")
         : `${outcome.tier ?? "unscored"}, ${outcome.points}`;
-    title.textContent = `${seatLabel(outcome.winner)} wins — ${
-      outcome.patternName ?? outcome.patternId
-    } (${value})`;
+    const winner =
+      outcome.winner === payload.seat ? "You" : seatLabel(outcome.winner);
+    title.textContent =
+      `${winner} ${outcome.winner === payload.seat ? "win" : "wins"} — ` +
+      `${outcome.patternName ?? outcome.patternId} (${value})`;
   }
   card.append(sub, title);
 
   if (outcome.kind === "win") {
     const source = div("result-sub");
     source.textContent =
-      `${outcome.selfDrawn ? "self-drawn" : `on ${seatLabel(outcome.from)}'s discard`} · ` +
-      `winning tile ${outcome.winningTile ?? "?"}`;
+      `${outcome.selfDrawn ? "self-drawn" : `on ${seatLabel(outcome.from)}'s discard`}` +
+      (outcome.winningTile === null ? "" : " · winning tile ");
+    if (outcome.winningTile !== null) {
+      source.append(tileElement(outcome.winningTile));
+    }
     card.append(source);
+  }
 
-    const grid = div("result-grid");
-    const left = div();
-    const right = div();
+  const grid = div("result-grid");
+  const left = div();
+  const right = div();
 
+  if (outcome.kind === "win") {
     const patternTitle = document.createElement("h3");
     patternTitle.textContent = "Pattern";
     const pattern = div("result-pattern");
     pattern.append(document.createTextNode(outcome.patternName ?? outcome.patternId ?? "—"));
     if (outcome.tier !== null) pattern.append(span("tier-badge", outcome.tier));
-    if (outcome.points !== null) pattern.append(span("tier-badge", String(outcome.points)));
+    pattern.append(
+      span("tier-badge", outcome.points === null ? "calculate" : String(outcome.points)),
+    );
     left.append(patternTitle, pattern);
 
     const handTitle = document.createElement("h3");
     handTitle.textContent = "Composed tiles";
-    left.append(handTitle);
-    const tiles = div("result-tiles");
-    if (outcome.hand !== null) {
-      for (const key of outcome.hand) tiles.append(tileElement(key));
-    }
-    if (outcome.melds !== null) {
-      for (const meld of outcome.melds) {
-        const group = div("meld");
-        for (const key of meld.tiles) group.append(tileElement(key));
-        tiles.append(group);
-      }
-    }
+    left.append(handTitle, composeResultTiles(outcome));
     if (outcome.hand === null) {
       const hidden = div("result-sub");
       hidden.textContent =
@@ -933,7 +1246,6 @@ function renderOutcome() {
         "winning tile are shown.";
       left.append(hidden);
     }
-    left.append(tiles);
 
     const matchesTitle = document.createElement("h3");
     matchesTitle.textContent = "Patterns matched";
@@ -952,61 +1264,24 @@ function renderOutcome() {
       }
     }
     left.append(matches);
-
-    const settlementsTitle = document.createElement("h3");
-    settlementsTitle.textContent = "Fishing settlements";
-    right.append(settlementsTitle);
-    const settlements = document.createElement("ul");
-    settlements.className = "result-list";
-    if (outcome.fishing.length === 0) {
-      const item = document.createElement("li");
-      item.textContent = "No fishing settlements.";
-      settlements.append(item);
-    } else {
-      for (const entry of outcome.fishing) {
-        const item = document.createElement("li");
-        item.textContent =
-          `${entry.from} pays ${entry.to} ` +
-          `${entry.points === null ? "calculate" : entry.points} — ${entry.reason}`;
-        settlements.append(item);
-      }
-    }
-    right.append(settlements);
-
-    const totalsTitle = document.createElement("h3");
-    totalsTitle.textContent = "Points this hand";
-    right.append(totalsTitle);
-    const table = document.createElement("table");
-    table.className = "result-score";
-    const head = document.createElement("thead");
-    const headRow = document.createElement("tr");
-    for (const label of ["Seat", "Δ"]) {
-      const th = document.createElement("th");
-      th.textContent = label;
-      headRow.append(th);
-    }
-    head.append(headRow);
-    const body = document.createElement("tbody");
-    for (const seat of SEATS) {
-      const row = document.createElement("tr");
-      const name = document.createElement("td");
-      name.textContent = seatLabel(seat);
-      const delta = document.createElement("td");
-      delta.className = "delta";
-      delta.textContent = signed(outcome.totals[seat] ?? 0);
-      row.append(name, delta);
-      body.append(row);
-    }
-    table.append(head, body);
-    right.append(table);
-
-    grid.append(left, right);
-    card.append(grid);
   } else {
-    const note = div("result-sub");
-    note.textContent = "The wall is exhausted; no seat won this hand.";
-    card.append(note);
+    const reasonTitle = document.createElement("h3");
+    reasonTitle.textContent = "Reason";
+    const reason = div("result-sub");
+    reason.textContent = outcome.reason;
+    left.append(reasonTitle, reason);
   }
+
+  const paymentsTitle = document.createElement("h3");
+  paymentsTitle.textContent = "Settlements";
+  right.append(paymentsTitle, resultPayments(outcome));
+
+  const scoreTitle = document.createElement("h3");
+  scoreTitle.textContent = "Score";
+  right.append(scoreTitle, resultScoreTable(outcome));
+
+  grid.append(left, right);
+  card.append(grid);
 
   if (outcome.unknown > 0) {
     const note = div("result-note");
@@ -1022,10 +1297,20 @@ function renderOutcome() {
   const key = document.createElement("kbd");
   key.textContent = "enter";
   next.append(key);
-  next.addEventListener("click", () => void request("/api/next", { game: payload.game }));
+  next.addEventListener("click", () => {
+    focusHandOnRender = true;
+    focusedOutcomeKey = null;
+    void request("/api/next", { game: payload.game });
+  });
   card.append(next);
 
   panel.append(card);
+
+  const resultKey = `${payload.game}:${payload.view.handNumber}`;
+  if (focusedOutcomeKey !== resultKey) {
+    focusedOutcomeKey = resultKey;
+    next.focus({ preventScroll: true });
+  }
 }
 
 function positionOwnRiver() {
@@ -1055,6 +1340,11 @@ function render() {
   renderWaits();
   renderFishing();
   renderOutcome();
+
+  if (focusHandOnRender) {
+    focusHandOnRender = false;
+    if (payload.outcome === null) focusHand(cursor);
+  }
 
   previousHand = [...payload.view.player.hand];
   if (tableInitialized) {
@@ -1262,9 +1552,16 @@ function declareClaim(kind) {
   sendAction(action);
 }
 
+function declareChow(index = 0) {
+  const action = chowActions()[index];
+  if (action !== undefined) sendAction(action);
+}
+
 function undo() {
   if (payload === null) return;
   selected = null;
+  revertScores();
+  focusHandOnRender = true;
   void request("/api/undo", { game: payload.game }, null, true);
 }
 
@@ -1276,6 +1573,8 @@ function newGame(seed) {
   previousHand = [];
   previousDiscards = { E: 0, S: 0, W: 0, N: 0 };
   announced = "";
+  focusedOutcomeKey = null;
+  focusHandOnRender = true;
   void request(
     "/api/new",
     seed === undefined ? {} : { seed },
@@ -1296,10 +1595,12 @@ function onKeydown(event) {
   const isButton =
     target instanceof HTMLElement &&
     target.closest("button, a, summary") !== null;
+  const passOffered = payload.legalActions.some((action) => action.type === "Pass");
   const nativeActivation =
     (event.key === "Enter" || event.key === " " || event.key === "Spacebar") &&
     isButton &&
-    !isHand;
+    !isHand &&
+    !(event.key !== "Enter" && passOffered);
   if (nativeActivation) return;
 
   const outcomeOpen = !document.getElementById("outcome").hidden;
@@ -1307,6 +1608,61 @@ function onKeydown(event) {
     if (event.key === "Enter") {
       event.preventDefault();
       document.getElementById("result-next")?.click();
+    } else if (event.key === "u" || event.key === "U") {
+      event.preventDefault();
+      undo();
+    } else if (event.key === "n" || event.key === "N") {
+      event.preventDefault();
+      newGame(randomSeed());
+    } else if (event.key === "?") {
+      event.preventDefault();
+      openHelp();
+    }
+    return;
+  }
+
+  if (isOwnClaimWindow() && !["n", "N", "u", "U", "?"].includes(event.key)) {
+    const key = event.key;
+    if (key === "m" || key === "M") {
+      event.preventDefault();
+      const win = payload.legalActions.find(
+        (action) =>
+          action.type === "Win" ||
+          (action.type === "Claim" && action.kind === "mahjong"),
+      );
+      if (win !== undefined) sendAction(win);
+      return;
+    }
+    if (key === "p" || key === "P") {
+      event.preventDefault();
+      const pung = payload.legalActions.find(
+        (action) => action.type === "Claim" && action.kind === "pung",
+      );
+      if (pung !== undefined) sendAction(pung);
+      return;
+    }
+    if (key === "k" || key === "K") {
+      event.preventDefault();
+      const kong = payload.legalActions.find(
+        (action) => action.type === "Claim" && action.kind === "kong",
+      );
+      if (kong !== undefined) sendAction(kong);
+      return;
+    }
+    if (key === "c" || key === "C") {
+      event.preventDefault();
+      declareChow(0);
+      return;
+    }
+    if (/^[1-9]$/.test(key)) {
+      event.preventDefault();
+      declareChow(Number(key) - 1);
+      return;
+    }
+    if (key === " " || key === "Spacebar") {
+      event.preventDefault();
+      pass();
+      return;
     }
     return;
   }

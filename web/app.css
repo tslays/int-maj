@@ -559,6 +559,7 @@ kbd {
   border-color: var(--accent-soft);
   border-left-color: var(--accent);
   background: rgba(5, 18, 12, 0.76);
+  box-shadow: inset 0 0 0 1px rgba(231, 198, 91, 0.24);
 }
 
 .seat-wind {
@@ -593,6 +594,11 @@ kbd {
 .seat.is-turn .rack,
 .seat.is-turn .river-wrap {
   transform: translateY(-2px);
+}
+
+.seat.is-turn .rack {
+  outline: 1px solid var(--accent-soft);
+  outline-offset: 2px;
 }
 
 .rack-line {
@@ -685,6 +691,7 @@ kbd {
 
 .hand-band.is-turn {
   border-top-color: var(--accent-soft);
+  box-shadow: inset 0 2px 0 var(--accent-soft);
 }
 
 .meld .tile {
@@ -816,7 +823,7 @@ kbd {
 }
 
 .river .tile.last {
-  outline: 1px solid var(--accent-soft);
+  outline: 1px solid var(--accent);
   outline-offset: 1px;
 }
 
@@ -1033,6 +1040,11 @@ kbd {
   font-size: var(--fs-label);
 }
 
+.claim-bar .claim-row > .tile {
+  width: 24px;
+  height: 32px;
+}
+
 .claim-button {
   min-height: 38px;
   padding: 5px 10px;
@@ -1216,11 +1228,15 @@ kbd {
 .outcome {
   position: fixed;
   z-index: 20;
-  inset: 0;
+  inset: 0 260px 0 0;
   display: grid;
   padding: 22px;
   background: rgba(4, 12, 8, 0.58);
   place-items: center;
+}
+
+.app.rail-closed .outcome {
+  inset: 0;
 }
 
 .result-card {
@@ -1246,6 +1262,17 @@ kbd {
 .result-sub {
   color: var(--muted);
   font-size: var(--fs-label);
+}
+
+.result-sub .tile {
+  width: 22px;
+  height: 29px;
+  margin-left: 3px;
+  vertical-align: middle;
+}
+
+.result-list .is-fishing-payment {
+  color: var(--indicator-bg);
 }
 
 .result-grid {
@@ -1512,6 +1539,10 @@ kbd {
 @media (max-width: 1100px) {
   .app {
     grid-template-columns: minmax(0, 1fr) 230px;
+  }
+
+  .outcome {
+    inset: 0 230px 0 0;
   }
 
   .rail {
