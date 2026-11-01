@@ -36,6 +36,9 @@ const STATIC_FILES: Readonly<Record<string, string>> = Object.freeze({
   "/tiles.js": "tiles.js",
   "/app.css": "app.css",
   "/table.jpg": "table.jpg",
+  // Local design reference for the debug overlay (?overlay=1). The file is
+  // gitignored, so a fresh checkout serves 404 until it is prepared.
+  "/reference3.png": "reference3.png",
 });
 
 const CONTENT_TYPES: Readonly<Record<string, string>> = Object.freeze({
@@ -44,6 +47,7 @@ const CONTENT_TYPES: Readonly<Record<string, string>> = Object.freeze({
   "tiles.js": "text/javascript; charset=utf-8",
   "app.css": "text/css; charset=utf-8",
   "table.jpg": "image/jpeg",
+  "reference3.png": "image/png",
 });
 
 class HttpError extends Error {
