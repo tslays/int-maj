@@ -357,14 +357,30 @@ const FILL_RIVERS = (count: number): string => `
 (() => {
   const template = document.querySelector(".hand-tile .tile");
   if (template === null) throw new Error("no tile to copy into the rivers");
+  // Same mapping as the client: increase index away from each seat, columns
+  // left to right as that player reads them.
+  const layouts = {
+    top: { cols: 6, rows: 3, cell: (r, c) => [5 - c, r] },
+    bottom: { cols: 6, rows: 3, cell: (r, c) => [c, 2 - r] },
+    left: { cols: 3, rows: 6, cell: (r, c) => [r, c] },
+    right: { cols: 3, rows: 6, cell: (r, c) => [2 - r, 5 - c] },
+  };
   for (const river of document.querySelectorAll(".river")) {
-    const cells = [];
-    for (let index = 0; index < 18; index++) {
+    const place = ["top", "bottom", "left", "right"].find((name) =>
+      river.classList.contains("river-" + name),
+    );
+    const layout = layouts[place];
+    const cells = Array.from({ length: 18 }, () => {
       const slot = document.createElement("div");
       slot.className = "river-slot";
-      if (index < ${count}) slot.append(template.cloneNode(true));
-      else slot.setAttribute("aria-hidden", "true");
-      cells.push(slot);
+      slot.setAttribute("aria-hidden", "true");
+      return slot;
+    });
+    for (let index = 0; index < ${count}; index++) {
+      const [x, y] = layout.cell(Math.floor(index / 6), index % 6);
+      const slot = cells[y * layout.cols + x];
+      slot.removeAttribute("aria-hidden");
+      slot.append(template.cloneNode(true));
     }
     river.replaceChildren(...cells);
   }
