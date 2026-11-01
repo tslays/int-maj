@@ -81,6 +81,15 @@ The discard area of every seat is allocated **before the first discard**: a fixe
 
 Consequences: no absolute positioning of the river, no per-discard layout pass, no overlap with the hand band, the centre panel or the seat chips, and the same rule for all four seats.
 
+## Claims are two decisions, not four
+
+A claim window offers exactly two choices, by keyboard and by mouse:
+
+- **Enter / the Claim button** takes the claim. If the claim has variants (a chow can be more than one run), Enter takes the obvious best one and the variants remain clickable buttons in the bar for the mouse.
+- **Space / the Dismiss button** lets it go.
+
+There are no per-meld keys (no `p`, `c`, `k`, `m`) and no scattered meld buttons: two labelled buttons, fixed in place, always in the same spot, never shifting the board.
+
 ## Interaction contract
 
 - Exactly one primary action is emphasised at any moment; secondary ones are inline with keycaps (D, 1-9, Enter, Space).
