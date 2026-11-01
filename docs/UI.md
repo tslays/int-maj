@@ -30,7 +30,7 @@ What Mahjong Soul and Riichi City get right about that layout:
 - **One river per seat, six to a row.** Discards sit in a fixed grid belonging to each seat, in throw order, so you can read who discarded what without a log. Melds sit beside the river, not mixed into it, and a claimed tile is visibly absent from the river.
 - **Seat HUDs are compact and identical**, one per corner/edge: wind, name, points, dealer dot, and their melds. Nothing per-seat is a different shape from the others.
 - **Turn is positional.** The active seat's area lights up (edge glow + slightly raised hand or rack), so you know whose turn it is before you read a word.
-- **Actions are a fixed low cluster**, always in the same place, big enough to hit without aiming, with a keycap legend; the primary one (Mahjong, then Pung/Kong, then Chow, then Pass) is visually dominant and the rest follow in a strict order.
+- **Actions are a fixed low cluster**, always in the same place, big enough to hit without aiming, with a keycap legend; one primary action is visually dominant. A claim window has exactly two decisions, Claim and Dismiss.
 - **The wall is a quiet counter**, a number and a shrinking ring in the middle, never a table.
 - **Results are an overlay with deltas**, showing each seat's change against its previous points, then a single primary "next hand".
 - **Selection is physical**: hover lifts a tile a few px, selecting raises it further and dims the rest of the hand slightly, so what you are about to throw is unmistakable.
@@ -42,7 +42,7 @@ Do **not** copy: avatars, emotes, sound, backgrounds, gacha frames, decorative a
 Full viewport, no max-width box. Three bands:
 
 1. **Board** (fills the window): the three bots on the top, left and right edges, seated on the felt. Each shows: name chip with seat wind and points, a rack of tile backs (concealed count), its melds, and a 6-column discard grid. The centre holds the wall count, the round wind and the dealer badge — small, quiet, never competing with the hand.
-2. **Own hand** (bottom, full width): tiles 84x112 (SVG art scales), sorted by suit then rank with honours last, 6px gaps, hover lift 6px and brighten, click selects and lifts 10px, Enter/click discards. Melds sit to the right of the hand, kongs showing all four. Bonus tiles sit in a small tray at the far right.
+2. **Own hand** (bottom, full width): tiles 84x112 (SVG art scales), sorted by suit then rank with honours last, 6px gaps, hover lift 6px and brighten, click selects and lifts 10px, Enter/click discards. The just-drawn tile sits one extra gap apart from the 13; no dot is needed. Melds sit to the right of the hand, kongs showing all four. Bonus tiles sit in a small tray at the far right.
 3. **Rail** (right, 260px, collapsible): scorecard (four rows: seat, wind, points, dealer dot), a turn indicator that is a moving highlight rather than a sentence, the wait panel ("waiting on b6 - 3 left"), and a collapsible event log.
 
 ### The reserved river grid
@@ -108,19 +108,19 @@ Consequences: no absolute positioning of a seat, river or the centre, no per-dis
 
 A claim window offers exactly two choices, by keyboard and by mouse:
 
-- **Enter / the Claim button** takes the claim. If the claim has variants (a chow can be more than one run), Enter takes the obvious best one and the variants remain clickable buttons in the bar for the mouse.
+- **Enter / the Claim button** takes the claim. If the claim has variants (a chow can be more than one run), Enter takes the obvious best one and the variants remain clickable tile groups under the row for the mouse.
 - **Space / the Dismiss button** lets it go.
 
 There are no per-meld keys (no `p`, `c`, `k`, `m`) and no scattered meld buttons: two labelled buttons, fixed in place, always in the same spot, never shifting the board.
 
 ## The claim prompt gets a sound
 
-When a claim window opens for you, play **one short, quiet cue** — enough to notice if you looked away, never a jingle. Constraints: synthesised with the Web Audio API (no audio files, no dependency), a single soft note or two-note tick under ~180 ms at low gain, played once per claim window (not on every re-render), only after the browser allows audio (the first user gesture), silenced by a mute toggle (`m`, remembered in `localStorage`) and by `prefers-reduced-motion`'s "reduce" users who also mute. No sounds anywhere else for now.
+When a claim window opens for you, play **one short, quiet cue** — enough to notice if you looked away, never a jingle. Constraints: synthesised with the Web Audio API (no audio files, no dependency), a two-note tick of 170 ms at low gain, played once per claim window (not on every re-render), only after the browser allows audio (the first user gesture), silenced by a mute toggle (`m`, remembered in `localStorage`). `prefers-reduced-motion: reduce` starts muted until `m` says otherwise. No sounds anywhere else for now.
 
 ## Interaction contract
 
-- Exactly one primary action is emphasised at any moment; secondary ones are inline with keycaps (D, 1-9, Enter, Space).
-- Claims appear as a bottom-centre bar that pushes nothing else around: Pung, Chow (a second row to pick the variant), Kong, Mahjong, Pass — all reachable by key and by click.
+- Exactly one primary action is emphasised at any moment; secondary ones are inline with keycaps (Enter, Space, F).
+- Claims appear as a fixed bottom-centre bar that pushes nothing else around: exactly two decisions, **Claim** (Mahjong, else pung/kong/chow) and **Dismiss**. Enter takes Claim, Space takes Dismiss, and multiple chow runs appear as clickable tile groups under the row. There are no p/c/k/m claim shortcuts.
 - Illegal actions are absent, not greyed out, except during a claim window where Pass is always present.
 - The hand's keyboard focus is a cursor you can move with arrows; 1-9 jumps to a tile.
 - End of hand: a panel over the felt, not a new page — winner, the pattern that scored with its tier, the composed tiles, each fishing settlement and the four deltas, then "Next hand" as the primary action.

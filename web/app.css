@@ -935,7 +935,7 @@ kbd {
   grid-area: centre;
   width: 100%;
   height: 100%;
-  max-width: 190px;
+  max-width: 240px;
   max-height: 190px;
   background: radial-gradient(
     circle,
@@ -952,6 +952,7 @@ kbd {
   flex-direction: column;
   gap: 5px;
   align-items: center;
+  width: 100%;
   text-align: center;
 }
 
@@ -1010,6 +1011,58 @@ kbd {
 .center-meta strong {
   color: var(--on-felt);
   font-weight: 650;
+}
+
+.center-scores {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 8px;
+  width: 100%;
+  max-width: 210px;
+}
+
+.center-score {
+  display: grid;
+  grid-template-columns: auto 1fr 5px;
+  gap: 4px;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 5px;
+  color: var(--on-felt-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+
+.center-score.is-turn {
+  background: rgba(231, 198, 91, 0.12);
+  color: var(--on-felt);
+}
+
+.center-wind {
+  color: var(--seat-color, var(--accent));
+  font-weight: 750;
+}
+
+.center-points {
+  color: var(--on-felt);
+  font-weight: 600;
+  text-align: right;
+}
+
+.center-points.is-up {
+  color: #f4d98a;
+}
+
+.center-points.is-down {
+  color: #f0a090;
+}
+
+.center-dealer {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
 }
 
 /* ------------------------------------------------------------- actions */
@@ -1190,6 +1243,35 @@ kbd {
   background: rgba(14, 40, 27, 0.96);
 }
 
+.claim-variants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+.claim-variant {
+  display: inline-flex;
+  gap: 1px;
+  padding: 2px;
+  border: 1px solid rgba(231, 198, 91, 0.34);
+  border-radius: 6px;
+  background: rgba(6, 22, 15, 0.82);
+  cursor: pointer;
+}
+
+.claim-variant:hover,
+.claim-variant:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.claim-variant .tile {
+  width: 24px;
+  height: 32px;
+}
+
 /* ---------------------------------------------------------- own hand */
 
 .hand {
@@ -1316,17 +1398,8 @@ kbd {
   color: var(--accent);
 }
 
-.drawn-dot {
-  position: absolute;
-  z-index: 1;
-  top: -3px;
-  right: 7px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 1px rgba(16, 26, 20, 0.45);
-  pointer-events: none;
+.hand-tile.is-drawn-gap {
+  margin-left: calc(var(--hand-gap) * 2);
 }
 
 .hand-placeholder {

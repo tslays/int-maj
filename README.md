@@ -299,12 +299,15 @@ row. Nothing is recomputed in the browser: the table-side checker is the
 left (or `dead`), and the catalogue hands each wait would make.
 
 Click a tile to select it, then click it again or press `Enter` to discard;
-arrow keys move the hand cursor and `1`-`9` jump to a tile. `d` draws, `m`
-declares mahjong, `p`/`k`/`c` claim pung/kong/chow, `Space` passes or picks
-`Pass`, `f` declares fishing, `u` undoes the previous decision by replaying
-from the seed, `n` deals a new game and `?` lists the keys. The whole hand is
-playable keyboard-only. While a claim is open the bar shows every legal claim
-and always keeps Pass; `1`-`9` picks a chow variant. After a hand the result
+arrow keys move the hand cursor and `1`-`9` jump to a tile. `d` draws, `Enter`
+claims the best offered claim (Mahjong, then pung, kong or chow), `Space`
+dismisses a claim or picks `Pass`, `m` mutes the claim cue, `f` declares
+fishing, `u` undoes the previous decision by replaying from the seed, `n`
+deals a new game and `?` lists the keys. The whole hand is playable
+keyboard-only. A claim bar has two decisions, Claim and Dismiss; multiple chow
+runs are clickable tile groups under the row. The cue is synthesised with the
+Web Audio API, plays once per claim window after the first gesture, and stays
+muted across reloads when `m` turned it off. After a hand the result
 panel overlays the felt with the winning pattern and tier, the composed
 tiles, every settlement, each seat's before/delta/now score and a Next hand
 button; the rail stays where it was. Another seat's concealed tiles stay

@@ -30,6 +30,7 @@ const PLACE = {
 
 const RAIL_KEY = "mahjong-rail";
 const GAME_KEY = "mahjong-game";
+const MUTE_KEY = "mahjong-mute";
 const STARTING_WALL = 92;
 const RIVER_SLOTS = 36;
 const RING_RADIUS = 31;
@@ -54,9 +55,94 @@ let scoresKey = null;
 let sessionScores = { E: 0, S: 0, W: 0, N: 0 };
 let appliedOutcome = null;
 
+let muted = false;
+let audioContext = null;
+let lastClaimCueKey = null;
+
 const logLines = [];
 
 const $ = (selector) => document.querySelector(selector);
+
+/* ------------------------------------------------------------- claim cue */
+
+/** `m` is the only sound control; reduced-motion users start muted. */
+function readMuted() {
+  try {
+    const stored = localStorage.getItem(MUTE_KEY);
+    if (stored === "1") return true;
+    if (stored === "0") return false;
+  } catch {
+    // Private windows can refuse storage; the default still applies.
+  }
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+}
+
+function persistMuted() {
+  try {
+    localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
+  } catch {
+    // The toggle still works for this visit.
+  }
+}
+
+function toggleMute() {
+  muted = !muted;
+  persistMuted();
+  log(muted ? "Claim cue muted." : "Claim cue on.");
+}
+
+/** Audio starts on the first gesture, as browser autoplay rules require. */
+function unlockAudio(event) {
+  if (event.type === "keydown" && (event.key === "m" || event.key === "M")) return;
+  if (audioContext === null) {
+    const Constructor = window.AudioContext ?? window.webkitAudioContext;
+    if (Constructor === undefined) return;
+    audioContext = new Constructor();
+  }
+  if (audioContext.state === "suspended") {
+    void audioContext.resume().then(maybePlayClaimCue, () => {});
+    return;
+  }
+  maybePlayClaimCue();
+}
+
+/** One soft two-note tick, 170 ms at low gain, synthesised in the page. */
+function playClaimCue(context) {
+  const now = context.currentTime;
+  const gain = context.createGain();
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.045, now + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+  gain.connect(context.destination);
+
+  const low = context.createOscillator();
+  low.type = "sine";
+  low.frequency.setValueAtTime(659.25, now);
+  low.connect(gain);
+  low.start(now);
+  low.stop(now + 0.075);
+
+  const high = context.createOscillator();
+  high.type = "sine";
+  high.frequency.setValueAtTime(987.77, now + 0.055);
+  high.connect(gain);
+  high.start(now + 0.055);
+  high.stop(now + 0.17);
+}
+
+/** Once per claim window, and never before the first user gesture. */
+function maybePlayClaimCue() {
+  const view = payload?.view;
+  if (view === undefined || view === null || view.claimWindow === null) return;
+  const claimWindow = view.claimWindow;
+  const key =
+    `${payload.game}|${view.handNumber}|${claimWindow.discarder}|` +
+    `${claimWindow.tile}|${claimWindow.pending.join(",")}`;
+  if (key === lastClaimCueKey) return;
+  if (muted || audioContext === null || audioContext.state !== "running") return;
+  lastClaimCueKey = key;
+  playClaimCue(audioContext);
+}
 
 /* ------------------------------------------------------------ elements */
 
@@ -452,17 +538,10 @@ function actionKeycap(action) {
     case "Draw":
       return "d";
     case "Win":
-      return "m";
     case "Claim":
-      if (action.kind === "mahjong") return "m";
-      if (action.kind === "pung") return "p";
-      if (action.kind === "kong") return "k";
-      return "c";
+      return "enter";
     case "DeclareFishing":
       return "f";
-    case "ConcealedKong":
-    case "AddedKong":
-      return "k";
     case "Pass":
       return "space";
     default:
@@ -670,6 +749,30 @@ function renderCenter() {
     document.createTextNode(" round · dealer "),
     dealer,
   );
+
+  const totals = displayTotals();
+  const scores = $("#center-scores");
+  scores.replaceChildren();
+  for (const entry of payload.table) {
+    const points = totals[entry.seat] ?? 0;
+    const cell = div(`center-score${seatIsTurn(entry.seat) ? " is-turn" : ""}`);
+    cell.dataset.seat = entry.seat;
+    cell.style.setProperty("--seat-color", seatColor(entry.seat));
+    cell.setAttribute(
+      "aria-label",
+      `${entry.isYou ? "You" : `${WIND_NAME[entry.wind]} bot`}, ` +
+        `${points === 0 ? "0" : signed(points)} points` +
+        `${entry.dealer ? ", dealer" : ""}`,
+    );
+    const wind = span("center-wind", entry.wind);
+    const value = span("center-points", points === 0 ? "0" : signed(points));
+    if (points !== 0) value.classList.add(changeClass(points));
+    const dealerMark = span("center-dealer");
+    dealerMark.title = entry.dealer ? "Dealer" : "";
+    if (!entry.dealer) dealerMark.hidden = true;
+    cell.append(wind, value, dealerMark);
+    scores.append(cell);
+  }
 }
 
 function renderHand() {
@@ -726,9 +829,8 @@ function renderHand() {
     }
     if (index === drawnIndex) {
       button.classList.add("is-drawn");
-      const dot = span("drawn-dot");
-      dot.title = "Just drawn";
-      button.append(dot);
+      // The extra tile stands apart from the 13 instead of carrying a dot.
+      if (hand.length > 13 && index > 0) button.classList.add("is-drawn-gap");
     }
     if (
       handInitialized &&
@@ -814,6 +916,21 @@ function chowActions() {
   );
 }
 
+/** Mahjong, then pung, kong, chow; Enter and Claim both take this one. */
+function bestClaimAction(actions) {
+  const win = actions.find(
+    (action) => action.type === "Win" || (action.type === "Claim" && action.kind === "mahjong"),
+  );
+  if (win !== undefined) return win;
+  for (const kind of ["pung", "kong", "chow"]) {
+    const found = actions.find(
+      (action) => action.type === "Claim" && action.kind === kind,
+    );
+    if (found !== undefined) return found;
+  }
+  return null;
+}
+
 function makeClaimButton(
   action,
   { primary = false, label = "", tiles = null, keycap = "", className = "" } = {},
@@ -832,14 +949,35 @@ function makeClaimButton(
     button.append(key);
   }
   button.title = actionLabel(action);
+  button.setAttribute("aria-label", actionLabel(action));
   button.addEventListener("click", () => sendAction(action));
   return button;
 }
 
+/** A chow variant is a clickable tile group, not a third decision button. */
+function makeChowVariant(action) {
+  const variant = document.createElement("span");
+  variant.className = "claim-variant";
+  variant.setAttribute("role", "button");
+  variant.tabIndex = 0;
+  variant.title = actionLabel(action);
+  variant.setAttribute("aria-label", actionLabel(action));
+  for (const key of action.tiles) variant.append(tileElement(key));
+  variant.addEventListener("click", () => sendAction(action));
+  variant.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " " || event.key === "Spacebar") {
+      event.preventDefault();
+      event.stopPropagation();
+      sendAction(action);
+    }
+  });
+  return variant;
+}
+
 /**
- * The claim dock floats over the felt the way the reference clients do: the
- * discarded tile first, then one row of large choices, primary last in the
- * reading order but first in weight. It never pushes the hand or the board.
+ * Two decisions, fixed at the bottom centre: Claim (the best legal claim,
+ * Mahjong first) and Dismiss. If a chow has several runs, its variants are
+ * clickable tile groups under the row; Enter always takes the first.
  */
 function renderClaimBar() {
   const bar = $("#claim-bar");
@@ -856,18 +994,7 @@ function renderClaimBar() {
   const actions = payload.legalActions.filter(
     (action) => action.type === "Win" || action.type === "Claim" || action.type === "Pass",
   );
-  const win = actions.find(
-    (action) => action.type === "Win" || (action.type === "Claim" && action.kind === "mahjong"),
-  );
-  const pung = actions.find(
-    (action) => action.type === "Claim" && action.kind === "pung",
-  );
-  const kong = actions.find(
-    (action) => action.type === "Claim" && action.kind === "kong",
-  );
-  const chows = actions.filter(
-    (action) => action.type === "Claim" && action.kind === "chow",
-  );
+  const claim = bestClaimAction(actions);
   const pass =
     actions.find((action) => action.type === "Pass") ?? {
       type: "Pass",
@@ -876,57 +1003,39 @@ function renderClaimBar() {
 
   const row = div("claim-row");
   row.append(head);
-  const primaryWin = win !== undefined;
-  if (win !== undefined) {
-    row.append(makeClaimButton(win, { primary: true, label: "Mahjong", keycap: "m" }));
-  }
-  if (pung !== undefined) {
+  if (claim !== null) {
     row.append(
-      makeClaimButton(pung, {
-        primary: !primaryWin,
-        label: "Pung",
-        tiles: pung.tiles,
-        keycap: "p",
+      makeClaimButton(claim, {
+        primary: true,
+        label: "Claim",
+        tiles:
+          claim.type === "Claim" && claim.kind !== "mahjong" ? claim.tiles : null,
+        keycap: "enter",
       }),
     );
-  }
-  if (kong !== undefined) {
-    row.append(
-      makeClaimButton(kong, {
-        primary: !primaryWin && pung === undefined,
-        label: "Kong",
-        tiles: kong.tiles,
-        keycap: "k",
-      }),
-    );
-  }
-  if (chows.length > 0) {
-    row.append(span("claim-label", "Chow"));
-    chows.forEach((action, index) => {
-      const primary =
-        !primaryWin && pung === undefined && kong === undefined && index === 0;
-      row.append(
-        makeClaimButton(action, {
-          primary,
-          tiles: action.tiles,
-          keycap: String(index + 1),
-        }),
-      );
-    });
   }
   row.append(
     makeClaimButton(pass, {
-      primary:
-        !primaryWin &&
-        pung === undefined &&
-        kong === undefined &&
-        chows.length === 0,
-      label: "Pass",
+      label: "Dismiss",
       keycap: "space",
       className: "claim-pass",
     }),
   );
   bar.append(row);
+
+  if (
+    claim !== null &&
+    claim.type === "Claim" &&
+    claim.kind === "chow" &&
+    chowActions().length > 1
+  ) {
+    const variants = div("claim-variants");
+    variants.append(span("claim-label", "Chow"));
+    for (const action of chowActions()) variants.append(makeChowVariant(action));
+    bar.append(variants);
+  }
+
+  maybePlayClaimCue();
 }
 
 function renderActions() {
@@ -1564,6 +1673,11 @@ function confirmSelection() {
     discardSelected();
     return;
   }
+  const win = legalAction("Win");
+  if (win !== undefined) {
+    sendAction(win);
+    return;
+  }
   const draw = legalAction("Draw");
   if (draw !== undefined) {
     sendAction(draw);
@@ -1601,32 +1715,10 @@ function declareFishing() {
   sendAction(action);
 }
 
-function declareWin() {
-  const action =
-    legalAction("Win") ??
-    legalAction("Claim", (candidate) => candidate.kind === "mahjong");
-  if (action === undefined) {
-    log("Mahjong is not legal now.");
-    return;
-  }
-  sendAction(action);
-}
-
-function declareClaim(kind) {
-  const action = legalAction(
-    "Claim",
-    (candidate) => candidate.kind === kind,
-  );
-  if (action === undefined) {
-    log(`There is no ${kind} to claim.`);
-    return;
-  }
-  sendAction(action);
-}
-
-function declareChow(index = 0) {
-  const action = chowActions()[index];
-  if (action !== undefined) sendAction(action);
+function claimBest() {
+  if (payload === null || busy) return;
+  const action = bestClaimAction(payload.legalActions);
+  if (action !== null) sendAction(action);
 }
 
 function undo() {
@@ -1663,6 +1755,12 @@ function onKeydown(event) {
   if (document.querySelector("dialog[open]") !== null) return;
   if (payload === null) return;
 
+  if (event.key === "m" || event.key === "M") {
+    event.preventDefault();
+    toggleMute();
+    return;
+  }
+
   const isHand = target instanceof HTMLElement && target.closest(".hand-tile") !== null;
   const isButton =
     target instanceof HTMLElement &&
@@ -1693,42 +1791,11 @@ function onKeydown(event) {
     return;
   }
 
-  if (isOwnClaimWindow() && !["n", "N", "u", "U", "?"].includes(event.key)) {
+  if (isOwnClaimWindow()) {
     const key = event.key;
-    if (key === "m" || key === "M") {
+    if (key === "Enter") {
       event.preventDefault();
-      const win = payload.legalActions.find(
-        (action) =>
-          action.type === "Win" ||
-          (action.type === "Claim" && action.kind === "mahjong"),
-      );
-      if (win !== undefined) sendAction(win);
-      return;
-    }
-    if (key === "p" || key === "P") {
-      event.preventDefault();
-      const pung = payload.legalActions.find(
-        (action) => action.type === "Claim" && action.kind === "pung",
-      );
-      if (pung !== undefined) sendAction(pung);
-      return;
-    }
-    if (key === "k" || key === "K") {
-      event.preventDefault();
-      const kong = payload.legalActions.find(
-        (action) => action.type === "Claim" && action.kind === "kong",
-      );
-      if (kong !== undefined) sendAction(kong);
-      return;
-    }
-    if (key === "c" || key === "C") {
-      event.preventDefault();
-      declareChow(0);
-      return;
-    }
-    if (/^[1-9]$/.test(key)) {
-      event.preventDefault();
-      declareChow(Number(key) - 1);
+      claimBest();
       return;
     }
     if (key === " " || key === "Spacebar") {
@@ -1736,7 +1803,9 @@ function onKeydown(event) {
       pass();
       return;
     }
-    return;
+    // n, u and ? keep working; every other key is swallowed while the
+    // claim is open. There are no p/c/k/m or chow-number shortcuts.
+    if (!["n", "N", "u", "U", "?"].includes(key)) return;
   }
 
   switch (event.key) {
@@ -1758,26 +1827,6 @@ function onKeydown(event) {
     case "F":
       event.preventDefault();
       declareFishing();
-      break;
-    case "m":
-    case "M":
-      event.preventDefault();
-      declareWin();
-      break;
-    case "p":
-    case "P":
-      event.preventDefault();
-      declareClaim("pung");
-      break;
-    case "k":
-    case "K":
-      event.preventDefault();
-      declareClaim("kong");
-      break;
-    case "c":
-    case "C":
-      event.preventDefault();
-      declareClaim("chow");
       break;
     case " ":
     case "Spacebar":
@@ -1851,6 +1900,8 @@ function bindEvents() {
   $("#rail-show").addEventListener("click", () => setRail(true));
   $("#help-dialog").addEventListener("close", () => $("#help-button").focus());
   document.addEventListener("keydown", onKeydown);
+  window.addEventListener("pointerdown", unlockAudio, { capture: true });
+  window.addEventListener("keydown", unlockAudio, { capture: true });
 }
 
 function initialRail() {
@@ -1865,6 +1916,7 @@ function initialRail() {
 }
 
 async function boot() {
+  muted = readMuted();
   bindEvents();
   railOpen = initialRail();
   applyRail();
