@@ -39,8 +39,19 @@ interface ApiPayload {
 
 interface Measurement {
   readonly rects: Record<string, Rect>;
-  readonly tile: { readonly w: number; readonly h: number; readonly gap: number };
+  readonly tile: {
+    readonly w: number;
+    readonly h: number;
+    readonly gap: number;
+    readonly handW: number;
+    readonly handH: number;
+    readonly backW: number;
+    readonly backH: number;
+    readonly centreW: number;
+  };
   readonly slots: Record<string, number>;
+  readonly handCount: number;
+  readonly drawGap: number;
   readonly overflow: readonly [number, number, number, number];
 }
 
@@ -53,19 +64,22 @@ const RIVERS = ["top", "left", "right", "bottom"] as const;
 
 const LABELS: Record<string, string> = {
   board: "board",
+  playfield: "frame",
   handBand: "hand band",
   riverTop: "river north",
   riverLeft: "river west",
   riverRight: "river east",
   riverBottom: "river south",
   centre: "centre panel",
-  chipTop: "north seat chip",
+  labelTop: "north label",
+  labelLeft: "west label",
+  labelRight: "east label",
+  selfLabel: "your label",
   rackTop: "north rack",
-  chipLeft: "west seat chip",
   rackLeft: "west rack",
-  chipRight: "east seat chip",
   rackRight: "east rack",
-  selfChip: "your seat chip",
+  hand: "your hand",
+  actions: "action cluster",
 };
 
 /* Vocabulary: pairwise non-intersection. A one-pixel touch is not an
@@ -84,7 +98,7 @@ function formatRect(rect: Rect): string {
   return `${Math.round(rect[0])},${Math.round(rect[1])} ${Math.round(rect[2])}x${Math.round(rect[3])}`;
 }
 
-function printMeasurement(label: string, measurement: Measurement): void {
+function printMeasurement(label: string, measurement: Measurement, viewportWidth: number): void {
   console.log(`\n${label}`);
   for (const [key, rect] of Object.entries(measurement.rects)) {
     console.log(`  ${(LABELS[key] ?? key).padEnd(16)} ${formatRect(rect)}`);
@@ -92,8 +106,16 @@ function printMeasurement(label: string, measurement: Measurement): void {
   const tile = measurement.tile;
   const expectedRiver = `6*${tile.w} + 5*${tile.gap} = ${6 * tile.w + 5 * tile.gap}`;
   console.log(
+    `  hand unit        ${tile.handW}x${tile.handH} (${((tile.handW / viewportWidth) * 100).toFixed(2)}% of viewport width)`,
+  );
+  console.log(
     `  tile unit        ${tile.w}x${tile.h}, gap ${tile.gap}; ` +
       `river width ${expectedRiver}, height ${3 * tile.h + 2 * tile.gap}`,
+  );
+  console.log(
+    `  ratios           river/hand ${(tile.w / tile.handW).toFixed(3)}, ` +
+      `back/hand ${(Math.max(tile.backW, tile.backH) / tile.handW).toFixed(3)}, ` +
+      `centre/hand ${(tile.centreW / tile.handW).toFixed(3)}`,
   );
   console.log(
     `  river slots      ${RIVERS.map((river) => `${river} ${measurement.slots[river]}`).join(", ")}`,
@@ -336,18 +358,15 @@ const FILL_RIVERS = (count: number): string => `
   const template = document.querySelector(".hand-tile .tile");
   if (template === null) throw new Error("no tile to copy into the rivers");
   for (const river of document.querySelectorAll(".river")) {
-    const children = [];
+    const cells = [];
     for (let index = 0; index < 18; index++) {
-      if (index < ${count}) {
-        children.push(template.cloneNode(true));
-      } else {
-        const slot = document.createElement("div");
-        slot.className = "river-slot";
-        slot.setAttribute("aria-hidden", "true");
-        children.push(slot);
-      }
+      const slot = document.createElement("div");
+      slot.className = "river-slot";
+      if (index < ${count}) slot.append(template.cloneNode(true));
+      else slot.setAttribute("aria-hidden", "true");
+      cells.push(slot);
     }
-    river.replaceChildren(...children);
+    river.replaceChildren(...cells);
   }
   return document.querySelectorAll(".river").length;
 })()
@@ -362,30 +381,61 @@ const MEASURE = String.raw`
     return [box.x, box.y, box.width, box.height];
   };
   const css = (name) => parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+  const box = (selector) => {
+    const element = document.querySelector(selector);
+    if (element === null) throw new Error("missing " + selector);
+    return element.getBoundingClientRect();
+  };
   const board = document.querySelector(".board");
   const slots = {};
   for (const zone of ["top", "left", "right", "bottom"]) {
-    slots[zone] = document.querySelectorAll("#river-" + zone + " .river-slot, #river-" + zone + " .tile").length;
+    slots[zone] = document.querySelectorAll(
+      "#river-" + zone + " .river > .river-slot",
+    ).length;
   }
+  const riverSlot = box("#river-top .river-slot");
+  const handTile = box(".hand-tile .tile");
+  const back = box(".seat-top .rack .tile-back");
+  const centre = box(".center");
+  const handTiles = [...document.querySelectorAll(".hand-tile")];
+  const lastHand = handTiles.at(-1)?.getBoundingClientRect();
+  const penultimateHand = handTiles.at(-2)?.getBoundingClientRect();
   return {
     rects: {
       board: rect(".board"),
+      playfield: rect(".playfield"),
       handBand: rect(".hand-band"),
       riverTop: rect("#river-top .river"),
       riverLeft: rect("#river-left .river"),
       riverRight: rect("#river-right .river"),
       riverBottom: rect("#river-bottom .river"),
       centre: rect(".center"),
-      chipTop: rect(".seat-top .seat-chip"),
+      labelTop: rect("#label-top"),
+      labelLeft: rect("#label-left"),
+      labelRight: rect("#label-right"),
+      selfLabel: rect("#self-label"),
       rackTop: rect(".seat-top .rack"),
-      chipLeft: rect(".seat-left .seat-chip"),
       rackLeft: rect(".seat-left .rack"),
-      chipRight: rect(".seat-right .seat-chip"),
       rackRight: rect(".seat-right .rack"),
-      selfChip: rect("#self-chip"),
+      hand: rect("#hand"),
+      actions: rect(".action-cluster"),
     },
-    tile: { w: css("--tile-w"), h: css("--tile-h"), gap: css("--tile-gap") },
+    tile: {
+      w: riverSlot.width,
+      h: riverSlot.height,
+      gap: css("--tile-gap"),
+      handW: handTile.width,
+      handH: handTile.height,
+      backW: back.width,
+      backH: back.height,
+      centreW: centre.width,
+    },
     slots,
+    handCount: handTiles.length,
+    drawGap:
+      lastHand === undefined || penultimateHand === undefined
+        ? 0
+        : lastHand.x - (penultimateHand.x + penultimateHand.width),
     overflow: [board.scrollWidth, board.clientWidth, board.scrollHeight, board.clientHeight],
   };
 })()
@@ -493,7 +543,7 @@ async function main(): Promise<void> {
 
         const measurement = await evaluate<Measurement>(cdp, sessionId, MEASURE);
         const label = `${viewport.width}x${viewport.height}, ${count} discards`;
-        printMeasurement(label, measurement);
+        printMeasurement(label, measurement, viewport.width);
 
         for (const river of RIVERS) {
           assert.equal(
@@ -503,12 +553,42 @@ async function main(): Promise<void> {
           );
         }
 
-        const expectedWidth = 6 * measurement.tile.w + 5 * measurement.tile.gap;
-        const expectedHeight = 3 * measurement.tile.h + 2 * measurement.tile.gap;
+        const { w, h, gap, handW, handH, backW, backH, centreW } = measurement.tile;
+        // Mahjong Soul's scale, expressed only in ratios of the hand unit.
+        assert.ok(
+          handW / viewport.width >= 0.06 && handW / viewport.width <= 0.07,
+          `${label}: hand tile is ${handW}px (${((handW / viewport.width) * 100).toFixed(2)}% of the viewport), expected about 7%`,
+        );
+        assert.ok(
+          Math.abs(handH / handW - 4 / 3) <= 0.02,
+          `${label}: hand tile is ${handW}x${handH}, not the 3:4 tile`,
+        );
+        assert.ok(
+          Math.abs(w / handW - 0.62) <= 0.01,
+          `${label}: river tile is ${w}px, expected 0.62 of ${handW}`,
+        );
+        assert.ok(gap <= 1.5, `${label}: river rows are ${gap}px apart, not flush`);
+        assert.ok(
+          Math.abs(Math.max(backW, backH) / handW - 0.33) <= 0.012,
+          `${label}: concealed back is ${backW}x${backH}, expected 0.33 of ${handW}`,
+        );
+        assert.ok(
+          Math.abs(centreW / handW - 1.9) <= 0.02,
+          `${label}: centre is ${centreW}px wide, expected 1.9 of ${handW}`,
+        );
+
+        const expected: Record<(typeof RIVERS)[number], readonly [number, number]> = {
+          top: [6 * w + 5 * gap, 3 * h + 2 * gap],
+          bottom: [6 * w + 5 * gap, 3 * h + 2 * gap],
+          left: [3 * h + 2 * gap, 6 * w + 5 * gap],
+          right: [3 * h + 2 * gap, 6 * w + 5 * gap],
+        };
         for (const river of RIVERS) {
           const rect = measurement.rects[`river${river[0]!.toUpperCase()}${river.slice(1)}`]!;
+          const [expectedWidth, expectedHeight] = expected[river];
           assert.ok(
-            Math.abs(rect[2] - expectedWidth) <= 0.5 && Math.abs(rect[3] - expectedHeight) <= 0.5,
+            Math.abs(rect[2] - expectedWidth) <= 0.5 &&
+              Math.abs(rect[3] - expectedHeight) <= 0.5,
             `${label}: river ${river} is ${formatRect(rect)}, expected ${expectedWidth}x${expectedHeight}`,
           );
           const baselineKey = `${viewport.width}x${viewport.height}:${river}`;
@@ -521,10 +601,98 @@ async function main(): Promise<void> {
           }
         }
 
-        // The board contains its seats and rivers, so pairwise checks cover
-        // the board's children; the hand band must stay outside the board.
+        const board = measurement.rects.board!;
+        const frame = measurement.rects.playfield!;
+        const centre = measurement.rects.centre!;
+        const top = measurement.rects.riverTop!;
+        const bottom = measurement.rects.riverBottom!;
+        const left = measurement.rects.riverLeft!;
+        const right = measurement.rects.riverRight!;
+
+        // The frame: 3% in from the sides, 12% from the top, 2% from the
+        // bottom, a one-tile-wide band of felt outside it.
+        assert.ok(
+          Math.abs(frame[0] - (board[0] + board[2] * 0.03)) <= 1.5 &&
+            Math.abs(board[0] + board[2] - (frame[0] + frame[2]) - board[2] * 0.03) <= 1.5,
+          `${label}: frame sides are not 3% from the board (${formatRect(frame)} in ${formatRect(board)})`,
+        );
+        assert.ok(
+          Math.abs(frame[1] - (board[1] + board[3] * 0.12)) <= 1.5 &&
+            Math.abs(board[1] + board[3] - (frame[1] + frame[3]) - board[3] * 0.02) <= 1.5,
+          `${label}: frame top/bottom are not 12%/2% from the board (${formatRect(frame)} in ${formatRect(board)})`,
+        );
+
+        // The centre is dead centre of the play area, and the four rivers
+        // are centred in front of their seats, meeting around it.
+        const frameCx = frame[0] + frame[2] / 2;
+        const frameCy = frame[1] + frame[3] / 2;
+        assert.ok(
+          Math.abs(centre[0] + centre[2] / 2 - frameCx) <= 1 &&
+            Math.abs(centre[1] + centre[3] / 2 - frameCy) <= 1,
+          `${label}: centre ${formatRect(centre)} is not the centre of the frame ${formatRect(frame)}`,
+        );
+        for (const river of ["riverTop", "riverBottom"] as const) {
+          const rect = measurement.rects[river]!;
+          assert.ok(
+            Math.abs(rect[0] + rect[2] / 2 - frameCx) <= 1,
+            `${label}: ${river} ${formatRect(rect)} is not centred on the table`,
+          );
+        }
+        for (const river of ["riverLeft", "riverRight"] as const) {
+          const rect = measurement.rects[river]!;
+          assert.ok(
+            Math.abs(rect[1] + rect[3] / 2 - frameCy) <= 1,
+            `${label}: ${river} ${formatRect(rect)} is not centred on the table`,
+          );
+        }
+        assert.ok(
+          Math.abs(top[0] - (left[0] + left[2])) <= 1 &&
+            Math.abs(top[0] + top[2] - right[0]) <= 1,
+          `${label}: north/side rivers do not meet at their corners`,
+        );
+        assert.ok(
+          Math.abs(top[1] + top[3] - centre[1]) <= 1 &&
+            Math.abs(centre[1] + centre[3] - bottom[1]) <= 1,
+          `${label}: north/south rivers do not meet the centre`,
+        );
+
+        // Racks are one line per seat, not a block.
+        const rackTop = measurement.rects.rackTop!;
+        const rackLeft = measurement.rects.rackLeft!;
+        const rackRight = measurement.rects.rackRight!;
+        assert.ok(
+          rackTop[2] > rackTop[3] && rackLeft[3] > rackLeft[2] && rackRight[3] > rackRight[2],
+          `${label}: a concealed rack is not a single line`,
+        );
+
+        // The hand is one row at the bottom, the drawn tile apart.
+        const hand = measurement.rects.hand!;
+        assert.ok(
+          Math.abs(hand[0] + hand[2] / 2 - viewport.width / 2) <= 2,
+          `${label}: hand is not centred (${formatRect(hand)})`,
+        );
+        assert.equal(measurement.handCount, 14, `${label}: expected 13 tiles plus the drawn tile`);
+        assert.ok(
+          measurement.drawGap >= handW * 0.25,
+          `${label}: drawn tile gap is ${measurement.drawGap}px, expected a visible break`,
+        );
+
+        // Two actions at the bottom right, on the felt, never over the hand.
+        const actions = measurement.rects.actions!;
+        assert.ok(
+          Math.abs(actions[0] + actions[2] - (board[0] + board[2] - 14)) <= 1 &&
+            Math.abs(actions[1] + actions[3] - (board[1] + board[3] - 12)) <= 1,
+          `${label}: action cluster ${formatRect(actions)} is not pinned to the felt's bottom right`,
+        );
+        assert.ok(
+          actions[1] + actions[3] <= board[1] + board[3] + 1,
+          `${label}: action cluster ${formatRect(actions)} is over the hand`,
+        );
+
+        // The board contains its playfield, seats and rivers; the hand band
+        // sits below it. The frame and the band themselves are containers.
         const keys = Object.keys(measurement.rects).filter(
-          (key) => key !== "board" && key !== "handBand",
+          (key) => key !== "board" && key !== "playfield" && key !== "handBand",
         );
         for (let first = 0; first < keys.length; first++) {
           for (let second = first + 1; second < keys.length; second++) {
@@ -537,9 +705,16 @@ async function main(): Promise<void> {
           }
         }
 
-        const board = measurement.rects.board!;
         for (const [key, rect] of Object.entries(measurement.rects)) {
-          if (key === "board" || key === "handBand" || key === "selfChip") continue;
+          if (
+            key === "board" ||
+            key === "playfield" ||
+            key === "handBand" ||
+            key === "selfLabel" ||
+            key === "hand"
+          ) {
+            continue;
+          }
           assert.ok(
             rect[0] >= board[0] - 1 &&
               rect[1] >= board[1] - 1 &&
@@ -557,6 +732,16 @@ async function main(): Promise<void> {
         assert.ok(
           handBand[1] >= board[1] + board[3] - 1,
           `${label}: hand band ${formatRect(handBand)} overlaps the board ${formatRect(board)}`,
+        );
+        const selfLabel = measurement.rects.selfLabel!;
+        assert.ok(
+          selfLabel[0] >= handBand[0] - 1 &&
+            selfLabel[1] >= handBand[1] - 1 &&
+            selfLabel[1] + selfLabel[3] <= handBand[1] + handBand[3] + 1 &&
+            hand[0] >= handBand[0] - 1 &&
+            hand[1] >= handBand[1] - 1 &&
+            hand[1] + hand[3] <= handBand[1] + handBand[3] + 1,
+          `${label}: the hand or your label leaves the hand band`,
         );
         for (const [key, rect] of Object.entries(measurement.rects)) {
           assert.ok(

@@ -203,6 +203,17 @@ function backElement() {
   return element;
 }
 
+/** The hand in reading order: the thirteen, then the tile just drawn. */
+function displayHand() {
+  if (payload === null) return [];
+  const hand = payload.view.player.hand;
+  const draw = payload.view.lastDraw;
+  if (draw === null || draw.seat !== payload.view.seat) return [...hand];
+  const index = hand.lastIndexOf(draw.tile);
+  if (index < 0) return [...hand];
+  return [...hand.slice(0, index), ...hand.slice(index + 1), hand[index]];
+}
+
 /* ------------------------------------------------------------ transport */
 
 async function api(path, body) {
@@ -594,29 +605,18 @@ function renderMeta() {
   meta.title = `Seed ${payload.seed} · game ${payload.game} · dealer ${view.dealer}`;
 }
 
-function seatChip(entry) {
-  const chip = div("seat-chip");
-  chip.dataset.seat = entry.seat;
-  chip.style.setProperty("--seat-color", seatColor(entry.seat));
-  chip.setAttribute(
+/** Tenhou's seat is only a wind and a name, set straight into the felt. */
+function fillSeatLabel(slot, entry) {
+  slot.style.setProperty("--seat-color", seatColor(entry.seat));
+  slot.classList.toggle("is-turn", seatIsTurn(entry.seat));
+  slot.setAttribute(
     "aria-label",
     `${entry.isYou ? "You" : `${WIND_NAME[entry.wind]} bot`}, ${entry.wind} wind` +
       `${entry.dealer ? ", dealer" : ""}`,
   );
-
   const wind = span("seat-wind", entry.wind);
   const name = span("seat-name", entry.isYou ? "You" : `${WIND_NAME[entry.wind]} bot`);
-  const points = span("seat-points");
-  const totals = displayTotals();
-  const value = totals[entry.seat] ?? 0;
-  points.textContent = value === 0 ? "0" : signed(value);
-  if (value !== 0) points.classList.add(changeClass(value));
-  const dealer = span("seat-dealer");
-  dealer.title = entry.dealer ? "Dealer" : "";
-  if (!entry.dealer) dealer.hidden = true;
-
-  chip.append(wind, name, points, dealer);
-  return chip;
+  slot.replaceChildren(wind, name);
 }
 
 function rackLine(entry) {
@@ -654,43 +654,54 @@ function bonusRow(entry) {
   return row;
 }
 
+/* The screen footprint of each river. A discard is at row r, column c in
+   its own player's reading order; this maps that to the screen cell, so
+   every player reads their own river left to right, top to bottom and the
+   rows grow away from their seat toward the centre. */
+const RIVER_GRID = {
+  bottom: { cols: 6, rows: 3, flat: true, cell: (r, c) => [c, 2 - r] },
+  top: { cols: 6, rows: 3, flat: true, cell: (r, c) => [5 - c, r] },
+  left: { cols: 3, rows: 6, flat: false, cell: (r, c) => [r, c] },
+  right: { cols: 3, rows: 6, flat: false, cell: (r, c) => [2 - r, 5 - c] },
+};
+
 function riverWrapper(entry) {
-  const wrap = div("river-wrap");
-  const river = div("river");
+  const place = PLACE[entry.seat];
+  const grid = RIVER_GRID[place];
+  const river = div(
+    `river ${grid.flat ? "river-flat" : "river-side"} river-${place}`,
+  );
 
   const claimWindow = payload.view.claimWindow;
   const last = entry.discards.length - 1;
   const previous = tableInitialized ? (previousDiscards[entry.seat] ?? 0) : entry.discards.length;
 
-  // Every river is the same reserved 6x6 board, decided by the layout before
-  // the hand starts. Discards fill left to right, then top to bottom; the
-  // empty slots stay in the grid so a river never reflows or grows into
-  // another element.
+  // The reserved block is decided before the first discard. Each screen
+  // cell maps back to the throw index that belongs there.
+  const cells = new Array(RIVER_SLOTS);
   for (let index = 0; index < RIVER_SLOTS; index++) {
-    const key = entry.discards[index];
-    if (key === undefined) {
-      const empty = div("river-slot");
-      empty.setAttribute("aria-hidden", "true");
-      river.append(empty);
-    } else {
-      river.append(
-        riverTile(
-          key,
-          index === last,
-          index >= previous,
-          entry.seat,
-          claimWindow,
-        ),
-      );
-    }
+    const [x, y] = grid.cell(Math.floor(index / 6), index % 6);
+    cells[y * grid.cols + x] = index;
   }
 
-  wrap.append(river);
-  wrap.setAttribute(
+  for (const index of cells) {
+    const slot = div("river-slot");
+    const key = index === undefined ? undefined : entry.discards[index];
+    if (key !== undefined) {
+      slot.append(
+        riverTile(key, index === last, index >= previous, entry.seat, claimWindow),
+      );
+    } else {
+      slot.setAttribute("aria-hidden", "true");
+    }
+    river.append(slot);
+  }
+
+  river.setAttribute(
     "aria-label",
     `${entry.isYou ? "Your" : `${WIND_NAME[entry.wind]} seat`} ${entry.discards.length} discards`,
   );
-  return wrap;
+  return river;
 }
 
 function riverTile(key, isLast, isNew, seat, claimWindow) {
@@ -711,38 +722,35 @@ function riverTile(key, isLast, isNew, seat, claimWindow) {
 function renderSeat(entry) {
   const place = PLACE[entry.seat];
   if (place === "bottom") return;
+  const labelSlot = $(`#label-${place}`);
+  if (labelSlot !== null) fillSeatLabel(labelSlot, entry);
+
   const root = $(`#seat-${place}`);
   root.className = `seat seat-${place}${seatIsTurn(entry.seat) ? " is-turn" : ""}`;
   root.style.setProperty("--seat-color", seatColor(entry.seat));
   root.replaceChildren();
 
-  if (place === "top") {
-    const line = div("seat-line");
-    line.append(seatChip(entry), rackLine(entry));
-    root.append(line);
+  const rack = rackLine(entry);
+  const melds = meldRow(entry.melds);
+  const bonuses = bonusRow(entry);
 
-    // Melds and bonuses stay under the north rack, inside the seat's own
-    // grid row. They never share a line that could push into a side seat.
-    const extras = div("seat-extras");
-    const melds = meldRow(entry.melds);
-    if (melds !== null) extras.append(melds);
-    const bonuses = bonusRow(entry);
-    if (bonuses !== null) extras.append(bonuses);
-    if (extras.childElementCount > 0) root.append(extras);
+  if (place === "top") {
+    // The north seat lays its melds and bonuses along the top band beside
+    // the rack, never over the play area.
+    if (melds !== null) root.append(melds);
+    root.append(rack);
+    if (bonuses !== null) root.append(bonuses);
     return;
   }
 
-  root.append(seatChip(entry));
-  root.append(rackLine(entry));
-  const melds = meldRow(entry.melds);
+  // The side racks hug the edge; their melds sit inboard of the rack.
+  root.append(rack);
   if (melds !== null) root.append(melds);
 }
 
 function renderSelf(entry) {
-  const slot = $("#self-chip");
-  slot.replaceChildren(seatChip(entry));
-  slot.classList.toggle("is-turn", seatIsTurn(entry.seat));
-  slot.style.setProperty("--seat-color", seatColor(entry.seat));
+  const slot = $("#self-label");
+  fillSeatLabel(slot, entry);
 }
 
 function renderRivers() {
@@ -777,21 +785,20 @@ function renderCenter() {
   meta.replaceChildren();
   const round = document.createElement("strong");
   round.textContent = view.prevailingWind;
-  const dealerEntry = payload.table.find((entry) => entry.seat === view.dealer);
-  const dealer = document.createElement("strong");
-  dealer.textContent = dealerEntry?.wind ?? view.dealer;
-  meta.append(
-    round,
-    document.createTextNode(" round · dealer "),
-    dealer,
-  );
+  const hand = document.createElement("strong");
+  hand.textContent = String(view.handNumber);
+  meta.append(round, document.createTextNode(" round · hand "), hand);
 
   const totals = displayTotals();
+  const cornerFor = { top: "nw", right: "ne", bottom: "se", left: "sw" };
   const scores = $("#center-scores");
   scores.replaceChildren();
   for (const entry of payload.table) {
     const points = totals[entry.seat] ?? 0;
-    const cell = div(`center-score${seatIsTurn(entry.seat) ? " is-turn" : ""}`);
+    const corner = cornerFor[PLACE[entry.seat]];
+    const cell = div(
+      `center-score corner-${corner}${seatIsTurn(entry.seat) ? " is-turn" : ""}`,
+    );
     cell.dataset.seat = entry.seat;
     cell.style.setProperty("--seat-color", seatColor(entry.seat));
     cell.setAttribute(
@@ -813,7 +820,7 @@ function renderCenter() {
 
 function renderHand() {
   const view = payload.view;
-  const hand = view.player.hand;
+  const hand = displayHand();
   const element = $("#hand");
   const hadFocus =
     document.activeElement instanceof HTMLElement &&
@@ -832,11 +839,12 @@ function renderHand() {
     return;
   }
 
-  const drawnKey =
-    view.lastDraw !== undefined && view.lastDraw !== null && view.lastDraw.seat === view.seat
-      ? view.lastDraw.tile
-      : null;
-  const drawnIndex = drawnKey === null ? -1 : hand.lastIndexOf(drawnKey);
+  const draw = view.lastDraw;
+  const hasDrawn =
+    draw !== null &&
+    draw.seat === view.seat &&
+    view.player.hand.includes(draw.tile);
+  const drawnIndex = hasDrawn ? hand.length - 1 : -1;
   if (
     drawnIndex >= 0 &&
     (hand.length > previousHand.length || !handInitialized)
@@ -865,8 +873,9 @@ function renderHand() {
     }
     if (index === drawnIndex) {
       button.classList.add("is-drawn");
-      // The extra tile stands apart from the 13 instead of carrying a dot.
-      if (hand.length > 13 && index > 0) button.classList.add("is-drawn-gap");
+      // The extra tile stands apart from the thirteen instead of carrying a
+      // dot or a lift.
+      if (index > 0) button.classList.add("is-drawn-gap");
     }
     if (
       handInitialized &&
@@ -878,9 +887,6 @@ function renderHand() {
     }
 
     button.append(tileElement(key));
-    const number = span("tile-index", index < 9 ? String(index + 1) : "");
-    number.setAttribute("aria-hidden", "true");
-    button.append(number);
 
     button.addEventListener("click", () => onHandClick(index));
     button.addEventListener("focus", () => {
@@ -902,7 +908,7 @@ function updateDiscardHint() {
   const button = document.querySelector('.action-button[data-action="discard"]');
   if (button === null) return;
   const index = selected ?? cursor;
-  const tile = payload.view.player.hand[index];
+  const tile = displayHand()[index];
   if (tile === undefined) return;
   const label = `Discard ${tileName(tile)} (tile ${index + 1})`;
   button.title = label;
@@ -1134,7 +1140,7 @@ function renderActions() {
   // A click on the hand does the same thing; this makes the action nameable.
   if (view.phase === "discard" && view.turn === view.seat) {
     const index = selected ?? cursor;
-    const tile = view.player.hand[index];
+    const tile = displayHand()[index];
     if (tile !== undefined) {
       const button = document.createElement("button");
       button.type = "button";
@@ -1742,7 +1748,7 @@ function render() {
     if (payload.outcome === null) focusHand(cursor);
   }
 
-  previousHand = [...payload.view.player.hand];
+  previousHand = displayHand();
   if (tableInitialized) {
     for (const seat of SEATS) {
       previousDiscards[seat] = seatEntry(seat)?.discards.length ?? 0;
@@ -1830,7 +1836,7 @@ function onHandClick(index) {
     pendingClick = index;
     return;
   }
-  if (index < 0 || index >= payload.view.player.hand.length) return;
+  if (index < 0 || index >= displayHand().length) return;
   cursor = index;
   selected = index;
   // A click throws the tile: nothing about a mahjong hand needs a two-step
@@ -1845,7 +1851,7 @@ function onHandClick(index) {
 
 function selectTile(index) {
   if (payload === null || busy) return;
-  if (index < 0 || index >= payload.view.player.hand.length) {
+  if (index < 0 || index >= displayHand().length) {
     log(`There is no tile ${index + 1}.`);
     return;
   }
@@ -1866,7 +1872,7 @@ function discardSelected() {
     log("Pick a tile with 1–9 first.");
     return;
   }
-  const tile = payload.view.player.hand[selected];
+  const tile = displayHand()[selected];
   if (tile !== undefined && sendDiscard(tile)) return;
   log("That tile cannot be discarded now.");
 }
@@ -1878,7 +1884,7 @@ function discardCandidate() {
     return;
   }
   if (!isYourDiscardPhase()) return;
-  const tile = payload.view.player.hand[cursor];
+  const tile = displayHand()[cursor];
   if (tile !== undefined && sendDiscard(tile)) return;
   log("That tile cannot be discarded now.");
 }
@@ -1917,7 +1923,7 @@ function confirmSelection() {
 
 function moveCursor(delta) {
   if (payload === null) return;
-  const hand = payload.view.player.hand;
+  const hand = displayHand();
   if (hand.length === 0) return;
   cursor = (cursor + delta + hand.length) % hand.length;
   syncCursorDom();
@@ -2078,7 +2084,7 @@ function onKeydown(event) {
       break;
     case "End":
       event.preventDefault();
-      moveCursor(payload.view.player.hand.length - 1 - cursor);
+      moveCursor(displayHand().length - 1 - cursor);
       break;
     case "Escape":
       selected = null;
