@@ -9,47 +9,52 @@
   <body>
     <main class="app" id="app">
       <section class="board" id="board" aria-label="Mahjong table">
-        <section class="playfield" id="playfield" aria-label="Play area">
-          <div class="seat-label label-top" id="label-top"></div>
-          <div class="seat-label label-right" id="label-right"></div>
-          <div class="seat-label label-left" id="label-left"></div>
-          <div class="board-centre" id="board-centre">
-            <section class="center" aria-label="Table centre">
-              <div class="center-scores" id="center-scores" aria-label="Scores"></div>
-              <div class="wall-dial" id="wall-dial">
-                <svg viewBox="0 0 72 72" aria-hidden="true">
-                  <circle class="wall-track" cx="36" cy="36" r="31"></circle>
-                  <circle class="wall-ring" id="wall-ring" cx="36" cy="36" r="31"></circle>
-                </svg>
-                <span class="wall-count" id="wall-count">0</span>
-                <span class="wall-label">wall</span>
-              </div>
-              <p class="center-meta" id="center-meta"></p>
-            </section>
-            <section class="river-zone zone-top" id="river-top" aria-label="Top seat discards"></section>
-            <section class="river-zone zone-left" id="river-left" aria-label="Left seat discards"></section>
-            <section class="river-zone zone-right" id="river-right" aria-label="Right seat discards"></section>
-            <section class="river-zone zone-bottom" id="river-bottom" aria-label="Your discards"></section>
-          </div>
-        </section>
+        <img
+          class="reference-overlay"
+          id="reference-overlay"
+          src="/reference3.png"
+          width="1512"
+          height="982"
+          alt=""
+          hidden
+        />
+        <section class="playfield" id="playfield" aria-label="Play area"></section>
 
         <section class="seat seat-top" id="seat-top" aria-label="Top seat"></section>
         <section class="seat seat-left" id="seat-left" aria-label="Left seat"></section>
         <section class="seat seat-right" id="seat-right" aria-label="Right seat"></section>
 
+        <section class="center" aria-label="Table centre">
+          <div class="center-scores" id="center-scores" aria-label="Scores"></div>
+          <p class="center-meta" id="center-meta"></p>
+          <div class="wall-dial" id="wall-dial">
+            <svg viewBox="0 0 72 72" aria-hidden="true">
+              <circle class="wall-track" cx="36" cy="36" r="31"></circle>
+              <circle class="wall-ring" id="wall-ring" cx="36" cy="36" r="31"></circle>
+            </svg>
+            <span class="wall-count" id="wall-count">0</span>
+            <span class="wall-label">wall</span>
+          </div>
+        </section>
+
+        <section class="river-zone zone-top" id="river-top" aria-label="Top seat discards"></section>
+        <section class="river-zone zone-left" id="river-left" aria-label="Left seat discards"></section>
+        <section class="river-zone zone-right" id="river-right" aria-label="Right seat discards"></section>
+        <section class="river-zone zone-bottom" id="river-bottom" aria-label="Your discards"></section>
+
+        <section class="hand-band" aria-label="Your hand">
+          <div class="hand-layout">
+            <div class="self-info">
+              <div class="self-label" id="self-label"></div>
+              <div class="own-bonus" id="own-bonus" aria-label="Bonus tiles"></div>
+            </div>
+            <div class="own-melds" id="own-melds" aria-label="Your melds"></div>
+            <div class="hand" id="hand" role="group" aria-label="Your hand"></div>
+          </div>
+        </section>
+
         <div class="action-cluster" id="actions" aria-label="Available actions"></div>
         <div class="claim-bar" id="claim-bar" hidden aria-label="Claim window"></div>
-      </section>
-
-      <section class="hand-band" aria-label="Your hand">
-        <div class="hand-layout">
-          <div class="self-info">
-            <div class="self-label" id="self-label"></div>
-            <div class="own-bonus" id="own-bonus" aria-label="Bonus tiles"></div>
-          </div>
-          <div class="own-melds" id="own-melds" aria-label="Your melds"></div>
-          <div class="hand" id="hand" role="group" aria-label="Your hand"></div>
-        </div>
       </section>
 
       <aside class="rail" id="rail" aria-label="Table information">
@@ -127,6 +132,8 @@
           <dd>Deal a new game.</dd>
           <dt><kbd>Esc</kbd></dt>
           <dd>Clear the picked tile, or close this dialog.</dd>
+          <dt><kbd>o</kbd></dt>
+          <dd>Show the reference screenshot behind the board (debug view).</dd>
           <dt><kbd>?</kbd></dt>
           <dd>Show this key list.</dd>
         </dl>

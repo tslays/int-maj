@@ -34,34 +34,21 @@
   --fs-body: 15px;
   --fs-heading: 18px;
 
-  /* One tile unit sizes the whole table. The hand is the unit: a Mahjong
-     Soul board puts about fourteen of them across the bottom edge, so the
-     hand is capped at 6.4% of the viewport width and by the height the
-     rotated rivers need. Every other number is a ratio of that unit. */
-  --hand-w: min(6.2vw, calc((86vh - 20px) / 8));
-  --hand-h: calc(var(--hand-w) * 4 / 3);
+  /* One hand tile sizes the whole table. These are the fit to
+     reference3.png's page (1512x894, the Safari chrome cropped at 88px):
+     the hand row spans x 405..1106, the centre panel 251x163, a river tile
+     41x55, a concealed back 34.4x45. The derived lengths live on .app so
+     .rail-closed can widen --board-w. */
   --hand-gap: 2px;
-  /* River tile = 0.62 hand; rows flush at one pixel, six to a row. */
-  --tile-w: calc(var(--hand-w) * 0.62);
-  --tile-h: calc(var(--hand-h) * 0.62);
   --tile-gap: 1px;
-  --river-w6: calc(6 * var(--tile-w) + 5 * var(--tile-gap));
-  --river-h3: calc(3 * var(--tile-h) + 2 * var(--tile-gap));
-  /* A side river is the same block turned: three rows across, six down. */
-  --river-w3: calc(3 * var(--tile-h) + 2 * var(--tile-gap));
-  --river-h6: calc(6 * var(--tile-w) + 5 * var(--tile-gap));
-  /* Concealed back = 0.33 hand on its long side. */
-  --back-w: calc(var(--hand-w) * 0.25);
-  --back-h: calc(var(--hand-w) * 0.33);
-  /* Centre = 1.9 hand; the four blocks meet it with a 0.91-unit gap. */
-  --centre-w: calc(var(--hand-w) * 1.9);
-  --play-w: calc(var(--river-w6) + 2 * var(--river-w3));
-  --play-h: calc(2 * var(--river-h3) + var(--centre-w));
-  --frame-top: 12%;
-  --frame-x: 3%;
-  --frame-bottom: 2%;
-  --meld-w: calc(var(--hand-w) * 0.45);
-  --meld-h: calc(var(--hand-h) * 0.45);
+  --frame-top: 1%;
+  --frame-x: 14.5%;
+  --frame-bottom: 4.6%;
+  --rack-top: 1.9%;
+  --rack-pad: 0.65%;
+  --ring-gap: 8.3%;
+  --hand-lift: 3.4%;
+  --action-row: 4.6%;
   --rail-w: 260px;
 
   --fast: 140ms;
@@ -170,10 +157,52 @@ kbd {
 
 /* ------------------------------------------------------------- shell */
 
+/* The debug overlay: reference3.png at native size, the Safari chrome
+   cropped (the page starts at y 88) and the image's page origin on the
+   board's origin. At 1512x894 (the reference's page, rail closed) the
+   image and the board are the same box, so a tile only "lines up" when it
+   covers the reference tile exactly. `?overlay=1` or `o` shows it; it is
+   never part of the game surface. */
+.reference-overlay {
+  position: absolute;
+  z-index: 0;
+  top: -88px;
+  left: 0;
+  width: 1512px;
+  height: 982px;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+}
+
+.board.overlay-on {
+  overflow: visible;
+}
+
+.board.overlay-on::after {
+  display: none;
+}
+
+/* The board is the page minus the rail, so every length is derived from
+   --board-w here, where .rail-closed can widen it. */
 .app {
+  --board-w: calc(100vw - var(--rail-w));
+  --hand-w: calc((var(--board-w) * 0.4643 - 13 * var(--hand-gap)) / 14.4);
+  --hand-h: calc(var(--hand-w) * 4 / 3);
+  --tile-w: calc(var(--hand-w) * 0.874);
+  --tile-h: calc(var(--hand-h) * 0.874);
+  --river-w6: calc(6 * var(--tile-w) + 5 * var(--tile-gap));
+  --river-h3: calc(3 * var(--tile-h) + 2 * var(--tile-gap));
+  --river-w3: var(--river-h3);
+  --river-h6: var(--river-w6);
+  --back-w: calc(var(--hand-w) * 0.73);
+  --back-h: calc(var(--hand-w) * 0.96);
+  --meld-w: calc(var(--hand-w) * 0.45);
+  --meld-h: calc(var(--hand-h) * 0.45);
+
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 260px;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) var(--rail-w);
+  grid-template-rows: minmax(0, 1fr);
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
@@ -181,6 +210,7 @@ kbd {
 }
 
 .app.rail-closed {
+  --board-w: 100vw;
   grid-template-columns: minmax(0, 1fr) 0;
 }
 
@@ -188,15 +218,39 @@ kbd {
   display: none;
 }
 
-/* The board is the felt. The playfield is the thin lighter frame; the racks
-   and names live on the felt outside it, the four rivers and the centre
-   inside it. Nothing is placed at a hand-tuned offset: every edge comes
-   from the frame percentages or the hand unit. */
+/* The board is one grid: a felt margin, a rack line, the felt above the
+   ring, the four river blocks and the centre hole, the felt below, the
+   hand row, the lift and the action row. Every edge is a track measured
+   off the reference; nothing is placed at a pixel offset. */
 .board {
   position: relative;
-  display: block;
+  z-index: 1;
+  display: grid;
   grid-column: 1;
   grid-row: 1;
+  grid-template-columns:
+    14.5%
+    0.65%
+    var(--back-w)
+    minmax(0, 1fr)
+    var(--river-w3)
+    var(--river-w6)
+    var(--river-w3)
+    minmax(0, 1fr)
+    var(--back-w)
+    0.65%
+    14.5%;
+  grid-template-rows:
+    1.9%
+    auto
+    8.3%
+    var(--river-h3)
+    var(--river-h3)
+    var(--river-h3)
+    minmax(0, 1fr)
+    var(--hand-h)
+    3.4%
+    4.6%;
   overflow: hidden;
   background:
     radial-gradient(ellipse at 50% 38%, var(--felt-high) 0%, var(--felt) 52%, var(--felt-low) 100%);
@@ -212,9 +266,10 @@ kbd {
   pointer-events: none;
 }
 
-/* The frame marks the play area: inset 12% from the top, 3% from the sides,
-   2% from the bottom. The one-tile-wide felt band lies outside it, where
-   the seat names and concealed racks sit. */
+/* The frame marks the felt's edge in the reference: 1% from the top, 14.5%
+   from the sides, 4.6% from the bottom. It is absolutely positioned because
+   a percentage inset resolves top/bottom against the board's height, which
+   margins do not. */
 .playfield {
   position: absolute;
   z-index: 1;
@@ -224,27 +279,13 @@ kbd {
   pointer-events: none;
 }
 
-/* The four blocks meeting around the centre: north/south are six wide,
-   east/west are the same block turned six tall. They touch at the corners. */
-.board-centre {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: var(--play-w);
-  height: var(--play-h);
-  transform: translate(-50%, -50%);
-}
-
 .hand-band {
   position: relative;
   z-index: 4;
   display: flex;
-  grid-column: 1 / -1;
-  grid-row: 2;
+  grid-area: 8 / 1 / 9 / -1;
   align-items: flex-end;
   justify-content: center;
-  padding: 8px 10px;
-  background: var(--felt-low);
   color: var(--on-felt);
 }
 
@@ -649,10 +690,11 @@ kbd {
 
 /* ------------------------------------------------------- seats and racks */
 
-/* Tenhou's seats are a wind and a name on the felt, nothing else. Each name
-   sits in its own corner of the play area; the racks stay on the edges. */
+/* Tenhou's seats are a rack line and a meld block on the felt, nothing else.
+   The racks sit on the board's own tracks: the north line in its row, the
+   side lines in their columns, just inside the felt frame. */
 .seat {
-  position: absolute;
+  position: relative;
   z-index: 2;
   display: flex;
   gap: 12px;
@@ -662,49 +704,25 @@ kbd {
 }
 
 .seat-top {
-  top: 4px;
-  left: 50%;
-  transform: translateX(-50%);
+  grid-area: 2 / 1 / 3 / -1;
+  justify-self: center;
+  align-self: start;
 }
 
 .seat-left {
-  left: 5px;
-  top: 50%;
-  transform: translateY(-50%);
+  grid-area: 3 / 3 / 8 / 4;
+  flex-direction: column;
+  justify-self: start;
+  align-self: center;
+  align-items: flex-start;
 }
 
 .seat-right {
-  right: 5px;
-  top: 50%;
-  flex-direction: row-reverse;
-  transform: translateY(-50%);
-}
-
-.seat-label {
-  position: absolute;
-  z-index: 3;
-  display: flex;
-  gap: 7px;
-  align-items: baseline;
-  font-size: var(--fs-label);
-  line-height: 1.1;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-.label-top {
-  top: 8px;
-  left: 10px;
-}
-
-.label-right {
-  top: 8px;
-  right: 10px;
-}
-
-.label-left {
-  bottom: 8px;
-  left: 10px;
+  grid-area: 3 / 9 / 8 / 10;
+  flex-direction: column;
+  justify-self: end;
+  align-self: center;
+  align-items: flex-end;
 }
 
 .seat-wind {
@@ -719,7 +737,6 @@ kbd {
   font-weight: 600;
 }
 
-.seat-label.is-turn .seat-wind,
 .self-label.is-turn .seat-wind {
   text-shadow: 0 0 10px var(--accent-soft);
   color: var(--accent);
@@ -870,42 +887,29 @@ kbd {
 /* Every river reserves its whole block at mount time: empty slots keep
    their space, so the four blocks meet around the centre and never reflow.
    North and south read six across; east and west are the same block turned,
-   six down, each tile rotated to face its own player. */
+   six down, each tile rotated to face its own player. Each zone is a grid
+   item: north/south in the centre column, east/west in their side columns,
+   the side blocks centred on the centre row. */
 .river-zone {
-  position: absolute;
   pointer-events: auto;
 }
 
 .zone-top {
-  left: 50%;
-  top: 0;
-  width: var(--river-w6);
-  height: var(--river-h3);
-  transform: translateX(-50%);
+  grid-area: 4 / 6 / 5 / 7;
 }
 
 .zone-bottom {
-  left: 50%;
-  bottom: 0;
-  width: var(--river-w6);
-  height: var(--river-h3);
-  transform: translateX(-50%);
+  grid-area: 6 / 6 / 7 / 7;
 }
 
 .zone-left {
-  left: 0;
-  top: 50%;
-  width: var(--river-w3);
-  height: var(--river-h6);
-  transform: translateY(-50%);
+  grid-area: 4 / 5 / 7 / 6;
+  align-self: center;
 }
 
 .zone-right {
-  right: 0;
-  top: 50%;
-  width: var(--river-w3);
-  height: var(--river-h6);
-  transform: translateY(-50%);
+  grid-area: 4 / 7 / 7 / 8;
+  align-self: center;
 }
 
 .river {
@@ -986,16 +990,14 @@ kbd {
 
 /* -------------------------------------------------------------- centre */
 
-/* The centre is the gap the four blocks leave: 1.9 units square, dead in
-   the play area. Round, hand and wall in the middle; four scores in the
-   corners, the dealer's corner carrying a dot. */
+/* The centre is the hole the four river blocks leave: one river block wide,
+   three river rows tall (251x166 at the reference size, against 251x163
+   measured). The panel is that box: round and hand at the top, the wall
+   count in the middle, the four scores in the corners. */
 .center {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: var(--centre-w);
-  height: var(--centre-w);
-  transform: translate(-50%, -50%);
+  grid-area: 5 / 6 / 6 / 7;
+  position: relative;
+  overflow: hidden;
   border: 1px solid rgba(247, 242, 226, 0.08);
   border-radius: 8px;
   background: rgba(4, 12, 8, 0.2);
@@ -1004,11 +1006,11 @@ kbd {
 .wall-dial {
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: 56%;
   display: grid;
   width: calc(var(--hand-w) * 0.8);
   height: calc(var(--hand-w) * 0.8);
-  transform: translate(-50%, -55%);
+  transform: translate(-50%, -50%);
   place-items: center;
 }
 
@@ -1053,10 +1055,10 @@ kbd {
 .center-meta {
   position: absolute;
   left: 50%;
-  top: calc(50% + var(--hand-w) * 0.42);
+  top: 7px;
   transform: translateX(-50%);
   color: var(--on-felt-muted);
-  font-size: 9px;
+  font-size: 10px;
   white-space: nowrap;
 }
 
@@ -1141,24 +1143,23 @@ kbd {
 /* ------------------------------------------------------------- actions */
 
 .action-cluster {
-  position: absolute;
   z-index: 6;
-  right: 14px;
-  bottom: 12px;
   display: flex;
+  grid-area: 10 / 1 / 11 / -1;
   flex-direction: column;
   gap: 6px;
   align-items: flex-end;
-  max-width: 240px;
+  align-self: end;
+  justify-self: end;
+  width: max-content;
+  max-width: calc(var(--board-w) * 0.19);
+  margin: 0 14px 4px 0;
 }
 
-/* With a fishing offer the preview and the buttons share one low row, so the
-   cluster stays below the east river instead of growing up into it. */
+/* The fishing preview stacks above the buttons in the felt right of the
+   hand, so nothing in the reserved board moves when the offer appears. */
 .action-cluster.has-fishing-preview {
-  flex-direction: row;
-  gap: 10px;
-  align-items: flex-end;
-  max-width: none;
+  width: calc(var(--board-w) * 0.19);
 }
 
 .action-buttons {
@@ -1174,8 +1175,8 @@ kbd {
   gap: 8px;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 8px 14px;
+  min-height: 37px;
+  padding: 4px 12px;
   border: 1px solid rgba(247, 242, 226, 0.24);
   border-radius: 7px;
   background: rgba(5, 18, 12, 0.78);
@@ -1232,7 +1233,7 @@ kbd {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  max-width: 220px;
+  width: 100%;
   padding: 9px 11px;
   border: 1px solid rgba(231, 198, 91, 0.5);
   border-radius: 11px;
@@ -1284,22 +1285,23 @@ kbd {
 }
 
 .discard-action .tile {
-  width: 24px;
-  height: 32px;
+  width: 20px;
+  height: 27px;
   border-radius: 2px;
 }
 
 .claim-bar {
-  position: absolute;
   z-index: 7;
-  right: 14px;
-  bottom: 12px;
   display: flex;
+  grid-area: 10 / 1 / 11 / -1;
   flex-direction: column;
   gap: 6px;
   align-items: flex-end;
+  align-self: end;
+  justify-self: end;
   width: max-content;
-  max-width: calc(100% - 28px);
+  max-width: calc(var(--board-w) * 0.19);
+  margin: 0 14px 4px 0;
 }
 
 .claim-head {
@@ -1998,12 +2000,11 @@ kbd {
 
 @media (max-width: 1100px) {
   :root {
-    --hand-w: min(6vw, calc((86vh - 20px) / 8));
     --rail-w: 230px;
   }
 
   .app {
-    grid-template-columns: minmax(0, 1fr) 230px;
+    grid-template-columns: minmax(0, 1fr) var(--rail-w);
   }
 
   .outcome {
@@ -2014,9 +2015,9 @@ kbd {
     padding: 12px;
   }
 
-  .action-cluster {
-    right: 10px;
-    max-width: 200px;
+  .action-cluster,
+  .claim-bar {
+    margin-right: 10px;
   }
 }
 
@@ -2041,10 +2042,6 @@ kbd {
 }
 
 @media (max-height: 760px) {
-  .action-cluster {
-    bottom: 9px;
-  }
-
   .rail {
     gap: 10px;
   }
