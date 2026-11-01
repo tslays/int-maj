@@ -112,6 +112,9 @@ Copying their *layout* is fine; copying their art is not. These are the proporti
 
 Everything else in that screenshot (avatars, emotes, gacha frames, dora, sticks, timers) is theirs and stays out.
 
+**Where the 7% is capped.** The ratios above are exact (measured: river 0.620, concealed back 0.330, centre 1.900 of the hand unit). The hand's *absolute* width is capped at 6.2vw on a 16:10 screen: fourteen 7vw tiles alone would be 98vw before a single gap, and the four rotated three-row rivers, the 12%-top frame and the hand must all fit the viewport height at 1440x900 and 1280x800. A literal 7vw hand would need about 70px more height than 900px allows once the side rivers are turned six tall. The layout therefore takes the *proportions* from Mahjong Soul and lets the width and height budgets set the unit; the remaining ~0.3vw of slack keeps the name and bonus tray clear of the hand's left edge. Measured at both target sizes: hand tile 6.20vw, river tile 0.62 hand, back 0.33 hand, centre 1.90 hand.
+
+
 ## How the reference arranges tiles (from the Mahjong Soul board)
 
 Looking at a live Mahjong Soul table, the arrangement rules that make it read instantly — adopt these:
