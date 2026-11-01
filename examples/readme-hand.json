@@ -1,0 +1,817 @@
+{
+  "seed": "readme-demo",
+  "actions": [
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "b6"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "b2"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "b1"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "b1"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "b8"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "c3"
+    },
+    {
+      "type": "Pass",
+      "seat": "W"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "b7"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "b3"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "b8"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "c3"
+    },
+    {
+      "type": "Pass",
+      "seat": "W"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "b9"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "b8"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "c1"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "c4"
+    },
+    {
+      "type": "Pass",
+      "seat": "W"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "c3"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "b9"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "c1"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "b7"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "b9"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "c6"
+    },
+    {
+      "type": "Pass",
+      "seat": "E"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "c5"
+    },
+    {
+      "type": "Pass",
+      "seat": "W"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "b4"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "c4"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "b2"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "c3"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "c8"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "b5"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "c5"
+    },
+    {
+      "type": "Pass",
+      "seat": "E"
+    },
+    {
+      "type": "Pass",
+      "seat": "W"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "b4"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "c8"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "c5"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "c1"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "b5"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "c2"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "c1"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "c7"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "b3"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "c2"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "c5"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "b6"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "c6"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "c9"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "c6"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "c7"
+    },
+    {
+      "type": "Pass",
+      "seat": "E"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "b7"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "b8"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "b6"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "o3"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "c7"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "b3"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "c9"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "b6"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "c6"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "c2"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "b2"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "o2"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "b1"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "o1"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "b5"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "b9"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "c7"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "c9"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "b4"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "o4"
+    },
+    {
+      "type": "Pass",
+      "seat": "E"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "c4"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "o1"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "c8"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "c2"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "b2"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "o2"
+    },
+    {
+      "type": "Pass",
+      "seat": "W"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "b5"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "b3"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "o2"
+    },
+    {
+      "type": "Pass",
+      "seat": "S"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "o3"
+    },
+    {
+      "type": "Pass",
+      "seat": "W"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "o1"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "o4"
+    },
+    {
+      "type": "Pass",
+      "seat": "E"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "b1"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "c8"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "c9"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "b4"
+    },
+    {
+      "type": "Draw",
+      "seat": "E"
+    },
+    {
+      "type": "Discard",
+      "seat": "E",
+      "tile": "b7"
+    },
+    {
+      "type": "Draw",
+      "seat": "S"
+    },
+    {
+      "type": "Discard",
+      "seat": "S",
+      "tile": "o2"
+    },
+    {
+      "type": "Pass",
+      "seat": "W"
+    },
+    {
+      "type": "Draw",
+      "seat": "W"
+    },
+    {
+      "type": "Discard",
+      "seat": "W",
+      "tile": "c4"
+    },
+    {
+      "type": "Draw",
+      "seat": "N"
+    },
+    {
+      "type": "Discard",
+      "seat": "N",
+      "tile": "o1"
+    }
+  ]
+}

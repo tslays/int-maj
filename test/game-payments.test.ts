@@ -1,0 +1,437 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  apply,
+  claimOptions,
+  fishingDeclarationFor,
+  isApplyError,
+  legalActions,
+  ledgerTotals,
+  newGame,
+  nextHand,
+  replayEventLog,
+  serialize,
+  type Action,
+  type GameState,
+} from "../src/core/game/index.ts";
+import { fixture, handOf, play, playError } from "./game-fixture.ts";
+
+function zeroSum(state: GameState): void {
+  const { totals } = ledgerTotals(state);
+  assert.equal(totals.E + totals.S + totals.W + totals.N, 0);
+}
+
+const FILLER = {
+  S: "b1 b1 b1 b3 b3 b3 b4 b4 b4 b6 b6 b6 b7",
+  W: "c1 c1 c1 c2 c2 c2 c3 c3 c3 c4 c4 c4 c5",
+  N: "o1 o1 o1 o2 o2 o2 o3 o3 o3 o4 o4 o4 o5",
+};
+
+describe("payments", () => {
+  it("pays a self-drawn dealer win from all three at the printed tier", () => {
+    const state = fixture({
+      hands: {
+        E: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 b5",
+        ...FILLER,
+      },
+      wall: ["o6", "o7", "o8"],
+      phase: "discard",
+      turn: "E",
+      lastDraw: { seat: "E", tile: "b5", end: "front" },
+    });
+    const won = play(state, { type: "Win", seat: "E", kind: "self-drawn" });
+    assert.equal(won.state.result?.points, 1500);
+    assert.equal(won.state.result?.nextDealer, "E");
+    assert.deepEqual(
+      won.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
+      [
+        ["S", "E", 1500],
+        ["W", "E", 1500],
+        ["N", "E", 1500],
+      ],
+    );
+    assert.deepEqual(ledgerTotals(won.state).totals, { E: 4500, S: -1500, W: -1500, N: -1500 });
+    zeroSum(won.state);
+  });
+
+  it("makes the dealer pay double on a non-dealer self-drawn win", () => {
+    const state = fixture({
+      hands: {
+        E: "b1 b1 b1 b3 b3 b3 b4 b4 b4 b6 b6 b6 b7",
+        S: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 b5",
+        W: "c1 c1 c1 c2 c2 c2 c3 c3 c3 c4 c4 c4 c5",
+        N: "o1 o1 o1 o2 o2 o2 o3 o3 o3 o4 o4 o4 o5",
+      },
+      wall: ["o6", "o7", "o8"],
+      phase: "discard",
+      turn: "S",
+      lastDraw: { seat: "S", tile: "b5", end: "front" },
+    });
+    const won = play(state, { type: "Win", seat: "S", kind: "self-drawn" });
+    assert.deepEqual(
+      won.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
+      [
+        ["E", "S", 3000],
+        ["W", "S", 1500],
+        ["N", "S", 1500],
+      ],
+    );
+    assert.match(won.state.ledger[0]!.reason, /dealer double/);
+    assert.equal(won.state.result?.nextDealer, "S");
+    zeroSum(won.state);
+  });
+
+  it("makes the discarder pay a win on a discard", () => {
+    const state = fixture({
+      hands: {
+        E: "b1 b1 b1 c1 c2 c3 c7 c8 c9 wE wS wW b5 o9",
+        ...FILLER,
+        S: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5",
+      },
+      wall: ["o6", "o7", "o8"],
+      phase: "discard",
+      turn: "E",
+    });
+    const discarded = play(state, { type: "Discard", seat: "E", tile: "b5" });
+    const won = play(discarded.state, {
+      type: "Claim",
+      seat: "S",
+      kind: "mahjong",
+      tiles: ["b5"],
+    });
+    assert.equal(won.state.result?.from, "E");
+    assert.equal(won.state.result?.selfDrawn, false);
+    assert.deepEqual(
+      won.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
+      [["E", "S", 1500]],
+    );
+    assert.equal(won.state.result?.nextDealer, "S");
+    zeroSum(won.state);
+  });
+
+  it("settles a fishing declaration independently when the fisher loses", () => {
+    const state = fixture({
+      hands: {
+        E: "b1 b1 b2 b2 b3 b3 b4 b4 b5 b5 b6 b6 b7 b8",
+        S: "c1 c1 c2 c2 c3 c3 c4 c4 c5 c5 c6 c6 c7",
+        W: "o1 o1 o2 o2 o3 o3 o4 o4 o5 o5 o6 o6 o7",
+        N: "wE wE wS wS wW wW wN wN dR dR dG dG dW",
+      },
+      wall: ["c7", "o8", "o9", "b9", "c8", "c9", "o1", "o2", "o3"],
+      phase: "discard",
+      turn: "E",
+    });
+    const discarded = play(state, { type: "Discard", seat: "E", tile: "b8" });
+    assert.equal(discarded.state.phase, "announce");
+    const declaration = legalActions(discarded.state, "E").find(
+      (action) => action.type === "DeclareFishing",
+    );
+    assert.ok(declaration);
+    const fished = play(discarded.state, declaration);
+    assert.equal(fished.state.fishing[0]?.tier, "limit");
+    assert.ok(fished.state.fishing[0]?.wait.includes("b7"));
+
+    const drawn = play(fished.state, { type: "Draw", seat: "S" });
+    const won = play(drawn.state, { type: "Win", seat: "S", kind: "self-drawn" });
+    assert.equal(won.state.result?.winner, "S");
+    const fishingEntries = won.state.ledger.filter((entry) => entry.reason.startsWith("fishing"));
+    assert.deepEqual(
+      fishingEntries.map((entry) => [entry.from, entry.to, entry.points]),
+      [
+        ["S", "E", 400],
+        ["W", "E", 400],
+        ["N", "E", 400],
+      ],
+    );
+    assert.deepEqual(ledgerTotals(won.state).totals, { E: -800, S: 3600, W: -1400, N: -1400 });
+    zeroSum(won.state);
+  });
+
+  it("does not pay a fishing player who is the winner", () => {
+    const state = fixture({
+      hands: {
+        E: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 o9",
+        S: "b1 b2 b3 c1 c2 c3 c7 c8 c9 wE wS wW b5",
+        W: "c1 c1 c1 c2 c2 c2 c3 c3 c3 c4 c4 c4 c5",
+        N: "o1 o1 o1 o2 o2 o2 o3 o3 o3 o4 o4 o4 o5",
+      },
+      wall: ["o1", "o2", "o3"],
+      phase: "discard",
+      turn: "E",
+      fishing: [{ seat: "E", wait: ["b5"], tier: "middle" }],
+    });
+    const discarded = play(state, { type: "Discard", seat: "E", tile: "o9" });
+    const drawn = play(discarded.state, { type: "Draw", seat: "S" });
+    const sDiscard = play(drawn.state, { type: "Discard", seat: "S", tile: "b5" });
+    const won = play(sDiscard.state, {
+      type: "Claim",
+      seat: "E",
+      kind: "mahjong",
+      tiles: ["b5"],
+    });
+    assert.equal(won.state.result?.winner, "E");
+    assert.ok(!won.state.ledger.some((entry) => entry.reason.startsWith("fishing")));
+    assert.deepEqual(
+      won.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
+      [["S", "E", 1500]],
+    );
+    zeroSum(won.state);
+  });
+
+  it("surfaces Calculate as unscored instead of inventing a figure", () => {
+    const state = fixture({
+      hands: {
+        E: "c6 c6 c6 c7 c7 c7 c8 c8 c8 c9 c9 c9 c5 c5",
+        ...FILLER,
+      },
+      wall: ["o6", "o7", "o8"],
+      phase: "discard",
+      turn: "E",
+      lastDraw: { seat: "E", tile: "c5", end: "front" },
+    });
+    const won = play(state, { type: "Win", seat: "E", kind: "self-drawn" });
+    assert.equal(won.state.result?.tier, "calculate");
+    assert.equal(won.state.result?.points, null);
+    assert.ok(won.state.ledger.every((entry) => entry.points === null));
+    assert.equal(ledgerTotals(won.state).unknown, 3);
+    assert.deepEqual(ledgerTotals(won.state).totals, { E: 0, S: 0, W: 0, N: 0 });
+    assert.ok(won.events.some((event) => event.type === "HandScored" && event.points === null));
+  });
+});
+
+describe("dealer rotation", () => {
+  const finishedSelfDrawn = () => {
+    const state = fixture({
+      hands: {
+        E: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 b5",
+        ...FILLER,
+      },
+      wall: ["o6"],
+      phase: "discard",
+      turn: "E",
+      lastDraw: { seat: "E", tile: "b5", end: "front" },
+    });
+    return play(state, { type: "Win", seat: "E", kind: "self-drawn" }).state;
+  };
+
+  it("keeps the deal when the dealer wins", () => {
+    const won = finishedSelfDrawn();
+    assert.equal(won.result?.nextDealer, "E");
+    const next = nextHand(won);
+    assert.equal(next.state.dealer, "E");
+    assert.equal(next.state.handNumber, 2);
+    assert.equal(next.events[0]?.type, "NextDeal");
+  });
+
+  it("passes the deal when a non-dealer wins", () => {
+    const state = fixture({
+      hands: {
+        E: "b1 b1 b1 c1 c2 c3 c7 c8 c9 wE wS wW b5 o9",
+        ...FILLER,
+        S: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5",
+      },
+      wall: ["o6"],
+      phase: "discard",
+      turn: "E",
+    });
+    const discarded = play(state, { type: "Discard", seat: "E", tile: "b5" });
+    const won = play(discarded.state, {
+      type: "Claim",
+      seat: "S",
+      kind: "mahjong",
+      tiles: ["b5"],
+    });
+    assert.equal(won.state.result?.nextDealer, "S");
+    assert.equal(nextHand(won.state).state.dealer, "S");
+  });
+
+  it("keeps the deal after a drawn hand", () => {
+    const state = fixture({
+      hands: {
+        E: "b2 b2 b2 c1 c2 c3 c7 c8 c9 wE wS wW o5 o9",
+        ...FILLER,
+      },
+      wall: [],
+      phase: "draw",
+      turn: "S",
+    });
+    const drawn = play(state, { type: "Draw", seat: "S" });
+    assert.equal(drawn.state.result?.kind, "drawn");
+    assert.equal(drawn.state.result?.nextDealer, "E");
+    assert.ok(drawn.events.some((event) => event.type === "DrawnHand"));
+    assert.equal(nextHand(drawn.state).state.dealer, "E");
+  });
+});
+
+describe("fishing restrictions", () => {
+  const fishingState = () =>
+    fixture({
+      hands: {
+        E: "o5 o5 b1 b1 b2 b2 b3 b3 b4 b4 b5 b5 b7",
+        S: "c1 c2 c3 c4 c5 c6 c7 c8 c9 wE wS wW o5",
+        W: "c1 c1 c1 c2 c2 c2 c3 c3 c3 c4 c4 c4 c5",
+        N: "o1 o1 o1 o2 o2 o2 o3 o3 o3 o4 o4 o4 o5",
+      },
+      wall: ["o6", "o7", "o8", "o9"],
+      phase: "discard",
+      turn: "E",
+      fishing: [{ seat: "E", wait: ["b7"], tier: "half" }],
+    });
+
+  it("offers a fishing player no pung, chow or claim-kong", () => {
+    const state = fishingState();
+    const options = claimOptions(state, "E", "o5", "S");
+    assert.deepEqual(options, []);
+  });
+
+  it("rejects a fishing claim with the rule name", () => {
+    const state = fixture({
+      hands: {
+        E: "o5 o5 b1 b1 b2 b2 b3 b3 b4 b4 b5 b5 b7",
+        S: "c1 c2 c3 c4 c5 c6 c7 c8 c9 wE wS wW o5",
+        W: "c1 c1 c1 c2 c2 c2 c3 c3 c3 c4 c4 c4 c5",
+        N: "o1 o1 o1 o2 o2 o2 o3 o3 o3 o4 o4 o4 o5",
+      },
+      wall: ["o6"],
+      phase: "claim",
+      turn: "E",
+      fishing: [{ seat: "E", wait: ["b7"], tier: "half" }],
+      claimWindow: {
+        discarder: "S",
+        tile: "o5",
+        pending: ["E"],
+        claims: [],
+      },
+    });
+    playError(
+      state,
+      { type: "Claim", seat: "E", kind: "pung", tiles: ["o5", "o5", "o5"] },
+      /fishing player may not claim/,
+    );
+    playError(
+      state,
+      { type: "Claim", seat: "E", kind: "kong", tiles: ["o5", "o5", "o5", "o5"] },
+      /fishing player may not claim/,
+    );
+    playError(
+      state,
+      { type: "Claim", seat: "E", kind: "chow", tiles: ["o4", "o5", "o6"] },
+      /fishing player may not claim/,
+    );
+  });
+
+  it("keeps a concealed kong legal and the fixed wait unchanged", () => {
+    const state = fixture({
+      hands: {
+        E: "b1 b1 b1 b1 b2 b2 b3 b3 b4 b4 b5 b5 b7 b8",
+        S: "c1 c2 c3 c4 c5 c6 c7 c8 c9 wE wS wW o5",
+        W: "c1 c1 c1 c2 c2 c2 c3 c3 c3 c4 c4 c4 c5",
+        N: "o1 o1 o1 o2 o2 o2 o3 o3 o3 o4 o4 o4 o5",
+      },
+      wall: ["o6", "o7", "o8", "o9"],
+      phase: "discard",
+      turn: "E",
+      fishing: [{ seat: "E", wait: ["b7"], tier: "half" }],
+    });
+    assert.ok(
+      legalActions(state, "E").some(
+        (action) => action.type === "ConcealedKong" && action.tile === "b1",
+      ),
+    );
+    const kong = play(state, { type: "ConcealedKong", seat: "E", tile: "b1" });
+    assert.deepEqual(kong.state.fishing, [{ seat: "E", wait: ["b7"], tier: "half" }]);
+    assert.equal(kong.state.phase, "discard");
+  });
+
+  it("keeps an added kong to a concealed pung legal", () => {
+    const state = fixture({
+      hands: {
+        E: "b1 b2 b2 b3 b3 b4 b4 b5 b5 b7 b8",
+        S: "c1 c2 c3 c4 c5 c6 c7 c8 c9 wE wS wW o5",
+        W: "c1 c1 c1 c2 c2 c2 c3 c3 c3 c4 c4 c4 c5",
+        N: "o1 o1 o1 o2 o2 o2 o3 o3 o3 o4 o4 o4 o5",
+      },
+      melds: {
+        E: [{ kind: "pung", tiles: ["b1", "b1", "b1"], exposed: false }],
+      },
+      wall: ["o6", "o7", "o8", "o9"],
+      phase: "discard",
+      turn: "E",
+      fishing: [{ seat: "E", wait: ["b7"], tier: "half" }],
+    });
+    assert.ok(
+      legalActions(state, "E").some(
+        (action) => action.type === "AddedKong" && action.tile === "b1",
+      ),
+    );
+    const kong = play(state, { type: "AddedKong", seat: "E", tile: "b1" });
+    assert.deepEqual(kong.state.players[0]!.melds, [
+      { kind: "kong", tiles: ["b1", "b1", "b1", "b1"], exposed: false },
+    ]);
+    assert.deepEqual(kong.state.fishing, [{ seat: "E", wait: ["b7"], tier: "half" }]);
+  });
+
+  it("refuses fishing when every copy of the wait is already dead", () => {
+    const state = fixture({
+      hands: {
+        E: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 o9",
+        S: "b1 b1 b1 b3 b3 b3 b4 b4 b4 b6 b6 b6 b7",
+        W: "c1 c1 c1 c2 c2 c2 c3 c3 c3 c4 c4 c4 c5",
+        N: "o1 o1 o1 o2 o2 o2 o3 o3 o3 o4 o4 o4 o5",
+      },
+      discards: { S: ["b5"], W: ["b5"], N: ["b5"] },
+      wall: ["o6", "o7", "o8", "o9"],
+      phase: "discard",
+      turn: "E",
+    });
+    const discarded = play(state, { type: "Discard", seat: "E", tile: "o9" });
+    assert.notEqual(discarded.state.phase, "announce");
+    assert.equal(fishingDeclarationFor(discarded.state, "E"), null);
+  });
+});
+
+describe("event-log replay", () => {
+  it("reproduces a full hand from the seed and the recorded actions", () => {
+    const seed = "replay-hand";
+    const start = newGame(seed);
+    const actions: Action[] = [];
+    let state = start.state;
+    const events = [...start.events];
+
+    while (state.phase !== "finished") {
+      const legal = legalActions(state, state.turn);
+      const action =
+        legal.find((candidate) => candidate.type === "Draw") ??
+        legal.find((candidate) => candidate.type === "Discard") ??
+        legal.find((candidate) => candidate.type === "Pass");
+      assert.ok(action, `no deterministic action in ${state.phase}`);
+      const result = apply(state, action);
+      assert.ok(!isApplyError(result), isApplyError(result) ? result.error : "");
+      actions.push(action);
+      state = result.state;
+      events.push(...result.events);
+    }
+
+    assert.equal(state.result?.kind, "drawn");
+    assert.equal(actions.length > 100, true);
+
+    const replay = newGame(seed);
+    let replayed = replay.state;
+    const replayedEvents = [...replay.events];
+    for (const action of actions) {
+      const result = apply(replayed, action);
+      assert.ok(!isApplyError(result), isApplyError(result) ? result.error : "");
+      replayed = result.state;
+      replayedEvents.push(...result.events);
+    }
+    assert.equal(JSON.stringify(replayedEvents), JSON.stringify(events));
+    assert.equal(serialize(replayed), serialize(state));
+    assert.deepEqual(handOf(replayed, "E"), handOf(state, "E"));
+
+    // The event log alone is enough: no action list is needed.
+    const fromEvents = replayEventLog(seed, events);
+    assert.equal(JSON.stringify(fromEvents.events), JSON.stringify(events));
+    assert.equal(serialize(fromEvents.state), serialize(state));
+  });
+});
