@@ -75,6 +75,12 @@ What we take from that picture is exactly three things: **the viewing angle** (a
 What we do not take: riichi-only furniture (dora indicators, riichi sticks, furiten warnings, seat boxes, round/timer bars, avatars) and none of the flash — no glow, no gradients on the felt, no character art, no orchestrated animation. Ours is quieter than the reference on purpose.
 
 
+## Rivers are reserved, not grown
+
+The discard area of every seat is allocated **before the first discard**: a fixed 6-wide grid of 36 slots (six rows), sized from the tile size, and it never reflows, grows, shrinks or moves for the rest of the hand. Thrown tiles fill the slots in throw order — left to right, then top to bottom — and empty slots are invisible but still occupy their space, so the board's geometry is decided once and nothing ever jumps.
+
+Consequences: no absolute positioning of the river, no per-discard layout pass, no overlap with the hand band, the centre panel or the seat chips, and the same rule for all four seats.
+
 ## Interaction contract
 
 - Exactly one primary action is emphasised at any moment; secondary ones are inline with keycaps (D, 1-9, Enter, Space).
