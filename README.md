@@ -20,7 +20,9 @@ variant. The synopsis's printed Winning/Fishing values are transcribed;
 - Turn engine: `GameState + Action -> { state, events }`, claims and
   precedence, fishing declarations, payments, dealer rotation, event-log
   replay. Rules the book leaves open are in `rules/PLAY.md` entries 11-19.
-- Not started: UI, server, persistence.
+- Console table: `npm run play` seats you against three bots, with a pure
+  policy in `src/core/game/bot.ts` and the table text in `console.ts`.
+- Not started: server, persistence.
 - Sources: `rules/companion-ocr.txt` (index only), page renders in
   `rules/pages/` (tile diagrams), assumptions in `rules/ASSUMPTIONS.md`,
   unresolved/provisional notes in `rules/NOTES.md`.
@@ -203,6 +205,70 @@ The state is the whole game: `serialize(state)` is the resume point, and
 precedence race) and `replayEventLog(seed, log)` regenerates the identical
 state and byte-identical log.
 
+## Playing at the console
+
+`npm run play` seats you at one table position against three bots. The table is
+built from `viewFor(state, seat)`, so you see your own numbered hand and only
+the public melds, discards and bonus tiles of the other seats.
+
+```sh
+npm run play -- --seed table-7
+npm run play -- --seat S --seed table-7
+npm run play -- --bot --events --seed table-7   # watch four bots
+```
+
+`--seed <seed>` sets the deal, `--seat E|S|W|N` picks your seat, `--bot` hands
+all four seats to the bot, and `--events` prints the reducer's event log as it
+happens. At your decision: `d <n>` discards tile `n` from the numbered hand;
+`p`/`c`/`k`/`m` claim pung/chow/kong/mahjong; `f` declares fishing and prints
+the fixed wait; `space` passes; `u` undoes the previous decision by replaying
+from the seed; `h` prints help; `q` quits. Anything else reprints the legal
+options and changes nothing.
+
+```text
+$ npm run play -- --seed console-readme --seat E
+Hand 1 · dealer E · E round · wall 87 · turn E (discard)
+Scores: E 0  S 0  W 0  N 0
+E (dealer) (you)  hand: 1:b2 2:b5 3:b7 4:b9 5:c1 6:c2 7:c4 8:c6 9:c7 10:o2 11:o5 12:o5 13:o9 14:dR
+    melds: none · discards: none · bonus: f4
+S  hand: 13 concealed
+    melds: none · discards: none · bonus: none
+W  hand: 13 concealed
+    melds: none · discards: none · bonus: f1 s4 s1
+N  hand: 13 concealed
+    melds: none · discards: none · bonus: none
+Legal: d <n> discard
+> d 1
+S draws
+S discards c1
+W draws
+W discards c2
+N draws
+N discards o4
+
+Hand 1 · dealer E · E round · wall 83 · turn E (discard)
+Scores: E 0  S 0  W 0  N 0
+E (dealer) (you)  hand: 1:b5 2:b6 3:b7 4:b9 5:c1 6:c2 7:c4 8:c6 9:c7 10:o2 11:o5 12:o5 13:o9 14:dR
+    melds: none · discards: b2 · bonus: f4
+S  hand: 13 concealed
+    melds: none · discards: c1 · bonus: none
+W  hand: 13 concealed
+    melds: none · discards: c2 · bonus: f1 s4 s1
+N  hand: 13 concealed
+    melds: none · discards: o4 · bonus: none
+Last discard: N o4
+Legal: d <n> discard
+> q
+Quit.
+```
+
+The bot wins when legal, declares fishing whenever the engine offers it,
+claims a pung or kong only when the call completes a set without spending the
+hand's last pair, draws otherwise and discards the least useful tile: pairs,
+triplets and same-suit neighbours are kept, isolated tiles go first. A kong
+is preferred to a pung when both are offered, because its replacement tile is
+free. The bot never chows and never sees another seat's hand.
+
 ## Test
 
 ```sh
@@ -210,4 +276,8 @@ npm test
 ```
 
 Node's built-in test runner executes the TypeScript tests directly. No install
-step is required.
+step is required. `npm test` self-plays a couple of dozen seeded hands in
+`test/soak.test.ts` (about 7 s for the whole suite) and checks tile
+conservation, the zero-sum ledger, legal-action membership, serialisation,
+event-log replay and termination. `npm run soak` runs the full 300 hands (about
+a minute), and `SOAK_SEEDS=1000 npm run soak` raises it further.

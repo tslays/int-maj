@@ -367,12 +367,15 @@ function replaceBonus(
 ): string | null {
   let current = tile;
   while (isBonus(parseTile(current))) {
+    // Keep the bonus even when no replacement exists: the tile has been
+    // turned over, so it belongs to the pool. Dropping it here made the
+    // final bonus tile vanish from the 144-tile census.
+    addBonus(draft, seat, current);
     const replacement = drawFrom(draft, "back");
     if (replacement === null) {
       finishDrawn(draft, "wall exhausted while replacing a bonus tile", emit);
       return null;
     }
-    addBonus(draft, seat, current);
     emit({ type: "FlowerReplaced", seat, tile: current, replacement });
     current = replacement;
   }

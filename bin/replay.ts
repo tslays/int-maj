@@ -18,6 +18,7 @@ import {
   ledgerTotals,
   replaySteps,
   stepsFromEvents,
+  describeEvent,
   type Action,
   type Event,
   type GameState,
@@ -40,50 +41,6 @@ async function readStdin(): Promise<string> {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string));
   }
   return Buffer.concat(chunks).toString("utf8");
-}
-
-function describeEvent(event: Event): string {
-  switch (event.type) {
-    case "Dealt":
-      return `${event.seat} is dealt ${event.count} tiles`;
-    case "Drew":
-      return `${event.seat} draws ${event.tile}${event.end === "back" ? " from the back" : ""}`;
-    case "FlowerReplaced":
-      return `${event.seat} replaces ${event.tile} with ${event.replacement}`;
-    case "Discarded":
-      return `${event.seat} discards ${event.tile}`;
-    case "Promoted":
-      return `${event.seat} takes the turn from ${event.from} (${event.kind})`;
-    case "Claimed":
-      return `${event.seat} claims ${event.kind} ${event.tiles.join(" ")} from ${event.from}`;
-    case "KongDeclared":
-      return `${event.seat} declares a ${event.kind} kong of ${event.tile}`;
-    case "KongReplacementDrawn":
-      return `${event.seat} draws the loose tile ${event.tile}`;
-    case "FishingDeclared":
-      return `${event.seat} declares fishing on ${event.wait.join(" ")} (${event.tier})`;
-    case "WinDeclared":
-      return (
-        `${event.seat} wins ${event.selfDrawn ? "self-drawn" : `on ${event.from}'s discard`}` +
-        ` with ${event.patternId} (${event.tier}${event.points === null ? ", calculate" : ` ${event.points}`})`
-      );
-    case "HandScored":
-      return (
-        `  score: ${event.patternName} — ${event.tier}` +
-        (event.points === null ? " (calculate)" : ` ${event.points}`)
-      );
-    case "Payments":
-      return event.entries
-        .map(
-          (entry) =>
-            `  ${entry.from} pays ${entry.to} ${entry.points === null ? "calculate" : entry.points} (${entry.reason})`,
-        )
-        .join("\n");
-    case "DrawnHand":
-      return `drawn hand: ${event.reason}`;
-    case "NextDeal":
-      return `next deal: hand ${event.hand}, dealer ${event.dealer}`;
-  }
 }
 
 function signed(value: number): string {
