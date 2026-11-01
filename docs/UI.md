@@ -90,6 +90,10 @@ A claim window offers exactly two choices, by keyboard and by mouse:
 
 There are no per-meld keys (no `p`, `c`, `k`, `m`) and no scattered meld buttons: two labelled buttons, fixed in place, always in the same spot, never shifting the board.
 
+## The claim prompt gets a sound
+
+When a claim window opens for you, play **one short, quiet cue** — enough to notice if you looked away, never a jingle. Constraints: synthesised with the Web Audio API (no audio files, no dependency), a single soft note or two-note tick under ~180 ms at low gain, played once per claim window (not on every re-render), only after the browser allows audio (the first user gesture), silenced by a mute toggle (`m`, remembered in `localStorage`) and by `prefers-reduced-motion`'s "reduce" users who also mute. No sounds anywhere else for now.
+
 ## Interaction contract
 
 - Exactly one primary action is emphasised at any moment; secondary ones are inline with keycaps (D, 1-9, Enter, Space).
