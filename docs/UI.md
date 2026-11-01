@@ -82,6 +82,8 @@ The rules, the hands and the scoring are the Companion's and nothing else: no ri
 
 Placement is checked by superposition, not by guessing: the reference screenshot is dropped into the page behind the board (`?overlay=1`, or the `o` key) at exactly its own size, the board is rendered on top, and every element is moved until the tiles land on the reference tiles. Once they line up, the overlay is hidden and stays available as a debug view so a later change can be checked the same way.
 
+Two local references are used: `reference/reference.tiff` (1030x793, converted to `web/reference.png`) is the one to fit against, and `reference/reference2.tiff` (768x576, converted to `web/reference2.png`) is the smaller window to sanity-check that the same proportions hold. Both stay out of git.
+
 ## Prefer Tenhou's plainness for the arrangement
 
 Of the two references, Tenhou is the closer model for us because it carries no decoration at all, and its arrangement is simpler to hit:
