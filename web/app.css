@@ -9,19 +9,10 @@
   --border: #2c5a41;
   --accent: #e7c65b;
   --error: #e06c5a;
-  --suit-bamboo: #1d7a4f;
-  --suit-characters: #b3261e;
-  --suit-circles: #1f5fa8;
-  --wind: #2a3a30;
-  --dragon-red: #c62828;
-  --dragon-green: #1b7a3d;
-  --dragon-white: #8a8a8a;
-  --flower: #c2558f;
-  --season: #b07a1f;
-  --small-w: 22px;
-  --small-h: 30px;
-  --large-w: 52px;
-  --large-h: 70px;
+  --small-w: 30px;
+  --small-h: 42px;
+  --large-w: 60px;
+  --large-h: 84px;
 }
 
 * {
@@ -306,6 +297,84 @@ kbd {
   border: 1px solid #0d2c1d;
   border-radius: 5px;
   background: repeating-linear-gradient(45deg, #1f5a3c 0 3px, #17462f 3px 6px);
+}
+
+.concealed-count {
+  align-self: center;
+  margin-left: 3px;
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 16px;
+}
+
+#tile-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.gallery-mode .topbar {
+  grid-template-columns: 1fr;
+}
+
+.gallery-mode .status,
+.gallery-mode .top-actions {
+  display: none;
+}
+
+.gallery-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gallery-head h2 {
+  color: var(--ink);
+  font-size: 20px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.gallery-group {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.gallery-group h3 {
+  margin-bottom: 10px;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+  gap: 12px;
+}
+
+.gallery-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.gallery-tile .tile-large {
+  width: 72px;
+  height: 101px;
+}
+
+.gallery-tile figcaption {
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
 }
 
 .center {
@@ -606,10 +675,15 @@ kbd {
 
 @media (max-width: 780px) {
   :root {
-    --small-w: 18px;
-    --small-h: 25px;
-    --large-w: 38px;
-    --large-h: 52px;
+    --small-w: 22px;
+    --small-h: 31px;
+    --large-w: 42px;
+    --large-h: 59px;
+  }
+
+  .gallery-tile .tile-large {
+    width: 56px;
+    height: 78px;
   }
 
   .topbar {

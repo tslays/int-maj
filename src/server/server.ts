@@ -31,12 +31,14 @@ const STATIC_FILES: Readonly<Record<string, string>> = Object.freeze({
   "/": "index.html",
   "/index.html": "index.html",
   "/app.js": "app.js",
+  "/tiles.js": "tiles.js",
   "/app.css": "app.css",
 });
 
 const CONTENT_TYPES: Readonly<Record<string, string>> = Object.freeze({
   "index.html": "text/html; charset=utf-8",
   "app.js": "text/javascript; charset=utf-8",
+  "tiles.js": "text/javascript; charset=utf-8",
   "app.css": "text/css; charset=utf-8",
 });
 
