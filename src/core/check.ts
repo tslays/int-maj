@@ -63,6 +63,12 @@ export interface WaitReport {
   readonly remaining: number;
   /** True when every copy is already held or exposed in the input. */
   readonly dead: boolean;
+  /**
+   * True when the only completed hands require the tile to be drawn. Such a
+   * wait cannot be claimed off a discard, but it still finishes the hand and
+   * is exactly what a fishing declaration can fix.
+   */
+  readonly selfDrawnOnly: boolean;
   /** Catalogue matches for the completed hand, best tier first. */
   readonly matches: PatternMatch[];
 }
@@ -325,10 +331,11 @@ function makeHand(
   concealed: PlayTile[],
   melds: Meld[],
   allowExtraCopy: boolean,
+  selfDrawn = false,
 ): Hand {
   const { flowers, seasons } = splitBonuses(parsed);
   if (!allowExtraCopy) {
-    return createHand({ concealed, melds, flowers, seasons });
+    return createHand({ concealed, melds, flowers, seasons, selfDrawn });
   }
 
   // A dead wait is a tile the player already holds four copies of. The fifth
@@ -340,7 +347,7 @@ function makeHand(
     flowers,
     seasons,
     winningTile: null,
-    selfDrawn: false,
+    selfDrawn,
     seatWind: "E",
     prevailingWind: "E",
   };
@@ -403,18 +410,25 @@ export function checkHand(input: CheckInput): CheckResult {
     for (const key of PLAY_TILE_KEYS) {
       const remaining = 4 - (counts.get(key) ?? 0);
       const candidate = parseTile(key) as PlayTile;
+      // A wait is a tile the player draws: self-drawn-only hands count here
+      // even though they can never be claimed off a discard.
       const hand = makeHand(
         parsed,
         [...concealed, candidate],
         melds,
         remaining <= 0,
+        true,
       );
       const matches = matchHand(hand);
       if (matches.length === 0) continue;
+      const claimable =
+        matchHand(makeHand(parsed, [...concealed, candidate], melds, remaining <= 0))
+          .length > 0;
       waits.push({
         tile: candidate,
         remaining: Math.max(0, remaining),
         dead: remaining <= 0,
+        selfDrawnOnly: !claimable,
         matches,
       });
     }

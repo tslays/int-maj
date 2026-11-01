@@ -83,6 +83,7 @@ function jsonResult(result: CheckResult, parsed: ParsedTiles): unknown {
       tile: tileKey(wait.tile),
       remaining: wait.remaining,
       dead: wait.dead,
+      selfDrawnOnly: wait.selfDrawnOnly,
       matches: wait.matches.map(summarizeMatch),
     })),
   };
@@ -124,7 +125,7 @@ function printHuman(result: CheckResult, parsed: ParsedTiles, all: boolean): voi
   for (const wait of result.waits) {
     const head = `${tileKey(wait.tile)}  ${
       wait.dead ? "dead" : `x${wait.remaining} left`
-    }`;
+    }${wait.selfDrawnOnly ? "  self-drawn" : ""}`;
     if (!all) {
       console.log(
         `${head}  ${wait.matches.map((match) => describeMatch(summarizeMatch(match))).join(" / ")}`,

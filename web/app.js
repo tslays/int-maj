@@ -555,7 +555,7 @@ function actionLabel(action) {
       if (action.kind === "mahjong") return "Mahjong";
       return `${action.kind[0].toUpperCase()}${action.kind.slice(1)} ${action.tiles.join(" ")}`;
     case "DeclareFishing":
-      return `Fishing ${action.wait.join(" ")}`;
+      return "Declare fishing";
     case "ConcealedKong":
       return `Kong ${action.tile}`;
     case "AddedKong":
@@ -1074,6 +1074,41 @@ function renderClaimBar() {
   maybePlayClaimCue();
 }
 
+/**
+ * Before fishing is confirmed, the table shows exactly which wait the
+ * announcement will fix. It is a preview, not a second decision: `f` or the
+ * button below still declares in one action.
+ */
+function fishingPreview(action) {
+  const preview = div("fishing-preview");
+  preview.setAttribute("role", "group");
+  const label = div("fishing-preview-label");
+  label.textContent = "Fishing fixes";
+  // The rail sorts waits by what they complete; show the fixed set in that
+  // same order so the preview and the panel read as one list.
+  const order =
+    payload.checker.size === 13
+      ? new Map(payload.checker.waits.map((wait, index) => [wait.tile, index]))
+      : new Map();
+  const waits = [...action.wait].sort(
+    (a, b) => (order.get(a) ?? 99) - (order.get(b) ?? 99),
+  );
+  const tiles = div("fishing-preview-tiles");
+  for (const key of waits) tiles.append(tileElement(key));
+  const keys = div("fishing-preview-keys");
+  keys.textContent = waits.join(" ");
+  const count = div("fishing-preview-count");
+  count.textContent = waits.length === 1 ? "1 wait" : `${waits.length} waits`;
+  const footer = div("fishing-preview-footer");
+  footer.append(keys, count);
+  preview.append(label, tiles, footer);
+  preview.setAttribute(
+    "aria-label",
+    `Fishing would fix ${waits.map(tileName).join(", ")}`,
+  );
+  return preview;
+}
+
 function renderActions() {
   const element = $("#actions");
   const bar = $("#claim-bar");
@@ -1081,6 +1116,7 @@ function renderActions() {
   if (isOwnClaimWindow()) {
     renderClaimBar();
     element.replaceChildren();
+    element.classList.remove("has-fishing-preview");
     element.hidden = true;
     return;
   }
@@ -1092,6 +1128,7 @@ function renderActions() {
 
   const view = payload.view;
   const actions = orderedActions(payload.legalActions);
+  const column = div("action-buttons");
 
   // The turn's one obvious action: throw the tile under the keyboard cursor.
   // A click on the hand does the same thing; this makes the action nameable.
@@ -1109,9 +1146,17 @@ function renderActions() {
       key.textContent = "enter";
       button.append(key);
       button.addEventListener("click", () => discardCandidate());
-      element.append(button);
+      column.append(button);
     }
   }
+
+  const fishingAction = actions.find((action) => action.type === "DeclareFishing");
+  if (fishingAction !== undefined) {
+    // The preview sits beside the buttons, below the east river, so nothing
+    // in the reserved board moves when the offer appears.
+    element.append(fishingPreview(fishingAction));
+  }
+  element.classList.toggle("has-fishing-preview", fishingAction !== undefined);
 
   if (actions.length === 0) {
     const note = div("action-note");
@@ -1123,7 +1168,8 @@ function renderActions() {
     } else {
       note.textContent = "";
     }
-    if (note.textContent) element.append(note);
+    if (note.textContent) column.append(note);
+    if (column.childElementCount > 0) element.append(column);
     return;
   }
 
@@ -1132,14 +1178,20 @@ function renderActions() {
     button.type = "button";
     button.className = `action-button${
       index === 0 && view.phase !== "discard" ? " primary" : ""
-    }`;
+    }${action.type === "DeclareFishing" ? " fishing-action" : ""}`;
     button.append(document.createTextNode(actionLabel(action)));
+    if (action.type === "DeclareFishing") {
+      const waits = action.wait.map(tileName).join(", ");
+      button.title = `Declare fishing on ${waits}`;
+      button.setAttribute("aria-label", `Declare fishing on ${waits}`);
+    }
     const key = document.createElement("kbd");
     key.textContent = actionKeycap(action);
     if (actionKeycap(action)) button.append(key);
     button.addEventListener("click", () => sendAction(action));
-    element.append(button);
+    column.append(button);
   });
+  element.append(column);
   updateDiscardHint();
 }
 
@@ -1240,19 +1292,38 @@ function renderFishing() {
   const slot = $("#fishing");
   slot.replaceChildren();
   for (const entry of view.fishing) {
-    const line = div();
-    line.textContent =
-      `${entry.seat}${entry.seat === view.seat ? " (you)" : ""} — ` +
-      `${entry.wait.join(" ")} · ${entry.tier}`;
+    const line = div(`fishing-entry${entry.seat === view.seat ? " is-mine" : ""}`);
+    line.dataset.seat = entry.seat;
+    line.style.setProperty("--seat-color", seatColor(entry.seat));
+    const head = div("fishing-head");
+    const name = span("fishing-name", seatLabel(entry.seat));
+    const state = span("fishing-fixed", "fixed");
+    head.append(name, state);
+    const waits = div("fishing-waits");
+    for (const key of entry.wait) waits.append(tileElement(key));
+    const tier = span("fishing-tier", tierName(entry.tier) ?? entry.tier);
+    line.append(head, waits, tier);
+    line.setAttribute(
+      "aria-label",
+      `${seatLabel(entry.seat)} fishing on ${entry.wait.map(tileName).join(", ")}, ` +
+        `${tierName(entry.tier) ?? entry.tier}`,
+    );
     slot.append(line);
   }
 }
 
 function renderWaits() {
   const slot = $("#waits");
-  slot.replaceChildren();
+  const block = $("#waits-block");
   const checker = payload.checker;
   const view = payload.view;
+  if (view.phase === "finished") {
+    block.hidden = true;
+    slot.replaceChildren();
+    return;
+  }
+  block.hidden = false;
+  slot.replaceChildren();
   const ownFishing =
     view.fishing.find((entry) => entry.seat === view.seat)?.wait ?? [];
 
@@ -1263,6 +1334,13 @@ function renderWaits() {
       slot.append(empty);
       return;
     }
+    const lead = div("wait-lead");
+    lead.textContent =
+      checker.waits.length === 1
+        ? "1 completing tile"
+        : `${checker.waits.length} completing tiles`;
+    slot.append(lead);
+
     for (const wait of checker.waits) {
       const fishing = ownFishing.includes(wait.tile);
       const row = div(
@@ -1272,38 +1350,51 @@ function renderWaits() {
       const body = div("wait-body");
       const head = div("wait-head");
       const key = span("", wait.tile);
-      const left = span("wait-left", wait.dead ? "dead wait" : `${wait.remaining} left`);
+      const left = span(
+        wait.dead ? "wait-dead" : "wait-left",
+        wait.dead ? "dead" : `${wait.remaining} left`,
+      );
       head.append(key, left);
+      if (wait.selfDrawnOnly) head.append(span("wait-drawn", "self-drawn"));
       if (fishing) head.append(span("fishing-badge", "fishing"));
       const hands = div("wait-hands");
       if (wait.dead) {
-        hands.textContent = "every copy is visible";
+        hands.textContent = "you hold all four copies";
+      } else if (wait.matches.length === 0) {
+        hands.textContent = "no catalogue hand";
       } else {
-        hands.textContent =
-          wait.matches.length === 0
-            ? "no catalogue hand"
-            : wait.matches
-                .slice(0, 2)
-                .map((match) => `${match.name} · ${match.tier}`)
-                .join(" · ");
+        const best = wait.matches[0];
+        const extra = wait.matches.length - 1;
+        hands.textContent = `${best.name} · ${tierName(best.tier) ?? best.tier}`;
+        if (extra > 0) {
+          hands.title = `${wait.matches.length} completing patterns; best ${best.name}`;
+        }
       }
       body.append(head, hands);
       row.append(body);
+      row.setAttribute(
+        "aria-label",
+        `${tileName(wait.tile)}: ${
+          wait.dead ? "dead, you hold all four copies" : `${wait.remaining} copies left`
+        }${wait.selfDrawnOnly ? ", self-drawn only" : ""}${
+          fishing ? ", your fishing wait" : ""
+        }`,
+      );
       slot.append(row);
     }
     return;
   }
 
   if (checker.size === 14) {
-    const note = div("hint");
-    note.textContent =
+    const lead = div("hint");
+    lead.textContent =
       checker.matches.length > 0
         ? `You hold 14 tiles. ${checker.matches
             .slice(0, 3)
-            .map((match) => `${match.name} · ${match.tier}`)
+            .map((match) => `${match.name} · ${tierName(match.tier) ?? match.tier}`)
             .join(" · ")}`
         : "You hold 14 tiles. Discard one to see the waits.";
-    slot.append(note);
+    slot.append(lead);
     return;
   }
 
@@ -1796,6 +1887,11 @@ function confirmSelection() {
   if (payload === null || busy) return;
   if (!document.getElementById("outcome").hidden) {
     document.getElementById("result-next")?.click();
+    return;
+  }
+  // The announce turn has exactly one primary action: fix the wait.
+  if (payload.view.phase === "announce" && payload.view.turn === payload.seat) {
+    declareFishing();
     return;
   }
   if (selected !== null) {

@@ -214,6 +214,18 @@ describe("checkHand on 13 tiles", () => {
     assert.equal(live!.dead, false);
   });
 
+  it("lists a wait that only a self-drawn tile completes", () => {
+    // Seven Twins needs every tile from the wall, so this wait can never be
+    // claimed off a discard, but it is still the tile that finishes the hand
+    // and the wait a fishing declaration fixes.
+    const result = wait("b2 b2 b9 b9 o1 o1 o2 o3 o3 o4 o4 o8 o8");
+    assert.equal(result.waits.length, 1);
+    const drawn = result.waits[0]!;
+    assert.equal(tileKey(drawn.tile), "o2");
+    assert.equal(drawn.selfDrawnOnly, true);
+    assert.equal(drawn.matches[0]!.pattern.id, "seven-twins");
+  });
+
   it("accepts aliases through the whole checker", () => {
     const result = win("R R R g g g white white white b1 b2 b3 b5 b5");
     assert.equal(result.matches[0]!.pattern.id, "three-great-scholars");
