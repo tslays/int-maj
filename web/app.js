@@ -35,6 +35,7 @@ const RING_RADIUS = 31;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 
 let payload = null;
+let pendingClick = null;
 let selected = null;
 let cursor = 0;
 let busy = false;
@@ -163,6 +164,11 @@ function applyResponse(data, note, replaceLog = false) {
   }
   selected = null;
   render();
+  if (pendingClick !== null) {
+    const index = pendingClick;
+    pendingClick = null;
+    setTimeout(() => onHandClick(index), 0);
+  }
 }
 
 async function request(path, body, note, replaceLog = false) {
@@ -212,7 +218,7 @@ function autoDraw() {
   if (payload === null || busy || payload.outcome !== null) return;
   const draw = payload.legalActions.find((action) => action.type === "Draw");
   if (draw === undefined) return;
-  sendAction(draw, 160);
+  sendAction(draw);
 }
 
 function sendDiscard(tile) {
@@ -1480,7 +1486,14 @@ function focusHand(index) {
 }
 
 function onHandClick(index) {
-  if (payload === null || busy) return;
+  if (payload === null) return;
+  // A click that lands while a request is in flight (the automatic draw) is
+  // remembered and applied the moment the table answers, so a fast click is
+  // never swallowed.
+  if (busy) {
+    pendingClick = index;
+    return;
+  }
   if (index < 0 || index >= payload.view.player.hand.length) return;
   cursor = index;
   selected = index;
