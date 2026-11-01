@@ -1,4 +1,4 @@
-# mahjong
+# int-maj
 
 Pure, deterministic core for international mahjong as Patricia Thompson and
 Betty Maloney print it: the hands of *The Mah Jong Player's Companion*, gathered
@@ -303,6 +303,17 @@ tile, `Enter` confirms (or draws when nothing is picked), `Space` passes,
 winning hand (yours; another seat's concealed tiles stay hidden), every
 matched pattern, the tier, the fishing settlements, the per-seat totals and a
 Next hand button.
+
+Every tile is an inline SVG drawn from its canonical key: characters carry
+their numeral over `萬`, circles use the printed dot layouts, bamboo uses the
+stick patterns (the b1 sparrow for the bird), and the winds, dragons, flowers
+and seasons have their own marks. Faces stay crisp at any zoom and keep their
+key in the tooltip and aria-label. `?gallery=1` replaces the table with
+`#tile-gallery`, a grid of all 34 playable faces and the 8 bonus marks:
+
+```sh
+open "http://127.0.0.1:8080/?gallery=1"
+```
 
 ### API
 
