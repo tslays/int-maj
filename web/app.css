@@ -996,7 +996,9 @@ kbd {
   width: var(--centre-w);
   height: var(--centre-w);
   transform: translate(-50%, -50%);
-  background: radial-gradient(circle, rgba(4, 12, 8, 0.22) 0%, rgba(4, 12, 8, 0) 70%);
+  border: 1px solid rgba(247, 242, 226, 0.08);
+  border-radius: 8px;
+  background: rgba(4, 12, 8, 0.2);
 }
 
 .wall-dial {
