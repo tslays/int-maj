@@ -468,6 +468,32 @@ kbd {
   overflow-wrap: anywhere;
 }
 
+/* `?state=<name>` boards name themselves here, so a screenshot of the rail
+   says which fixed board it is. */
+.state-tag {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: var(--stroke) solid var(--accent-line);
+  border-radius: var(--radius-sm);
+  margin-top: var(--space-2);
+}
+
+.state-tag-name {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.state-tag-title {
+  color: var(--muted);
+  font-size: var(--fs-label);
+  line-height: var(--lh-label);
+}
+
 .rail-block {
   padding-top: var(--space-5);
   border-top: var(--stroke) solid var(--border);
@@ -1462,9 +1488,12 @@ kbd {
   font-weight: var(--fw-strong);
 }
 
+/* The claim bar is a control overlay, so its tiles are control-sized — the
+   same 20x27 as the discard button — not fractions of the hand. A chow
+   variant only means something if its three tiles can be read. */
 .claim-bar .claim-head > .tile {
-  width: var(--art-lg-w);
-  height: var(--art-lg-h);
+  width: var(--control-tile-w);
+  height: var(--control-tile-h);
   filter: var(--tile-shadow);
 }
 
@@ -1475,8 +1504,8 @@ kbd {
 }
 
 .claim-button .tile {
-  width: var(--art-md-w);
-  height: var(--art-md-h);
+  width: var(--control-tile-w);
+  height: var(--control-tile-h);
 }
 
 .claim-button.claim-pass {
@@ -1513,8 +1542,8 @@ kbd {
 }
 
 .claim-variant .tile {
-  width: var(--art-sm-w);
-  height: var(--art-sm-h);
+  width: var(--control-tile-w);
+  height: var(--control-tile-h);
 }
 
 /* ---------------------------------------------------------- own hand */

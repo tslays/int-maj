@@ -8,7 +8,8 @@ rules, and behaves like a finished game.
 
 Hand-pattern catalogue (85), table-side checker, deterministic turn engine,
 soak test, console table, web table (server + client), Tenhou-scale board, the
-reference overlay, claims/wait/result panels.
+reference overlay, claims/wait/result panels, review states (`?state=`), and
+one design-token set (`docs/STYLE.md`) that the stylesheet reads exclusively.
 
 ## M1 — Reviewable states and design tokens
 

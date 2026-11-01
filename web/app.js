@@ -44,6 +44,8 @@ let busy = false;
 let railOpen = true;
 let referenceShown = false;
 let referenceMissing = false;
+/** `?state=<name>`: a fixed review board, never written back as the open game. */
+let scenarioName = null;
 
 let handInitialized = false;
 let tableInitialized = false;
@@ -252,7 +254,7 @@ function log(line) {
 
 function applyResponse(data, note, replaceLog = false) {
   payload = data;
-  if (typeof data.game === "string") {
+  if (typeof data.game === "string" && scenarioName === null) {
     sessionStorage.setItem(GAME_KEY, data.game);
   }
   loadScores(data.game, data.seed);
@@ -1823,6 +1825,43 @@ function renderGallery() {
   app.append(gallery);
 }
 
+/* ------------------------------------------------------------ review states */
+
+/**
+ * `?state=<name>` opens one fixed board from the server's scenario table: the
+ * same reducer and the same bot policy the game uses, replayed from a fixed
+ * seed, so the page is the real table in that state — not a mock and not a
+ * saved DOM. The tab names the state, and the rail carries the same name, so
+ * a screenshot identifies itself.
+ */
+async function openScenario(name) {
+  let data;
+  try {
+    data = await api(`/api/scenario?state=${encodeURIComponent(name)}`);
+  } catch (error) {
+    log(`No review state "${name}": ${error.message}`);
+    return false;
+  }
+  scenarioName = name;
+  applyResponse(data, null, true);
+  document.title = `Mahjong — ${name}`;
+  const tag = $("#state-tag");
+  if (tag !== null) {
+    tag.querySelector(".state-tag-name").textContent = `state · ${name}`;
+    tag.querySelector(".state-tag-title").textContent = data.title;
+    tag.hidden = false;
+  }
+  return true;
+}
+
+/** Leaving review mode — a new deal — restores the table's own title. */
+function clearScenario() {
+  scenarioName = null;
+  document.title = "Mahjong table";
+  const tag = $("#state-tag");
+  if (tag !== null) tag.hidden = true;
+}
+
 /* ------------------------------------------------------------- commands */
 
 function focusHand(index) {
@@ -1964,6 +2003,7 @@ function undo() {
 }
 
 function newGame(seed) {
+  clearScenario();
   selected = null;
   cursor = 0;
   handInitialized = false;
@@ -2183,13 +2223,17 @@ async function boot() {
   bindEvents();
   railOpen = initialRail();
   applyRail();
-  referenceShown = new URLSearchParams(window.location.search).get("overlay") === "1";
+  const params = new URLSearchParams(window.location.search);
+  referenceShown = params.get("overlay") === "1";
   applyReference();
 
-  if (new URLSearchParams(window.location.search).get("gallery") === "1") {
+  if (params.get("gallery") === "1") {
     renderGallery();
     return;
   }
+
+  const stateName = params.get("state");
+  if (stateName !== null && (await openScenario(stateName))) return;
 
   const stored = sessionStorage.getItem(GAME_KEY);
   if (stored !== null) {
