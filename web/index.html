@@ -7,78 +7,117 @@
     <link rel="stylesheet" href="/app.css" />
   </head>
   <body>
-    <header class="topbar">
-      <div class="brand">
-        <h1>Mahjong</h1>
-        <p id="meta" class="meta"></p>
-      </div>
-      <p id="status" class="status" role="status" aria-live="polite"></p>
-      <nav class="top-actions" aria-label="Table controls">
-        <button id="new-game" type="button">New game <kbd>n</kbd></button>
-        <button id="undo" type="button">Undo <kbd>u</kbd></button>
-        <button id="help-button" type="button" aria-label="Show the key list">Keys <kbd>?</kbd></button>
-      </nav>
-    </header>
+    <main class="app" id="app">
+      <section class="board" id="board" aria-label="Mahjong table">
+        <section class="seat seat-top" id="seat-top" aria-label="Top seat"></section>
+        <section class="seat seat-left" id="seat-left" aria-label="Left seat"></section>
+        <section class="seat seat-right" id="seat-right" aria-label="Right seat"></section>
 
-    <main class="page">
-      <section class="table" aria-label="Mahjong table">
-        <section class="seat pos-north" id="pos-north" aria-label="North side of the table"></section>
-        <section class="seat pos-west" id="pos-west" aria-label="West side of the table"></section>
         <section class="center" aria-label="Table centre">
-          <div class="wall"><span id="wall-count">0</span><span class="center-label">wall</span></div>
-          <div class="round"><span id="round-wind">E</span><span class="center-label">round</span></div>
-          <div id="turn-indicator" class="turn"></div>
+          <div class="center-hud">
+            <div class="wall-dial" id="wall-dial">
+              <svg viewBox="0 0 72 72" aria-hidden="true">
+                <circle class="wall-track" cx="36" cy="36" r="31"></circle>
+                <circle class="wall-ring" id="wall-ring" cx="36" cy="36" r="31"></circle>
+              </svg>
+              <span class="wall-count" id="wall-count">0</span>
+              <span class="wall-label">wall</span>
+            </div>
+            <p class="center-meta" id="center-meta"></p>
+          </div>
         </section>
-        <section class="seat pos-east" id="pos-east" aria-label="East side of the table"></section>
-        <section class="seat pos-south" id="pos-south" aria-label="South side of the table"></section>
+
+        <section class="own-river" id="own-river" aria-label="Your discards"></section>
+        <div class="self-chip" id="self-chip"></div>
+        <div class="action-cluster" id="actions" aria-label="Available actions"></div>
+        <div class="claim-bar" id="claim-bar" hidden aria-label="Claim window"></div>
       </section>
+
+      <section class="hand-band" aria-label="Your hand">
+        <div class="hand-layout">
+          <div class="hand" id="hand" role="group" aria-label="Your hand"></div>
+          <div class="own-melds" id="own-melds" aria-label="Your melds"></div>
+          <div class="own-bonus" id="own-bonus" aria-label="Bonus tiles"></div>
+        </div>
+      </section>
+
+      <aside class="rail" id="rail" aria-label="Table information">
+        <header class="rail-head">
+          <div>
+            <h1>Mahjong</h1>
+            <p class="meta" id="meta"></p>
+          </div>
+          <button class="ghost-button" id="rail-hide" type="button">Hide rail</button>
+        </header>
+
+        <section class="rail-block" aria-labelledby="score-title">
+          <h2 id="score-title">Scorecard</h2>
+          <div class="scorecard" id="scorecard"></div>
+        </section>
+
+        <section class="rail-block" aria-labelledby="turn-title">
+          <h2 id="turn-title">Turn</h2>
+          <div class="turn-wrap">
+            <ol class="turn-track" id="turn-track"></ol>
+            <p class="turn-text" id="turn-text"></p>
+          </div>
+        </section>
+
+        <section class="rail-block" aria-labelledby="waits-title">
+          <h2 id="waits-title">Waiting on</h2>
+          <div class="waits" id="waits"></div>
+        </section>
+
+        <section class="rail-block" id="fishing-block" aria-labelledby="fishing-title" hidden>
+          <h2 id="fishing-title">Fishing</h2>
+          <div class="fishing" id="fishing"></div>
+        </section>
+
+        <details class="rail-block log-block">
+          <summary>Table log</summary>
+          <pre class="log" id="log" tabindex="0"></pre>
+        </details>
+
+        <footer class="rail-actions">
+          <button class="ghost-button" id="new-game" type="button">
+            New game <kbd>n</kbd>
+          </button>
+          <button class="ghost-button" id="undo" type="button">Undo <kbd>u</kbd></button>
+          <button class="ghost-button" id="help-button" type="button">
+            Keys <kbd>?</kbd>
+          </button>
+        </footer>
+      </aside>
+
+      <button class="rail-toggle" id="rail-show" type="button" hidden>Show rail</button>
 
       <section id="outcome" class="outcome" hidden aria-live="polite"></section>
-
-      <div id="actions" class="actions" aria-label="Available actions"></div>
-
-      <section class="hand-area" aria-label="Your hand">
-        <div class="hand-head">
-          <h2>Your hand</h2>
-          <p id="hand-hint" class="hint"></p>
-        </div>
-        <p id="fishing" class="fishing"></p>
-        <div id="hand" class="hand"></div>
-      </section>
-
-      <div class="lower">
-        <section class="panel wait-panel" aria-labelledby="waits-title">
-          <h2 id="waits-title">Waits</h2>
-          <p class="hint">The table-side checker: every tile that completes this 13-tile hand.</p>
-          <div id="waits"></div>
-        </section>
-        <section class="panel log-panel" aria-labelledby="log-title">
-          <h2 id="log-title">Table log</h2>
-          <pre id="log" class="log" tabindex="0"></pre>
-        </section>
-      </div>
     </main>
 
     <dialog id="help-dialog" class="dialog">
       <form method="dialog">
         <h2>Keys and tiles</h2>
         <dl class="keys">
+          <dt><kbd>←</kbd> <kbd>→</kbd></dt>
+          <dd>Move the hand cursor.</dd>
           <dt><kbd>1</kbd>–<kbd>9</kbd></dt>
-          <dd>Pick a hand tile.</dd>
+          <dd>Jump to a hand tile.</dd>
           <dt><kbd>Enter</kbd></dt>
-          <dd>Confirm the picked tile, or draw when nothing is picked.</dd>
+          <dd>Pick the tile, discard the picked tile, or draw when nothing is picked.</dd>
           <dt><kbd>Space</kbd></dt>
           <dd>Pass when a claim or fishing offer is open.</dd>
-          <dt><kbd>f</kbd></dt>
-          <dd>Declare fishing; the fixed wait is shown in the log and under your hand.</dd>
-          <dt><kbd>u</kbd></dt>
-          <dd>Undo the previous decision by replaying from the seed.</dd>
-          <dt><kbd>n</kbd></dt>
-          <dd>Deal a new game.</dd>
           <dt><kbd>d</kbd></dt>
           <dd>Draw a tile when it is your turn.</dd>
           <dt><kbd>m</kbd></dt>
           <dd>Declare mahjong when a win is legal.</dd>
+          <dt><kbd>f</kbd></dt>
+          <dd>Declare fishing.</dd>
+          <dt><kbd>p</kbd> <kbd>k</kbd> <kbd>c</kbd></dt>
+          <dd>Pung, kong and chow when a claim is open.</dd>
+          <dt><kbd>u</kbd></dt>
+          <dd>Undo the previous decision by replaying from the seed.</dd>
+          <dt><kbd>n</kbd></dt>
+          <dd>Deal a new game.</dd>
           <dt><kbd>Esc</kbd></dt>
           <dd>Clear the picked tile, or close this dialog.</dd>
           <dt><kbd>?</kbd></dt>
@@ -96,6 +135,8 @@
         <button type="submit" class="action">Close</button>
       </form>
     </dialog>
+
+    <p class="sr-only" id="live-turn" role="status" aria-live="polite"></p>
 
     <script type="module" src="/app.js"></script>
   </body>

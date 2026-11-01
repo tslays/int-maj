@@ -177,6 +177,7 @@ describe("web API", () => {
       /^view\.player\./,
       /^view\.opponents\[\d+\]\.(melds|discards|flowers|seasons)(\.|\[|$)/,
       /^view\.lastDiscard\.tile$/,
+      /^view\.lastDraw\.tile$/,
       /^view\.claimWindow\.tile$/,
       /^view\.fishing\[\d+\]\.wait(\[\d+\])?$/,
       /^view\.legalActions\[\d+\]\.(tile|tiles\[\d+\]|wait\[\d+\])$/,
