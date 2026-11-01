@@ -31,6 +31,7 @@ const PLACE = {
 const RAIL_KEY = "mahjong-rail";
 const GAME_KEY = "mahjong-game";
 const STARTING_WALL = 92;
+const RIVER_SLOTS = 36;
 const RING_RADIUS = 31;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 
@@ -242,6 +243,10 @@ function signed(value) {
   return value > 0 ? `+${value}` : String(value);
 }
 
+function changeClass(value) {
+  return value > 0 ? "is-up" : value < 0 ? "is-down" : "";
+}
+
 function randomSeed() {
   if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
     return globalThis.crypto.randomUUID();
@@ -347,7 +352,7 @@ function seatEntry(seat) {
 function seatLabel(seat) {
   if (seat === payload.seat) return "You";
   const entry = seatEntry(seat);
-  return entry === null ? `${seat} seat` : `${WIND_NAME[entry.wind]} seat`;
+  return entry === null ? `${seat} seat` : `${WIND_NAME[entry.wind]} bot`;
 }
 
 function seatColor(seat) {
@@ -490,6 +495,7 @@ function seatChip(entry) {
   const totals = displayTotals();
   const value = totals[entry.seat] ?? 0;
   points.textContent = value === 0 ? "0" : signed(value);
+  if (value !== 0) points.classList.add(changeClass(value));
   const dealer = span("seat-dealer");
   dealer.title = entry.dealer ? "Dealer" : "";
   if (!entry.dealer) dealer.hidden = true;
@@ -506,8 +512,7 @@ function rackLine(entry) {
   }
   rack.setAttribute("aria-label", `${entry.handCount} concealed tiles`);
   for (let index = 0; index < entry.handCount; index++) rack.append(backElement());
-  const count = span("rack-count", String(entry.handCount));
-  line.append(rack, count);
+  line.append(rack);
   return line;
 }
 
@@ -534,19 +539,36 @@ function bonusRow(entry) {
   return row;
 }
 
-function riverWrapper(entry, kind) {
-  const wrap = div(`river-wrap ${kind}`);
+function riverWrapper(entry) {
+  const wrap = div("river-wrap");
   const river = div("river");
 
   const claimWindow = payload.view.claimWindow;
   const last = entry.discards.length - 1;
   const previous = tableInitialized ? (previousDiscards[entry.seat] ?? 0) : entry.discards.length;
 
-  // One grid for every seat: six to a row, throw order, left to right then
-  // top to bottom.
-  entry.discards.forEach((key, index) => {
-    river.append(riverTile(key, index === last, index >= previous, entry.seat, claimWindow));
-  });
+  // Every river is the same reserved 6x6 board, decided by the layout before
+  // the hand starts. Discards fill left to right, then top to bottom; the
+  // empty slots stay in the grid so a river never reflows or grows into
+  // another element.
+  for (let index = 0; index < RIVER_SLOTS; index++) {
+    const key = entry.discards[index];
+    if (key === undefined) {
+      const empty = div("river-slot");
+      empty.setAttribute("aria-hidden", "true");
+      river.append(empty);
+    } else {
+      river.append(
+        riverTile(
+          key,
+          index === last,
+          index >= previous,
+          entry.seat,
+          claimWindow,
+        ),
+      );
+    }
+  }
 
   wrap.append(river);
   wrap.setAttribute(
@@ -577,38 +599,38 @@ function renderSeat(entry) {
   const root = $(`#seat-${place}`);
   root.className = `seat seat-${place}${seatIsTurn(entry.seat) ? " is-turn" : ""}`;
   root.style.setProperty("--seat-color", seatColor(entry.seat));
-  root.replaceChildren(seatChip(entry));
+  root.replaceChildren();
 
   if (place === "top") {
-    root.append(rackLine(entry));
+    const line = div("seat-line");
+    line.append(seatChip(entry), rackLine(entry));
     const melds = meldRow(entry.melds);
-    if (melds !== null) root.append(melds);
+    if (melds !== null) line.append(melds);
     const bonuses = bonusRow(entry);
-    if (bonuses !== null) root.append(bonuses);
-    root.append(riverWrapper(entry, "north"));
+    if (bonuses !== null) line.append(bonuses);
+    root.append(line);
     return;
   }
 
-  const body = div("side-body");
-  const rack = rackLine(entry);
-  const river = riverWrapper(entry, place === "left" ? "west" : "east");
-  if (place === "left") body.append(rack, river);
-  else body.append(river, rack);
-  root.append(body);
-
+  root.append(seatChip(entry), rackLine(entry));
   const melds = meldRow(entry.melds);
   if (melds !== null) root.append(melds);
-  const bonuses = bonusRow(entry);
-  if (bonuses !== null) root.append(bonuses);
 }
 
 function renderSelf(entry) {
   const slot = $("#self-chip");
   slot.replaceChildren(seatChip(entry));
-  const own = $("#own-river");
-  own.replaceChildren(riverWrapper(entry, "own"));
-  own.dataset.turn = seatIsTurn(entry.seat) ? "true" : "false";
+  slot.classList.toggle("is-turn", seatIsTurn(entry.seat));
   slot.style.setProperty("--seat-color", seatColor(entry.seat));
+}
+
+function renderRivers() {
+  for (const entry of payload.table) {
+    const place = PLACE[entry.seat];
+    const zone = $(`#river-${place}`);
+    if (zone === null) continue;
+    zone.replaceChildren(riverWrapper(entry));
+  }
 }
 
 function renderSeats() {
@@ -616,6 +638,7 @@ function renderSeats() {
     if (entry.isYou) renderSelf(entry);
     else renderSeat(entry);
   }
+  renderRivers();
 }
 
 function renderCenter() {
@@ -633,8 +656,9 @@ function renderCenter() {
   meta.replaceChildren();
   const round = document.createElement("strong");
   round.textContent = view.prevailingWind;
+  const dealerEntry = payload.table.find((entry) => entry.seat === view.dealer);
   const dealer = document.createElement("strong");
-  dealer.textContent = view.dealer;
+  dealer.textContent = dealerEntry?.wind ?? view.dealer;
   meta.append(
     round,
     document.createTextNode(" round · dealer "),
@@ -735,9 +759,12 @@ function updateDiscardHint() {
   if (button === null) return;
   const index = selected ?? cursor;
   const tile = payload.view.player.hand[index];
-  if (tile !== undefined) {
-    button.title = `Discard ${tileName(tile)} (tile ${index + 1})`;
-  }
+  if (tile === undefined) return;
+  const label = `Discard ${tileName(tile)} (tile ${index + 1})`;
+  button.title = label;
+  button.setAttribute("aria-label", label);
+  const art = button.querySelector(".tile");
+  if (art !== null) art.replaceWith(tileElement(tile));
 }
 
 function syncCursorDom() {
@@ -762,7 +789,7 @@ function renderOwnBonus() {
   slot.replaceChildren();
   const bonuses = [...payload.view.player.flowers, ...payload.view.player.seasons];
   const label = div("bonus-empty");
-  label.textContent = bonuses.length === 0 ? "Bonus" : `Bonus ${bonuses.length}`;
+  label.textContent = "Bonus";
   slot.append(label);
   if (bonuses.length === 0) return;
   const row = div("bonus-row");
@@ -781,10 +808,14 @@ function chowActions() {
   );
 }
 
-function makeClaimButton(action, { primary = false, label = "", tiles = null, keycap = "" } = {}) {
+function makeClaimButton(
+  action,
+  { primary = false, label = "", tiles = null, keycap = "", className = "" } = {},
+) {
   const button = document.createElement("button");
   button.type = "button";
-  button.className = `claim-button${primary ? " primary" : ""}`;
+  button.className =
+    `claim-button${primary ? " primary" : ""}${className ? ` ${className}` : ""}`;
   if (label) button.append(document.createTextNode(label));
   if (tiles !== null) {
     for (const key of tiles) button.append(tileElement(key));
@@ -799,6 +830,11 @@ function makeClaimButton(action, { primary = false, label = "", tiles = null, ke
   return button;
 }
 
+/**
+ * The claim dock floats over the felt the way the reference clients do: the
+ * discarded tile first, then one row of large choices, primary last in the
+ * reading order but first in weight. It never pushes the hand or the board.
+ */
 function renderClaimBar() {
   const bar = $("#claim-bar");
   bar.hidden = false;
@@ -807,12 +843,9 @@ function renderClaimBar() {
   const window = view.claimWindow;
   if (window === null) return;
 
-  const head = div("claim-row");
-  const label = span("claim-label", "Claim on");
+  const head = div("claim-head");
+  const label = span("claim-label", `${seatLabel(window.discarder)} discards`);
   head.append(label, tileElement(window.tile));
-  const from = span("claim-label", `from ${seatLabel(window.discarder)}`);
-  head.append(from);
-  bar.append(head);
 
   const actions = payload.legalActions.filter(
     (action) => action.type === "Win" || action.type === "Claim" || action.type === "Pass",
@@ -836,6 +869,7 @@ function renderClaimBar() {
     };
 
   const row = div("claim-row");
+  row.append(head);
   const primaryWin = win !== undefined;
   if (win !== undefined) {
     row.append(makeClaimButton(win, { primary: true, label: "Mahjong", keycap: "m" }));
@@ -860,6 +894,20 @@ function renderClaimBar() {
       }),
     );
   }
+  if (chows.length > 0) {
+    row.append(span("claim-label", "Chow"));
+    chows.forEach((action, index) => {
+      const primary =
+        !primaryWin && pung === undefined && kong === undefined && index === 0;
+      row.append(
+        makeClaimButton(action, {
+          primary,
+          tiles: action.tiles,
+          keycap: String(index + 1),
+        }),
+      );
+    });
+  }
   row.append(
     makeClaimButton(pass, {
       primary:
@@ -869,26 +917,10 @@ function renderClaimBar() {
         chows.length === 0,
       label: "Pass",
       keycap: "space",
+      className: "claim-pass",
     }),
   );
   bar.append(row);
-
-  if (chows.length > 0) {
-    const chowRow = div("claim-row");
-    chowRow.append(span("claim-label", "Chow"));
-    chows.forEach((action, index) => {
-      const primary =
-        !primaryWin && pung === undefined && kong === undefined && index === 0;
-      chowRow.append(
-        makeClaimButton(action, {
-          primary,
-          tiles: action.tiles,
-          keycap: String(index + 1),
-        }),
-      );
-    });
-    bar.append(chowRow);
-  }
 }
 
 function renderActions() {
@@ -909,15 +941,33 @@ function renderActions() {
 
   const view = payload.view;
   const actions = orderedActions(payload.legalActions);
+
+  // The turn's one obvious action: throw the tile under the keyboard cursor.
+  // A click on the hand does the same thing; this makes the action nameable.
+  if (view.phase === "discard" && view.turn === view.seat) {
+    const index = selected ?? cursor;
+    const tile = view.player.hand[index];
+    if (tile !== undefined) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.action = "discard";
+      button.className = "action-button primary discard-action";
+      button.append(tileElement(tile));
+      button.append(document.createTextNode("Discard"));
+      const key = document.createElement("kbd");
+      key.textContent = "enter";
+      button.append(key);
+      button.addEventListener("click", () => discardCandidate());
+      element.append(button);
+    }
+  }
+
   if (actions.length === 0) {
     const note = div("action-note");
     if (view.phase === "finished") note.textContent = "";
     else if (view.turn !== view.seat) note.textContent = "Waiting for the table.";
-    else if (view.phase === "discard" && selected === null) {
-      note.textContent = "Pick a tile, then press Enter.";
-    } else if (view.phase === "discard") {
-      note.textContent = "Press Enter to discard the picked tile.";
-    } else if (view.phase === "claim") {
+    else if (view.phase === "discard") note.textContent = "";
+    else if (view.phase === "claim") {
       note.textContent = "Waiting for the claim to resolve.";
     } else {
       note.textContent = "";
@@ -927,23 +977,11 @@ function renderActions() {
   }
 
   actions.forEach((action, index) => {
-    if (action.type === "Discard") {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.dataset.action = "discard";
-      button.className = `action-button${index === 0 ? " primary" : ""}`;
-      button.append(document.createTextNode("Discard"));
-      const key = document.createElement("kbd");
-      key.textContent = "enter";
-      button.append(key);
-      button.addEventListener("click", () => discardCandidate());
-      element.append(button);
-      return;
-    }
-
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `action-button${index === 0 ? " primary" : ""}`;
+    button.className = `action-button${
+      index === 0 && view.phase !== "discard" ? " primary" : ""
+    }`;
     button.append(document.createTextNode(actionLabel(action)));
     const key = document.createElement("kbd");
     key.textContent = actionKeycap(action);
@@ -972,6 +1010,7 @@ function renderScorecard() {
     const points = span("score-points");
     const value = totals[entry.seat] ?? 0;
     points.textContent = value === 0 ? "0" : signed(value);
+    if (value !== 0) points.classList.add(changeClass(value));
     const dealer = span("score-dealer");
     dealer.title = entry.dealer ? "Dealer" : "";
     if (!entry.dealer) dealer.hidden = true;
@@ -987,7 +1026,7 @@ function turnSentence() {
     if (view.phase === "draw") return "Your turn — draw a tile.";
     if (view.phase === "discard") return "Your turn — discard a tile.";
     if (view.phase === "announce") return "Your turn — declare fishing or pass.";
-    if (view.phase === "claim") return "Your turn — answer the claim.";
+    if (view.phase === "claim") return "Your turn — claim or pass.";
     return "Your turn.";
   }
   if (view.phase === "claim") {
@@ -1069,7 +1108,7 @@ function renderWaits() {
   if (checker.size === 13) {
     if (checker.waits.length === 0) {
       const empty = div("hint");
-      empty.textContent = "No catalogue hand completes from these 13 tiles.";
+      empty.textContent = "No catalogue hand waits on these tiles.";
       slot.append(empty);
       return;
     }
@@ -1155,10 +1194,16 @@ function resultScoreTable(outcome) {
     const start = document.createElement("td");
     start.textContent = signed(before[seat] ?? 0);
     const delta = document.createElement("td");
-    delta.className = "delta";
+    delta.className = `delta ${changeClass(outcome.totals[seat] ?? 0)}`;
     delta.textContent = signed(outcome.totals[seat] ?? 0);
     const end = document.createElement("td");
+    end.className = changeClass(after[seat] ?? 0);
     end.textContent = signed(after[seat] ?? 0);
+    row.dataset.seat = seat;
+    row.style.setProperty("--seat-color", seatColor(seat));
+    if (outcome.kind === "win" && outcome.winner === seat) {
+      row.classList.add("is-winner");
+    }
     row.append(name, start, delta, end);
     body.append(row);
   }
@@ -1177,8 +1222,10 @@ function resultPayments(outcome) {
   }
   for (const entry of outcome.ledger) {
     const item = document.createElement("li");
+    const from = seatLabel(entry.from);
+    const verb = entry.from === payload.seat ? "pay" : "pays";
     item.textContent =
-      `${seatLabel(entry.from)} pays ${seatLabel(entry.to)} ` +
+      `${from} ${verb} ${seatLabel(entry.to)} ` +
       `${entry.points === null ? "calculate" : entry.points} — ${entry.reason}`;
     if (entry.reason.startsWith("fishing")) item.classList.add("is-fishing-payment");
     list.append(item);
@@ -1227,17 +1274,12 @@ function renderOutcome() {
   const title = document.createElement("h2");
   title.id = "outcome-title";
   if (outcome.kind === "drawn") {
-    title.textContent = `Drawn hand — ${outcome.reason}`;
+    title.textContent = "Hand drawn";
   } else {
-    const value =
-      outcome.points === null
-        ? (outcome.tier ?? "unscored")
-        : `${outcome.tier ?? "unscored"}, ${outcome.points}`;
     const winner =
       outcome.winner === payload.seat ? "You" : seatLabel(outcome.winner);
     title.textContent =
-      `${winner} ${outcome.winner === payload.seat ? "win" : "wins"} — ` +
-      `${outcome.patternName ?? outcome.patternId} (${value})`;
+      `${winner} ${outcome.winner === payload.seat ? "win" : "wins"}`;
   }
   card.append(sub, title);
 
@@ -1344,25 +1386,13 @@ function renderOutcome() {
   }
 }
 
-function positionOwnRiver() {
-  const hand = $("#hand");
-  const own = $("#own-river");
-  const board = $(".board");
-  if (hand === null || own === null || board === null) return;
-  const handBox = hand.getBoundingClientRect();
-  const boardBox = board.getBoundingClientRect();
-  if (handBox.width === 0 || boardBox.width === 0) return;
-  const offset = handBox.left + handBox.width / 2 - (boardBox.left + boardBox.width / 2);
-  own.style.transform = `translateX(calc(-50% + ${offset}px))`;
-}
-
 function render() {
   if (payload === null) return;
+  $("#board").classList.toggle("is-claiming", isOwnClaimWindow());
   renderMeta();
   renderSeats();
   renderCenter();
   renderHand();
-  positionOwnRiver();
   renderOwnMelds();
   renderOwnBonus();
   renderActions();
@@ -1805,7 +1835,6 @@ function setRail(open) {
   railOpen = open;
   applyRail();
   persistRail();
-  requestAnimationFrame(positionOwnRiver);
 }
 
 function bindEvents() {
@@ -1816,7 +1845,6 @@ function bindEvents() {
   $("#rail-show").addEventListener("click", () => setRail(true));
   $("#help-dialog").addEventListener("close", () => $("#help-button").focus());
   document.addEventListener("keydown", onKeydown);
-  window.addEventListener("resize", positionOwnRiver);
 }
 
 function initialRail() {
