@@ -7,22 +7,21 @@
  * changed and the last payload stays on screen.
  */
 
+import {
+  BONUS_NAMES,
+  BONUS_TILE_KEYS,
+  drawTileFace,
+  PLAY_TILE_KEYS,
+  VIEW_HEIGHT,
+  VIEW_WIDTH,
+} from "./tiles.js";
+
 const NS = "http://www.w3.org/2000/svg";
 const SEATS = ["E", "S", "W", "N"];
 const POSITION = { E: "south", S: "east", W: "north", N: "west" };
 const WIND_NAME = { E: "East", S: "South", W: "West", N: "North" };
 const SUIT_NAME = { b: "bamboo", c: "characters", o: "circles" };
-const SUIT_COLOUR = {
-  b: "var(--suit-bamboo)",
-  c: "var(--suit-characters)",
-  o: "var(--suit-circles)",
-};
 const DRAGON_NAME = { R: "Red", G: "Green", W: "White" };
-const DRAGON_COLOUR = {
-  R: "var(--dragon-red)",
-  G: "var(--dragon-green)",
-  W: "var(--dragon-white)",
-};
 
 let payload = null;
 let selected = null;
@@ -52,202 +51,17 @@ function svgNode(name, attributes = {}) {
   return node;
 }
 
-function svgText(text, attributes) {
-  const node = svgNode("text", attributes);
-  node.textContent = text;
-  return node;
-}
-
 /**
- * Draw a tile face from its canonical key: suit colour plus rank, and a
- * geometric suit mark; honours use their letter. No emoji, no font-dependent
- * pictograms, so the face is the same everywhere.
+ * Draw a tile face from its canonical key. The face table and the shapes live
+ * in tiles.js; this only supplies the tile-shaped viewport.
  */
 function tileSvg(key) {
   const svg = svgNode("svg", {
-    viewBox: "0 0 40 56",
+    viewBox: `0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`,
     "aria-hidden": "true",
     focusable: "false",
   });
-
-  const suited = /^([bco])([1-9])$/.exec(key);
-  if (suited !== null) {
-    const suit = suited[1];
-    const rank = suited[2];
-    const colour = SUIT_COLOUR[suit];
-    svg.append(
-      svgText(rank, {
-        x: "20",
-        y: "24",
-        "text-anchor": "middle",
-        "font-size": "22",
-        "font-weight": "700",
-        fill: colour,
-        "font-family": "Georgia, 'Times New Roman', serif",
-      }),
-    );
-    if (suit === "o") {
-      for (const cx of [12, 20, 28]) {
-        svg.append(
-          svgNode("circle", {
-            cx,
-            cy: 40,
-            r: 4,
-            fill: "none",
-            stroke: colour,
-            "stroke-width": 2,
-          }),
-        );
-      }
-      svg.append(svgNode("circle", { cx: 20, cy: 49, r: 2.5, fill: colour }));
-    } else if (suit === "b") {
-      for (const x of [12, 20, 28]) {
-        svg.append(
-          svgNode("rect", {
-            x: x - 2,
-            y: 37,
-            width: 4,
-            height: 12,
-            rx: 2,
-            fill: colour,
-          }),
-        );
-      }
-      svg.append(
-        svgNode("rect", { x: 15, y: 49, width: 10, height: 2, rx: 1, fill: colour }),
-      );
-    } else {
-      svg.append(
-        svgNode("path", {
-          d: "M10 38 h20 M10 43 h20 M13 38 v10 M27 38 l-9 12",
-          fill: "none",
-          stroke: colour,
-          "stroke-width": 2,
-          "stroke-linecap": "round",
-        }),
-      );
-    }
-    return svg;
-  }
-
-  if (/^w[ESWN]$/.test(key)) {
-    const letter = key[1];
-    svg.append(
-      svgText(letter, {
-        x: "20",
-        y: "30",
-        "text-anchor": "middle",
-        "font-size": "24",
-        "font-weight": "700",
-        fill: "var(--wind)",
-        "font-family": "Georgia, serif",
-      }),
-    );
-    svg.append(
-      svgNode("rect", { x: 12, y: 38, width: 16, height: 2, rx: 1, fill: "var(--wind)" }),
-    );
-    svg.append(
-      svgNode("rect", { x: 16, y: 44, width: 8, height: 2, rx: 1, fill: "var(--wind)" }),
-    );
-    return svg;
-  }
-
-  if (/^d[RGW]$/.test(key)) {
-    const letter = key[1];
-    svg.append(
-      svgText(letter, {
-        x: "20",
-        y: "32",
-        "text-anchor": "middle",
-        "font-size": "24",
-        "font-weight": "700",
-        fill: DRAGON_COLOUR[letter],
-        "font-family": "Georgia, serif",
-      }),
-    );
-    svg.append(
-      svgNode("circle", {
-        cx: 20,
-        cy: 44,
-        r: 4,
-        fill: "none",
-        stroke: DRAGON_COLOUR[letter],
-        "stroke-width": 2,
-      }),
-    );
-    return svg;
-  }
-
-  const bonus = /^([fs])([1-4])$/.exec(key);
-  if (bonus !== null) {
-    const kind = bonus[1];
-    const index = bonus[2];
-    const colour = kind === "f" ? "var(--flower)" : "var(--season)";
-    if (kind === "f") {
-      for (let petal = 0; petal < 5; petal++) {
-        const angle = (Math.PI * 2 * petal) / 5 - Math.PI / 2;
-        svg.append(
-          svgNode("circle", {
-            cx: 20 + Math.cos(angle) * 7,
-            cy: 26 + Math.sin(angle) * 7,
-            r: 4,
-            fill: colour,
-          }),
-        );
-      }
-      svg.append(
-        svgNode("circle", {
-          cx: 20,
-          cy: 26,
-          r: 3,
-          fill: "#fffdf4",
-          stroke: colour,
-          "stroke-width": 1.5,
-        }),
-      );
-    } else {
-      svg.append(
-        svgNode("circle", {
-          cx: 20,
-          cy: 25,
-          r: 8,
-          fill: "none",
-          stroke: colour,
-          "stroke-width": 2,
-        }),
-      );
-      svg.append(
-        svgNode("path", {
-          d: "M10 44 h20",
-          stroke: colour,
-          "stroke-width": 2,
-          "stroke-linecap": "round",
-        }),
-      );
-    }
-    svg.append(
-      svgText(index, {
-        x: "20",
-        y: "52",
-        "text-anchor": "middle",
-        "font-size": "11",
-        "font-weight": "700",
-        fill: colour,
-        "font-family": "Georgia, serif",
-      }),
-    );
-    return svg;
-  }
-
-  svg.append(
-    svgText("?", {
-      x: "20",
-      y: "34",
-      "text-anchor": "middle",
-      "font-size": "20",
-      fill: "#333333",
-    }),
-  );
+  drawTileFace(svg, key);
   return svg;
 }
 
@@ -256,6 +70,7 @@ function tileName(key) {
   if (suited !== null) return `${suited[2]} ${SUIT_NAME[suited[1]]}`;
   if (/^w[ESWN]$/.test(key)) return `${WIND_NAME[key[1]]} wind`;
   if (/^d[RGW]$/.test(key)) return `${DRAGON_NAME[key[1]]} dragon`;
+  if (Object.hasOwn(BONUS_NAMES, key)) return BONUS_NAMES[key];
   return key;
 }
 
@@ -403,6 +218,10 @@ function renderSeat(entry) {
       back.className = "tile-back";
       concealed.append(back);
     }
+    const count = document.createElement("span");
+    count.className = "concealed-count";
+    count.textContent = String(entry.handCount);
+    concealed.append(count);
     element.append(concealed);
   }
 
@@ -785,6 +604,64 @@ function render() {
   renderOutcome();
 }
 
+/* -------------------------------------------------------------- gallery */
+
+const GALLERY_GROUPS = [
+  { title: "Bamboo", keys: PLAY_TILE_KEYS.filter((key) => key.startsWith("b")) },
+  { title: "Characters", keys: PLAY_TILE_KEYS.filter((key) => key.startsWith("c")) },
+  { title: "Circles", keys: PLAY_TILE_KEYS.filter((key) => key.startsWith("o")) },
+  { title: "Winds", keys: PLAY_TILE_KEYS.filter((key) => key.startsWith("w")) },
+  { title: "Dragons", keys: PLAY_TILE_KEYS.filter((key) => key.startsWith("d")) },
+  { title: "Flowers", keys: BONUS_TILE_KEYS.filter((key) => key.startsWith("f")) },
+  { title: "Seasons", keys: BONUS_TILE_KEYS.filter((key) => key.startsWith("s")) },
+];
+
+/** `?gallery=1`: every face in one grid, instead of the table. */
+function renderGallery() {
+  document.title = "Mahjong tile gallery";
+  document.body.classList.add("gallery-mode");
+  const page = $(".page");
+  page.replaceChildren();
+
+  const gallery = document.createElement("section");
+  gallery.id = "tile-gallery";
+  gallery.setAttribute("aria-label", "Tile gallery");
+
+  const head = document.createElement("div");
+  head.className = "gallery-head";
+  const title = document.createElement("h2");
+  title.textContent = "Tile gallery";
+  const hint = document.createElement("p");
+  hint.className = "hint";
+  hint.textContent =
+    "All 34 play tiles and the 8 bonus marks, drawn from their canonical keys.";
+  head.append(title, hint);
+  gallery.append(head);
+
+  for (const group of GALLERY_GROUPS) {
+    const section = document.createElement("section");
+    section.className = "gallery-group";
+    const heading = document.createElement("h3");
+    heading.textContent = group.title;
+    section.append(heading);
+
+    const grid = document.createElement("div");
+    grid.className = "gallery-grid";
+    for (const key of group.keys) {
+      const figure = document.createElement("figure");
+      figure.className = "gallery-tile";
+      const caption = document.createElement("figcaption");
+      caption.textContent = `${key} · ${tileName(key)}`;
+      figure.append(tileElement(key, "large"), caption);
+      grid.append(figure);
+    }
+    section.append(grid);
+    gallery.append(section);
+  }
+
+  page.append(gallery);
+}
+
 /* ------------------------------------------------------------ commands */
 
 function selectTile(index) {
@@ -946,6 +823,11 @@ function bindEvents() {
 
 async function boot() {
   bindEvents();
+
+  if (new URLSearchParams(window.location.search).get("gallery") === "1") {
+    renderGallery();
+    return;
+  }
 
   const stored = sessionStorage.getItem("mahjong-game");
   if (stored !== null) {

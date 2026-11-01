@@ -72,7 +72,7 @@ async function getState(game: string): Promise<ApiPayload> {
 }
 
 describe("web API", () => {
-  it("serves the page, the module and the stylesheet", async () => {
+  it("serves the page, modules and stylesheet", async () => {
     const page = await fetch(`${baseUrl}/`);
     assert.equal(page.status, 200);
     assert.match(page.headers.get("content-type") ?? "", /text\/html/);
@@ -86,6 +86,11 @@ describe("web API", () => {
     const style = await fetch(`${baseUrl}/app.css`);
     assert.equal(style.status, 200);
     assert.match(style.headers.get("content-type") ?? "", /text\/css/);
+
+    const tiles = await fetch(`${baseUrl}/tiles.js`);
+    assert.equal(tiles.status, 200);
+    assert.match(tiles.headers.get("content-type") ?? "", /text\/javascript/);
+    assert.match(await tiles.text(), /export function faceFor/);
   });
 
   it("returns the seat view, legal actions, table, ledger and wait panel", async () => {
