@@ -61,6 +61,41 @@ legality check, and settlement independent of the winner. The synopsis prints
 the figures: half 200, limit 400, middle 600, double 800; `calculate` hands
 have no fixed figure.
 
+## Table checker
+
+Type a hand from the table and see what it is. Canonical keys are `b1..b9`,
+`c1..c9`, `o1..o9`, `wE wS wW wN` and `dR dG dW`; aliases `E S W N`,
+`r g w`, `red green white` and the flower/season keys `f1..f4 s1..s4` are
+accepted too. Parentheses mark one **exposed** meld; flowers and seasons are
+reported as bonuses and never count toward the 13/14.
+
+```sh
+npm run check -- "(b1 b1 b1) c1 c1 c1 o1 o1 o1 wE wE wS wW wN"
+```
+
+```
+14 tiles: (b1 b1 b1) c1 c1 c1 o1 o1 o1 wE wE wS wW wN
+* 500 half  Windy Ones (exposed)
+```
+
+Thirteen effective tiles list every tile that completes a catalogue hand,
+best tier first:
+
+```sh
+npm run check -- "dR dR dR dG dG dG dW dW dW b1 b2 b3 b5"
+```
+
+```
+13 tiles: dR dR dR dG dG dG dW dW dW b1 b2 b3 b5
+b5  x3 left  1500 middle  Three Great Scholars (concealed) / calculate  Ordinary Mah Jong (concealed)
+```
+
+A kong adds one physical tile but still counts as one set, so a hand with a
+kong is 14 effective tiles at 15 physical. Waits show `dead` instead of a
+remaining count when all four copies are already visible in the input.
+`--json` prints the result for another program; `--all` gives each match its
+own line for a wait. With no arguments the checker reads stdin.
+
 ## Test
 
 ```sh
