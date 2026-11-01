@@ -4,15 +4,29 @@ on:
   push:
     branches: [main]
   pull_request:
+  # The 300-hand soak takes minutes on a small runner: it runs nightly, or on
+  # demand, instead of on every push.
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
       # No dependencies and no build step: Node runs the TypeScript directly.
       - run: npm test
+
+  soak:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
       - run: npm run soak
