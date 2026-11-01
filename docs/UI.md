@@ -71,6 +71,20 @@ Taken from how these tables read in play (AJ Martinez, worldsbe.st, on Mahjong S
 
 The rules, the hands and the scoring are the Companion's and nothing else: no riichi yaku, no dora, no furiten, no riichi sticks. What may be borrowed from Riichi City and Mahjong Soul is **interface and game-feel** — the shape of a turn, how a claim is offered, how a result is presented, how the table waits for you, what the player can see at a glance. Research those clients (public screenshots, articles, wikis) for interaction patterns, then translate them onto our rules. When the two disagree about a rule, the Companion wins; when they disagree about how something *feels*, the reference wins.
 
+## Prefer Tenhou's plainness for the arrangement
+
+Of the two references, Tenhou is the closer model for us because it carries no decoration at all, and its arrangement is simpler to hit:
+
+- No avatars or portrait panels. Each seat is its wind and name, set into the felt in its own corner, nothing else.
+- Racks live on the edges, one line per seat: top horizontal, left and right vertical, the concealed backs slightly inset from the border.
+- Wall on the edge: one row of face-down tiles along the felt above your hand; for us a quiet counter is enough.
+- Rivers in the middle, six per row, each turned to face its own player, the four blocks meeting around the centre.
+- Centre carries only the round and hand, the wall count and the four scores at the sides.
+- Hand at the very bottom: one plain row, drawn tile apart, no meld mixing, no ornament.
+- Two plain action buttons bottom-right with their key hints, on the felt.
+
+So: take scale and tile proportion from Mahjong Soul, and structure, spacing and plainness from Tenhou.
+
 ## The geometry to copy (measured off a Mahjong Soul board)
 
 Copying their *layout* is fine; copying their art is not. These are the proportions that make that board read, expressed against one hand tile as 1 unit:
