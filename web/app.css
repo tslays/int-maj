@@ -34,25 +34,34 @@
   --fs-body: 15px;
   --fs-heading: 18px;
 
-  /* One tile unit sizes the whole table: rivers, seat columns and racks all
-     derive their tracks from these numbers, so no element is placed at a
-     hand-tuned pixel offset. */
-  --back-w: 22px;
-  --back-h: 29px;
-  --tile-w: 44px;
-  --tile-h: 58px;
-  /* Four rows are enough for a hand's discards (about 20 throws); reserving
-     six wasted the board's height and forced the tiles to stay small. */
-  --river-rows: 3;
-  --tile-gap: 2px;
-  --hand-w: 84px;
-  --hand-h: 112px;
-  --hand-gap: 6px;
+  /* One tile unit sizes the whole table. The hand is the unit: a Mahjong
+     Soul board puts about fourteen of them across the bottom edge, so the
+     hand is capped at 6.4% of the viewport width and by the height the
+     rotated rivers need. Every other number is a ratio of that unit. */
+  --hand-w: min(6.2vw, calc((86vh - 20px) / 8));
+  --hand-h: calc(var(--hand-w) * 4 / 3);
+  --hand-gap: 2px;
+  /* River tile = 0.62 hand; rows flush at one pixel, six to a row. */
+  --tile-w: calc(var(--hand-w) * 0.62);
+  --tile-h: calc(var(--hand-h) * 0.62);
+  --tile-gap: 1px;
   --river-w6: calc(6 * var(--tile-w) + 5 * var(--tile-gap));
-  --river-h6: calc(var(--river-rows) * var(--tile-h) + (var(--river-rows) - 1) * var(--tile-gap));
-  --seat-col: calc(2 * var(--tile-w) + 4 * var(--tile-gap));
-  --board-pad: 10px;
-  --board-gap: var(--tile-gap);
+  --river-h3: calc(3 * var(--tile-h) + 2 * var(--tile-gap));
+  /* A side river is the same block turned: three rows across, six down. */
+  --river-w3: calc(3 * var(--tile-h) + 2 * var(--tile-gap));
+  --river-h6: calc(6 * var(--tile-w) + 5 * var(--tile-gap));
+  /* Concealed back = 0.33 hand on its long side. */
+  --back-w: calc(var(--hand-w) * 0.25);
+  --back-h: calc(var(--hand-w) * 0.33);
+  /* Centre = 1.9 hand; the four blocks meet it with a 0.91-unit gap. */
+  --centre-w: calc(var(--hand-w) * 1.9);
+  --play-w: calc(var(--river-w6) + 2 * var(--river-w3));
+  --play-h: calc(2 * var(--river-h3) + var(--centre-w));
+  --frame-top: 12%;
+  --frame-x: 3%;
+  --frame-bottom: 2%;
+  --meld-w: calc(var(--hand-w) * 0.45);
+  --meld-h: calc(var(--hand-h) * 0.45);
   --rail-w: 260px;
 
   --fast: 140ms;
@@ -179,29 +188,15 @@ kbd {
   display: none;
 }
 
-/* The board is one grid. Its four rows are the north rack, the north river,
-   the middle band (left seat | left river | centre | right river | right
-   seat) and your own river. The side seats span the full height in their
-   own columns, so a rack or a meld can never reach a river. */
+/* The board is the felt. The playfield is the thin lighter frame; the racks
+   and names live on the felt outside it, the four rivers and the centre
+   inside it. Nothing is placed at a hand-tuned offset: every edge comes
+   from the frame percentages or the hand unit. */
 .board {
   position: relative;
-  display: grid;
+  display: block;
   grid-column: 1;
   grid-row: 1;
-  grid-template-columns:
-    var(--seat-col) var(--river-w6) minmax(0, 1fr) var(--river-w6) var(--seat-col);
-  grid-template-rows:
-    auto
-    var(--river-h6)
-    minmax(var(--river-h6), 1fr)
-    var(--river-h6);
-  grid-template-areas:
-    "seat-left  seat-top    seat-top    seat-top    seat-right"
-    "seat-left  river-top   river-top   river-top   seat-right"
-    "seat-left  river-left  centre      river-right seat-right"
-    "seat-left  river-bottom river-bottom river-bottom seat-right";
-  gap: var(--board-gap);
-  padding: var(--board-pad);
   overflow: hidden;
   background:
     radial-gradient(ellipse at 50% 38%, var(--felt-high) 0%, var(--felt) 52%, var(--felt-low) 100%);
@@ -217,24 +212,50 @@ kbd {
   pointer-events: none;
 }
 
+/* The frame marks the play area: inset 12% from the top, 3% from the sides,
+   2% from the bottom. The one-tile-wide felt band lies outside it, where
+   the seat names and concealed racks sit. */
+.playfield {
+  position: absolute;
+  z-index: 1;
+  inset: var(--frame-top) var(--frame-x) var(--frame-bottom);
+  border: 1px solid rgba(247, 242, 226, 0.18);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+/* The four blocks meeting around the centre: north/south are six wide,
+   east/west are the same block turned six tall. They touch at the corners. */
+.board-centre {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--play-w);
+  height: var(--play-h);
+  transform: translate(-50%, -50%);
+}
+
 .hand-band {
   position: relative;
   z-index: 4;
+  display: flex;
   grid-column: 1 / -1;
   grid-row: 2;
-  padding: 10px 18px 12px;
-  border-top: 1px solid rgba(247, 242, 226, 0.12);
-  background: linear-gradient(180deg, #0e2b1d 0%, #091d13 100%);
+  align-items: flex-end;
+  justify-content: center;
+  padding: 8px 10px;
+  background: var(--felt-low);
   color: var(--on-felt);
 }
 
 .hand-layout {
-  display: grid;
-  grid-template-columns: 120px minmax(0, 1fr) auto 88px;
-  gap: 12px;
-  align-items: end;
+  position: relative;
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  justify-content: center;
   width: 100%;
-  min-height: calc(var(--hand-h) + 22px);
+  min-height: var(--hand-h);
 }
 
 /* -------------------------------------------------------------- rail */
@@ -626,102 +647,82 @@ kbd {
   white-space: pre-wrap;
 }
 
-/* --------------------------------------------------------- seat chips */
+/* ------------------------------------------------------- seats and racks */
 
+/* Tenhou's seats are a wind and a name on the felt, nothing else. Each name
+   sits in its own corner of the play area; the racks stay on the edges. */
 .seat {
+  position: absolute;
+  z-index: 2;
   display: flex;
-  flex-direction: column;
-  gap: 7px;
+  gap: 12px;
   align-items: center;
-  justify-self: center;
   min-width: 0;
   pointer-events: none;
 }
 
 .seat-top {
-  grid-area: seat-top;
-  width: 100%;
-}
-
-.seat-line {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap;
-}
-
-.seat-extras {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  justify-content: center;
-  max-width: 100%;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .seat-left {
-  grid-area: seat-left;
-  align-self: center;
-  width: 100%;
+  left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .seat-right {
-  grid-area: seat-right;
-  align-self: center;
-  width: 100%;
+  right: 5px;
+  top: 50%;
+  flex-direction: row-reverse;
+  transform: translateY(-50%);
 }
 
-.seat-chip {
-  display: inline-flex;
+.seat-label {
+  position: absolute;
+  z-index: 3;
+  display: flex;
   gap: 7px;
-  align-items: center;
-  max-width: 100%;
-  padding: 4px 8px 4px 7px;
-  border: 1px solid rgba(247, 242, 226, 0.14);
-  border-left: 2px solid var(--seat-color, var(--accent));
-  border-radius: 7px;
-  background: rgba(5, 18, 12, 0.55);
-  color: var(--on-felt);
+  align-items: baseline;
   font-size: var(--fs-label);
-  line-height: 1.2;
+  line-height: 1.1;
   white-space: nowrap;
+  pointer-events: none;
 }
 
-/* The active seat marks itself with its chip and rack outline. No edge
-   bar: a seat is a grid item now, and its turn state must not add geometry. */
-.seat.is-turn .seat-chip {
-  border-color: var(--accent-soft);
-  border-left-color: var(--accent);
-  background: rgba(5, 18, 12, 0.76);
-  box-shadow:
-    inset 0 0 0 1px rgba(231, 198, 91, 0.24),
-    0 0 16px rgba(231, 198, 91, 0.16);
+.label-top {
+  top: 8px;
+  left: 10px;
+}
+
+.label-right {
+  top: 8px;
+  right: 10px;
+}
+
+.label-left {
+  bottom: 8px;
+  left: 10px;
 }
 
 .seat-wind {
   color: var(--seat-color, var(--accent));
-  font-size: var(--fs-heading);
+  font-size: 15px;
   font-weight: 800;
   line-height: 1;
 }
 
 .seat-name {
-  color: var(--on-felt);
+  color: var(--on-felt-muted);
   font-weight: 600;
 }
 
-.seat-points {
-  color: var(--on-felt);
-  font-variant-numeric: tabular-nums;
-}
-
-.seat-points.is-up {
-  color: #f4d98a;
-}
-
-.seat-points.is-down {
-  color: #f0a090;
+.seat-label.is-turn .seat-wind,
+.self-label.is-turn .seat-wind {
+  text-shadow: 0 0 10px var(--accent-soft);
+  color: var(--accent);
 }
 
 .score-points.is-up,
@@ -740,44 +741,9 @@ kbd {
   font-variant-numeric: tabular-nums;
 }
 
-.seat-dealer {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--indicator-bg);
-}
-
-.seat-dealer[hidden] {
-  display: block !important;
-  visibility: hidden;
-}
-
-.seat.is-turn .rack {
-  transform: translateY(-2px);
-}
-
 .seat.is-turn .rack {
   outline: 1px solid var(--accent-soft);
-  outline-offset: 2px;
-}
-
-/* The two side seats are narrow columns: their chip stacks, their hand is a
-   vertical line of backs and every meld fits inside the same two-tile
-   track. */
-.seat-left .seat-chip,
-.seat-right .seat-chip {
-  flex-direction: column;
-  gap: 1px;
-  align-items: center;
-  max-width: 100%;
-  padding: 4px;
-  text-align: center;
-  white-space: normal;
-}
-
-.seat-left .seat-name,
-.seat-right .seat-name {
-  display: none;
+  outline-offset: 3px;
 }
 
 .rack-line {
@@ -786,28 +752,21 @@ kbd {
   align-items: center;
 }
 
+/* One line of backs per seat: horizontal across the top, vertical down
+   each side, a few pixels in from the felt's edge. */
 .rack {
   display: flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 5px;
-  background: rgba(0, 0, 0, 0.17);
-  box-shadow: 0 1px 0 rgba(247, 242, 226, 0.06);
-  transition: transform var(--fast) var(--ease);
+  gap: 1px;
+  align-items: center;
 }
 
-/* The two side seats show their hand as one line of backs, never a block. */
 .rack.side {
-  display: flex;
   flex-direction: column;
-  gap: 1px;
 }
 
 .rack .tile-back {
-  /* A concealed hand is a rack of backs, not a second river: it uses its own
-     smaller unit so thirteen of them fit beside a seat. */
-  width: var(--back-w, 22px);
-  height: var(--back-h, 29px);
+  width: var(--back-w);
+  height: var(--back-h);
   overflow: hidden;
 }
 
@@ -822,45 +781,35 @@ kbd {
 .meld-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 4px;
   align-items: flex-end;
   justify-content: center;
-  max-width: min(96vw, 540px);
+  max-width: 50vw;
 }
 
 .seat-left .meld-row,
 .seat-right .meld-row {
-  justify-content: center;
-  max-width: 100%;
-}
-
-.seat-left .meld .tile,
-.seat-right .meld .tile {
-  width: calc(var(--tile-w) * 0.5);
-  height: calc(var(--tile-h) * 0.53);
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  max-width: none;
 }
 
 .meld {
   display: inline-flex;
   gap: 1px;
-  padding: 2px;
-  border: 1px solid rgba(231, 198, 91, 0.3);
-  border-radius: 5px;
-  background: rgba(0, 0, 0, 0.12);
+  padding: 1px;
+  border: 1px solid rgba(231, 198, 91, 0.28);
+  border-radius: 3px;
 }
 
 .meld.is-concealed {
   border-style: dashed;
 }
 
-.hand-band.is-turn {
-  border-top-color: var(--accent-soft);
-  box-shadow: inset 0 2px 0 var(--accent-soft);
-}
-
 .meld .tile {
-  width: 32px;
-  height: 43px;
+  width: var(--meld-w);
+  height: var(--meld-h);
 }
 
 .bonus-row {
@@ -870,9 +819,10 @@ kbd {
 }
 
 .bonus-row .tile {
-  width: 28px;
-  height: 37px;
+  width: calc(var(--hand-w) * 0.24);
+  height: calc(var(--hand-w) * 0.32);
 }
+
 
 /* --------------------------------------------------------------- tiles */
 
@@ -917,52 +867,77 @@ kbd {
   user-select: none;
 }
 
-/* Every river is a reserved 6x6 slot board at mount time: empty slots keep
-   their space, so a river's box is known before the first discard and its
-   contents can never reflow into the centre or another seat. */
+/* Every river reserves its whole block at mount time: empty slots keep
+   their space, so the four blocks meet around the centre and never reflow.
+   North and south read six across; east and west are the same block turned,
+   six down, each tile rotated to face its own player. */
 .river-zone {
-  display: grid;
-  align-items: center;
-  justify-items: center;
+  position: absolute;
   pointer-events: auto;
 }
 
 .zone-top {
-  grid-area: river-top;
-}
-
-.zone-left {
-  grid-area: river-left;
-}
-
-.zone-right {
-  grid-area: river-right;
+  left: 50%;
+  top: 0;
+  width: var(--river-w6);
+  height: var(--river-h3);
+  transform: translateX(-50%);
 }
 
 .zone-bottom {
-  grid-area: river-bottom;
-}
-
-.river-wrap {
+  left: 50%;
+  bottom: 0;
   width: var(--river-w6);
-  height: var(--river-h6);
+  height: var(--river-h3);
+  transform: translateX(-50%);
 }
 
-/* Every river reads the same way: six to a row, filled left to right and
-   top to bottom in throw order, exactly as a printed scoresheet or a riichi
-   table shows discards. No rotation, no reversed rows. */
+.zone-left {
+  left: 0;
+  top: 50%;
+  width: var(--river-w3);
+  height: var(--river-h6);
+  transform: translateY(-50%);
+}
+
+.zone-right {
+  right: 0;
+  top: 50%;
+  width: var(--river-w3);
+  height: var(--river-h6);
+  transform: translateY(-50%);
+}
+
 .river {
   display: grid;
-  grid-template-columns: repeat(6, var(--tile-w));
-  grid-template-rows: repeat(var(--river-rows), var(--tile-h));
   gap: var(--tile-gap);
   align-content: start;
   justify-content: start;
 }
 
+.river-flat {
+  width: var(--river-w6);
+  height: var(--river-h3);
+  grid-template-columns: repeat(6, var(--tile-w));
+  grid-template-rows: repeat(3, var(--tile-h));
+}
+
+.river-side {
+  width: var(--river-w3);
+  height: var(--river-h6);
+  grid-template-columns: repeat(3, var(--tile-h));
+  grid-template-rows: repeat(6, var(--tile-w));
+}
+
 .river-slot {
   width: var(--tile-w);
   height: var(--tile-h);
+}
+
+.river-side .river-slot {
+  position: relative;
+  width: var(--tile-h);
+  height: var(--tile-w);
 }
 
 .river .tile {
@@ -971,7 +946,20 @@ kbd {
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
 }
 
+.river-side .river-slot .tile {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(90deg);
+}
 
+.river-side.river-east .river-slot .tile {
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.river-flat.river-north .tile {
+  transform: rotate(180deg);
+}
 
 .river .tile.last {
   outline: 1px solid var(--accent);
@@ -990,62 +978,35 @@ kbd {
 @keyframes river-in {
   from {
     opacity: 0;
-    transform: translateY(12px) scale(0.96);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
   }
-}
-
-/* Your own seat chip lives in the hand band's first track, so no board
-   element has to float over the felt. */
-.self-chip {
-  grid-column: 1;
-  align-self: end;
-  min-width: 0;
-}
-
-.self-chip.is-turn .seat-chip {
-  border-left-color: var(--accent);
-  box-shadow:
-    inset 0 0 0 1px rgba(231, 198, 91, 0.3),
-    0 0 18px rgba(231, 198, 91, 0.2);
 }
 
 /* -------------------------------------------------------------- centre */
 
+/* The centre is the gap the four blocks leave: 1.9 units square, dead in
+   the play area. Round, hand and wall in the middle; four scores in the
+   corners, the dealer's corner carrying a dot. */
 .center {
-  display: grid;
-  grid-area: centre;
-  width: 100%;
-  height: 100%;
-  max-width: 240px;
-  max-height: 190px;
-  background: radial-gradient(
-    circle,
-    rgba(4, 12, 8, 0.28) 0%,
-    rgba(4, 12, 8, 0) 68%
-  );
-  place-items: center;
-  justify-self: center;
-  align-self: center;
-}
-
-.center-hud {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  align-items: center;
-  width: 100%;
-  text-align: center;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--centre-w);
+  height: var(--centre-w);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(4, 12, 8, 0.22) 0%, rgba(4, 12, 8, 0) 70%);
 }
 
 .wall-dial {
-  position: relative;
+  position: absolute;
+  left: 50%;
+  top: 50%;
   display: grid;
-  width: 92px;
-  height: 92px;
+  width: calc(var(--hand-w) * 0.8);
+  height: calc(var(--hand-w) * 0.8);
+  transform: translate(-50%, -55%);
   place-items: center;
 }
 
@@ -1073,7 +1034,7 @@ kbd {
 
 .wall-count {
   color: var(--on-felt);
-  font-size: var(--fs-heading);
+  font-size: var(--fs-body);
   font-variant-numeric: tabular-nums;
   font-weight: 650;
   line-height: 1;
@@ -1081,15 +1042,19 @@ kbd {
 
 .wall-label {
   position: absolute;
-  bottom: 13px;
+  bottom: calc(var(--hand-w) * 0.1);
   color: var(--on-felt-muted);
-  font-size: var(--fs-label);
+  font-size: 9px;
   line-height: 1;
 }
 
 .center-meta {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + var(--hand-w) * 0.42);
+  transform: translateX(-50%);
   color: var(--on-felt-muted);
-  font-size: var(--fs-label);
+  font-size: 9px;
   white-space: nowrap;
 }
 
@@ -1099,28 +1064,49 @@ kbd {
 }
 
 .center-scores {
+  position: absolute;
+  inset: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 2px 8px;
-  width: 100%;
-  max-width: 210px;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
 }
 
 .center-score {
-  display: grid;
-  grid-template-columns: auto 1fr 5px;
+  display: flex;
   gap: 4px;
   align-items: center;
-  padding: 1px 5px;
-  border-radius: 5px;
+  padding: 3px 6px;
   color: var(--on-felt-muted);
-  font-size: 12px;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
-  line-height: 1.25;
+  line-height: 1.2;
+}
+
+.corner-nw {
+  grid-area: 1 / 1;
+  align-self: start;
+  justify-self: start;
+}
+
+.corner-ne {
+  grid-area: 1 / 2;
+  align-self: start;
+  justify-self: end;
+}
+
+.corner-sw {
+  grid-area: 2 / 1;
+  align-self: end;
+  justify-self: start;
+}
+
+.corner-se {
+  grid-area: 2 / 2;
+  align-self: end;
+  justify-self: end;
 }
 
 .center-score.is-turn {
-  background: rgba(231, 198, 91, 0.12);
   color: var(--on-felt);
 }
 
@@ -1132,7 +1118,6 @@ kbd {
 .center-points {
   color: var(--on-felt);
   font-weight: 600;
-  text-align: right;
 }
 
 .center-points.is-up {
@@ -1144,24 +1129,25 @@ kbd {
 }
 
 .center-dealer {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   background: var(--accent);
 }
+
 
 /* ------------------------------------------------------------- actions */
 
 .action-cluster {
   position: absolute;
   z-index: 6;
-  right: 18px;
-  bottom: 14px;
+  right: 14px;
+  bottom: 12px;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
   align-items: flex-end;
-  max-width: 220px;
+  max-width: 240px;
 }
 
 /* With a fishing offer the preview and the buttons share one low row, so the
@@ -1183,21 +1169,20 @@ kbd {
 .action-button,
 .claim-button {
   display: inline-flex;
-  gap: 7px;
+  gap: 8px;
   align-items: center;
   justify-content: center;
-  min-height: 42px;
-  padding: 7px 13px;
-  border: 1px solid rgba(247, 242, 226, 0.22);
-  border-radius: 9px;
-  background: rgba(5, 18, 12, 0.82);
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid rgba(247, 242, 226, 0.24);
+  border-radius: 7px;
+  background: rgba(5, 18, 12, 0.78);
   color: var(--on-felt);
   font: inherit;
   font-size: var(--fs-body);
   font-weight: 600;
   line-height: 1.2;
   cursor: pointer;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.24);
 }
 
 .action-button:hover,
@@ -1305,58 +1290,30 @@ kbd {
 .claim-bar {
   position: absolute;
   z-index: 7;
-  bottom: 16px;
-  left: 50%;
+  right: 14px;
+  bottom: 12px;
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  align-items: center;
+  gap: 6px;
+  align-items: flex-end;
   width: max-content;
-  max-width: calc(100% - 48px);
-  padding: 9px 14px;
-  border: 1px solid rgba(247, 242, 226, 0.14);
-  border-radius: 14px;
-  background: rgba(5, 18, 12, 0.9);
-  box-shadow:
-    0 16px 40px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(247, 242, 226, 0.08);
-  transform: translateX(-50%);
-  backdrop-filter: blur(6px);
-}
-
-/* A soft pool of shade behind the choices, so the dock reads over a full
-   river without becoming a card. */
-.claim-bar::before {
-  position: absolute;
-  z-index: -1;
-  inset: -16px -22px -12px;
-  background: radial-gradient(
-    70% 100% at 50% 72%,
-    rgba(4, 12, 8, 0.55),
-    rgba(4, 12, 8, 0) 70%
-  );
-  content: "";
-  pointer-events: none;
+  max-width: calc(100% - 28px);
 }
 
 .claim-head {
   display: flex;
   gap: 8px;
   align-items: center;
-  padding-right: 13px;
-  border-right: 1px solid rgba(247, 242, 226, 0.14);
   color: var(--on-felt);
-  font-size: var(--fs-body);
+  font-size: var(--fs-label);
   font-weight: 600;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 .claim-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
 }
 
 .claim-label {
@@ -1366,34 +1323,29 @@ kbd {
 }
 
 .claim-bar .claim-head > .tile {
-  width: 32px;
-  height: 42px;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+  width: calc(var(--hand-w) * 0.3);
+  height: calc(var(--hand-w) * 0.4);
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
 }
 
 .claim-button {
-  gap: 5px;
-  min-height: 50px;
-  padding: 7px 14px;
-  border-radius: 10px;
-  background: rgba(6, 22, 15, 0.94);
-  box-shadow:
-    0 6px 18px rgba(0, 0, 0, 0.38),
-    inset 0 1px 0 rgba(247, 242, 226, 0.1);
+  min-width: 148px;
+  min-height: 48px;
+  gap: 6px;
 }
 
 .claim-button .tile {
-  width: 26px;
-  height: 34px;
+  width: calc(var(--hand-w) * 0.24);
+  height: calc(var(--hand-w) * 0.32);
 }
 
 .claim-button.claim-pass {
-  background: rgba(5, 18, 12, 0.86);
+  background: rgba(5, 18, 12, 0.66);
   color: var(--on-felt);
 }
 
 .claim-button.claim-pass:hover {
-  background: rgba(14, 40, 27, 0.96);
+  background: rgba(14, 40, 27, 0.9);
 }
 
 .claim-variants {
@@ -1401,7 +1353,7 @@ kbd {
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
 }
 
 .claim-variant {
@@ -1409,7 +1361,7 @@ kbd {
   gap: 1px;
   padding: 2px;
   border: 1px solid rgba(231, 198, 91, 0.34);
-  border-radius: 6px;
+  border-radius: 5px;
   background: rgba(6, 22, 15, 0.82);
   cursor: pointer;
 }
@@ -1421,32 +1373,28 @@ kbd {
 }
 
 .claim-variant .tile {
-  width: 24px;
-  height: 32px;
+  width: calc(var(--hand-w) * 0.22);
+  height: calc(var(--hand-w) * 0.29);
 }
 
 /* ---------------------------------------------------------- own hand */
 
+/* One plain row at the very bottom. The drawn tile is separated by a gap,
+   never lifted, so the row still reads as thirteen plus one. */
 .hand {
   display: flex;
-  grid-column: 2;
+  flex: none;
   gap: var(--hand-gap);
   align-items: flex-end;
-  justify-content: center;
-  min-width: 0;
-  transform: perspective(1500px) rotateX(4deg);
-  transform-origin: 50% 100%;
 }
 
 .hand-tile {
   position: relative;
   display: flex;
-  flex: 0 1 var(--hand-w);
-  flex-direction: column;
-  gap: 2px;
-  align-items: center;
+  flex: none;
+  align-items: flex-end;
   width: var(--hand-w);
-  min-width: 36px;
+  height: var(--hand-h);
   padding: 0;
   border: 0;
   margin: 0;
@@ -1457,9 +1405,9 @@ kbd {
 }
 
 .hand-tile .tile {
-  width: 100%;
+  width: var(--hand-w);
   height: var(--hand-h);
-  border-radius: 4px;
+  border-radius: 3px;
   filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45));
   transition:
     transform var(--fast) var(--ease),
@@ -1469,7 +1417,7 @@ kbd {
 }
 
 .hand-tile .tile img {
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 .hand-tile.is-new {
@@ -1501,10 +1449,6 @@ kbd {
     opacity: 0;
     transform: translateY(-20px) scale(0.96);
   }
-}
-
-.hand-tile.is-drawn:not(.selected) .tile {
-  transform: translateY(-4px);
 }
 
 .hand-tile:hover:not(.selected) .tile {
@@ -1539,20 +1483,8 @@ kbd {
   outline-offset: 2px;
 }
 
-.tile-index {
-  min-height: 14px;
-  color: var(--on-felt-muted);
-  font-size: var(--fs-label);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
-.hand-tile.selected .tile-index {
-  color: var(--accent);
-}
-
 .hand-tile.is-drawn-gap {
-  margin-left: calc(var(--hand-gap) * 2);
+  margin-left: calc(var(--hand-w) * 0.4);
 }
 
 .hand-placeholder {
@@ -1560,10 +1492,11 @@ kbd {
   font-size: var(--fs-label);
 }
 
+/* Melds sit outside the thirteen, on the side away from the drawn tile. */
 .own-melds {
   display: flex;
-  grid-column: 3;
-  gap: 8px;
+  flex: none;
+  gap: 6px;
   align-items: flex-end;
 }
 
@@ -1572,35 +1505,57 @@ kbd {
 }
 
 .own-melds .meld .tile {
-  width: 34px;
-  height: 45px;
+  width: var(--meld-w);
+  height: var(--meld-h);
+}
+
+/* Your wind and name sit with your hand; the bonus tray lives under it. */
+.self-info {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  width: calc(var(--hand-w) * 0.5);
+}
+
+.self-label {
+  display: flex;
+  gap: 5px;
+  align-items: baseline;
+  font-size: 12px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.self-label .seat-wind {
+  font-size: 14px;
 }
 
 .own-bonus {
   display: flex;
-  grid-column: 4;
   flex-direction: column;
   gap: 3px;
-  align-items: center;
-  min-width: 82px;
+  align-items: flex-start;
 }
 
 .own-bonus .bonus-row {
   display: grid;
-  grid-template-columns: repeat(2, 40px);
+  grid-template-columns: repeat(2, calc(var(--hand-w) * 0.22));
   gap: 2px;
 }
 
 .own-bonus .tile {
-  width: 40px;
-  height: 53px;
+  width: calc(var(--hand-w) * 0.22);
+  height: calc(var(--hand-w) * 0.29);
 }
 
 .bonus-empty {
   color: var(--on-felt-muted);
-  font-size: var(--fs-label);
-  line-height: 1.2;
-  text-align: center;
+  font-size: 9px;
+  line-height: 1;
 }
 
 /* ------------------------------------------------------------- result */
@@ -2039,32 +1994,9 @@ kbd {
 
 /* --------------------------------------------------------- small screens */
 
-@media (max-width: 1300px) {
-  :root {
-    --tile-w: 38px;
-    --tile-h: 50px;
-    --tile-gap: 2px;
-    --hand-w: 76px;
-    --hand-h: 101px;
-  }
-
-  .wall-dial {
-    width: 76px;
-    height: 76px;
-  }
-
-  .wall-label {
-    bottom: 10px;
-  }
-}
-
 @media (max-width: 1100px) {
   :root {
-    --tile-w: 32px;
-    --tile-h: 42px;
-    --tile-gap: 2px;
-    --hand-w: 68px;
-    --hand-h: 91px;
+    --hand-w: min(6vw, calc((86vh - 20px) / 8));
     --rail-w: 230px;
   }
 
@@ -2082,76 +2014,7 @@ kbd {
 
   .action-cluster {
     right: 10px;
-    max-width: 190px;
-  }
-
-  .meld .tile {
-    width: 24px;
-    height: 32px;
-  }
-
-  .bonus-row .tile {
-    width: 22px;
-    height: 29px;
-  }
-
-  .claim-bar {
-    gap: 6px;
-    padding: 7px 10px;
-  }
-
-  .claim-row {
-    gap: 6px;
-  }
-
-  .claim-head {
-    gap: 6px;
-    padding-right: 9px;
-    font-size: var(--fs-label);
-  }
-
-  .claim-bar .claim-head > .tile {
-    width: 26px;
-    height: 34px;
-  }
-
-  .claim-button {
-    min-height: 42px;
-    padding: 5px 9px;
-    font-size: var(--fs-label);
-  }
-
-  .claim-button .tile {
-    width: 20px;
-    height: 27px;
-  }
-
-  .wall-dial {
-    width: 68px;
-    height: 68px;
-  }
-
-  .hand-band {
-    padding-right: 12px;
-    padding-left: 12px;
-  }
-
-  .hand-layout {
-    grid-template-columns: 96px minmax(0, 1fr) auto 76px;
-    gap: 8px;
-  }
-
-  .own-bonus {
-    min-width: 58px;
-  }
-
-  .own-bonus .bonus-row {
-    grid-template-columns: repeat(2, 28px);
-  }
-
-  .own-bonus .tile {
-    width: 28px;
-    height: 37px;
+    max-width: 200px;
   }
 }
 
@@ -2176,28 +2039,6 @@ kbd {
 }
 
 @media (max-height: 760px) {
-  :root {
-    --tile-w: 19px;
-    --tile-h: 24px;
-    --tile-gap: 2px;
-    --hand-w: 68px;
-    --hand-h: 91px;
-  }
-
-  .wall-dial {
-    width: 68px;
-    height: 68px;
-  }
-
-  .hand-layout {
-    min-height: calc(var(--hand-h) + 14px);
-  }
-
-  .hand-band {
-    padding-top: 7px;
-    padding-bottom: 8px;
-  }
-
   .action-cluster {
     bottom: 9px;
   }
