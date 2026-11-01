@@ -22,7 +22,9 @@ This is a design brief, not a wish list: each phase has acceptance criteria that
 
 ## Borrowed from the north star, concretely
 
-What Mahjong Soul and Riichi City get right — take these mechanics of layout, not their art:
+The north star here is **only** how the table looks and where the elements sit while playing — board proportions, where each seat, river, hand, wall and action cluster lives, and the visual hierarchy between them. Not their rules, features, progression or art.
+
+What Mahjong Soul and Riichi City get right about that layout:
 
 - **The hand is the hero.** A wide, bottom-centred row of large tiles, always the brightest thing on screen; everything else steps back in contrast and size.
 - **One river per seat, six to a row.** Discards sit in a fixed grid belonging to each seat, in throw order, so you can read who discarded what without a log. Melds sit beside the river, not mixed into it, and a claimed tile is visibly absent from the river.
@@ -33,7 +35,7 @@ What Mahjong Soul and Riichi City get right — take these mechanics of layout, 
 - **Results are an overlay with deltas**, showing each seat's change against its previous points, then a single primary "next hand".
 - **Selection is physical**: hover lifts a tile a few px, selecting raises it further and dims the rest of the hand slightly, so what you are about to throw is unmistakable.
 
-Do **not** copy: avatars, emotes, sound, backgrounds, gacha frames, or any decorative animation. Our surface is felt, our type is system sans, our only ornament is the tiles.
+Do **not** copy: avatars, emotes, sound, backgrounds, gacha frames, decorative animation, or any of their rules and features. Our surface is felt, our type is system sans, our only ornament is the tiles.
 
 ## Layout (target)
 
