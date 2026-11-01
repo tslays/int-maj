@@ -55,6 +55,17 @@ Taken from how these tables read in play (AJ Martinez, worldsbe.st, on Mahjong S
 - **Wall always visible** — the remaining wall is a first-class counter the whole hand (Riichi City shows the whole wall; we need only the count and a shrinking ring).
 - **Our equivalents of their dora/furiten warnings**: the bonus tiles you hold are shown in the tray at all times, and an announced fishing wait is highlighted where it sits in the rail.
 
+## The arrangement reference
+
+The composition to match is the Riichi City table screenshot the owner nominated: <https://worldsbe.st/content/images/2022/11/riichicity.jpg> (1920x1080). Match its **proportions and positions**, never its art:
+
+- own hand: one large centred row along the bottom edge, occupying roughly the bottom sixth of the frame;
+- own river: directly above the hand, six to a row, growing away from you toward the centre;
+- opponents' rivers: the same six-wide pattern in front of each seat, feeding the centre from top, left and right;
+- seat chips: a compact identical block at each seat's own edge (wind, name, points), never a shared table in a corner;
+- wall and round: the quiet centre;
+- actions: a fixed cluster low on the right, adjacent to the hand, not across the board.
+
 ## Interaction contract
 
 - Exactly one primary action is emphasised at any moment; secondary ones are inline with keycaps (D, 1-9, Enter, Space).
