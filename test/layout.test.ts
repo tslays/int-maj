@@ -54,6 +54,8 @@ describe("computeLayout", () => {
           `${width}: hand row does not overflow (${result.handWidth})`,
         );
         assert.equal(result.handWidth, HAND_TILE_COUNT * result.handTileWidth + 13 * result.handGap);
+        assert.equal(result.handTileCount, 14);
+        assert.equal(result.drawnTileIndex, 13);
       } else {
         assert.ok(result.tileWidth >= BREAKPOINTS[mode].minTileWidth);
         assert.ok(result.tileWidth <= BREAKPOINTS[mode].maxTileWidth);
