@@ -189,3 +189,19 @@ recorded assumption: each of the three other seats pays the fishing award, with
 East's payment or receipt doubled like any other score. This is an assumption,
 not a printed rule; it is tracked as AUDIT A7 and must not be described as a
 source reading.
+
+## Milestone C6 — round and table rulings (checked pages)
+
+- A drawn Western hand repeats East once and marks the next hand as a
+  Goulash (I p. 21, p. 63). The three-tile exchange is not implemented: the
+  page does not say which three tiles a player chooses, so no exchange rule is
+  invented. Jokers and the pool remain optional table agreements (I p. 21).
+- The Chinese drawn hand keeps East and adds a kitty stake (I p. 28); the
+  kitty is counted, not paid out.
+- Hand-size penalties and a false Mah Jong have no trigger in the legal-action
+  model: the reducer never lets a hand reach 13/15 effective tiles or declare
+  an incomplete win. A discarded tile is already unclaimable (I p. 21-22).
+- A reshuffle demand (I p. 22) has no printed deal algorithm, so the engine
+  does not offer a redeal action.
+- Tournament hand-count and repeat-history limits (I p. 63) are table-level
+  bookkeeping, not engine state.

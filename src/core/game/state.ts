@@ -104,6 +104,8 @@ export interface HandResult {
   /** Dealer of the next hand: repeats on a dealer win or a drawn hand. */
   readonly nextDealer: Seat;
   readonly reason: string;
+  /** A drawn Western hand is followed by a Goulash. */
+  readonly goulash?: boolean;
 }
 
 export interface GameState {
@@ -114,6 +116,16 @@ export interface GameState {
   readonly handNumber: number;
   readonly dealer: Seat;
   readonly prevailingWind: Wind;
+  /** The game ends after the North round; no further hand may be dealt. */
+  readonly gameOver?: boolean;
+  /** A drawn Western hand repeats the dealer only once. */
+  readonly drawRepeatUsed?: boolean;
+  /** Western by default; the Chinese drawn hand keeps East and adds a kitty. */
+  readonly variant?: "western" | "chinese";
+  /** Stakes accumulated in the Chinese kitty. */
+  readonly kitty?: number;
+  /** The next hand is a Goulash: no chow claims, no no-chow double. */
+  readonly goulash?: boolean;
   /** Dice roll and East's chosen seat for the game, when the deal selected it. */
   readonly seatSelection?: {
     readonly rolls: Readonly<Record<Seat, number>>;
