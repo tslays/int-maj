@@ -46,6 +46,14 @@ export interface FixtureOptions {
   readonly variant?: "western" | "chinese";
   readonly kitty?: number;
   readonly goulash?: boolean;
+  readonly settlement?: GameState["settlement"];
+  readonly tournament?: boolean;
+  readonly limit?: number;
+  readonly goulashStage?: GameState["goulashStage"];
+  readonly goulashPool?: number;
+  readonly goulashPicks?: GameState["goulashPicks"];
+  readonly specialHands?: GameState["specialHands"];
+  readonly recentSpecialHands?: GameState["recentSpecialHands"];
 }
 
 export function fixture(options: FixtureOptions = {}): GameState {
@@ -71,6 +79,16 @@ export function fixture(options: FixtureOptions = {}): GameState {
   state.variant = options.variant ?? "western";
   state.kitty = options.kitty ?? 0;
   state.goulash = options.goulash ?? false;
+  if (options.settlement !== undefined) state.settlement = options.settlement;
+  if (options.tournament !== undefined) state.tournament = options.tournament;
+  if (options.limit !== undefined) state.limit = options.limit;
+  if (options.goulashStage !== undefined) state.goulashStage = options.goulashStage;
+  if (options.goulashPool !== undefined) state.goulashPool = options.goulashPool;
+  if (options.goulashPicks !== undefined) state.goulashPicks = options.goulashPicks;
+  if (options.specialHands !== undefined) state.specialHands = [...options.specialHands];
+  if (options.recentSpecialHands !== undefined) {
+    state.recentSpecialHands = [...options.recentSpecialHands];
+  }
   state.handNumber = 1;
 
   const keysOf = (input: string | readonly string[]): string[] =>

@@ -104,11 +104,9 @@ these slices, in order, one commit each, tests green at every commit
 | C9 Text sweep | — | README, docs/UI.md and every comment describe the framework, not the old rules | grep finds no stale rule claim |
 
 **Milestone C status: done.** All nine slices are committed; C9 is the text
-sweep. Deferred rows and their reasons are in `rules/AUDIT.md`: A13 (Goulash
-exchange tile choice not printed), A15 (hand-size/false-Mah-Jong penalties
-have no reachable legal action), A17 (reshuffle has no printed deal
-algorithm), A25 (tournament hand-count/repeat history is table bookkeeping),
-plus A16/A24/A27 from C2.
+sweep. The eight rows C2/C6 left out (A7, A13, A15, A16, A17, A24, A25, A27)
+were closed in D2 against the printed pages, with the narrow readings recorded
+in `rules/RULES.md` and tests in `test/deferred-rules.test.ts`.
 
 ### The bar for every C slice
 

@@ -754,9 +754,11 @@ other mahjong knowledge or the old Companion text.
    p. 18 says loose tiles are replenished from the wall, but not what occurs
    when there is no tile left.
 5. **Who pays a fishing player.** p. 21 says "certain conditions apply to the
-   scoring" and p. 32 fixes the figures and says East pays/receives double, but
-   no page names the payers or says whether the reduced figure is per payer or
-   in total.
+   scoring" and p. 32 fixes the figures and says East pays/receives double.
+   Read with R76 ("All players pay the winner") and R71 ("score in the same
+   way"), the three other players pay the fishing hand as if it had won; the
+   figure is per payer. This is the narrowest reading of the two printed
+   sentences; the page never names the payers in one sentence.
 6. **Whether a fishing player may still pung, chow or kong.** No restriction is
    printed; fishing is described only as the state of needing one tile.
 7. **How a chow that wins is displayed or scored as exposed or concealed.**
@@ -773,14 +775,35 @@ other mahjong knowledge or the old Companion text.
     p. 22 says an extra hand each time the hand is drawn; p. 63 says in the
     Western version "East remains for only one more hand and a Goulash is
     played". These are not reconciled on the page.
-12. **Whether the too-many-tiles offender pays the table or only scores
-    nothing.** p. 22 and p. 63 disagree; both readings are printed (R80, R81).
+12. **The amount a too-many-tiles offender pays.** p. 63 says only "pays all
+    other players"; it prints no figure. The engine pays each other player the
+    half-limit (the only printed half-limit penalty, R80(3)), and records this
+    as a reading, not a quotation.
 13. **Penalties for an out-of-turn claim, an exposed tile error, or a wrong
     declaration other than a false Mah Jong.** Only the four p. 22 penalties
     and the careless-discard rule are printed.
 14. **How the dead-wall boundary is accounted when a kong replacement is taken
     from it.** p. 28 says the last 14 tiles are dead but a kong takes a loose
     tile from that portion; the exact counting boundary is not printed.
+
+### Readings chosen where a sub-case is silent
+
+- **Goulash exchange order and choice.** R100 names the three exchanges and
+  the engine asks each player for the three tiles they choose; choice is not
+  printed but is the only literal reading of "three tiles are exchanged".
+- **Goulash jokers.** R103 makes them a table option (four blanks or four
+  2 Bamboos). The engine carries the option in state; blank-tile nomination is
+  not used in the Western default described by the rest of this framework.
+- **Reshuffle algorithm.** R82 orders a reshuffle but prints no shuffle. The
+  engine advances the seeded wall by one set and redeals the same hand number.
+- **Losing-hand score at advanced settlement.** R94 says "all hands"; R69
+  prints the ordinary/fishing route "without the 20 points for going Mah
+  Jong". The engine scores a losing 13-tile hand by its best waiting
+  completion's ground score (or 0 when it has no wait), and settles pairwise
+  differences (R76).
+- **Tournament special-hand selection.** R105(7) caps the list at fourteen;
+  R105(8) bans a third consecutive win with the same selected special hand.
+  Ordinary Mah Jong remains available regardless of the selected list.
 
 ### Source ambiguities
 
@@ -789,8 +812,9 @@ Recorded with both literal readings; no reading was chosen silently.
 - **p. 62 tile list.** The summary prints "8 Seasons (8)" where the arithmetic
   needs 4 flowers + 4 seasons. p. 6 and p. 9 print four of each. R1 records the
   literal line; the composition follows p. 6.
-- **p. 63 vs p. 22, too many tiles.** R80 and R81 give different penalties.
-  No page reconciles them.
+- **p. 63 vs p. 22, too many tiles.** R80 says "scores nothing" and R81 adds
+  "pays all other players". The engine applies both: the offender scores
+  nothing and pays; the amount is the half-limit reading above.
 - **p. 63 vs p. 21-22, drawn hand.** "East remains for only one more hand"
   (Western) versus "an extra hand for each time ... the hand is drawn" (p. 22).
 - **p. 21, chow from a non-right seat.** R61 says another player may claim for a
