@@ -35,11 +35,10 @@ from another mahjong variant, or from the old catalogue's habits.
 ## Status
 
 - **Part I — general play:** audited against the primary scan (Milestone A).
-- **Part II — special hands and their scores:** the primary book's illustrated
-  catalogue, still to be extracted (Milestone B). Until it lands, the tiers in
-  `src/core/patterns/table.ts` are unverified.
-- **Part III — Companion extensions:** the additional hands and tier values
-  that the supplement contributes, once Part II shows what is missing.
+- **Part II — special hands and their scores:** audited against the primary
+  scan (Milestone B); the catalogue is in Part II below.
+- **Part III — Companion extensions:** written from the Companion (Part III);
+  only additions, with the superseded readings listed in `rules/AUDIT.md`.
 
 The engine does not yet follow this framework: `rules/AUDIT.md` lists each
 conflict with the code and is the work list for Milestone C. Do not describe
@@ -891,14 +890,267 @@ III). None of the 12 corrections or 3 additions is implemented yet.
 `發` (green), `中` (red), `白` (white). "extra" is the fourteenth tile for a hand
 whose caption says "any tile paired".
 
-];
-
 # Part III — Companion extensions
 
-Not yet written. After Part II, this section lists only what the Companion adds:
-hands the Illustrated book does not print, and the middle-limit tier with the
-fishing figures for each tier. Every entry carries a `[C p.N]` tag, states the
-Illustrated alternative where one exists, and never contradicts Part I.
+*The Mah Jong Player's Companion* (Patricia A. Thompson and Betty Maloney,
+Kangaroo Press, 1997) is the supplement. This part records **only what the
+Companion adds** to Parts I and II. The Illustrated book wins every conflict;
+the Companion readings that differ are listed in `rules/AUDIT.md` under
+"Catalogue and Part III conflicts" and are not applied here.
+
+Page tags `[C p. N]` are the Companion's **printed** pages. The render
+`rules/pages/pNN.png` is the spread of printed pages `2NN-4` and `2NN-3`
+(so `p04.png` is printed pp. 4-5, `p30.png` is pp. 56-57).
+
+## 1. The tier ladder
+
+The Companion prints four tiers with a fishing figure for each `[C p. 4]`:
+
+| Tier | Winning | Fishing |
+|---|---:|---:|
+| Half limit | 500 | 200 |
+| Limit | 1000 | 400 |
+| Middle limit | 1500 | 600 |
+| Double limit | 2000 | 800 |
+
+> "This book introduces a new level of scoring, positioned between Limit and
+> Double Limit. It is called the Middle Limit and scores 1500 points. The
+> fishing score for a Double Limit has been under review and now scores 800
+> points (i.e. two-fifths of a Double Limit). New scores are indicated in bold
+> type." `[C p. 4]`
+
+### How this reconciles with Parts I and II
+
+- **The Illustrated book prints no middle tier.** Its printed tiers are half
+  limit, limit and double limit (Part II: 7 double, 37 limit, 5 half, and 4
+  scored by doubling, the score sheet or 10 points). Its values — half 500,
+  limit 1000, double 2000 — and its fishing figures — half 200, limit 400,
+  double 500 (`[I p. 32]`, Part I R69) — stay authoritative for every hand the
+  Illustrated book prints.
+- **Middle limit exists only for Companion hands that print it.** Exactly four
+  Companion-only hands print 1500/600: Odds & Evens, Numbers in Parallel,
+  Numbers Doubled and Dragon's Run. No Illustrated hand is rescored to middle.
+- **Five Illustrated hands are printed at Middle in the Companion but at a
+  lower tier in the Illustrated book**: Three Great Scholars (C p. 58, 1500;
+  I p. 49, LIMIT), Four Blessings (C p. 30, 1500; I p. 49, LIMIT), Civil War
+  (C p. 30, 1500; I p. 53, DOUBLE LIMIT), Chinese Odds (C p. 59, 1500; I p. 40,
+  LIMIT) and Sparrow's Sanctuary (C pp. 21 and 52, 1500; I p. 44, LIMIT). The
+  Illustrated tier governs; the Companion figures are recorded as superseded
+  in `rules/AUDIT.md` (C8).
+- **Double-limit fishing.** The Companion prints 800 `[C p. 4]`; the
+  Illustrated prints 500 `[I p. 32]`. For every hand the Illustrated prints,
+  500 governs. The two Companion-only double-limit hands (Up You Go, Down You
+  Go) print 800; 800 is used only for those supplement hands, never to replace
+  the Illustrated figure for its hands. This is AUDIT C9.
+- The Companion's tier names are otherwise the Illustrated ones; its
+  half/limit hands fish at the same 200/400 as Part I.
+
+## 2. The Companion-only hands
+
+The 35 entries that `rules/AUDIT.md` lists as "not printed in this book",
+with their printed composition, printed tier and page. Thirty-four are
+distinct printed hands; Big Robert has two scoring variants and therefore two
+table ids. `N/I` means the Companion prints the hand in its synopsis but does
+not illustrate it `[C p. 4: N/I = Not Illustrated]`.
+
+| Table id | Companion name | Printed composition | Printed tier (winning / fishing) | Page | Note |
+|---|---|---|---|---|---|
+| `chow-chow` | Chow Chow | Four chows + pair, all one suit; every tile from the wall including the last. | HALF LIMIT (500 / 200) | `[C p. 15]` | "All tiles from wall—INCLUDING LAST" — table `requiresSelfDrawn: true` is correct. |
+| `guardian-winds` | Guardian Winds | Run 1–9 in one suit + pung/kong of Winds + pair of Winds. | LIMIT (1000 / 400) | `[C p. 10]` | Concealed. |
+| `wriggly-dragon` | Wriggly Dragon | Run 1–9 in one suit + one of each Dragon (green, red, white) + pair of Dragons. | LIMIT (1000 / 400) | `[C p. 11]` | Also synopsis p. 31. |
+| `guardian-dragons` | Guardian Dragons | Run 1–9 in one suit + pung/kong of Dragons + pair of Dragons. | LIMIT (1000 / 400) | `[C p. 10]` | "As Guardian Winds ... with Run 1-9, Pung/K Dragons and Pair Dragons." |
+| `grand-sequence` | Grand Sequence | Run 1–9 in one suit + any two tiles 1–9 paired (a suited pair) + pung/kong of Winds or Dragons. | LIMIT (1000 / 400) | `[C p. 11]` | Two illustrations, p. 40; same shape. |
+| `dragons-gates` | Dragon's Gates | All one suit: run 2–8 + any tile 2–8 paired + pung/kong of 1s or 9s + pung/kong of the corresponding Dragon. | LIMIT (Concealed 1000 / 400) / HALF LIMIT (Exposed 500 / 200) | `[C p. 12]` | Corresponding Dragon: Bamboo–Green, Characters–Red, Circles–White. |
+| `dragons-teeth` | Dragon's Teeth | Run 1–7 or 2–8 in Characters or Circles + any tile 1–7 or 2–8 paired + pung/kong White Dragons + pung/kong Red Dragons. | LIMIT (Exposed 1000 / 400) | `[C p. 12]` | Also p. 33; no half-limit printed. |
+| `yin-yang` | Yin Yang | `11 / 234 / 55` in one suit; `55 / 678 / 99` in another suit. | LIMIT (Concealed 1000 / 400) | `[C p. 14]` | Also p. 50. |
+| `big-robert` | Big Robert | Three runs of four tiles, one in each suit + pair of Winds or Dragons; the same four numbers in all three runs. | LIMIT (Concealed 1000 / 400) | `[C p. 14]` | The page: "LIMIT for same numbers (Otherwise) HALF LIMIT (Concealed)". |
+| `big-robert-mixed` | Big Robert (mixed numbers) | The same hand with the three runs not all using the same numbers. | HALF LIMIT (Concealed 500 / 200) | `[C p. 14]` | Table's second id for the same printed hand. |
+| `moon-at-bottom-of-well` | Moon at Bottom of Well | All Circles: four chows — 123, 456 and 789 in ascending order, plus any fourth Circle chow — + pair of Circles. | LIMIT (Concealed 1000 / 400) | `[C p. 15]` | Also pp. 47 and 60. Illustration: 123, 456, 789, 123, 44. |
+| `three-philosophers` | Three Philosophers | Chow in each suit + one mixed chow (three consecutive numbers, one from each suit) + pair in any suit. | LIMIT (Concealed 1000 / 400) | `[C p. 15]` | |
+| `crazy-chows` | Crazy Chows | Four mixed chows + mixed pair (same number in two suits). | HALF LIMIT (Concealed 500 / 200) | `[C p. 16]` | Illustration: 456, 234, 678, 123 mixed chows; pair 6B + 6C. |
+| `little-robert` | Little Robert | Chow in each suit + pung/kong in any suit + pair in any suit. | HALF LIMIT (Concealed 500 / 200) | `[C p. 16]` | |
+| `hovering-angel` | Hovering Angel | Chow in each suit + pung/kong of own Wind + pair of Dragons. | LIMIT (Concealed 1000 / 400) | `[C p. 17]` | Also p. 41. |
+| `little-brother` | Little Brother | Chow in each suit + another chow in any suit + pair of own Wind. | HALF LIMIT (Concealed 500 / 200) | `[C p. 17]` | |
+| `apple-blossom` | Apple Blossom | Three mixed chows + pung/kong of White Dragons + pair of Green Dragons. | LIMIT (Concealed 1000 / 400) | `[C p. 19]` | Also p. 33. |
+| `professors` | The Professors | Three mixed chows + one of each Dragon + pair of own Wind. | HALF LIMIT (Concealed 500 / 200) | `[C p. 19]` | |
+| `seven-twins` | Seven Twins | Seven pairs of any tiles; every tile from the wall including the last. | HALF LIMIT (Concealed 500 / 200) | `[C p. 22]` | Table `requiresSelfDrawn: true` is correct. |
+| `dragonette` | Dragonette | Three pairs in one suit (no 1s or 9s) + one of each Wind + one of each Dragon + one Wind or Dragon paired. | LIMIT (Concealed 1000 / 400) | `[C p. 24]` | **Correction:** the page says "Any Wind or Dragon paired"; the table pairs a Dragon only. Allow the extra honour to be a Wind or a Dragon. |
+| `windvane` | Windvane | One of each Wind + one Wind paired + pung/kong in each suit. | LIMIT (Concealed 1000 / 400) | `[C p. 28]` | |
+| `golden-gates` | Golden Gates | All one suit: pairs 2,2 / 4,4 / 6,6 / 8,8 + pung/kong of 1s or 9s + pung/kong of the corresponding Dragon. | LIMIT (Concealed 1000 / 400) / HALF LIMIT (Exposed 500 / 200) | `[C p. 25]` | Also p. 34; Dragon correspondence as above. |
+| `sunrise` | Sunrise | Pung/kong of East Winds + pair of White Dragons + pung/kong in each suit, no 1s or 9s. | LIMIT (Concealed 1000 / 400) / HALF LIMIT (Exposed 500 / 200) | `[C p. 42]` | |
+| `sunset` | Sunset | Pung/kong of West Winds + pair of Red Dragons + pung/kong in each suit, no 1s or 9s. | LIMIT (Concealed 1000 / 400) / HALF LIMIT (Exposed 500 / 200) | `[C p. 42]` | |
+| `ods-evens` | Odds & Evens | The five odd numbers in two suits + the four even numbers in the third suit, one tile of each number (10 + 4 = 14). | 1500 / 600 (middle limit) | `[C p. 60]` | N/I. The synopsis prints the figures, not the tier word; middle by the p. 4 ladder. |
+| `robin` | Robin | Chow in the first suit + two chows in the second suit + chow and pair in the third suit. | 500 / 200 (half limit) | `[C p. 60]` | N/I. |
+| `blue-mountains` | Blue Mountains | Pung/kong of Green Dragons + three pung/kongs + pair of blue Circles (2, 3, 4, 5, 8, 9). | 1000 / 400 (limit) | `[C p. 60]` | N/I. |
+| `white-elephant` | White Elephant | Pung/kong of White Dragons + three pung/kongs + pair of even Circles (2, 4, 6, 8). | 1000 / 400 (limit) | `[C p. 60]` | N/I. |
+| `driven-snow` | Driven Snow | Pung/kong of White Dragons + three pung/kongs + pair of odd Characters (1, 3, 5, 7, 9). | 1000 / 400 (limit) | `[C p. 60]` | N/I. |
+| `dragons-scales` | Dragon's Scales | Pung/kong of Red Dragons + three pung/kongs + pair of even Characters (2, 4, 6, 8). | 1000 / 400 (limit) | `[C p. 60]` | N/I. |
+| `up-you-go` | Up You Go | One of each Wind + 2, 44, 666, 8888 in one suit; the 8888 kong is concealed. | DOUBLE LIMIT (2000 / 800) | `[C p. 57]` | N/I. The 800 is the Companion's double-limit fishing figure; see §1. |
+| `down-you-go` | Down You Go | One of each Wind + 2222, 444, 66, 8 in one suit; the 2222 kong is concealed. | DOUBLE LIMIT (2000 / 800) | `[C p. 57]` | N/I. The table note says "8888" by mistake; the printed kong is 2222, which the predicate already uses. |
+| `numbers-in-parallel` | Numbers in Parallel | Pung/kong and pair of Dragons or Winds + pung/kong of the same number in each suit, no 1s or 9s. | MIDDLE LIMIT (Exposed 1500 / 600) | `[C p. 43]` | |
+| `numbers-doubled` | Numbers Doubled | Pair of Winds or Dragons + two pung/kongs of each of two numbers in each of two suits, no 1s or 9s. | MIDDLE LIMIT (Exposed 1500 / 600) | `[C p. 43]` | |
+| `dragons-run` | Dragon's Run | Run 1–9 in one suit + one of each Dragon + pair of Winds. | 1500 / 600 (middle limit) | `[C p. 59]` | N/I. Distinct from Wriggly Dragon (1000 / 400). |
+
+**Corrections to `src/core/patterns/table.ts` settled by these pages**
+
+- `dragonette`: the paired honour may be a Wind or a Dragon (C p. 24). The
+  table's `singleGroup(isDragon)` is too narrow; the Companion's synopsis says
+  "ESWN + GRW (one paired)" (C p. 58).
+- `down-you-go`: note text says the 8888 kong; the printed hand is 2222
+  (C p. 57). The predicate already uses 2222.
+- The Companion pages settle the provisional readings of `moon-at-bottom-of-well`
+  (C pp. 15, 47: four Circle chows, three ascending, pair Circles),
+  `crazy-chows` (C p. 16: pair 6B + 6C), and `white-elephant`, `driven-snow`,
+  `dragons-scales` (C p. 60: three pungs, pair restricted by parity/suit).
+  Their compositions match; the `provisional` flags can be cleared.
+- No Companion-only hand needs a tier change: all 35 table tiers match the
+  printed figures. The only tier conflict is the middle-limit group of
+  Illustrated hands in §1 (AUDIT C8).
+
+## 3. Other Companion additions to play
+
+These are additions where Parts I and II are silent; none overrides an
+Illustrated rule.
+
+### 3.1 Notation and corresponding dragons `[C p. 4]`
+
+The Companion's shorthand, for reading its catalogue:
+
+| Abbreviation | Meaning |
+|---|---|
+| P/K or Pung/K | Pung or Kong |
+| Pr | Pair |
+| N/I | Not Illustrated |
+| L | Limit |
+| ESWN | one of each Wind |
+| GRW | one of each Dragon (W = white) |
+
+> "Corresponding Dragons: Red Dragon — Characters; Green Dragon — Bamboo;
+> White Dragon — Circles" `[C p. 4]`
+
+This correspondence is what Dragon's Gates and Golden Gates use.
+
+### 3.2 Settlement by units `[C p. 55]`
+
+The Companion offers a simplified points-to-units payment table for the
+ordinary, Purity and All Honour hands, whose scores are calculated as in the
+Illustrated book (pp. 24-26):
+
+> "Payments are made at the end of each hand and the following point score
+> system does this simply. Limit is set at 1000 points." `[C p. 55]`
+
+| Points | Pay | Fishing |
+|---|---|---:|
+| 50–150 | 1 unit | — |
+| 150–250 | 2 units | — |
+| 250–350 | 3 units | — |
+| 350–450 | 4 units | — |
+| 450–550 | 5 units | 2 units |
+| 550–650 | 6 units | — |
+| 650–750 | 7 units | — |
+| 750–850 | 8 units | — |
+| 850–950 | 9 units | — |
+| 950+ | 10 units | 4 units |
+
+The same page allocates 16 000 points of counters exactly as Part I R96 does:
+one red (4000), seven blue (7 × 1000), eight green (8 × 500), ten yellow
+(10 × 100).
+
+### 3.3 Optional Goulash variants `[C p. 55]`
+
+The Companion suggests, without changing Part I's Goulash procedure:
+
+1. "Goulash may be played as a warm-up at the start of a game. Each player puts
+   a 100 point counter in the kitty for the winner."
+2. "Playing into the box: The last hand may be played as a Goulash hand, with
+   the tiles gradually placed in their trays as the game proceeds."
+3. "When the Wind of the Round is West, this round may be played as a Goulash
+   round."
+4. "No half-limit hands are permitted during a Goulash."
+
+All four are optional table agreements. They do not alter Part I's rule that a
+Goulash follows a drawn hand; §4 lists the Companion sentence that does, and
+why it is not applied.
+
+### 3.4 Showing that you are fishing `[C p. 55]`
+
+> "Many players display a small fish (not real!) to indicate that they are
+> fishing; this must be done if a fishing score is to be claimed." `[C p. 55]`
+
+This is a table display convention; Part I's announcement (R67) still applies.
+
+### 3.5 Drawing and discarding `[C pp. 63-64]`
+
+- Draw only after the previous discard is face up:
+  > "A player may not draw a tile from the wall until the previous players
+  > discard has been made—face up and in full view of the other players. Tiles
+  > must be drawn from the wall in their correct sequence. If any player draws
+  > the wrong tile from the wall, it must be returned to its correct position."
+  > `[C p. 64]`
+- Miscalling a discard:
+  > "There is no penalty for miscalling a discard but it should not be done
+  > deliberately. To avoid disclosing any combination of tiles concealed in the
+  > hand players should wait until the discarded tile is placed on the table,
+  > face up, before a Pung or Chow is made." `[C p. 63]`
+- An exposed combination laid down wrongly:
+  > "the error should be corrected prior to the next player's discard. If the
+  > mistake is not corrected at this time, the hand containing the irregular
+  > combination is then considered dead." `[C p. 64]`
+- A too-hasty draw:
+  > "Should a player draw from the wall before or after the preceding player
+  > has relinquished their discard, said player is committed to this draw and
+  > may not claim the discarded tile. If another player requires the discarded
+  > tile, he may take it up and the too-hasty player must replace the tile in
+  > the wall." `[C p. 64]`
+
+The Companion's sentence allowing a declared Pung or Chow to be changed and a
+tile drawn instead contradicts Part I R52 and is listed in AUDIT C7; it is not
+adopted here.
+
+### 3.6 Concealed Kong house rule `[C p. 63]`
+
+The Companion records an optional club rule:
+
+> "It is provoking to conceal a Kong and if this is unacceptable, then implement
+> the House Rule; this allows a Kong to be concealed only until a further
+> exposed Pung is made (in that same hand). The concealed Kong must then be
+> exposed—it still scores as a concealed Kong, of course." `[C p. 63]`
+
+Part I's default (R57, R66: the kong is laid down with the two middle tiles
+face down, and full concealment requires agreement before play) governs unless
+the table adopts this house rule.
+
+### 3.7 Several tables `[C p. 55]`
+
+> "When several tables are playing, a bell is rung at a pre-arranged time and
+> East and West Winds move on to the next table." `[C p. 55]`
+
+A tournament movement convention; it does not change the four-player table
+rules.
+
+## 4. Companion statements not applied
+
+These Companion statements conflict with Part I or Part II and are recorded in
+`rules/AUDIT.md` (C1-C9), not applied:
+
+- Goulash is **not** played after a drawn hand `[C p. 62]`; Part I R74 says it
+  is.
+- East plays only once per round regardless of a win `[C p. 55]`; Part I R30
+  keeps East on a win.
+- A bouquet may be saved for three doubles instead of the immediate payment
+  `[C p. 63]`; Part I R72 makes the payment immediate.
+- No cleared-suit double in the Western game `[C p. 63]`; Part I R25(f) and
+  R91(j) award it.
+- No all-one-suit double when fishing `[C p. 55]`; Part I R71 scores the
+  fishing hand as p. 24 less only the 20-point bonus.
+- A declared Pung or Chow may be changed and a tile drawn instead `[C p. 64]`;
+  Part I R52 requires the discard.
+- Middle limit 1500 for five hands the Illustrated book prints at limit or
+  double `[C pp. 30, 52, 58, 59]`; the Illustrated tier governs.
+- Double-limit fishing 800 for Illustrated hands `[C p. 4]`; the Illustrated
+  figure is 500.
+- No player may win with the same hand in consecutive games `[C p. 62]`;
+  Part I R105 permits the same Special Hand for up to two consecutive turns.
 
 # Appendix — evidence
 

@@ -230,3 +230,46 @@ table as the supplement; none is deleted.
 - `rules/PRIMARY-HANDS.md` records the printed ambiguities (hand 8's repeated
   rank, hand 24's pair count, hand 25's chow option, hand 11's two score lines,
   All Kong's one-suit wording).
+
+---
+
+# Part III — Companion vs primary
+
+The Companion is a supplement; where it contradicts the Illustrated book, the
+Illustrated reading governs and the Companion sentence is not applied. These
+are the contradictions found while writing Part III of `rules/RULES.md`.
+
+| # | Companion page | Companion reading | Illustrated / Part I reading | Resolution |
+|---|---|---|---|---|
+| C1 | C p. 62 | "A Goulash should not be played after a hand in which no player wins." | I p. 21: a drawn hand is shuffled, the wall rebuilt and "a Goulash is played" (Part I R74). | Illustrated wins. The Companion sentence is omitted from Part III. |
+| C2 | C p. 62 | "Players may not win with the same hand in consecutive games." | I p. 63 / Part I R105: the same Special Hand is barred only after "more than two consecutive turns". | Illustrated wins. Part III does not adopt the stricter Companion limit. |
+| C3 | C p. 63 | A player may "save the Bouquet and take three doubles" instead of the immediate bonus. | I p. 32 / Part I R72: each other player "immediately gives this player one 1000-point counter and the four tiles are turned face down". | Illustrated wins; the saving option is omitted. |
+| C4 | C p. 63 | "In the Western game, awarding a double for all tiles of the one suit should not be allowed." | I p. 25: (f) one suit with Winds/Dragons is a double, and (j) all one suit is three doubles (Part I R25, R91). | Illustrated wins; the Companion restriction is omitted. |
+| C5 | C p. 55 | "East Wind is played only once by each player (whether they win or not), so there are only four hands in the round." | I p. 21 / Part I R30: East remains East after a win. | Illustrated wins; the once-only round is omitted. |
+| C6 | C p. 55 | "No double is awarded for all one suit when fishing, as the hand is incomplete." | I p. 32 / Part I R71: a fishing ordinary hand is scored as pp. 24-25 "without the bonus of 20 points for going Mah Jong" — no other double is removed. | Illustrated wins; the extra subtraction is omitted. |
+| C7 | C p. 64 | "A player may declare a Pung or Chow, then change that call and draw from the wall. No penalty is applied provided that no discard has been made." | I p. 21 / Part I R52: after a Pung the caller "must then make a discard, unless going Mah Jong"; R46 forbids drawing before the previous discard. | Illustrated wins; the change-and-draw sentence is omitted. The rest of the p. 64 incorrect-meld and too-hasty-draw rules are adopted in Part III §3.5. |
+| C8 | C pp. 30, 52, 58, 59 | Middle limit 1500 for Three Great Scholars, Four Blessings, Civil War, Chinese Odds and Sparrow's Sanctuary. | I pp. 40, 44, 49, 53: Chinese Odds LIMIT; Sparrow's Sanctuary LIMIT; Three Great Scholars LIMIT; Four Blessings LIMIT; Civil War DOUBLE LIMIT (Part II). | Illustrated wins. Those five hands stay at the Part II tier; middle is used only by the four Companion-only hands (Part III §1). |
+| C9 | C p. 4 | Double-limit fishing = 800 ("two-fifths of a Double Limit"). | I p. 32 / Part I R69: double-limit fishing = 500. | Illustrated 500 governs every hand the Illustrated prints. The Companion's 800 is used only for the two Companion-only double-limit hands (Up You Go, Down You Go), as their printed supplement figure. |
+
+## Table corrections settled by the Companion pages
+
+- `dragonette` (C p. 24): the paired honour may be **a Wind or a Dragon**
+  ("Any Wind or Dragon paired"; the synopsis says "ESWN + GRW (one paired)",
+  C p. 58). The table's `singleGroup(isDragon)` is too narrow; change it to
+  accept a wind or a dragon.
+- `down-you-go` (C p. 57): the note text says the "8888" kong, but the printed
+  hand is 2222 (the predicate already uses 2222). Text-only fix.
+- `moon-at-bottom-of-well` (C pp. 15, 47): four Circle chows, three in
+  ascending order, plus a Circle pair; the table's reading is confirmed and
+  its `provisional` flag can be cleared.
+- `crazy-chows` (C p. 16): the pair is 6B + 6C, confirming the table's mixed
+  pair; `provisional` can be cleared.
+- `white-elephant`, `driven-snow`, `dragons-scales` (C p. 60): the pair
+  restriction and three pungs are printed; the table's compositions match and
+  the `provisional` flags can be cleared.
+- `grand-sequence` (C pp. 11, 40): "any two tiles 1-9 paired" is a suited pair
+  (the two extra tiles form the hand's pair), which the table already requires.
+
+No Companion-only hand needs a tier change: all 35 table tiers match the
+printed winning/fishing figures. The only tier conflicts are the Illustrated
+hands in C8/C9.
