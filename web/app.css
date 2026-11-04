@@ -2425,3 +2425,164 @@ kbd {
   filter: none;
 }
 
+
+/* ------------------------------------------------------- variant D: bare */
+/* Subtraction, not restyling: the rail, log, notes, result card and seat
+   furniture leave; felt, rivers, hand, centre and one action row remain. */
+.variant-d .app {
+  --board-w: 100vw;
+  grid-template-columns: minmax(0, 1fr);
+  position: relative;
+}
+
+.variant-d .rail,
+.variant-d .rail-toggle,
+.variant-d #help-dialog,
+.variant-d .action-note,
+.variant-d .fishing-preview,
+.variant-d .claim-head,
+.variant-d .self-label {
+  display: none !important;
+}
+
+.variant-d .seat .rack-line,
+.variant-d .seat .meld-row,
+.variant-d .seat .bonus-row {
+  visibility: hidden;
+}
+
+.variant-d .seat-name,
+.variant-d .own-bonus {
+  display: none;
+}
+
+.variant-d .seat::before {
+  content: attr(data-wind) " " attr(data-count);
+  position: absolute;
+  z-index: 3;
+  color: var(--seat-color);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-black);
+  line-height: 1;
+  pointer-events: none;
+}
+
+.variant-d .seat-top::before {
+  top: 50%;
+  left: 0;
+  transform: translate(-100%, -50%);
+}
+
+.variant-d .seat-left::before,
+.variant-d .seat-right::before {
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -100%);
+}
+
+.variant-d .center {
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.variant-d .center-scores,
+.variant-d .wall-track,
+.variant-d .wall-ring,
+.variant-d .wall-label {
+  display: none;
+}
+
+.variant-d .wall-dial {
+  width: auto;
+  height: auto;
+}
+
+.variant-d .wall-count {
+  font-size: var(--fs-heading);
+}
+
+.variant-d .center-meta {
+  font-size: 0;
+}
+
+.variant-d .center-meta::before {
+  content: attr(data-round);
+  font-size: var(--fs-body);
+}
+
+.variant-d .center-meta::after {
+  content: " · " attr(data-current);
+  font-size: var(--fs-label);
+}
+
+.variant-d .action-cluster,
+.variant-d .claim-bar,
+.variant-d .action-buttons {
+  flex-direction: row;
+  align-items: center;
+  width: max-content;
+  max-width: none;
+}
+
+.variant-d .outcome {
+  position: absolute;
+  inset: auto 0 auto 0;
+  bottom: calc(var(--hand-h) + var(--hand-lift) + var(--action-row) + var(--space-6));
+  display: flex;
+  padding: 0;
+  background: none;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.variant-d .result-card {
+  display: flex;
+  gap: var(--space-5);
+  align-items: center;
+  width: auto;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--on-felt);
+  overflow: visible;
+  pointer-events: auto;
+}
+
+.variant-d .result-card > :not(h2):not(.result-source):not(.result-pattern):not(#result-next),
+.variant-d .result-card > h3,
+.variant-d .result-sub,
+.variant-d .result-tiles,
+.variant-d .result-grid,
+.variant-d .result-note,
+.variant-d .result-list {
+  display: none !important;
+}
+
+.variant-d .result-card h2 {
+  margin: 0;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-black);
+}
+
+.variant-d .result-pattern {
+  font-size: 0;
+}
+
+.variant-d .result-pattern .tier-badge {
+  font-size: var(--fs-body);
+}
+
+.variant-d .outcome[data-kind="win"] .result-source {
+  display: none !important;
+}
+
+.variant-d .outcome[data-kind="drawn"] .result-pattern {
+  display: none !important;
+}
+
+.variant-d #result-next {
+  pointer-events: auto;
+}

@@ -744,6 +744,7 @@ function renderSeat(entry) {
   const root = $(`#seat-${place}`);
   root.className = `seat seat-${place}${seatIsTurn(entry.seat) ? " is-turn" : ""}`;
   root.dataset.wind = entry.wind;
+  root.dataset.count = String(entry.handCount);
   root.style.setProperty("--seat-color", seatColor(entry.seat));
   root.replaceChildren();
 
@@ -800,6 +801,8 @@ function renderCenter() {
 
   const meta = $("#center-meta");
   meta.dataset.wall = String(view.wallRemaining);
+  meta.dataset.round = view.prevailingWind;
+  meta.dataset.current = view.turn === view.seat ? "You" : seatLabel(view.turn);
   meta.replaceChildren();
   const round = document.createElement("strong");
   round.textContent = view.prevailingWind;
@@ -1611,6 +1614,7 @@ function renderOutcome() {
     return;
   }
   panel.hidden = false;
+  panel.dataset.kind = outcome.kind;
   panel.replaceChildren();
   setTableInert(true);
   panel.setAttribute("role", "dialog");
@@ -2239,7 +2243,7 @@ async function boot() {
   applyRail();
   const params = new URLSearchParams(window.location.search);
   const variant = params.get("variant");
-  if (variant === "a" || variant === "b" || variant === "c") {
+  if (variant === "a" || variant === "b" || variant === "c" || variant === "d") {
     document.documentElement.classList.add(`variant-${variant}`);
   }
   referenceShown = params.get("overlay") === "1";
