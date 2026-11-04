@@ -1137,11 +1137,6 @@ function makeClaimButton(
   if (tiles !== null) {
     for (const key of tiles) button.append(tileElement(key));
   }
-  if (keycap) {
-    const key = document.createElement("kbd");
-    key.textContent = keycap;
-    button.append(key);
-  }
   button.title = actionLabel(action);
   button.setAttribute("aria-label", actionLabel(action));
   button.addEventListener("click", () => sendAction(action));
@@ -1300,9 +1295,6 @@ function renderActions() {
       button.className = "action-button primary discard-action";
       button.append(tileElement(tile));
       button.append(document.createTextNode("Discard"));
-      const key = document.createElement("kbd");
-      key.textContent = "enter";
-      button.append(key);
       button.addEventListener("click", () => discardCandidate());
       column.append(button);
     }
@@ -1343,9 +1335,6 @@ function renderActions() {
       button.title = `Declare fishing on ${waits}`;
       button.setAttribute("aria-label", `Declare fishing on ${waits}`);
     }
-    const key = document.createElement("kbd");
-    key.textContent = actionKeycap(action);
-    if (actionKeycap(action)) button.append(key);
     button.addEventListener("click", () => sendAction(action));
     column.append(button);
   });
@@ -1861,9 +1850,6 @@ function renderOutcome() {
   next.id = "result-next";
   next.className = "result-next";
   next.textContent = "Next hand";
-  const key = document.createElement("kbd");
-  key.textContent = "enter";
-  next.append(key);
   next.addEventListener("click", () => {
     focusHandOnRender = true;
     focusedOutcomeKey = null;
@@ -2321,8 +2307,7 @@ function onKeydown(event) {
 }
 
 function openHelp() {
-  const dialog = $("#help-dialog");
-  if (!dialog.open) dialog.showModal();
+  // The key list is gone; the keyboard still works without it.
 }
 
 function persistRail() {
@@ -2371,10 +2356,8 @@ function bindEvents() {
     $("#hand-toggle").setAttribute("aria-label", collapsed ? "Expand hand" : "Collapse hand");
   });
   $("#undo").addEventListener("click", undo);
-  $("#help-button").addEventListener("click", openHelp);
   $("#rail-hide").addEventListener("click", () => setRail(false));
   $("#rail-show").addEventListener("click", () => setRail(true));
-  $("#help-dialog").addEventListener("close", () => $("#help-button").focus());
   document.addEventListener("keydown", onKeydown);
   const overlay = $("#reference-overlay");
   overlay.addEventListener("load", applyReference);

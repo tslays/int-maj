@@ -102,12 +102,9 @@
 
         <footer class="rail-actions">
           <button class="ghost-button" id="new-game" type="button">
-            New game <kbd>n</kbd>
+            New game
           </button>
-          <button class="ghost-button" id="undo" type="button">Undo <kbd>u</kbd></button>
-          <button class="ghost-button" id="help-button" type="button">
-            Keys <kbd>?</kbd>
-          </button>
+          <button class="ghost-button" id="undo" type="button">Undo</button>
         </footer>
       </aside>
 
@@ -115,46 +112,6 @@
 
       <section id="outcome" class="outcome" hidden aria-live="polite"></section>
     </main>
-
-    <dialog id="help-dialog" class="dialog">
-      <form method="dialog">
-        <h2>Keys and tiles</h2>
-        <dl class="keys">
-          <dt><kbd>←</kbd> <kbd>→</kbd></dt>
-          <dd>Move the hand cursor.</dd>
-          <dt><kbd>1</kbd>–<kbd>9</kbd></dt>
-          <dd>Jump to a hand tile.</dd>
-          <dt><kbd>Enter</kbd></dt>
-          <dd>Claim the offered tile, or pick/discard/draw on your turn.</dd>
-          <dt><kbd>Space</kbd></dt>
-          <dd>Dismiss a claim, or pass a fishing offer.</dd>
-          <dt><kbd>m</kbd></dt>
-          <dd>Mute or unmute the claim cue (remembered).</dd>
-          <dt><kbd>f</kbd></dt>
-          <dd>Declare fishing.</dd>
-          <dt><kbd>u</kbd></dt>
-          <dd>Undo the previous decision by replaying from the seed.</dd>
-          <dt><kbd>n</kbd></dt>
-          <dd>Deal a new game.</dd>
-          <dt><kbd>Esc</kbd></dt>
-          <dd>Clear the picked tile, or close this dialog.</dd>
-          <dt><kbd>o</kbd></dt>
-          <dd>Show the reference screenshot behind the board (debug view).</dd>
-          <dt><kbd>?</kbd></dt>
-          <dd>Show this key list.</dd>
-        </dl>
-        <h3>Tile keys</h3>
-        <p class="hint">Every tile keeps its canonical key in the tooltip and aria-label.</p>
-        <ul class="legend">
-          <li><code>b1</code>–<code>b9</code> bamboo, green</li>
-          <li><code>c1</code>–<code>c9</code> characters, red</li>
-          <li><code>o1</code>–<code>o9</code> circles, blue</li>
-          <li><code>wE</code> <code>wS</code> <code>wW</code> <code>wN</code> winds</li>
-          <li><code>dR</code> <code>dG</code> <code>dW</code> dragons</li>
-        </ul>
-        <button type="submit" class="action">Close</button>
-      </form>
-    </dialog>
 
     <p class="sr-only" id="live-turn" role="status" aria-live="polite" aria-atomic="true"></p>
 
