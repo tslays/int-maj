@@ -374,10 +374,10 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "confused-gates",
     name: "Confused Gates",
-    pages: [9, 51],
+    pages: [9, 51, 57],
     category: "run",
     tier: "limit",
-    exposedTier: "limit",
+    exposedTier: null,
     requiresSelfDrawn: false,
     description:
       "Run 2-8 in one suit with one run tile paired, plus pungs/kongs of 1s " +
@@ -1394,10 +1394,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       for (const rank of GREEN_BAMBOO_RANKS) {
         bambooPairs += Math.floor(rankCount(shape, "bamboo", rank) / 2);
       }
-      return (
-        (dragonPairs === 1 && bambooPairs === 6) ||
-        (dragonPairs === 2 && bambooPairs === 5)
-      );
+      return dragonPairs === 1 && bambooPairs === 6;
     },
   },
   {
@@ -1471,10 +1468,10 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "red-waratah",
     name: "Red Waratah",
-    pages: [34],
+    pages: [34, 54],
     category: "dragon",
     tier: "limit",
-    exposedTier: "limit",
+    exposedTier: "half",
     requiresSelfDrawn: false,
     description:
       "Pung/kong of Red Dragons, pair of Green Dragons, and pungs of a red " +
@@ -1635,10 +1632,10 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "lillypilly",
     name: "Lillypilly",
-    pages: [36, 60],
+    pages: [36, 54, 60],
     category: "dragon",
     tier: "limit",
-    exposedTier: "limit",
+    exposedTier: "half",
     requiresSelfDrawn: false,
     description:
       "Pung/kong of Green Dragons, pair of White Dragons, and three " +
@@ -2387,4 +2384,65 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
         ]),
       ),
   },
+  {
+    id: "buried-treasure",
+    name: "Buried Treasure (Concealed Mah Jong)",
+    pages: [38],
+    category: "plain",
+    tier: "calculate",
+    exposedTier: null,
+    requiresSelfDrawn: true,
+    description:
+      "Any one suit, as many chows or pungs as desired, winds/dragons may be included, plus a pair; every tile from the wall including the last; no kongs.",
+    source: "Illustrated hand 11, p. 38.",
+    match: ({ hand, shape }) =>
+      hand.selfDrawn &&
+      shape.total === 14 &&
+      shape.kongCount === 0 &&
+      usedSuits(shape).length === 1 &&
+      shape.suitedTotal > 0 &&
+      decomposeStandard(shape).some((decomposition) =>
+        decomposition.sets.every((set) => set.kind !== "kong"),
+      ),
+  },
+  {
+    id: "all-kong",
+    name: "All Kong",
+    pages: [30],
+    category: "plain",
+    tier: "limit",
+    exposedTier: "limit",
+    requiresSelfDrawn: false,
+    description:
+      "Four kongs and a pair, all in one suit; winds, dragons or both may be included.",
+    source: "Illustrated special-hand list, p. 30.",
+    match: ({ shape }) =>
+      usedSuits(shape).length <= 1 &&
+      decomposeStandard(shape).some(
+        (decomposition) =>
+          decomposition.sets.length === 4 &&
+          decomposition.sets.every((set) => set.kind === "kong"),
+      ),
+  },
+  {
+    id: "mixed-pung",
+    name: "Mixed Pung",
+    pages: [30],
+    category: "plain",
+    tier: "limit",
+    exposedTier: null,
+    requiresSelfDrawn: true,
+    description:
+      "Four pungs and a pair in any of the three suits; winds, dragons or both may be included; every tile including the last from the wall.",
+    source: "Illustrated special-hand list, p. 30.",
+    match: ({ hand, shape }) =>
+      hand.selfDrawn &&
+      shape.kongCount === 0 &&
+      decomposeStandard(shape).some(
+        (decomposition) =>
+          decomposition.sets.length === 4 &&
+          decomposition.sets.every((set) => set.kind === "pung"),
+      ),
+  },
+
 ]);

@@ -168,7 +168,7 @@ describe("checkHand on 13 tiles", () => {
     assert.equal(only.dead, false);
     assert.deepEqual(
       only.matches.map((match) => match.pattern.id),
-      ["three-great-scholars", "ordinary-mahjong"],
+      ["three-great-scholars", "ordinary-mahjong", "buried-treasure"],
     );
   });
 

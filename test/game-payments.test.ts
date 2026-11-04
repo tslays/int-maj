@@ -266,7 +266,7 @@ describe("payments", () => {
   it("scores a Calculate hand from the ground score instead of a flat tier", () => {
     const state = fixture({
       hands: {
-        E: "c6 c6 c6 c7 c7 c7 c8 c8 c8 c9 c9 c9 c5 c5",
+        E: "c1 c2 c3 c6 c6 c6 c7 c7 c7 c9 c9 c9 c5 c5",
         ...FILLER,
       },
       wall: ["o6", "o7", "o8"],

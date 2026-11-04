@@ -325,7 +325,37 @@ export const FIXTURES: Readonly<Record<string, Fixture>> = {
       concealed: "dG dG b2 b2 b3 b3 b4 b4 b6 b6 b8 b8 b8 b8",
     },
     negative: {
-      concealed: "dG dG b2 b2 b3 b3 b4 b4 c6 c6 b8 b8 b8 b8",
+      concealed: "dG dG dG dG b2 b2 b3 b3 b4 b4 b6 b6 b8 b8",
+    },
+  },
+  "buried-treasure": {
+    positive: {
+      concealed: "b1 b2 b3 b2 b3 b4 b4 b5 b6 b7 b8 b9 b5 b5",
+      selfDrawn: true,
+    },
+    negative: {
+      concealed: "b1 b2 b3 b2 b3 b4 b4 b5 b6 b7 b8 b9 b5 b5",
+      selfDrawn: false,
+    },
+  },
+  "all-kong": {
+    positive: {
+      concealed:
+        "b1 b1 b1 b1 b2 b2 b2 b2 b3 b3 b3 b3 b4 b4 b4 b4 wE wE",
+    },
+    negative: {
+      concealed:
+        "b1 b1 b1 b2 b2 b2 b2 b3 b3 b3 b3 b4 b4 b4 b4 wE wE",
+    },
+  },
+  "mixed-pung": {
+    positive: {
+      concealed: "b1 b1 b1 c2 c2 c2 o3 o3 o3 wE wE wE dR dR",
+      selfDrawn: true,
+    },
+    negative: {
+      concealed: "b1 b1 b1 c2 c2 c2 o3 o3 o3 wE wE wE dR dR",
+      selfDrawn: false,
     },
   },
   "all-pair-ruby-jade": {
