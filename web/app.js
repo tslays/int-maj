@@ -824,7 +824,6 @@ function renderSeats() {
     if (entry.isYou) renderSelf(entry);
     else renderSeat(entry);
   }
-  renderSeatLine();
   renderHandBadge();
   renderRivers();
 }
