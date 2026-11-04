@@ -7,19 +7,24 @@ for international mahjong on 2026-11-04. Use the actual pages in this PDF for
 all rule semantics; it takes precedence over every conflicting earlier owner
 choice or project interpretation.
 
-- **Reading copy:** `scans/The Game of Mah Jong Illustrated - trimmed.pdf`
-- **Untouched original:** `scans/The Game of Mah Jong Illustrated.pdf`
+- **The primary file:** `scans/The Game of Mah Jong Illustrated - trimmed.pdf`
+  — the only copy now. Its pages keep the full 4032x3024 scan in the MediaBox;
+  only the CropBox is trimmed, so no pixel was discarded and the page edges can
+  always be restored by resetting each CropBox to its MediaBox.
 - **Identification:** the cover reads *The Game of Mah Jong Illustrated*, by
   Patricia A. Thompson and Betty Maloney, Kangaroo Press; it carries a 1990
   copyright. This is the owner-designated primary source regardless of what
   later editions, extracted notes or earlier project documents say.
-- **Extent:** 33 scanned PDF pages. The original SHA-256 is
-  `dd9b35d34509feeb379fdb0e6ca79ea685b95dae98814bcdd7ed0d1075906fbb`.
+- **Extent:** 33 scanned PDF pages (open-book spreads).
+- **History:** the owner deleted the untrimmed original on 2026-11-04 after the
+  trimmed copy was verified. Nothing was lost: the trimmed file was written as a
+  copy of the same pages and still carries their full scan images. Its SHA-256
+  is `059fd9cdf3140a44fd570c0fee43b3909cd97144422fb5ddf57545bb6694e9e8`.
 - **Crop method:** `rules/crop-primary-source.swift` detects each page edge and
   writes a non-destructive PDF copy with per-page CropBoxes and a 0.25% safety
-  border. It preserves the untouched original and the underlying scan images;
-  ordinary PDF viewers display the cropped page area. The script refuses to
-  overwrite an existing output.
+  border, leaving the scan images whole. It was run once, on the original that
+  the owner has since deleted; it needs a fresh original to run again, and it
+  refuses to overwrite an existing output.
 
 ## Precedence
 
