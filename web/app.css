@@ -2696,12 +2696,37 @@ kbd {
   height: 100%;
 }
 
+/* River cells come from the computed capacity grid, not the hand scale. */
 .variant-d .river-flat {
-  grid-template-columns: repeat(var(--layout-river-columns), var(--tile-w));
+  grid-template-columns: repeat(var(--river-columns), var(--river-tile-w));
+  grid-template-rows: repeat(var(--river-rows), var(--river-tile-h));
+  justify-content: center;
+}
+
+.variant-d .river-flat .river-slot {
+  width: var(--river-tile-w);
+  height: var(--river-tile-h);
+}
+
+.variant-d .river-flat .tile {
+  width: var(--river-tile-w);
+  height: var(--river-tile-h);
 }
 
 .variant-d .river-side {
-  grid-template-rows: repeat(var(--layout-river-columns), var(--tile-w));
+  grid-template-columns: repeat(var(--river-columns), var(--river-side-tile-h));
+  grid-template-rows: repeat(var(--river-rows), var(--river-side-tile-w));
+  align-content: center;
+}
+
+.variant-d .river-side .river-slot {
+  width: var(--river-side-tile-h);
+  height: var(--river-side-tile-w);
+}
+
+.variant-d .river-side .river-slot .tile {
+  width: var(--river-side-tile-w);
+  height: var(--river-side-tile-h);
 }
 
 .variant-d .seat {

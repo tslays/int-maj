@@ -98,14 +98,31 @@ the answers.
 No position, gap or size may be guessed from a picture. Each one derives from
 one number - the board box - through the spacing scale:
 
-    tile_w   = round(board_w * hand_row_fraction)      // one unit, everything else follows
+    tile_w   = round(board_w * hand_row_fraction)      // one unit for the table
     tile_h   = round(tile_w * tile_aspect)
     gap      = round(tile_w * 0.25)                     // the only gap scale
     inset    = gap                                      // every region is inset by the same gap
     rack     = tile_w * 0.73 x tile_h * 0.96            // a face-down tile
-    river    = 6 columns of tile_w + 5 gaps
     centre_w = board_w - 2 * (river_w + inset)
     centre_h = board_h - 2 * (river_h + inset) - hand_band_h
+
+The river is sized from its own region, never from the hand or board tile:
+
+    river_grid = 6 columns x 4 rows desktop
+                 5 x 5 phone landscape
+                 4 x 6 phone portrait
+    river_region = space between the hand band/controls, the centre and the seat bands
+    river_tile = min(board_tile,
+                     region_w / columns,
+                     region_h / rows,
+                     aspect_correct_bound)
+    river_tile_h = river_tile * 4 / 3
+
+`aspect_correct_bound` is `region_h * 3 / (4 * rows)` for a flat river and
+`region_w * 3 / (4 * columns)` for a rotated side river, so the 3:4 face fits
+both axes. Each river reserves `columns * rows` slots (24 on desktop, 25 on a
+landscape phone, 24 on a portrait phone) and every discard must sit inside its
+region.
 
 Every region is then a rectangle computed from those values, in this order:
 hand band, centre, four rivers, four seat bands, controls. A seat badge is
@@ -118,6 +135,11 @@ view) so a test can assert, at any viewport:
 - no two region rects intersect;
 - each badge's gap to its rack equals `gap` and its centre offset is 0;
 - `tile_w >= 26` on desktop and `>= 18` on a phone;
+- no discard intersects the hand band, the centre or a seat band at full
+  river capacity;
+- `river_tile <= region_w / columns` and `<= region_h / rows`, with a 3:4
+  face (`+/- 0.02`), and the first discard of every seat sits inside its own
+  river region;
 - nothing is placed outside the board box.
 
 Screenshots judge taste only. If taste and the computed rects disagree, the
@@ -129,8 +151,8 @@ rects win until the formula changes.
 |---|---|---|
 | Desktop | 1440x900, 1280x800, 1024x768 | As above; hand band 12% of height |
 | Tablet | 1024x768, 834x1112 | Same formulas; hand band 14% |
-| Phone landscape | 844x390, 932x430 | Board fills the height; rivers 4 columns; 14 touching hand tiles across the width, controls above the hand |
-| Phone portrait | 390x844, 430x932 | Rotate the table: rivers 3 columns; 14 touching hand tiles across the width, controls full width above the hand |
+| Phone landscape | 844x390, 932x430 | Board fills the height; 5x5 river grid; 14 touching hand tiles across the width, controls above the hand |
+| Phone portrait | 390x844, 430x932 | Rotate the table; 4x6 river grid; 14 touching hand tiles across the width, controls full width above the hand |
 
 Portrait is a real target, not a fallback: the same formulas must hold with
 `river_columns` as a breakpoint variable instead of a constant.

@@ -2,13 +2,40 @@
  * The one geometry formula for variant D.
  *
  * Everything starts from the board box and a tile width. Breakpoints only
- * change the four inputs: river columns, hand-band fraction, minimum tile
- * width and the large-screen cap. No caller may hand-place a region.
+ * change the hand-band fraction, minimum tile width and the large-screen cap.
+ * The river grid is chosen from the breakpoint, and the river tile is then
+ * fitted to the region that remains. No caller may hand-place a region.
  */
 
 export const HAND_TILE_COUNT = 14;
-export const RIVER_SLOTS = 18;
-export const RIVER_ROWS = 3;
+const REGION_ROWS = 3;
+const RIVER_GAP = 1;
+
+/**
+ * A river's slot grid, in the owning player's reading order. Wider tables
+ * keep the reference 6-column block; phones use the capacity the owner
+ * specified so a full river (up to 25 discards) fits.
+ */
+export function riverGrid(width, height, phone) {
+  if (!phone) return { columns: 6, rows: 4 };
+  return width > height
+    ? { columns: 5, rows: 5 }
+    : { columns: 4, rows: 6 };
+}
+
+/** Tile width for a river region: board cap, region cells, and 3:4 aspect. */
+function fitRiverTile(region, columns, rows, side, boardTile) {
+  const usableWidth = region[2] - (columns - 1) * RIVER_GAP;
+  const usableHeight = region[3] - (rows - 1) * RIVER_GAP;
+  const byWidth = usableWidth / columns;
+  const byHeight = usableHeight / rows;
+  const aspect = side ? byWidth * 0.75 : byHeight * 0.75;
+  const generic = Math.min(region[2] / columns, region[3] / rows);
+  return Math.max(
+    1,
+    Math.min(boardTile, generic, aspect, side ? byHeight : byWidth),
+  );
+}
 
 /** The 14-tile row plus 13 inter-tile gaps and two edge insets, at 0.25 tile. */
 const HAND_UNITS = HAND_TILE_COUNT + 15 * 0.25;
@@ -31,12 +58,16 @@ export function computeLayout({
   width,
   height,
   mode,
-  riverColumns,
   handBandFraction,
   minTileWidth,
   maxTileWidth,
 }) {
   const phone = mode === "phone";
+  const { columns: riverColumns, rows: riverRows } = riverGrid(
+    width,
+    height,
+    phone,
+  );
   const minGap = phone ? 2 : 1;
   const tileFloor = phone ? 26 : minTileWidth;
   if (phone) {
@@ -44,39 +75,56 @@ export function computeLayout({
     const boardScale = Math.max(26, round(width * 0.045));
     // The hand is its own scale: exactly fourteen tiles across the screen,
     // touching, so the row never scrolls and no tile is clipped.
-    // Tiles share the width exactly; the CSS flexes them to sum to the band.
     const handScale = width / HAND_TILE_COUNT;
     const handGap = 0;
     const boardGap = Math.max(2, round(boardScale * 0.25));
     const boardTileHeight = (boardScale * 4) / 3;
     const handTileHeight = (handScale * 4) / 3;
-    const riverRows = width > height ? 2 : 3;
-    const riverWidth =
-      riverColumns * boardScale + (riverColumns - 1) * boardGap;
-    const riverHeight =
-      riverRows * boardTileHeight + (riverRows - 1) * boardGap;
     const topSeatHeight = round(boardScale * 0.96);
     const rackWidth = round(boardScale * 0.73);
     const rackHeight = boardScale * 0.96;
     const badgeWidth = Math.max(34, round(boardScale * 0.8));
     const badgeHeight = round(boardScale * 0.36);
     const sideInset = 0;
-    const topRiverY = topSeatHeight + boardGap;
-    const bottomRiverY = height - boardGap - riverHeight;
-    const centreY = topRiverY + riverHeight + boardGap;
-    const centreHeight = bottomRiverY - boardGap - centreY;
-    const leftRiverX = sideInset + rackWidth + boardGap;
-    const rightRiverX = width - sideInset - rackWidth - boardGap - riverHeight;
-    const centreX = leftRiverX + riverHeight + boardGap;
-    const centreWidth = rightRiverX - boardGap - centreX;
-    const seatHeight = Math.min(
-      13 * rackHeight + 12,
-      bottomRiverY - boardGap - (topSeatHeight + boardGap),
-    );
+
+    // The bottom of the stack is fixed by the hand and its controls; the
+    // rivers and centre share what is left, so no discard can reach the hand.
     const handWidth = HAND_TILE_COUNT * handScale + (HAND_TILE_COUNT - 1) * handGap;
     const handBandY = height - handTileHeight - 2 * handGap;
     const handY = handBandY + handGap;
     const controlsY = handBandY - handGap - controlHeight;
+
+    const stackTop = topSeatHeight + boardGap;
+    const stackBottom = controlsY - boardGap;
+    const available = Math.max(1, stackBottom - stackTop);
+    const desiredRiver =
+      riverRows * boardTileHeight + (riverRows - 1) * boardGap;
+    const centreMin = Math.max(36, round(available * 0.12));
+    const maxRiver = Math.max(
+      1,
+      (available - centreMin - 2 * boardGap) / 2,
+    );
+    const riverHeight = Math.min(desiredRiver, maxRiver);
+    const centreHeight = Math.max(
+      1,
+      available - 2 * riverHeight - 2 * boardGap,
+    );
+
+    const topRiverY = stackTop;
+    const centreY = topRiverY + riverHeight + boardGap;
+    const bottomRiverY = centreY + centreHeight + boardGap;
+
+    const innerLeft = sideInset + rackWidth + boardGap;
+    const innerRight = width - sideInset - rackWidth - boardGap;
+    const centreWidth = Math.max(
+      24,
+      round(width * (width > height ? 0.4 : 0.225)),
+    );
+    const centreX = round((width - centreWidth) / 2);
+    const sideRiverWidth = Math.max(1, centreX - boardGap - innerLeft);
+    const flatRiverWidth = centreWidth;
+    const seatHeight = Math.min(13 * rackHeight + 12, available);
+
     const seats = {
       top: [
         round((width - (13 * rackWidth + 12)) / 2),
@@ -84,10 +132,10 @@ export function computeLayout({
         round(13 * rackWidth + 12),
         topSeatHeight,
       ],
-      left: [sideInset, topSeatHeight + boardGap, rackWidth, seatHeight],
+      left: [sideInset, stackTop, rackWidth, seatHeight],
       right: [
         width - sideInset - rackWidth,
-        topSeatHeight + boardGap,
+        stackTop,
         rackWidth,
         seatHeight,
       ],
@@ -95,15 +143,15 @@ export function computeLayout({
     };
     const centre = [centreX, centreY, centreWidth, centreHeight];
     const rivers = {
-      top: [round((width - riverWidth) / 2), topRiverY, riverWidth, riverHeight],
-      bottom: [
-        round((width - riverWidth) / 2),
-        bottomRiverY,
-        riverWidth,
-        riverHeight,
+      top: [centreX, topRiverY, flatRiverWidth, riverHeight],
+      bottom: [centreX, bottomRiverY, flatRiverWidth, riverHeight],
+      left: [innerLeft, stackTop, sideRiverWidth, available],
+      right: [
+        innerRight - sideRiverWidth,
+        stackTop,
+        sideRiverWidth,
+        available,
       ],
-      left: [leftRiverX, topRiverY, riverHeight, riverWidth],
-      right: [rightRiverX, topRiverY, riverHeight, riverWidth],
     };
     const handBand = [0, handBandY, width, handTileHeight + 2 * handGap];
     const hand = [0, handY, handWidth, handTileHeight];
@@ -134,6 +182,22 @@ export function computeLayout({
         badgeHeight,
       ],
     };
+
+    const flatTileWidth = fitRiverTile(
+      rivers.top,
+      riverColumns,
+      riverRows,
+      false,
+      boardScale,
+    );
+    const sideTileWidth = fitRiverTile(
+      rivers.left,
+      riverColumns,
+      riverRows,
+      true,
+      boardScale,
+    );
+
     return {
       board: [0, 0, width, height],
       table: [0, 0, width, height],
@@ -159,6 +223,11 @@ export function computeLayout({
       drawnTileIndex: HAND_TILE_COUNT - 1,
       riverColumns,
       riverRows,
+      riverGap: RIVER_GAP,
+      riverFlatTileWidth: flatTileWidth,
+      riverFlatTileHeight: (flatTileWidth * 4) / 3,
+      riverSideTileWidth: sideTileWidth,
+      riverSideTileHeight: (sideTileWidth * 4) / 3,
       mode,
       supported: width >= 390,
       minimumLegalWidth: 390,
@@ -176,7 +245,7 @@ export function computeLayout({
   const tileHeightOf = (tile) => (tile * 4) / 3;
   const riverHeightOf = (tile) => {
     const gap = gapFor(tile, minGap);
-    return RIVER_ROWS * tileHeightOf(tile) + (RIVER_ROWS - 1) * gap;
+    return REGION_ROWS * tileHeightOf(tile) + (REGION_ROWS - 1) * gap;
   };
 
   const fitsHeight = (tile) => {
@@ -245,7 +314,7 @@ export function computeLayout({
   const badgeHeight = round(tileWidth * 0.36);
   const sideInset = badgeWidth + gap;
   const riverWidth = riverColumns * tileWidth + (riverColumns - 1) * gap;
-  const riverHeight = RIVER_ROWS * tileHeight + (RIVER_ROWS - 1) * gap;
+  const riverHeight = REGION_ROWS * tileHeight + (REGION_ROWS - 1) * gap;
 
   const tableHeight = phone ? height : height;
   const handBandY = phone
@@ -353,6 +422,21 @@ export function computeLayout({
         ],
   };
 
+  const flatTileWidth = fitRiverTile(
+    rivers.top,
+    riverColumns,
+    riverRows,
+    false,
+    tileWidth,
+  );
+  const sideTileWidth = fitRiverTile(
+    rivers.left,
+    riverColumns,
+    riverRows,
+    true,
+    tileWidth,
+  );
+
   return {
     board,
     table,
@@ -369,6 +453,13 @@ export function computeLayout({
     gap,
     handGap: gap,
     inset: gap,
+    riverColumns,
+    riverRows,
+    riverGap: RIVER_GAP,
+    riverFlatTileWidth: flatTileWidth,
+    riverFlatTileHeight: (flatTileWidth * 4) / 3,
+    riverSideTileWidth: sideTileWidth,
+    riverSideTileHeight: (sideTileWidth * 4) / 3,
     handWidth,
     handTileCount: HAND_TILE_COUNT,
     drawnTileIndex: HAND_TILE_COUNT - 1,
