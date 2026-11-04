@@ -28,6 +28,7 @@ import {
   isSuited,
   parseTile,
   PLAY_TILE_KEYS,
+  WINDS,
   suitTileKey,
   tileKey,
   type PlayTile,
@@ -315,6 +316,7 @@ export function claimOptions(
   // seat in turn order), or by any player when it completes the hand. A
   // player who already has an exposed meld may claim a chow only to win.
   const parsed = parseTile(tile);
+  if (state.goulash === true) return options;
   if (isSuited(parsed)) {
     const right = seat === nextSeat(discarder);
     const hasExposed = player.melds.some((meld) => meld.exposed);
@@ -412,9 +414,12 @@ function finishDrawn(draft: Draft, reason: string, emit: Emit): void {
     patternName: null,
     tier: null,
     points: null,
-    nextDealer: draft.dealer,
+    nextDealer:
+      draft.drawRepeatUsed === true ? nextSeat(draft.dealer) : draft.dealer,
     reason,
+    goulash: draft.variant !== "chinese",
   };
+  if (draft.variant === "chinese") draft.kitty = (draft.kitty ?? 0) + 1;
   emit({ type: "DrawnHand", reason, dealer: draft.dealer });
 }
 
@@ -549,6 +554,7 @@ function finishWin(
   });
   if (hand === null) return { error: "winning hand is not a valid hand", state: draft as GameState };
   const score = scoreHand(hand, {
+    goulash: draft.goulash === true,
     wonOnLooseTile: selfDrawn && draft.lastDraw?.end === "loose",
     wonOnLastWallTile:
       selfDrawn &&
@@ -1094,7 +1100,6 @@ function dealHand(
   draft.rngSteps = stepsAfter;
   draft.handNumber = handNumber;
   draft.dealer = dealer;
-  draft.prevailingWind = "E";
   draft.players = SEATS.map((seat) => ({
     seat,
     hand: [],
@@ -1156,6 +1161,7 @@ function dealHand(
 
 export interface NewGameOptions {
   readonly dealer?: Seat;
+  readonly variant?: "western" | "chinese";
 }
 
 /** Roll two dice per seat; the unique highest total becomes East (I p. 18). */
@@ -1191,6 +1197,11 @@ export function newGame(seed: string | number, options: NewGameOptions = {}): Ap
     handNumber: 1,
     dealer,
     prevailingWind: "E" as Wind,
+    gameOver: false,
+    drawRepeatUsed: false,
+    variant: options.variant ?? "western",
+    kitty: 0,
+    goulash: false,
     players: [],
     wall: { tiles: [], front: 0, back: -1 },
     turn: dealer,
@@ -1218,8 +1229,19 @@ export function nextHand(state: GameState): ApplyOk {
   if (state.phase !== "finished" || state.result === null) {
     throw new Error("nextHand requires a finished hand");
   }
+  if (state.gameOver === true) throw new Error("the game is over");
   const dealer = state.result.nextDealer;
   const draft = draftOf(state);
+  if (dealer !== state.dealer) {
+    const index = WINDS.indexOf(state.prevailingWind);
+    if (index >= WINDS.length - 1) {
+      draft.gameOver = true;
+      throw new Error("the game is over");
+    }
+    draft.prevailingWind = WINDS[index + 1]!;
+  }
+  draft.drawRepeatUsed = state.result.kind === "drawn" && dealer === state.dealer;
+  draft.goulash = state.result.goulash === true;
   const events: Event[] = [];
   let seq = state.eventSeq;
   const emit: Emit = (event) => {

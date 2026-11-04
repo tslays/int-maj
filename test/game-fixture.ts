@@ -39,6 +39,12 @@ export interface FixtureOptions {
   readonly claimWindow?: ClaimWindow;
   readonly lastDraw?: { readonly seat: Seat; readonly tile: string; readonly end: "front" | "back" };
   readonly result?: GameState["result"];
+  readonly prevailingWind?: GameState["prevailingWind"];
+  readonly gameOver?: boolean;
+  readonly drawRepeatUsed?: boolean;
+  readonly variant?: "western" | "chinese";
+  readonly kitty?: number;
+  readonly goulash?: boolean;
 }
 
 export function fixture(options: FixtureOptions = {}): GameState {
@@ -55,6 +61,12 @@ export function fixture(options: FixtureOptions = {}): GameState {
   state.eventSeq = 0;
   state.lastDraw = options.lastDraw ?? null;
   state.result = options.result ?? null;
+  state.prevailingWind = options.prevailingWind ?? state.prevailingWind;
+  state.gameOver = options.gameOver ?? false;
+  state.drawRepeatUsed = options.drawRepeatUsed ?? false;
+  state.variant = options.variant ?? "western";
+  state.kitty = options.kitty ?? 0;
+  state.goulash = options.goulash ?? false;
   state.handNumber = 1;
 
   const keysOf = (input: string | readonly string[]): string[] =>

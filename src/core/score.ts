@@ -43,6 +43,8 @@ export interface ScoreOptions {
   readonly robbedKong?: boolean;
   /** Fishing for an ordinary hand scores ground without the 20 for Mah Jong. */
   readonly withoutMahJongBonus?: boolean;
+  /** A Goulash hand never scores the no-chows double. */
+  readonly goulash?: boolean;
 }
 
 export interface ScoreResult {
@@ -207,7 +209,7 @@ function calculateHand(hand: Hand, options: ScoreOptions): CalculatedScore | nul
   const shape = normalizeHand(hand);
   const suits = usedSuits(shape);
   const hasHonour = shape.honoursTotal > 0;
-  const noChows = sets.every((set) => set.kind !== "chow");
+  const noChows = !options.goulash && sets.every((set) => set.kind !== "chow");
   const ownWindPung = sets.some(
     (set) => set.kind !== "chow" && set.tile === `w${hand.seatWind}`,
   );
