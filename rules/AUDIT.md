@@ -82,3 +82,151 @@ These primary rules match the current engine and need no change:
 - Pair only for the win (R22) — `claimOptions` offers no pair claim.
 - A claimed discard is public (R48) — it joins the exposed meld.
 - Winner shows 14 tiles and makes no discard (R23) — `finishWin` ends the hand.
+
+---
+
+# Catalogue audit (Milestone B)
+
+Source: the illustrated hands on printed pp. 34-58 and the two unnumbered
+hands on p. 30; score lines from those pages; cross-checked against the
+synopsis (pp. 60-61) and the p. 50 summary. Compositions and tiers are in
+`rules/PRIMARY-HANDS.md`.
+
+Every entry in `src/core/patterns/table.ts` is classified once:
+
+- **verified** — the table's composition and score match the printed hand;
+- **corrected** — the table has the hand but a composition, tier, exposure or
+  score representation must change;
+- **missing** — printed in the primary book but absent from the table;
+- **not printed in this book** — a Companion-side entry; it stays as the
+  supplement (do not delete it).
+
+Counts: **38 verified, 12 corrected, 3 missing, 35 not printed** (85 table
+entries + 3 missing primary hands).
+
+## Verified (38)
+
+| Table entry | Name | Primary hand | Page |
+|---|---|---|---:|
+| `wriggly-snake` | Wriggly Snake | 10 | 38 |
+| `all-pair` | All Pair | 4 | 34 |
+| `run-pung-pair` | Run, Pung & Pair | 6 | 36 |
+| `gates-of-heaven` | Gates of Heaven | 5 | 36 |
+| `hachi-ban` | Hachi Ban | 48 | 57 |
+| `five-odd-honours` | Five Odd Honours | 47 | 56 |
+| `dragons-tail` | Dragon's Tail (1 & 2) | 36 | 52 |
+| `gretas-garden` | Greta's Garden | 21 | 43 |
+| `gretas-dragon` | Greta's Dragon | 22 | 43 |
+| `red-lantern` | Red Lantern | 31 | 48 |
+| `gerties-garter` | Gertie's Garter | 7 | 37 |
+| `windy-chow` | Windy Chow | 18 | 41 |
+| `chop-suey` | Chop Suey | 51 | 58 |
+| `chow-mein` | Chow Mien | 50 | 58 |
+| `knitting` | Knitting | 8 | 37 |
+| `triple-knitting` | Triple Knitting | 9 | 37 |
+| `all-pair-honours` | All Pair Honours | 13 | 38 |
+| `dragons-breath` | Dragon's Breath | 37 | 53 |
+| `windfall` | Windfall | 38 | 53 |
+| `windy-ones` | Windy Ones | 19 | 42 |
+| `windy-nines` | Windy Nines | 20 | 42 |
+| `all-pair-ruby-jade` | All Pair Ruby Jade | 27 | 46 |
+| `green-jade` | Green Jade | 44 | 56 |
+| `red-coral` | Red Coral | 45 | 56 |
+| `white-opal` | White Opal | 46 | 56 |
+| `imperial-jade` | Imperial Jade | 25 | 44 |
+| `lily-of-the-valley` | Lily of the Valley | 26 | 44 |
+| `ruby-jade` | Ruby Jade | 28 | 46 |
+| `red-lily` | Red Lily | 30 | 46 |
+| `royal-ruby` | Royal Ruby | 29 | 46 |
+| `unique-wonder` | Unique Wonder | 12 | 38 |
+| `windy-dragons` | Windy Dragons | 32 | 48 |
+| `all-winds-and-dragons` | All Winds and Dragons | 33 | 48 |
+| `heads-and-tails` | Heads and Tails | 15 | 40 |
+| `heavenly-twins` | Heavenly Twins | 3 | 34 |
+| `dragonfly` | Dragonfly | 17 | 40 |
+| `three-sisters` | Three Sisters | 43 | 55 |
+| `seven-brothers` | Seven Brothers | 42 | 55 |
+
+Note: `chow-mein` is spelled `Chow Mien` in the table; the printed hand is
+CHOW MEIN (p. 58). Spelling only; composition and tier match. `gates-of-heaven`
+and `run-pung-pair` carry a correct composition but stale Companion page
+citations (p. 9); the primary pages are 36 and 36.
+
+## Corrected (12)
+
+| Table entry | Primary hand / page | Printed reading | Current table reading | Change |
+|---|---|---|---|---|
+| `ordinary-mahjong` | 1 / p. 34 | Score: "See score-sheet, pp. 24 and 25". Name ORDINARY HAND. | `tier: "calculate"`, `exposedTier: "calculate"`, null points; cites p. 42. | Keep the composition. Replace the flat `calculate` placeholder with the ground-score + doubles path (AUDIT A1); retitle/cite p. 34. |
+| `purity-hand` | 2 / p. 34 | Score: "THREE DOUBLES PLUS EXTRAS (see score-sheet)". | `calculate`/`calculate`. | Keep the composition (one suit, no honours, four pungs/kongs or three plus a chow). Score is a doubling hand, not a flat null. |
+| `all-honour-hand` | 14 / p. 38 | Score: "THREE DOUBLES PLUS EXTRAS (see score-sheet)". A Pair of Honours; this book classes terminals as honours (p. 6, p. 30). | `calculate`/`calculate`. | Score is a doubling hand, not a flat null. Composition matches (four pungs/kongs of terminals/honours, pair of terminals or honours). |
+| `three-great-scholars` | 34 / p. 49 | LIMIT. "A limit is scored for any hand containing the Three Great Scholars" (pungs of all three dragons). | `middle`/`middle` (1500). | Change both tiers to `limit`; the all-dragon-pungs rule is also a global limit condition on any other hand containing them. Composition matches. |
+| `four-blessings` | 35 / p. 49 | LIMIT. "A limit is scored for any hand containing Pungs of each Wind." | `middle`/`middle` (1500). | Change both tiers to `limit`; the all-wind-pungs rule is also a global limit condition. Composition matches. |
+| `civil-war` | 39 / p. 53 | DOUBLE LIMIT. | `middle`/`middle` (1500). | Change both tiers to `double`. Composition matches (NNN, SSS, 1-8-6-1 one suit, 1-8-6-5 another). |
+| `chinese-odds` | 16 / p. 40 | LIMIT. | `middle`/`middle` (1500). | Change both tiers to `limit`. Composition matches (four odd pungs + odd pair, one suit). |
+| `sparrows-sanctuary` | 23 / p. 44 | LIMIT. | `middle`/`null`. | Change `tier` to `limit`. Composition matches (1B×4 + pairs 2,3,4,6,8). |
+| `confused-gates` | 49 / p. 57 | LIMIT, "Concealed (except last tile)". | `limit`/`limit`. | Change `exposedTier` to `null`. Composition matches (1s pung, 9s pung, 2-8 run in three different suits, one run tile paired). |
+| `red-waratah` | 40 / p. 54 | LIMIT / HALF LIMIT (Pungs from discard). | `limit`/`limit`. | Change `exposedTier` to `half`. Composition matches (中×3, 發×2, red-Bamboo ×3, Circles ×3, Characters ×3). |
+| `lillypilly` | 41 / p. 54 | LIMIT / HALF LIMIT (Pungs from discard). | `limit`/`limit`. | Change `exposedTier` to `half`. Composition matches (發×3, 白×2, 4C/8C/9C pungs). |
+| `all-pair-jade` | 24 / p. 44 | "6 Pairs of green Bamboos (2,3,4,6 and 8). At least one Pair of Green Dragons." Illustration: 6 bamboo pairs (4B twice) + 發 pair. | Allows either 6 bamboo + 1 Green Dragon pair or 5 bamboo + 2 Green Dragon pairs. | Restrict to the printed 6 + 1 shape. The 5 + 2 variant is not printed; if kept, it needs an explicit assumption. |
+
+## Missing from the table (3)
+
+| Primary hand | Page | Printed composition and score | Where it belongs |
+|---|---:|---|---|
+| 11. CONCEALED MAH JONG (BURIED TREASURE) | 38 | Any one suit; as many chows or pungs as desired, may include Winds, Dragons or both and a Pair; every tile from the wall including the last; no Kongs; score "10 POINTS FOR NON-SCORING HAND" (synopsis: 2 doubles and extras). Illustration: 234, 345, 678, 678 Characters + 99 Characters. | New pattern, concealed/self-drawn, distinct from `ordinary-mahjong` and `seven-twins`. |
+| ALL KONG | 30 | Four Kongs and one Pair, all in one suit; Winds, Dragons or both may be included. Score: Limit. No illustration. | New pattern (four kongs + pair, one suited suit, honours allowed). |
+| MIXED PUNG | 30 | Four Pungs and a Pair in any of the three suits; Winds, Dragons or both may be included; every tile including the last from the wall. Score: Limit. No illustration. | New pattern (four pungs + pair, any suits, honours allowed, self-drawn). |
+
+## Not printed in this book (35) — Companion supplement
+
+These entries have no printed counterpart in the primary book. They stay in the
+table as the supplement; none is deleted.
+
+| Table entry | Name | Note |
+|---|---|---|
+| `chow-chow` | Chow Chow | Four chows + pair, one suit, all from the wall. Not among the 51 printed hands (hand 11 permits any chows but is not this pattern). |
+| `guardian-winds` | Guardian Winds | Run 1-9 + wind pung + wind pair. |
+| `wriggly-dragon` | Wriggly Dragon | Run 1-9 + one each dragon + dragon pair. |
+| `guardian-dragons` | Guardian Dragons | Run 1-9 + dragon pung + dragon pair. |
+| `grand-sequence` | Grand Sequence | Run 1-9 + honour pung + suited pair. |
+| `dragons-gates` | Dragon's Gates | Run 2-8 + terminal pung + dragon pung + pair. |
+| `dragons-teeth` | Dragon's Teeth | Red/White dragon pungs + runs. |
+| `yin-yang` | Yin Yang | Fixed chow/pair shape. |
+| `big-robert` | Big Robert | Four-tile runs in each suit, same numbers. |
+| `big-robert-mixed` | Big Robert (mixed numbers) | Half-limit variant of Big Robert. |
+| `moon-at-bottom-of-well` | Moon at Bottom of Well | Four Circle chows + pair. |
+| `three-philosophers` | Three Philosophers | Three suit chows + mixed chow + pair. |
+| `crazy-chows` | Crazy Chows | Four mixed chows + mixed pair. |
+| `little-robert` | Little Robert | Suit chows + pung + pair. |
+| `hovering-angel` | Hovering Angel | Suit chows + own-wind pung + pair. |
+| `little-brother` | Little Brother | Suit chows + own-wind pair. |
+| `apple-blossom` | Apple Blossom | Mixed chows + White Dragon pung + Green pair. |
+| `professors` | The Professors | Mixed chows + dragons + own-wind pair. |
+| `seven-twins` | Seven Twins | Seven pairs any tiles, all from the wall. |
+| `dragonette` | Dragonette | Three suit pairs + winds + dragons. |
+| `windvane` | Windvane | Winds + one pung per suit. |
+| `golden-gates` | Golden Gates | Corresponding dragon + terminal pung + even pairs. |
+| `sunrise` | Sunrise | East Wind + White pair + suit pungs. |
+| `sunset` | Sunset | West Wind + Red pair + suit pungs. |
+| `ods-evens` | Odds & Evens | All odds in two suits + evens in the third. |
+| `robin` | Robin | Chow distribution across suits. |
+| `blue-mountains` | Blue Mountains | Green Dragon + three Circle pungs + blue-Circle pair. |
+| `white-elephant` | White Elephant | White Dragon + three Circle pungs + even-Circle pair. |
+| `driven-snow` | Driven Snow | White Dragon + three Character pungs + odd-Character pair. |
+| `dragons-scales` | Dragon's Scales | Red Dragon + three Character pungs + even-Character pair. |
+| `up-you-go` | Up You Go | Winds + 2,44,666,8888 one suit. |
+| `down-you-go` | Down You Go | Winds + 2222,444,66,8 one suit. |
+| `numbers-in-parallel` | Numbers in Parallel | Wind/dragon pung + matching-number pungs. |
+| `numbers-doubled` | Numbers Doubled | Two numbers doubled across suits. |
+| `dragons-run` | Dragon's Run | Run 1-9 + one each dragon + wind pair. |
+
+## Catalogue check
+
+- Every numbered hand 1-51 is accounted for exactly once above; hands 11,
+  All Kong and Mixed Pung are the three missing entries.
+- The table's Companion page citations (pp. 9-60) are left as they are; this
+  audit adds the primary page. A later pass can re-cite them, but no entry was
+  deleted.
+- `rules/PRIMARY-HANDS.md` records the printed ambiguities (hand 8's repeated
+  rank, hand 24's pair count, hand 25's chow option, hand 11's two score lines,
+  All Kong's one-suit wording).
