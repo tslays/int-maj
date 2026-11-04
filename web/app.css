@@ -2624,3 +2624,137 @@ kbd {
 .variant-d #result-next {
   pointer-events: auto;
 }
+
+/* ------------------------------------------- variant D: solved geometry */
+/* Positions and sizes below come only from computeLayout() via --layout-*. */
+.variant-d .app {
+  --hand-w: var(--layout-tile-w);
+  --hand-h: var(--layout-tile-h);
+  --tile-w: var(--layout-tile-w);
+  --tile-h: var(--layout-tile-h);
+  --hand-gap: var(--layout-gap);
+  --back-w: var(--layout-back-w);
+  --back-h: var(--layout-back-h);
+}
+
+.variant-d .board {
+  display: block;
+}
+
+.variant-d .hand-band {
+  position: absolute;
+  left: 0;
+  top: var(--layout-hand-y);
+  width: 100%;
+  height: var(--layout-hand-h);
+}
+
+.variant-d .center {
+  position: absolute;
+  left: var(--layout-centre-x);
+  top: var(--layout-centre-y);
+  width: var(--layout-centre-w);
+  height: var(--layout-centre-h);
+}
+
+.variant-d .river-zone {
+  position: absolute;
+  overflow: hidden;
+}
+
+.variant-d .zone-top {
+  left: var(--layout-river-top-x);
+  top: var(--layout-river-top-y);
+  width: var(--layout-river-top-w);
+  height: var(--layout-river-top-h);
+}
+
+.variant-d .zone-bottom {
+  left: var(--layout-river-bottom-x);
+  top: var(--layout-river-bottom-y);
+  width: var(--layout-river-bottom-w);
+  height: var(--layout-river-bottom-h);
+}
+
+.variant-d .zone-left {
+  left: var(--layout-river-left-x);
+  top: var(--layout-river-left-y);
+  width: var(--layout-river-left-w);
+  height: var(--layout-river-left-h);
+}
+
+.variant-d .zone-right {
+  left: var(--layout-river-right-x);
+  top: var(--layout-river-right-y);
+  width: var(--layout-river-right-w);
+  height: var(--layout-river-right-h);
+}
+
+.variant-d .river-flat,
+.variant-d .river-side {
+  width: 100%;
+  height: 100%;
+}
+
+.variant-d .river-flat {
+  grid-template-columns: repeat(var(--layout-river-columns), var(--tile-w));
+}
+
+.variant-d .river-side {
+  grid-template-rows: repeat(var(--layout-river-columns), var(--tile-w));
+}
+
+.variant-d .seat {
+  position: absolute;
+}
+
+.variant-d .seat-top {
+  left: var(--layout-seat-top-x);
+  top: var(--layout-seat-top-y);
+  width: var(--layout-seat-top-w);
+  height: var(--layout-seat-top-h);
+}
+
+.variant-d .seat-left {
+  left: var(--layout-seat-left-x);
+  top: var(--layout-seat-left-y);
+  width: var(--layout-seat-left-w);
+  height: var(--layout-seat-left-h);
+}
+
+.variant-d .seat-right {
+  left: var(--layout-seat-right-x);
+  top: var(--layout-seat-right-y);
+  width: var(--layout-seat-right-w);
+  height: var(--layout-seat-right-h);
+}
+
+.variant-d .action-cluster {
+  position: absolute;
+  left: var(--layout-controls-x);
+  top: var(--layout-controls-y);
+  width: var(--layout-controls-w);
+  height: var(--layout-controls-h);
+  margin: 0;
+  justify-self: auto;
+  align-self: auto;
+}
+
+.variant-d .seat-top .seat-badge,
+.variant-d .seat-left .seat-badge {
+  right: calc(100% + var(--layout-gap));
+}
+
+.variant-d .seat-right .seat-badge {
+  left: calc(100% + var(--layout-gap));
+}
+
+.variant-d .hand-badge {
+  top: calc(100% - var(--hand-h) / 2);
+  transform: translateY(-50%);
+}
+
+.variant-d .seat-left,
+.variant-d .seat-right {
+  justify-content: center;
+}
