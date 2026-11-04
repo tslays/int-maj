@@ -808,13 +808,11 @@ function renderHandBadge() {
   const parent = badge.offsetParent;
   if (hand !== null && parent !== null) {
     const gap = 2;
-    const handRect = hand.getBoundingClientRect();
-    const parentRect = parent.getBoundingClientRect();
-    const offset = handRect.left - parentRect.left - badge.offsetWidth - gap;
     requestAnimationFrame(() => {
       const settled = hand.getBoundingClientRect();
       const hostRect = parent.getBoundingClientRect();
-      badge.style.left = `${Math.max(0, settled.left - hostRect.left - badge.offsetWidth - gap)}px`;
+      const badgeWidth = badge.getBoundingClientRect().width;
+      badge.style.left = `${Math.max(0, settled.left - hostRect.left - badgeWidth - gap)}px`;
     });
   }
 }
