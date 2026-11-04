@@ -8,6 +8,7 @@ import {
   legalActions,
   newGame,
   nextHand,
+  seatWindOf,
   serialize,
   viewFor,
   wallRemaining,
@@ -30,16 +31,20 @@ function counts(state: GameState): Map<string, number> {
     for (const key of player.discards) add(key);
   }
   for (const key of state.wall.tiles.slice(state.wall.front, state.wall.back + 1)) add(key);
+  for (const key of state.wall.loose) add(key);
   return map;
 }
 
 describe("seeded deal", () => {
-  it("deals 13 to each seat and leaves the rest of the 144 tiles in the wall", () => {
+  it("deals East 14 and the others 13, leaving the rest in the wall and loose pair", () => {
     const { state, events } = newGame(DEAL_SEED);
     assert.equal(state.players.length, 4);
-    for (const player of state.players) assert.equal(player.hand.length, 13);
+    for (const player of state.players) {
+      assert.equal(player.hand.length, player.seat === state.dealer ? 14 : 13);
+    }
     assert.equal(
       wallRemaining(state) +
+        state.wall.loose.length +
         state.players.reduce(
           (sum, player) =>
             sum + player.hand.length + player.flowers.length + player.seasons.length,
@@ -51,8 +56,16 @@ describe("seeded deal", () => {
       events.slice(0, 4).map((event) => event.type),
       ["Dealt", "Dealt", "Dealt", "Dealt"],
     );
-    assert.equal(events.filter((event) => event.type === "Dealt").length, 4);
-    assert.equal(state.phase, "draw");
+    const dealt = new Map(
+      events
+        .filter((event) => event.type === "Dealt")
+        .map((event) => [event.seat, event.count] as const),
+    );
+    assert.equal(dealt.get(state.dealer), 14);
+    for (const seat of ["E", "S", "W", "N"] as const) {
+      assert.equal(dealt.get(seat), seat === state.dealer ? 14 : 13);
+    }
+    assert.equal(state.phase, "discard");
     assert.equal(state.turn, state.dealer);
   });
 
@@ -97,20 +110,53 @@ describe("seeded deal", () => {
     assert.notDeepEqual(next.state.wall.tiles, first.state.wall.tiles);
   });
 
-  it("lets only the dealer draw first", () => {
+  it("starts with East's discard, not a draw", () => {
     const { state } = newGame(DEAL_SEED);
-    assert.deepEqual(legalActions(state, state.dealer), [
-      { type: "Draw", seat: state.dealer },
-    ]);
-    for (const seat of ["S", "W", "N"] as const) {
+    const actions = legalActions(state, state.dealer);
+    assert.ok(actions.every((action) => action.type === "Discard"));
+    assert.ok(actions.length > 0);
+    for (const seat of ["E", "S", "W", "N"] as const) {
+      if (seat === state.dealer) continue;
       assert.deepEqual(legalActions(state, seat), []);
     }
   });
 });
 
+describe("seat selection", () => {
+  it("rolls dice for East and places the other winds by the printed rule", () => {
+    const { state } = newGame(DEAL_SEED);
+    assert.ok(state.seatSelection);
+    const rolls = state.seatSelection.rolls;
+    const dealer = state.seatSelection.dealer;
+    assert.equal(state.dealer, dealer);
+    assert.equal(rolls[dealer], Math.max(...Object.values(rolls)));
+    assert.equal(
+      Object.values(rolls).filter((value) => value === rolls[dealer]).length,
+      1,
+    );
+    const next = (seat: Seat) => (["E", "S", "W", "N"] as const)[
+      (["E", "S", "W", "N"].indexOf(seat) + 1) % 4
+    ]!;
+    assert.equal(seatWindOf(state, next(dealer)), "S");
+    assert.equal(seatWindOf(state, next(next(dealer))), "W");
+    assert.equal(seatWindOf(state, next(next(next(dealer)))), "N");
+  });
+});
+
 describe("draw and replacement", () => {
   it("draws from the front and moves to the discard phase", () => {
-    const { state } = newGame(DEAL_SEED);
+    const state = fixture({
+      dealer: "E",
+      hands: {
+        E: "b1 b2 b3 b4 b5 b6 c1 c2 c3 c4 c5 c6 c7",
+        S: "b7 b8 b9 c7 c8 c9 o1 o2 o3 wE wS wW wN",
+        W: "b1 b2 b3 b4 b5 b6 c1 c2 c3 c4 c5 c6 c7",
+        N: "b7 b8 b9 c7 c8 c9 o1 o2 o3 wE wS wW wN",
+      },
+      wall: ["o9", "o8", "o7", "o6"],
+      phase: "draw",
+      turn: "E",
+    });
     const front = state.wall.tiles[state.wall.front];
     const result = play(state, { type: "Draw", seat: "E" });
     assert.equal(handOf(result.state, "E").length, 14);
@@ -139,7 +185,7 @@ describe("draw and replacement", () => {
     assert.deepEqual(result.state.players[0]!.seasons, ["s2", "s1"]);
     assert.equal(handOf(result.state, "E").length, 14);
     assert.equal(result.state.wall.front, 1);
-    assert.equal(result.state.wall.back, 2);
+    assert.equal(result.state.wall.back, 1);
   });
 
   it("keeps the last bonus tile when the wall cannot replace it", () => {
@@ -164,7 +210,29 @@ describe("draw and replacement", () => {
     );
   });
 
-  it("takes a kong replacement from the back while ordinary draws use the front", () => {
+  it("refills the loose pair after both are used, without duplicating a tile", () => {
+    const state = fixture({
+      hands: {
+        E: "b1 b1 b1 b1 b2 b2 b2 b2 c1 c2 c3 c4 c5",
+        S: "b7 b8 b9 c7 c8 c9 o1 o2 o3 wE wS wW wN",
+        W: "b2 b3 b4 b5 b6 c1 c2 c3 c4 c5 c6 c7 c8",
+        N: "b7 b8 b9 c7 c8 c9 o1 o2 o3 wE wS wW wN",
+      },
+      wall: ["o1", "o2", "o3", "o9"],
+      phase: "discard",
+      turn: "E",
+    });
+    const first = play(state, { type: "ConcealedKong", seat: "E", tile: "b1" });
+    assert.equal(first.state.wall.loose.length, 1);
+    const second = play(first.state, { type: "ConcealedKong", seat: "E", tile: "b2" });
+    assert.equal(second.state.wall.loose.length, 2);
+    assert.equal(
+      new Set(second.state.wall.loose).size,
+      second.state.wall.loose.length,
+    );
+  });
+
+  it("takes a kong replacement from the loose tiles while ordinary draws use the front", () => {
     const state = fixture({
       hands: {
         E: "b1 b1 b1 b1 b2 b3 b4 b5 b6 c1 c2 c3 c4 c5",
@@ -178,9 +246,9 @@ describe("draw and replacement", () => {
     });
     const result = play(state, { type: "ConcealedKong", seat: "E", tile: "b1" });
     assert.equal(result.state.wall.front, 0);
-    assert.equal(result.state.wall.back, 2);
+    assert.equal(result.state.wall.back, 1);
     assert.ok(handOf(result.state, "E").includes("o9"));
-    assert.equal(result.state.lastDraw?.end, "back");
+    assert.equal(result.state.lastDraw?.end, "loose");
     assert.deepEqual(result.state.players[0]!.melds, [
       { kind: "kong", tiles: ["b1", "b1", "b1", "b1"], exposed: false },
     ]);
@@ -478,7 +546,8 @@ describe("purity", () => {
   it("does not mutate the input state on a legal action", () => {
     const { state } = newGame(DEAL_SEED);
     const before = serialize(state);
-    play(state, { type: "Draw", seat: "E" });
+    const action = legalActions(state, state.dealer)[0]!;
+    play(state, action);
     assert.equal(serialize(state), before);
   });
 });
@@ -503,10 +572,14 @@ describe("serialisation and views", () => {
     assert.equal(view.opponents.length, 3);
     for (const opponent of view.opponents) {
       assert.equal("hand" in opponent, false);
-      assert.equal(opponent.handCount, 13);
+      assert.equal(
+        opponent.handCount,
+        opponent.seat === state.dealer ? 14 : 13,
+      );
     }
     assert.equal(view.wallRemaining, wallRemaining(state));
     assert.deepEqual(view.legalActions, legalActions(state, "E"));
-    assert.deepEqual(viewFor(state, "S").legalActions, []);
+    const other = ["S", "W", "N"].find((seat) => seat !== state.dealer)!;
+    assert.deepEqual(viewFor(state, other).legalActions, []);
   });
 });

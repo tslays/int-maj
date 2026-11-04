@@ -32,6 +32,7 @@ export interface FixtureOptions {
   readonly flowers?: Partial<Record<Seat, string | readonly string[]>>;
   readonly seasons?: Partial<Record<Seat, string | readonly string[]>>;
   readonly wall?: readonly string[];
+  readonly loose?: readonly string[];
   readonly phase?: Phase;
   readonly turn?: Seat;
   readonly fishing?: readonly FishingState[];
@@ -78,7 +79,12 @@ export function fixture(options: FixtureOptions = {}): GameState {
   }
 
   const wall = options.wall ? [...options.wall] : [...base.wall.tiles];
-  state.wall = { tiles: wall, front: 0, back: wall.length - 1 };
+  state.wall = {
+    tiles: wall,
+    front: 0,
+    back: wall.length - 1,
+    loose: options.loose ? [...options.loose] : [],
+  };
   return state as GameState;
 }
 

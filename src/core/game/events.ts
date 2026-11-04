@@ -46,7 +46,7 @@ export interface DrewEvent extends EventBase {
   readonly seat: Seat;
   readonly tile: string;
   /** Front = ordinary draw; back = replacement (p. 34 loose tiles). */
-  readonly end: "front" | "back";
+  readonly end: "front" | "loose";
   readonly replacement: boolean;
 }
 

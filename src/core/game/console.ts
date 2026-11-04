@@ -339,7 +339,7 @@ export function describeEvent(event: Event): string {
     case "Dealt":
       return `${event.seat} is dealt ${event.count} tiles`;
     case "Drew":
-      return `${event.seat} draws ${event.tile}${event.end === "back" ? " from the back" : ""}`;
+      return `${event.seat} draws ${event.tile}${event.end === "loose" ? " from the loose tiles" : ""}`;
     case "FlowerReplaced":
       return `${event.seat} replaces ${event.tile} with ${event.replacement}`;
     case "Discarded":

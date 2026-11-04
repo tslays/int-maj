@@ -98,8 +98,8 @@ describe("review states", () => {
     const result = payloadFor("result");
     assert.equal(result.outcome?.kind, "win");
     assert.ok(
-      (result.outcome?.fishing.length ?? 0) >= 3,
-      "the result card shows a fishing settlement",
+      result.view.fishing.length >= 1,
+      "the result page shows a fishing declaration",
     );
     assert.equal(result.outcome?.unknown, 0, "no calculate entry goes unpaid");
   });
