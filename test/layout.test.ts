@@ -46,7 +46,7 @@ describe("computeLayout", () => {
       const result = layout(width, height, mode);
       const phone = mode === "phone";
       if (phone) {
-        assert.equal(result.handTileWidth, Math.floor(width / HAND_TILE_COUNT));
+        assert.equal(result.handTileWidth, width / HAND_TILE_COUNT);
         assert.equal(result.handGap, 0);
         assert.equal(result.handWidth, HAND_TILE_COUNT * result.handTileWidth);
         assert.ok(
@@ -124,15 +124,15 @@ describe("computeLayout", () => {
 
   it("fits fourteen touching tiles across the screen on a phone", () => {
     const portrait = layout(390, 844, "phone");
-    assert.equal(portrait.handTileWidth, Math.floor(390 / HAND_TILE_COUNT));
+    assert.equal(portrait.handTileWidth, 390 / HAND_TILE_COUNT);
     assert.equal(portrait.handGap, 0);
-    assert.equal(portrait.handWidth, 378);
+    assert.equal(portrait.handWidth, 390);
     assert.ok(portrait.boardTileWidth! >= 26);
 
     const landscape = layout(844, 390, "phone");
-    assert.equal(landscape.handTileWidth, Math.floor(844 / HAND_TILE_COUNT));
+    assert.equal(landscape.handTileWidth, 844 / HAND_TILE_COUNT);
     assert.equal(landscape.handGap, 0);
-    assert.equal(landscape.handWidth, 840);
+    assert.equal(landscape.handWidth, 844);
   });
 
   it("states the smallest supported phone width", () => {

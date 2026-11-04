@@ -44,7 +44,8 @@ export function computeLayout({
     const boardScale = Math.max(26, round(width * 0.045));
     // The hand is its own scale: exactly fourteen tiles across the screen,
     // touching, so the row never scrolls and no tile is clipped.
-    const handScale = Math.floor(width / HAND_TILE_COUNT);
+    // Tiles share the width exactly; the CSS flexes them to sum to the band.
+    const handScale = width / HAND_TILE_COUNT;
     const handGap = 0;
     const boardGap = Math.max(2, round(boardScale * 0.25));
     const boardTileHeight = (boardScale * 4) / 3;
