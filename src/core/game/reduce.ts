@@ -453,6 +453,13 @@ function addMeld(draft: Draft, seat: Seat, meld: MeldState): void {
   draftPlayer(draft, seat).melds.push(meld);
 }
 
+/** Payments are made to the nearest 100; over 50 rounds up, 50 or less down. */
+export function roundTo100(points: number): number {
+  const remainder = Math.abs(points) % 100;
+  const base = points - Math.sign(points) * remainder;
+  return remainder > 50 ? base + Math.sign(points) * 100 : base;
+}
+
 function ledgerFor(
   draft: Draft,
   winner: Seat,
@@ -464,31 +471,27 @@ function ledgerFor(
   const entries: LedgerEntry[] = [];
   const others = SEATS.filter((seat) => seat !== winner);
 
-  if (from !== null) {
+  // All three losers pay the winner; the winner pays nobody. East pays and
+  // receives double (I p. 21): East's own payment is doubled, and when East
+  // wins every loser pays double.
+  for (const payer of others) {
+    const doubled = payer === draft.dealer || winner === draft.dealer;
+    const amount = points === null ? null : roundTo100(points * (doubled ? 2 : 1));
+    const base = selfDrawn ? "self-drawn" : "win";
     entries.push({
-      from,
+      from: payer,
       to: winner,
-      points,
-      reason: points === null ? `win ${tier} (calculate, unscored)` : `win ${tier}`,
+      points: amount,
+      reason:
+        points === null
+          ? `${base} ${tier} (calculate, unscored)`
+          : `${base} ${tier}${doubled ? " (dealer double)" : ""}`,
     });
-  } else {
-    for (const payer of others) {
-      const doubled = payer === draft.dealer;
-      const amount = points === null ? null : points * (doubled ? 2 : 1);
-      entries.push({
-        from: payer,
-        to: winner,
-        points: amount,
-        reason:
-          points === null
-            ? `self-drawn ${tier} (calculate, unscored)`
-            : `self-drawn ${tier}${doubled ? " (dealer double)" : ""}`,
-      });
-    }
   }
 
-  // Fishing settles independently of the winner. Every non-winner declaration
-  // collects the printed fishing figure from each of the other three seats.
+  // Fishing settles independently of the winner. The payer set is the
+  // recorded assumption (each of the other three seats); East doubles as for
+  // any other score. See rules/archive/ASSUMPTIONS.md and AUDIT A7.
   const declarations = draft.fishing.map((entry) => ({
     player: entry.seat,
     wait: entry.wait,
@@ -498,14 +501,17 @@ function ledgerFor(
   for (const award of awards) {
     for (const payer of SEATS) {
       if (payer === award.player) continue;
+      const doubled = payer === draft.dealer || award.player === draft.dealer;
+      const amount =
+        award.points === null ? null : roundTo100(award.points * (doubled ? 2 : 1));
       entries.push({
         from: payer,
         to: award.player,
-        points: award.points,
+        points: amount,
         reason:
           award.points === null
             ? `fishing ${award.tier} (calculate, unscored)`
-            : `fishing ${award.tier}`,
+            : `fishing ${award.tier}${doubled ? " (dealer double)" : ""}`,
       });
     }
   }

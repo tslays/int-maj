@@ -11,6 +11,7 @@ import {
   newGame,
   nextHand,
   replayEventLog,
+  roundTo100,
   serialize,
   type Action,
   type GameState,
@@ -29,7 +30,7 @@ const FILLER = {
 };
 
 describe("payments", () => {
-  it("pays a self-drawn dealer win from all three at the printed tier", () => {
+  it("pays a self-drawn dealer win from all three with East receiving double", () => {
     const state = fixture({
       hands: {
         E: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 b5",
@@ -46,12 +47,12 @@ describe("payments", () => {
     assert.deepEqual(
       won.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
       [
-        ["S", "E", 1000],
-        ["W", "E", 1000],
-        ["N", "E", 1000],
+        ["S", "E", 2000],
+        ["W", "E", 2000],
+        ["N", "E", 2000],
       ],
     );
-    assert.deepEqual(ledgerTotals(won.state).totals, { E: 3000, S: -1000, W: -1000, N: -1000 });
+    assert.deepEqual(ledgerTotals(won.state).totals, { E: 6000, S: -2000, W: -2000, N: -2000 });
     zeroSum(won.state);
   });
 
@@ -82,7 +83,7 @@ describe("payments", () => {
     zeroSum(won.state);
   });
 
-  it("makes the discarder pay a win on a discard", () => {
+  it("makes all three losers pay a win on a discard, East double", () => {
     const state = fixture({
       hands: {
         E: "b1 b1 b1 c1 c2 c3 c7 c8 c9 wE wS wW b5 o9",
@@ -104,7 +105,11 @@ describe("payments", () => {
     assert.equal(won.state.result?.selfDrawn, false);
     assert.deepEqual(
       won.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
-      [["E", "S", 1000]],
+      [
+        ["E", "S", 2000],
+        ["W", "S", 1000],
+        ["N", "S", 1000],
+      ],
     );
     assert.equal(won.state.result?.nextDealer, "S");
     zeroSum(won.state);
@@ -139,12 +144,12 @@ describe("payments", () => {
     assert.deepEqual(
       fishingEntries.map((entry) => [entry.from, entry.to, entry.points]),
       [
-        ["S", "E", 400],
-        ["W", "E", 400],
-        ["N", "E", 400],
+        ["S", "E", 800],
+        ["W", "E", 800],
+        ["N", "E", 800],
       ],
     );
-    assert.deepEqual(ledgerTotals(won.state).totals, { E: -800, S: 3600, W: -1400, N: -1400 });
+    assert.deepEqual(ledgerTotals(won.state).totals, { E: 400, S: 3200, W: -1800, N: -1800 });
     zeroSum(won.state);
   });
 
@@ -174,7 +179,85 @@ describe("payments", () => {
     assert.ok(!won.state.ledger.some((entry) => entry.reason.startsWith("fishing")));
     assert.deepEqual(
       won.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
-      [["S", "E", 1000]],
+      [
+        ["S", "E", 2000],
+        ["W", "E", 2000],
+        ["N", "E", 2000],
+      ],
+    );
+    zeroSum(won.state);
+  });
+
+  it("reproduces the book's worked example: 84 x 2^5, East 2000 / others 1000", () => {
+    const state = fixture({
+      hands: {
+        E: FILLER.S,
+        S: FILLER.W,
+        N: FILLER.N,
+        W: "b3 b3 b3 wE wE",
+      },
+      melds: {
+        W: [
+          { kind: "pung", tiles: ["wW", "wW", "wW"], exposed: true },
+          { kind: "kong", tiles: ["dG", "dG", "dG", "dG"], exposed: true },
+          { kind: "kong", tiles: ["b1", "b1", "b1", "b1"], exposed: false },
+        ],
+      },
+      flowers: { W: "f3" },
+      wall: ["o6", "o7", "o8"],
+      phase: "discard",
+      turn: "W",
+      lastDraw: { seat: "W", tile: "b3", end: "front" },
+    });
+    const won = play(state, { type: "Win", seat: "W", kind: "self-drawn" });
+    assert.equal(won.state.result?.points, 1000);
+    assert.deepEqual(
+      won.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
+      [
+        ["E", "W", 2000],
+        ["S", "W", 1000],
+        ["N", "W", 1000],
+      ],
+    );
+    assert.deepEqual(ledgerTotals(won.state).totals, {
+      E: -2000,
+      S: -1000,
+      W: 4000,
+      N: -1000,
+    });
+    zeroSum(won.state);
+  });
+
+  it("rounds each payment to the nearest 100, over 50 up", () => {
+    assert.equal(roundTo100(288), 300);
+    assert.equal(roundTo100(250), 200);
+    assert.equal(roundTo100(251), 300);
+    assert.equal(roundTo100(1000), 1000);
+
+    const state = fixture({
+      hands: {
+        E: FILLER.S,
+        W: FILLER.W,
+        N: FILLER.N,
+        S: "c6 c6 c6 c7 c7 c7 c9 c9 c9 c5 c5",
+      },
+      melds: {
+        S: [{ kind: "chow", tiles: ["c1", "c2", "c3"], exposed: true }],
+      },
+      wall: ["o6", "o7", "o8"],
+      phase: "discard",
+      turn: "S",
+      lastDraw: { seat: "S", tile: "c5", end: "front" },
+    });
+    const won = play(state, { type: "Win", seat: "S", kind: "self-drawn" });
+    assert.equal(won.state.result?.points, 320);
+    assert.deepEqual(
+      won.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
+      [
+        ["E", "S", 600],
+        ["W", "S", 300],
+        ["N", "S", 300],
+      ],
     );
     zeroSum(won.state);
   });
@@ -193,9 +276,9 @@ describe("payments", () => {
     const won = play(state, { type: "Win", seat: "E", kind: "self-drawn" });
     assert.equal(won.state.result?.tier, "calculate");
     assert.equal(won.state.result?.points, 1000);
-    assert.ok(won.state.ledger.every((entry) => entry.points === 1000));
+    assert.ok(won.state.ledger.every((entry) => entry.points === 2000));
     assert.equal(ledgerTotals(won.state).unknown, 0);
-    assert.deepEqual(ledgerTotals(won.state).totals, { E: 3000, S: -1000, W: -1000, N: -1000 });
+    assert.deepEqual(ledgerTotals(won.state).totals, { E: 6000, S: -2000, W: -2000, N: -2000 });
     assert.ok(won.events.some((event) => event.type === "HandScored" && event.points === 1000));
   });
 });
