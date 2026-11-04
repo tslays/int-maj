@@ -743,6 +743,7 @@ function renderSeat(entry) {
 
   const root = $(`#seat-${place}`);
   root.className = `seat seat-${place}${seatIsTurn(entry.seat) ? " is-turn" : ""}`;
+  root.dataset.wind = entry.wind;
   root.style.setProperty("--seat-color", seatColor(entry.seat));
   root.replaceChildren();
 
@@ -798,6 +799,7 @@ function renderCenter() {
   dial.title = `${view.wallRemaining} tiles left`;
 
   const meta = $("#center-meta");
+  meta.dataset.wall = String(view.wallRemaining);
   meta.replaceChildren();
   const round = document.createElement("strong");
   round.textContent = view.prevailingWind;
@@ -816,6 +818,7 @@ function renderCenter() {
       `center-score corner-${corner}${seatIsTurn(entry.seat) ? " is-turn" : ""}`,
     );
     cell.dataset.seat = entry.seat;
+    cell.dataset.wall = String(view.wallRemaining);
     cell.style.setProperty("--seat-color", seatColor(entry.seat));
     cell.setAttribute(
       "aria-label",
@@ -2235,6 +2238,10 @@ async function boot() {
   railOpen = initialRail();
   applyRail();
   const params = new URLSearchParams(window.location.search);
+  const variant = params.get("variant");
+  if (variant === "a" || variant === "b" || variant === "c") {
+    document.documentElement.classList.add(`variant-${variant}`);
+  }
   referenceShown = params.get("overlay") === "1";
   applyReference();
 

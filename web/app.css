@@ -10,6 +10,14 @@
   --felt-high: #1a4a33;
   --felt-low: #0a2116;
   --felt-vignette: inset 0 0 130px rgba(0, 0, 0, 0.42);
+  --paper-surface: #f1eee4;
+  --paper-ink: #1b1a17;
+  --paper-muted: #6b685e;
+  --paper-line: rgba(27, 26, 23, 0.2);
+  --mat-surface: #1e201d;
+  --mat-ink: #e8e4d8;
+  --mat-muted: #9b988e;
+  --mat-line: rgba(232, 228, 216, 0.26);
   --ivory: #f7f2e2;
   --on-felt: #f7f2e2;
   --on-felt-muted: #b7c9ba;
@@ -2240,3 +2248,180 @@ kbd {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* --------------------------------------------------------- UI variants */
+/* `?variant=a|b|c` adds one class to the root. A is the default board and
+   keeps the existing block; B and C change only surface, seats, table extras
+   and chrome. Geometry is untouched. */
+.variant-a {
+  /* A — Felt: the default look. */
+}
+
+.variant-b .app {
+  background: var(--paper-surface);
+}
+
+.variant-b .board {
+  --on-felt: var(--paper-ink);
+  --on-felt-muted: var(--paper-muted);
+  --accent: var(--paper-ink);
+  --accent-strong: var(--paper-ink);
+  --accent-hover: var(--paper-ink);
+  --accent-soft: var(--paper-line);
+  --accent-line: var(--paper-line);
+  --accent-fill: rgba(27, 26, 23, 0.06);
+  --accent-ring: var(--paper-line);
+  --line-frame: transparent;
+  --tile-shadow: none;
+  --hand-shadow: none;
+  --hand-shadow-lift: none;
+  --card-shadow: none;
+  --preview-shadow: none;
+  --toggle-shadow: none;
+  background: var(--paper-surface);
+  color: var(--paper-ink);
+}
+
+.variant-b .board::after,
+.variant-b .playfield {
+  display: none;
+}
+
+.variant-b .tile {
+  outline: var(--stroke) solid var(--paper-line);
+  outline-offset: calc(var(--stroke) * -1);
+}
+
+.variant-b .tile img,
+.variant-b .river .tile {
+  filter: none;
+}
+
+.variant-b .meld,
+.variant-b .center {
+  border-color: transparent;
+  background: transparent;
+}
+
+.variant-b .center {
+  position: static;
+  overflow: visible;
+}
+
+.variant-b .center-scores,
+.variant-b .center-meta {
+  display: none;
+}
+
+.variant-b .wall-dial {
+  top: 0;
+  left: 50%;
+  width: auto;
+  height: auto;
+  transform: translateX(-50%);
+}
+
+.variant-b .wall-dial svg,
+.variant-b .wall-label {
+  display: none;
+}
+
+.variant-b .wall-count {
+  color: var(--paper-ink);
+}
+
+.variant-b .seat::before,
+.variant-c .seat::before {
+  content: attr(data-wind);
+  position: absolute;
+  z-index: 3;
+  color: var(--seat-color);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-black);
+  line-height: 1;
+  pointer-events: none;
+}
+
+.variant-b .seat-top::before,
+.variant-c .seat-top::before {
+  top: 50%;
+  left: 0;
+  transform: translate(-100%, -50%);
+}
+
+.variant-b .seat-left::before,
+.variant-c .seat-left::before {
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -100%);
+}
+
+.variant-b .seat-right::before,
+.variant-c .seat-right::before {
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -100%);
+}
+
+.variant-b .seat-name {
+  visibility: hidden;
+}
+
+.variant-c .app {
+  background: var(--mat-surface);
+}
+
+.variant-c .board {
+  --on-felt: var(--mat-ink);
+  --on-felt-muted: var(--mat-muted);
+  --accent: var(--mat-ink);
+  --accent-strong: var(--mat-ink);
+  --accent-hover: var(--mat-ink);
+  --accent-soft: var(--mat-line);
+  --accent-line: var(--mat-line);
+  --accent-fill: rgba(232, 228, 216, 0.06);
+  --accent-ring: var(--mat-line);
+  --tile-shadow: none;
+  --hand-shadow: none;
+  --hand-shadow-lift: none;
+  --card-shadow: none;
+  --preview-shadow: none;
+  --toggle-shadow: none;
+  background: var(--mat-surface);
+  color: var(--mat-ink);
+}
+
+.variant-c .board::after {
+  display: none;
+}
+
+.variant-c .playfield {
+  border-color: var(--mat-line);
+}
+
+.variant-c .center,
+.variant-c .meld {
+  border-color: transparent;
+  background: transparent;
+}
+
+.variant-c .wall-dial {
+  display: none;
+}
+
+.variant-c .center-score.is-turn::after {
+  content: " · " attr(data-wall);
+}
+
+.variant-c .seat-name,
+.variant-c .rack-line,
+.variant-c .meld-row,
+.variant-c .bonus-row {
+  visibility: hidden;
+}
+
+.variant-c .tile img,
+.variant-c .river .tile {
+  filter: none;
+}
+
