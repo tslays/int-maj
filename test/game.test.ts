@@ -361,7 +361,7 @@ describe("claims", () => {
     );
     assert.deepEqual(
       second.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
-      [["E", "S", 1500]],
+      [["E", "S", 1000]],
     );
   });
 });

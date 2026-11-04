@@ -525,7 +525,13 @@ function finishWin(
     selfDrawn,
   });
   if (hand === null) return { error: "winning hand is not a valid hand", state: draft as GameState };
-  const score = scoreHand(hand);
+  const score = scoreHand(hand, {
+    wonOnLooseTile: selfDrawn && draft.lastDraw?.end === "back",
+    wonOnLastWallTile:
+      selfDrawn &&
+      draft.lastDraw?.end === "front" &&
+      wallRemaining(draft as GameState) === 0,
+  });
   const winning = score.winning;
   if (winning === null) {
     return { error: "hand does not match any catalogue pattern", state: draft as GameState };
@@ -539,7 +545,7 @@ function finishWin(
     tile: winningTile,
     patternId: winning.pattern.id,
     tier: winning.tier,
-    points: winning.points,
+    points: score.points,
   });
   emit({
     type: "HandScored",
@@ -547,11 +553,11 @@ function finishWin(
     patternId: winning.pattern.id,
     patternName: winning.pattern.name,
     tier: winning.tier,
-    points: winning.points,
+    points: score.points,
     matches: score.matches.map((match) => match.pattern.id),
   });
 
-  const entries = ledgerFor(draft, seat, from, selfDrawn, winning.tier, winning.points);
+  const entries = ledgerFor(draft, seat, from, selfDrawn, winning.tier, score.points);
   draft.ledger.push(...entries);
   emit({ type: "Payments", entries });
 
@@ -568,7 +574,7 @@ function finishWin(
     patternId: winning.pattern.id,
     patternName: winning.pattern.name,
     tier: winning.tier,
-    points: winning.points,
+    points: score.points,
     nextDealer: seat === draft.dealer ? draft.dealer : nextSeat(draft.dealer),
     reason: `win by ${winning.pattern.id}`,
   };
