@@ -42,11 +42,10 @@ export function computeLayout({
   if (phone) {
     const controlHeight = Math.max(34, Math.min(48, round(height * 0.05)));
     const boardScale = Math.max(26, round(width * 0.045));
-    const handScale = Math.min(
-      width * 0.15,
-      Math.max(40, boardScale * 1.6),
-    );
-    const handGap = 2;
+    // The hand is its own scale: exactly fourteen tiles across the screen,
+    // touching, so the row never scrolls and no tile is clipped.
+    const handScale = Math.floor(width / HAND_TILE_COUNT);
+    const handGap = 0;
     const boardGap = Math.max(2, round(boardScale * 0.25));
     const boardTileHeight = (boardScale * 4) / 3;
     const handTileHeight = (handScale * 4) / 3;
@@ -73,7 +72,7 @@ export function computeLayout({
       13 * rackHeight + 12,
       bottomRiverY - boardGap - (topSeatHeight + boardGap),
     );
-    const handWidth = 14 * handScale + 13 * handGap;
+    const handWidth = HAND_TILE_COUNT * handScale + (HAND_TILE_COUNT - 1) * handGap;
     const handBandY = height - handTileHeight - 2 * handGap;
     const handY = handBandY + handGap;
     const controlsY = handBandY - handGap - controlHeight;
@@ -149,10 +148,10 @@ export function computeLayout({
       boardTileWidth: boardScale,
       handTileWidth: handScale,
       tileHeight: handTileHeight,
-      gap: handGap,
+      gap: 2,
       boardGap,
       handGap,
-      inset: handGap,
+      inset: 2,
       handWidth,
       handScrollWidth: handWidth,
       handTileCount: HAND_TILE_COUNT,
@@ -160,7 +159,7 @@ export function computeLayout({
       riverColumns,
       riverRows,
       mode,
-      supported: handScale >= 40,
+      supported: width >= 390,
       minimumLegalWidth: 390,
     };
   }
@@ -367,6 +366,7 @@ export function computeLayout({
     tileWidth,
     tileHeight,
     gap,
+    handGap: gap,
     inset: gap,
     handWidth,
     handTileCount: HAND_TILE_COUNT,

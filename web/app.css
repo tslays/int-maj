@@ -2632,7 +2632,7 @@ kbd {
   --hand-h: var(--layout-tile-h);
   --tile-w: var(--layout-tile-w);
   --tile-h: var(--layout-tile-h);
-  --hand-gap: var(--layout-gap);
+  --hand-gap: var(--layout-hand-gap);
   --back-w: var(--layout-back-w);
   --back-h: var(--layout-back-h);
 }
@@ -2760,26 +2760,32 @@ kbd {
 }
 
 
-/* Phone: one screen, two independent tile scales. The hand row may overflow
-   horizontally; the board keeps its own smaller scale. */
+/* Phone: one screen, two independent tile scales. The hand row is exactly
+   fourteen touching tiles across the screen, so it never scrolls; the board
+   keeps its own smaller scale. */
 .variant-d.phone .hand-band {
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-}
-
-.variant-d.phone .hand-band::-webkit-scrollbar {
-  display: none;
+  overflow: hidden;
 }
 
 .variant-d.phone .hand-layout {
-  width: max-content;
-  min-width: max-content;
+  width: 100%;
+  min-width: 0;
   justify-content: flex-start;
 }
 
 .variant-d.phone .hand {
   flex-wrap: nowrap;
+  gap: 0;
+}
+
+/* On a phone the drawn tile is marked in place, never by a gap. */
+.variant-d.phone .hand-tile.is-drawn-gap {
+  margin-left: 0;
+}
+
+.variant-d.phone .hand-tile.is-drawn .tile {
+  outline: var(--stroke) solid var(--accent);
+  outline-offset: calc(-1 * var(--space-1));
 }
 
 .variant-d.phone.hand-collapsed .hand-band {

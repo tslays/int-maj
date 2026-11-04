@@ -39,6 +39,7 @@ interface Measurement {
   readonly badges: Readonly<Record<"top" | "left" | "right" | "self", Badge>>;
   readonly tileWidth: number;
   readonly handTiles: readonly number[];
+  readonly handGaps: readonly number[];
   readonly handScrollWidth: number;
   readonly handClientWidth: number;
   readonly lastTileDrawn: boolean;
@@ -186,6 +187,9 @@ const MEASURE = `(() => {
       );
     }).length;
   const handTiles = [...document.querySelectorAll("#hand .hand-tile")].map(R);
+  const handGaps = handTiles
+    .slice(1)
+    .map((tile, index) => tile[0] - (handTiles[index][0] + handTiles[index][2]));
   const handBand = document.querySelector(".hand-band");
   const handTile = R(document.querySelector("#hand .hand-tile"));
   const lastTile = document.querySelector("#hand .hand-tile:last-child");
@@ -197,6 +201,7 @@ const MEASURE = `(() => {
     badges,
     tileWidth: handTile === null ? 0 : handTile[2],
     handTiles: handTiles.map((tile) => tile[2]),
+    handGaps,
     handScrollWidth: handBand === null ? 0 : handBand.scrollWidth,
     handClientWidth: handBand === null ? 0 : handBand.clientWidth,
     lastTileDrawn: lastTile === null ? false : lastTile.classList.contains("is-drawn"),
@@ -245,23 +250,34 @@ function assertGeometry(
     // Board regions only: the hand and controls are the bottom overlay zone.
     const boardRegions = ["centre", "riverTop", "riverLeft", "riverRight", "riverBottom", "seatTop", "seatLeft", "seatRight"];
     assert.deepEqual(measurement.outside, [], `${label}: region outside board`);
-    assert.ok(
-      measurement.handTiles.length === 14,
+    assert.equal(
+      measurement.handTiles.length,
+      14,
       `${label}: expected 14 hand tiles`,
     );
-    for (const width of measurement.handTiles) {
-      assert.ok(width >= 40, `${label}: hand tile ${width} below 40`);
-    }
-    assert.ok(
-      measurement.handScrollWidth > measurement.handClientWidth,
-      `${label}: hand row does not overflow`,
+    assert.equal(
+      measurement.handScrollWidth,
+      measurement.handClientWidth,
+      `${label}: hand row overflows its band`,
     );
-    const ratio = expected.handTileWidth! / expected.boardTileWidth!;
-    assert.ok(ratio >= 1.5 && ratio <= 1.7, `${label}: hand ratio ${ratio}`);
+    const handWidth = Math.floor(measurement.handClientWidth / 14);
+    for (const width of measurement.handTiles) {
+      assert.ok(
+        Math.abs(width - handWidth) <= 1,
+        `${label}: hand tile ${width} is not ${handWidth} (+/- 1)`,
+      );
+    }
+    for (const gap of measurement.handGaps) {
+      assert.ok(
+        Math.abs(gap) <= 0.5,
+        `${label}: hand gap ${gap} is not zero`,
+      );
+    }
     assert.ok(
       Math.abs(measurement.tileWidth - expected.handTileWidth!) <= 0.05,
       `${label}: hand tile width`,
     );
+    assert.ok(expected.boardTileWidth! >= 26, `${label}: board floor`);
     return;
   }
 

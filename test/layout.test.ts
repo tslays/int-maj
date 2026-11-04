@@ -46,14 +46,13 @@ describe("computeLayout", () => {
       const result = layout(width, height, mode);
       const phone = mode === "phone";
       if (phone) {
-        assert.ok(result.handTileWidth >= 40, "hand floor");
-        const ratio = result.handTileWidth / result.boardTileWidth!;
-        assert.ok(ratio >= 1.5 && ratio <= 1.7, `hand ratio ${ratio}`);
+        assert.equal(result.handTileWidth, Math.floor(width / HAND_TILE_COUNT));
+        assert.equal(result.handGap, 0);
+        assert.equal(result.handWidth, HAND_TILE_COUNT * result.handTileWidth);
         assert.ok(
-          result.handWidth > width,
-          `${width}: hand row does not overflow (${result.handWidth})`,
+          result.handWidth <= width,
+          `${width}: hand row fits (${result.handWidth})`,
         );
-        assert.equal(result.handWidth, HAND_TILE_COUNT * result.handTileWidth + 13 * result.handGap);
         assert.equal(result.handTileCount, 14);
         assert.equal(result.drawnTileIndex, 13);
       } else {
@@ -123,18 +122,22 @@ describe("computeLayout", () => {
     });
   }
 
-  it("uses the independent hand scale and overflows on a phone", () => {
-    const result = layout(390, 844, "phone");
-    assert.ok(result.handTileWidth! >= 40);
-    assert.ok(result.handTileWidth! / result.boardTileWidth! >= 1.5);
-    assert.ok(result.handTileWidth! / result.boardTileWidth! <= 1.7);
-    assert.ok(result.handWidth > 390);
-    assert.equal(result.handTileWidth, 41.6);
+  it("fits fourteen touching tiles across the screen on a phone", () => {
+    const portrait = layout(390, 844, "phone");
+    assert.equal(portrait.handTileWidth, Math.floor(390 / HAND_TILE_COUNT));
+    assert.equal(portrait.handGap, 0);
+    assert.equal(portrait.handWidth, 378);
+    assert.ok(portrait.boardTileWidth! >= 26);
+
+    const landscape = layout(844, 390, "phone");
+    assert.equal(landscape.handTileWidth, Math.floor(844 / HAND_TILE_COUNT));
+    assert.equal(landscape.handGap, 0);
+    assert.equal(landscape.handWidth, 840);
   });
 
-  it("states the smallest legal phone width at the 26px board floor", () => {
+  it("states the smallest supported phone width", () => {
     const result = layout(390, 600, "phone");
     assert.ok(result.supported);
-    assert.ok(result.handWidth > 390);
+    assert.ok(result.handWidth <= 390);
   });
 });

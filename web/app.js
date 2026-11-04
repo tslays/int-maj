@@ -838,6 +838,7 @@ function applyLayout() {
   const px = (value) => `${value}px`;
   root.setProperty("--layout-board-h", px(window.innerHeight));
   root.setProperty("--layout-gap", px(layout.gap));
+  root.setProperty("--layout-hand-gap", px(layout.handGap));
   root.setProperty("--layout-tile-w", px(layout.tileWidth));
   root.setProperty("--layout-tile-h", px(layout.tileHeight));
   root.setProperty("--layout-back-w", px(layout.tileWidth * 0.73));
@@ -1023,9 +1024,10 @@ function renderHand() {
     }
     if (index === drawnIndex) {
       button.classList.add("is-drawn");
-      // The extra tile stands apart from the thirteen instead of carrying a
-      // dot or a lift.
-      if (index > 0) button.classList.add("is-drawn-gap");
+      // Phones mark the extra tile in place; wider tables keep the gap.
+      if (index > 0 && !document.documentElement.classList.contains("phone")) {
+        button.classList.add("is-drawn-gap");
+      }
     }
     if (
       handInitialized &&
