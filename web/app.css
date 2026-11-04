@@ -2440,9 +2440,12 @@ kbd {
 .variant-d #help-dialog,
 .variant-d .action-note,
 .variant-d .fishing-preview,
-.variant-d .claim-head,
-.variant-d .self-label {
+.variant-d .claim-head {
   display: none !important;
+}
+
+.variant-d .self-label .seat-name {
+  display: none;
 }
 
 .variant-d .seat .rack-line,
@@ -2456,28 +2459,47 @@ kbd {
   display: none;
 }
 
-.variant-d .seat::before {
-  content: attr(data-wind) " " attr(data-count);
+/* One badge shape for every seat: wind, then a tabular tile count. */
+.variant-d .seat-badge,
+.variant-d .self-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4ch;
+  color: var(--on-felt);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.variant-d .seat-badge {
   position: absolute;
   z-index: 3;
-  color: var(--seat-color);
-  font-size: var(--fs-label);
-  font-weight: var(--fw-black);
-  line-height: 1;
+  top: 0;
+  left: 0;
+  transform: translateX(-100%);
   pointer-events: none;
 }
 
-.variant-d .seat-top::before {
-  top: 50%;
-  left: 0;
-  transform: translate(-100%, -50%);
+.variant-d .seat-badge .seat-wind,
+.variant-d .self-label .seat-wind {
+  color: inherit;
 }
 
-.variant-d .seat-left::before,
-.variant-d .seat-right::before {
-  top: 0;
-  left: 50%;
-  transform: translate(-50%, -100%);
+.variant-d .seat-badge .seat-count,
+.variant-d .self-label .seat-count {
+  display: inline;
+  opacity: 0.72;
+}
+
+.variant-d .seat.is-turn .seat-badge,
+.variant-d .self-label.is-turn {
+  color: var(--accent);
+}
+
+.seat-badge,
+.seat-count {
+  display: none;
 }
 
 .variant-d .center {
