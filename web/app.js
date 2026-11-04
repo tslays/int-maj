@@ -361,9 +361,20 @@ function tierName(tier) {
   return tier === null || tier === undefined ? null : (TIER_NAME[tier] ?? tier);
 }
 
-/** A tier and its printed winner points on one badge; calculate stays a word. */
+/** Printed tier, or the ground x 2^doubles arithmetic and its cap. */
 function scoreBadge(outcome) {
   const tier = tierName(outcome.tier);
+  if (outcome.ground !== null && outcome.doubles !== null && outcome.raw !== null) {
+    const arithmetic =
+      `ground ${outcome.ground} × 2^${outcome.doubles} = ${outcome.raw}` +
+      (outcome.points !== null && outcome.points !== undefined && outcome.raw > outcome.points
+        ? ` → ${outcome.points}`
+        : "");
+    return {
+      text: arithmetic,
+      note: `${outcome.raw} before the ${outcome.limit}-point limit; ${outcome.points} paid`,
+    };
+  }
   if (outcome.points === null || outcome.points === undefined) {
     return { text: tier ?? "calculate", note: "the book gives no fixed value" };
   }

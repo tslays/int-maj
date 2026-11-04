@@ -102,6 +102,14 @@ describe("review states", () => {
       "the result page shows a fishing declaration",
     );
     assert.equal(result.outcome?.unknown, 0, "no calculate entry goes unpaid");
+    assert.equal(typeof result.outcome?.limit, "number");
+    assert.equal(typeof result.outcome?.ground, "number");
+    assert.equal(typeof result.outcome?.doubles, "number");
+    assert.equal(typeof result.outcome?.raw, "number");
+    assert.equal(
+      result.outcome?.points,
+      Math.min(result.outcome?.raw ?? Infinity, result.outcome?.limit ?? Infinity),
+    );
   });
 
   it("serves each state by name and keeps its board until it moves", async () => {

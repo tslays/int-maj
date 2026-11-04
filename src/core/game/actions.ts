@@ -18,6 +18,11 @@
  * `Win { kind: "on-discard" }` is sugar for the mahjong claim: it registers
  * the same claim and obeys the same precedence race. `Win { kind:
  * "self-drawn" }` is the only way to go out on a tile drawn from the wall.
+ *
+ * Goulash and penalties have their own complete actions: `GoulashExchange`
+ * names the three tiles one seat gives in the current pairing, `RequestReshuffle`
+ * exercises R82, and `FalseMahJong` is the table declaration that R80(3)
+ * penalises. Normal play never offers the last two; they are table events.
  */
 
 import type { Seat } from "./state.ts";
@@ -43,6 +48,13 @@ export type Action =
   | { readonly type: "ConcealedKong"; readonly seat: Seat; readonly tile: string }
   | { readonly type: "AddedKong"; readonly seat: Seat; readonly tile: string }
   | { readonly type: "Pass"; readonly seat: Seat }
-  | { readonly type: "Win"; readonly seat: Seat; readonly kind: WinKind };
+  | { readonly type: "Win"; readonly seat: Seat; readonly kind: WinKind }
+  | {
+      readonly type: "GoulashExchange";
+      readonly seat: Seat;
+      readonly tiles: readonly string[];
+    }
+  | { readonly type: "RequestReshuffle"; readonly seat: Seat }
+  | { readonly type: "FalseMahJong"; readonly seat: Seat };
 
 export type ActionType = Action["type"];

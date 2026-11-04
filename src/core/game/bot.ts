@@ -9,9 +9,8 @@
  *
  * The policy, in order:
  *   1. Win when a win is legal.
- *   2. Declare fishing when the engine offers it. In this variant fishing is
- *      a free mini-win at settlement and blocks only pung/chow, neither of
- *      which this bot needs after the announcement (PLAY.md, fishing).
+ *   2. Declare fishing when the engine offers it. Fishing is a free mini-win
+ *      at settlement and does not restrict later pung/kong claims.
  *   3. Claim a pung or kong only when the call completes a set without
  *      spending the hand's last pair: at least one pair must remain in the
  *      concealed hand. Four sets plus a pair is the skeleton most catalogue

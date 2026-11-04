@@ -32,7 +32,10 @@ export const SEATS = ["E", "S", "W", "N"] as const;
 export type Seat = (typeof SEATS)[number];
 
 /** Whose decision the table is waiting for. */
-export type Phase = "draw" | "discard" | "announce" | "claim" | "finished";
+export type Phase = "draw" | "discard" | "announce" | "claim" | "exchange" | "finished";
+
+/** Settlement level agreed before play (I p. 24, R94). */
+export type SettlementLevel = "beginner" | "intermediate" | "advanced";
 
 export interface MeldState {
   readonly kind: MeldKind;
@@ -103,6 +106,14 @@ export interface HandResult {
   readonly patternName: string | null;
   readonly tier: Tier | null;
   readonly points: number | null;
+  /** Calculated hand: ground score before doubling; null for a printed tier. */
+  readonly ground: number | null;
+  /** Calculated hand: number of doubles; null for a printed tier. */
+  readonly doubles: number | null;
+  /** Calculated hand: ground x 2^doubles before the limit cap. */
+  readonly raw: number | null;
+  /** The limit used for this hand. */
+  readonly limit: number;
   /** Dealer of the next hand: repeats on a dealer win or a drawn hand. */
   readonly nextDealer: Seat;
   readonly reason: string;
@@ -120,6 +131,24 @@ export interface GameState {
   readonly prevailingWind: Wind;
   /** The game ends after the North round; no further hand may be dealt. */
   readonly gameOver?: boolean;
+  /** Agreed limit for ordinary-hand scoring (I p. 24, R93). */
+  readonly limit?: number;
+  /** R94: beginner pays the winner, intermediate also fishing, advanced all. */
+  readonly settlement?: SettlementLevel;
+  /** R105: tournament profile. */
+  readonly tournament?: boolean;
+  /** R105(7): selected special hands, at most fourteen. */
+  readonly specialHands?: readonly string[];
+  /** R105(8): recent winning pattern ids, newest last. */
+  readonly recentSpecialHands?: readonly string[];
+  /** R103: four blank jokers or four 2 Bamboos. */
+  readonly goulashJokers?: "blank" | "two-bamboo";
+  /** R104: each player's pool counter for the Goulash. */
+  readonly goulashPool?: number;
+  /** R100: 0 opposite, 1 East/South and West/North, 2 East/North and West/South. */
+  readonly goulashStage?: 0 | 1 | 2;
+  /** Picks already submitted in the current Goulash exchange. */
+  readonly goulashPicks?: Partial<Record<Seat, readonly string[]>>;
   /** A drawn Western hand repeats the dealer only once. */
   readonly drawRepeatUsed?: boolean;
   /** Western by default; the Chinese drawn hand keeps East and adds a kitty. */

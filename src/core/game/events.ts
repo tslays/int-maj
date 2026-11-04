@@ -120,12 +120,30 @@ export interface HandScoredEvent extends EventBase {
   readonly tier: Tier;
   /** Highest matching tier only; null for a Calculate hand. */
   readonly points: number | null;
+  /** Calculated hand: ground, doubles, raw total and the limit used. */
+  readonly ground?: number | null;
+  readonly doubles?: number | null;
+  readonly raw?: number | null;
+  readonly limit?: number;
   readonly matches: readonly string[];
 }
 
 export interface PaymentsEvent extends EventBase {
   readonly type: "Payments";
   readonly entries: readonly LedgerEntry[];
+}
+
+export interface GoulashExchangedEvent extends EventBase {
+  readonly type: "GoulashExchanged";
+  readonly stage: 0 | 1 | 2;
+  readonly a: { readonly seat: Seat; readonly tiles: readonly string[] };
+  readonly b: { readonly seat: Seat; readonly tiles: readonly string[] };
+}
+
+export interface ReshuffledEvent extends EventBase {
+  readonly type: "Reshuffled";
+  readonly seat: Seat;
+  readonly hand: number;
 }
 
 export interface DrawnHandEvent extends EventBase {
@@ -154,6 +172,8 @@ export type Event =
   | WinDeclaredEvent
   | HandScoredEvent
   | PaymentsEvent
+  | GoulashExchangedEvent
+  | ReshuffledEvent
   | DrawnHandEvent
   | NextDealEvent;
 

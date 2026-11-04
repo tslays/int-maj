@@ -18,6 +18,7 @@ import {
   claimOptions,
   fishingDeclarationFor,
   handIsComplete,
+  isFeaturelessHand,
   sortKeys,
   waitsOf,
 } from "./reduce.ts";
@@ -31,6 +32,24 @@ export function legalActions(state: GameState, seat: Seat): Action[] {
 
   if (state.phase === "draw") {
     return state.turn === seat ? [{ type: "Draw", seat }] : [];
+  }
+
+  if (state.phase === "exchange") {
+    if (state.turn !== seat) return [];
+    const player = state.players.find((candidate) => candidate.seat === seat)!;
+    const actions: Action[] = [];
+    for (let i = 0; i < player.hand.length; i++) {
+      for (let j = i + 1; j < player.hand.length; j++) {
+        for (let k = j + 1; k < player.hand.length; k++) {
+          actions.push({
+            type: "GoulashExchange",
+            seat,
+            tiles: [player.hand[i]!, player.hand[j]!, player.hand[k]!],
+          });
+        }
+      }
+    }
+    return actions;
   }
 
   if (state.phase === "discard") {
@@ -60,6 +79,12 @@ export function legalActions(state: GameState, seat: Seat): Action[] {
       handIsComplete(state, seat, state.lastDraw.tile) !== null
     ) {
       actions.push({ type: "Win", seat, kind: "self-drawn" });
+    }
+    if (
+      state.players.every((entry) => entry.discards.length === 0 && entry.melds.length === 0) &&
+      isFeaturelessHand(state, seat)
+    ) {
+      actions.push({ type: "RequestReshuffle", seat });
     }
     return actions;
   }
