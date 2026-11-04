@@ -33,11 +33,11 @@ const RAIL_KEY = "mahjong-rail";
 const GAME_KEY = "mahjong-game";
 const MUTE_KEY = "mahjong-mute";
 const STARTING_WALL = 92;
-const RIVER_SLOTS = 18;
 const RING_RADIUS = 31;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 
 let payload = null;
+let currentLayout = null;
 let pendingClick = null;
 let selected = null;
 let cursor = 0;
@@ -675,17 +675,54 @@ function bonusRow(entry) {
    its own player's reading order; this maps that to the screen cell, so
    every player reads their own river left to right, top to bottom. The
    first row sits flush against the centre panel and later rows grow back
-   toward the seat, which is how Tenhou fills the four blocks. */
-const RIVER_GRID = {
+   toward the seat, which is how Tenhou fills the four blocks. Legacy tables
+   keep a fixed 6x3 block; variant D uses the capacity from computeLayout. */
+const LEGACY_RIVER_GRID = {
   bottom: { cols: 6, rows: 3, flat: true, cell: (r, c) => [c, r] },
   top: { cols: 6, rows: 3, flat: true, cell: (r, c) => [5 - c, 2 - r] },
   left: { cols: 3, rows: 6, flat: false, cell: (r, c) => [2 - r, c] },
   right: { cols: 3, rows: 6, flat: false, cell: (r, c) => [r, 5 - c] },
 };
 
+function computedRiverGrid(place, columns, rows) {
+  const side = place === "left" || place === "right";
+  return {
+    cols: columns,
+    rows,
+    flat: !side,
+    cell: (index) => {
+      if (place === "bottom") {
+        return [index % columns, Math.floor(index / columns)];
+      }
+      if (place === "top") {
+        return [
+          columns - 1 - (index % columns),
+          rows - 1 - Math.floor(index / columns),
+        ];
+      }
+      const column = columns - 1 - Math.floor(index / rows);
+      const row = index % rows;
+      return place === "right"
+        ? [Math.floor(index / rows), rows - 1 - row]
+        : [column, row];
+    },
+  };
+}
+
+function riverGrid(place) {
+  if (!document.documentElement.classList.contains("variant-d")) {
+    return LEGACY_RIVER_GRID[place];
+  }
+  return computedRiverGrid(
+    place,
+    currentLayout?.riverColumns ?? 6,
+    currentLayout?.riverRows ?? 4,
+  );
+}
+
 function riverWrapper(entry) {
   const place = PLACE[entry.seat];
-  const grid = RIVER_GRID[place];
+  const grid = riverGrid(place);
   const river = div(
     `river ${grid.flat ? "river-flat" : "river-side"} river-${place}`,
   );
@@ -696,9 +733,9 @@ function riverWrapper(entry) {
 
   // The reserved block is decided before the first discard. Each screen
   // cell maps back to the throw index that belongs there.
-  const cells = new Array(RIVER_SLOTS);
-  for (let index = 0; index < RIVER_SLOTS; index++) {
-    const [x, y] = grid.cell(Math.floor(index / 6), index % 6);
+  const cells = new Array(grid.cols * grid.rows);
+  for (let index = 0; index < cells.length; index++) {
+    const [x, y] = grid.cell(index);
     cells[y * grid.cols + x] = index;
   }
 
@@ -832,6 +869,7 @@ function applyLayout() {
     height: window.innerHeight,
     ...layoutSpec(window.innerWidth, window.innerHeight),
   });
+  currentLayout = layout;
   const root = document.documentElement.style;
   const phone = layout.mode === "phone";
   document.documentElement.classList.toggle("phone", phone);
@@ -847,7 +885,12 @@ function applyLayout() {
     "--layout-back-h",
     px(Math.min(layout.tileWidth * 0.96, (sideHeight - 12) / 13)),
   );
-  root.setProperty("--layout-river-columns", String(layout.riverColumns));
+  root.setProperty("--river-columns", String(layout.riverColumns));
+  root.setProperty("--river-rows", String(layout.riverRows));
+  root.setProperty("--river-tile-w", px(layout.riverFlatTileWidth));
+  root.setProperty("--river-tile-h", px(layout.riverFlatTileHeight));
+  root.setProperty("--river-side-tile-w", px(layout.riverSideTileWidth));
+  root.setProperty("--river-side-tile-h", px(layout.riverSideTileHeight));
   const setRect = (name, rect) => {
     root.setProperty(`--layout-${name}-x`, px(rect[0]));
     root.setProperty(`--layout-${name}-y`, px(rect[1]));

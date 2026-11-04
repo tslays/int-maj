@@ -44,6 +44,10 @@ interface Measurement {
   readonly handClientWidth: number;
   readonly lastTileDrawn: boolean;
   readonly visibleBadges: number;
+  readonly riverTiles: readonly Rect[];
+  readonly riverZones: Readonly<Record<"top" | "left" | "right" | "bottom", Rect | null>>;
+  readonly riverSlots: Readonly<Record<"top" | "left" | "right" | "bottom", readonly Rect[]>>;
+  readonly firstDiscards: Readonly<Record<"top" | "left" | "right" | "bottom", Rect | null>>;
 }
 
 const SIZES = [
@@ -194,7 +198,25 @@ const MEASURE = `(() => {
   const handTile = R(document.querySelector("#hand .hand-tile"));
   const lastTile = document.querySelector("#hand .hand-tile:last-child");
 
+  const riverZones = {};
+  const riverSlots = {};
+  const firstDiscards = {};
+  for (const place of ["top", "left", "right", "bottom"]) {
+    const river = document.querySelector("#river-" + place + " .river");
+    riverZones[place] = R(river);
+    riverSlots[place] = river === null
+      ? []
+      : [...river.querySelectorAll(".river-slot")].map(R);
+    const first = river === null ? null : river.querySelector(".tile.first");
+    firstDiscards[place] = first === null ? null : R(first);
+  }
+  const riverTiles = [...document.querySelectorAll(".river .tile")].map(R);
+
   return {
+    riverTiles,
+    riverZones,
+    riverSlots,
+    firstDiscards,
     rects,
     overlaps: collisions,
     outside,
@@ -215,10 +237,116 @@ let browser: { kill: (signal: NodeJS.Signals) => boolean };
 let server: { url: string; stop: () => Promise<void> };
 let profile: string;
 
+/** Fill every reserved river slot so capacity is exercised, not just the
+    scenario's opening discards. */
+const FILL_RIVERS = `(() => {
+  const template = document.querySelector("#hand .hand-tile .tile");
+  if (template === null) throw new Error("no hand tile to copy into the rivers");
+  for (const river of document.querySelectorAll(".river")) {
+    const slots = [...river.querySelectorAll(".river-slot")];
+    slots.forEach((slot, index) => {
+      slot.removeAttribute("aria-hidden");
+      const tile = template.cloneNode(true);
+      slot.replaceChildren(tile);
+      if (index === 0) tile.classList.add("first");
+    });
+  }
+  return [...document.querySelectorAll(".river")].map(
+    (river) => river.querySelectorAll(".river-slot").length,
+  );
+})()`;
+
 async function measure(width: number, height: number): Promise<Measurement> {
   await setViewport(cdp, sessionId, width, height);
   await navigate(cdp, sessionId, `${server.url}/?state=turn&variant=d`);
+  await evaluate(cdp, sessionId, FILL_RIVERS);
+  await evaluate(
+    cdp,
+    sessionId,
+    `(() => {
+      const { promise, resolve } = Promise.withResolvers();
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+      return promise;
+    })()`,
+  );
   return evaluate<Measurement>(cdp, sessionId, MEASURE);
+}
+
+function overlapArea(a: Rect, b: Rect): number {
+  const width = Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0]);
+  const height = Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]);
+  return Math.max(0, Math.min(width, height));
+}
+
+function assertRivers(
+  measurement: Measurement,
+  expected: ReturnType<typeof expectedLayout>,
+  label: string,
+): void {
+  const columns = expected.riverColumns;
+  const rows = expected.riverRows;
+  const capacity = columns * rows;
+  const obstacles: Array<[string, Rect]> = [
+    ["hand band", measurement.rects.handBand!],
+    ["centre", measurement.rects.centre!],
+    ["top seat", measurement.rects.seatTop!],
+    ["left seat", measurement.rects.seatLeft!],
+    ["right seat", measurement.rects.seatRight!],
+  ].filter((entry): entry is [string, Rect] => entry[1] !== null);
+
+  assert.equal(
+    measurement.riverTiles.length,
+    4 * capacity,
+    `${label}: expected a full river of ${capacity} per seat`,
+  );
+  for (const tile of measurement.riverTiles) {
+    for (const [name, obstacle] of obstacles) {
+      assert.ok(
+        overlapArea(tile, obstacle) <= 0.5,
+        `${label}: discard ${tile} intersects the ${name}`,
+      );
+    }
+  }
+
+  for (const place of ["top", "left", "right", "bottom"] as const) {
+    const side = place === "left" || place === "right";
+    const zone = measurement.riverZones[place];
+    assert.ok(zone !== null, `${label}: missing ${place} river`);
+    const slots = measurement.riverSlots[place];
+    assert.equal(slots.length, capacity, `${label}: ${place} river slots`);
+    const expectedTile = side
+      ? expected.riverSideTileWidth
+      : expected.riverFlatTileWidth;
+    for (const slot of slots) {
+      const width = side ? slot[3] : slot[2];
+      const height = side ? slot[2] : slot[3];
+      assert.ok(
+        Math.abs(width - expectedTile) <= 0.5,
+        `${label}: ${place} river tile ${width}, solver says ${expectedTile}`,
+      );
+      assert.ok(
+        Math.abs(height / width - 4 / 3) <= 0.02,
+        `${label}: ${place} river tile ${width}x${height} is not 3:4`,
+      );
+      assert.ok(
+        width <= zone[2] / columns + 0.5,
+        `${label}: ${place} tile wider than regionWidth/columns`,
+      );
+      assert.ok(
+        width <= zone[3] / rows + 0.5,
+        `${label}: ${place} tile taller than regionHeight/rows`,
+      );
+    }
+    const first = measurement.firstDiscards[place];
+    assert.ok(first !== null, `${label}: ${place} first discard missing`);
+    assert.ok(
+      first[0] >= zone[0] - 1 &&
+        first[1] >= zone[1] - 1 &&
+        first[0] + first[2] <= zone[0] + zone[2] + 1 &&
+        first[1] + first[3] <= zone[1] + zone[3] + 1,
+      `${label}: ${place} first discard escapes its river region`,
+    );
+  }
 }
 
 function assertBadges(
@@ -316,11 +444,9 @@ describe("variant D computed geometry", () => {
   for (const [width, height, mode] of SIZES) {
     it(`${width}x${height} meets the computed-layout contract`, async () => {
       const expected = expectedLayout(width, height, mode);
-      assertGeometry(
-        await measure(width, height),
-        expected,
-        `${width}x${height}`,
-      );
+      const measurement = await measure(width, height);
+      assertRivers(measurement, expected, `${width}x${height}`);
+      assertGeometry(measurement, expected, `${width}x${height}`);
     });
   }
 });

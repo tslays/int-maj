@@ -61,6 +61,42 @@ describe("computeLayout", () => {
         assert.equal(result.handWidth, HAND_TILE_COUNT * result.tileWidth + 13 * result.gap);
       }
 
+      const capacity = result.riverColumns * result.riverRows;
+      assert.deepEqual(
+        [result.riverColumns, result.riverRows],
+        mode === "phone"
+          ? width > height
+            ? [5, 5]
+            : [4, 6]
+          : [6, 4],
+      );
+      for (const [place, side] of [["top", false], ["bottom", false], ["left", true], ["right", true]] as const) {
+        const region = result.rivers[place as keyof typeof result.rivers];
+        const tileW = side ? result.riverSideTileWidth : result.riverFlatTileWidth;
+        const tileH = side ? result.riverSideTileHeight : result.riverFlatTileHeight;
+        assert.ok(
+          tileW <= region[2] / result.riverColumns + 0.01,
+          `${width}: ${place} tile exceeds regionWidth/columns`,
+        );
+        assert.ok(
+          tileW <= region[3] / result.riverRows + 0.01,
+          `${width}: ${place} tile exceeds regionHeight/rows`,
+        );
+        assert.ok(
+          Math.abs(tileH / tileW - 4 / 3) <= 0.001,
+          `${width}: ${place} river tile is not 3:4`,
+        );
+        const usedWidth = side
+          ? result.riverColumns * tileH + (result.riverColumns - 1) * result.riverGap
+          : result.riverColumns * tileW + (result.riverColumns - 1) * result.riverGap;
+        const usedHeight = side
+          ? result.riverRows * tileW + (result.riverRows - 1) * result.riverGap
+          : result.riverRows * tileH + (result.riverRows - 1) * result.riverGap;
+        assert.ok(usedWidth <= region[2] + 0.01, `${width}: ${place} river too wide`);
+        assert.ok(usedHeight <= region[3] + 0.01, `${width}: ${place} river too tall`);
+        assert.ok(capacity >= 18, `${width}: river capacity`);
+      }
+
       const regions = phone
         ? [
             result.centre,
