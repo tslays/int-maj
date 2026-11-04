@@ -34,6 +34,8 @@ export interface Hand {
   readonly selfDrawn: boolean;
   readonly seatWind: Wind;
   readonly prevailingWind: Wind;
+  /** Scoring profile; the Western game is the default. */
+  readonly variant: "western" | "chinese";
 }
 
 export interface MeldInput {
@@ -51,6 +53,7 @@ export interface HandInput {
   readonly selfDrawn?: boolean;
   readonly seatWind?: Wind;
   readonly prevailingWind?: Wind;
+  readonly variant?: "western" | "chinese";
 }
 
 export function meld(input: MeldInput): Meld {
@@ -97,6 +100,7 @@ export function createHand(input: HandInput): Hand {
     selfDrawn: input.selfDrawn ?? false,
     seatWind: input.seatWind ?? "E",
     prevailingWind: input.prevailingWind ?? "E",
+    variant: input.variant ?? "western",
   };
 }
 

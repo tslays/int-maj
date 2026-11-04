@@ -2445,4 +2445,21 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       ),
   },
 
+  {
+    id: "chinese-ordinary",
+    name: "Chinese Ordinary Hand",
+    pages: [28, 62],
+    category: "plain",
+    tier: "calculate",
+    exposedTier: "calculate",
+    requiresSelfDrawn: false,
+    description:
+      "Four sets of pungs, kongs or chows in any suits, plus a pair; any number of chows is allowed.",
+    source: "Illustrated Chinese game, p. 28; summary p. 62.",
+    match: ({ hand, shape }) =>
+      hand.variant === "chinese" &&
+      shape.total === 14 + shape.kongCount &&
+      decomposeStandard(shape).length > 0,
+  },
+
 ]);

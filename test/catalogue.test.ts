@@ -328,6 +328,16 @@ export const FIXTURES: Readonly<Record<string, Fixture>> = {
       concealed: "dG dG dG dG b2 b2 b3 b3 b4 b4 b6 b6 b8 b8",
     },
   },
+  "chinese-ordinary": {
+    positive: {
+      concealed: "b1 b2 b3 c1 c2 c3 o1 o2 o3 o4 o5 o6 b5 b5",
+      variant: "chinese",
+    },
+    negative: {
+      concealed: "b1 b2 b3 c1 c2 c3 o1 o2 o3 o4 o5 o6 b5 b5",
+      variant: "western",
+    },
+  },
   "buried-treasure": {
     positive: {
       concealed: "b1 b2 b3 b2 b3 b4 b4 b5 b6 b7 b8 b9 b5 b5",

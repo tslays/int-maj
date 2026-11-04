@@ -140,6 +140,8 @@ export interface GameState {
     readonly back: number;
     /** The loose tiles lifted at the break; replacements come from here. */
     readonly loose: readonly string[];
+    /** Chinese game: the last 14 tiles, used only for kong replacements. */
+    readonly dead?: readonly string[];
   };
   readonly turn: Seat;
   readonly phase: Phase;

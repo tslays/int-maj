@@ -33,6 +33,7 @@ export interface FixtureOptions {
   readonly seasons?: Partial<Record<Seat, string | readonly string[]>>;
   readonly wall?: readonly string[];
   readonly loose?: readonly string[];
+  readonly dead?: readonly string[];
   readonly phase?: Phase;
   readonly turn?: Seat;
   readonly fishing?: readonly FishingState[];
@@ -48,7 +49,10 @@ export interface FixtureOptions {
 }
 
 export function fixture(options: FixtureOptions = {}): GameState {
-  const base = newGame(options.seed ?? "fixture", { dealer: options.dealer ?? "E" }).state;
+  const base = newGame(options.seed ?? "fixture", {
+    dealer: options.dealer ?? "E",
+    variant: options.variant,
+  }).state;
   const state = JSON.parse(serialize(base));
   const dealer = options.dealer ?? "E";
   state.dealer = dealer;
@@ -96,6 +100,11 @@ export function fixture(options: FixtureOptions = {}): GameState {
     front: 0,
     back: wall.length - 1,
     loose: options.loose ? [...options.loose] : [],
+    dead: options.dead
+      ? [...options.dead]
+      : base.wall.dead
+        ? [...base.wall.dead]
+        : undefined,
   };
   return state as GameState;
 }

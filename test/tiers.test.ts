@@ -24,6 +24,7 @@ const PRINTED: Readonly<
   "dragons-teeth": ["limit", "limit", 1000],
   "all-pair-jade": ["limit", null, 1000],
   "buried-treasure": ["calculate", null, null],
+  "chinese-ordinary": ["calculate", "calculate", null],
   "all-kong": ["limit", "limit", 1000],
   "mixed-pung": ["limit", null, 1000],
   "unique-wonder": ["double", null, 2000],
