@@ -149,7 +149,7 @@ board's width alone decides every tile, river, rack and dial.
 | `--back-ratio-w` | `0.73` | A concealed back's width |
 | `--back-ratio-h` | `0.96` | A concealed back's height |
 | `--meld-ratio` | `0.45` | A meld tile |
-| `--draw-gap-ratio` | `0.4` | The drawn tile's extra break |
+| `--draw-gap-ratio` | `0.4` | The drawn tile's extra break on wide tables |
 | `--art-sm-w` | `hand-w * 0.22` | Wait, variant art |
 | `--art-md-w` | `hand-w * 0.24` | Bonus tiles, claim button art |
 | `--art-lg-w` | `hand-w * 0.30` | Claim head, discard action art |

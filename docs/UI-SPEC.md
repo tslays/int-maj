@@ -129,8 +129,23 @@ rects win until the formula changes.
 |---|---|---|
 | Desktop | 1440x900, 1280x800, 1024x768 | As above; hand band 12% of height |
 | Tablet | 1024x768, 834x1112 | Same formulas; hand band 14% |
-| Phone landscape | 844x390, 932x430 | Board fills the width; hand band 24%; rivers 4 columns; seat badges move into the hand row |
-| Phone portrait | 390x844, 430x932 | Rotate the table: rivers 3 columns, hand band 18%, controls full width under the hand |
+| Phone landscape | 844x390, 932x430 | Board fills the height; rivers 4 columns; 14 touching hand tiles across the width, controls above the hand |
+| Phone portrait | 390x844, 430x932 | Rotate the table: rivers 3 columns; 14 touching hand tiles across the width, controls full width above the hand |
 
 Portrait is a real target, not a fallback: the same formulas must hold with
 `river_columns` as a breakpoint variable instead of a constant.
+
+## Phone: hand fills the width, board keeps its own scale
+
+Owner rule (2026-11-04): on a phone the hand row shows all 14 tiles at once,
+none clipped, with **no gap between tiles**. Hand tile width is
+`floor(screenWidth / 14)`; the drawn tile is marked by a lift or outline, never
+by a gap, and stays in its ordered position at the right end. No horizontal
+scrolling in the hand.
+
+The board keeps an independent scale so it still fits the viewport with no
+overlaps: rivers, walls and centre are sized by board scale, the hand by screen
+width. Measured: 27 px per hand tile at 390 wide, 60 px at 844.
+
+Tests assert `handScrollWidth == clientWidth`, 14 hand tiles, zero gap between
+adjacent tiles, and tile width == floor(width / 14) at 390x844 and 844x390.
