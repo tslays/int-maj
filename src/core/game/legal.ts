@@ -42,13 +42,13 @@ export function legalActions(state: GameState, seat: Seat): Action[] {
       tile,
     }));
 
-    if (wallRemaining(state) > 0) {
+    if (wallRemaining(state) > 0 || state.wall.loose.length > 0) {
       for (const tile of distinct(player.hand)) {
         const copies = player.hand.filter((key) => key === tile).length;
         if (copies === 4) actions.push({ type: "ConcealedKong", seat, tile });
       }
       for (const meld of player.melds) {
-        if (meld.kind !== "pung" || meld.exposed) continue;
+        if (meld.kind !== "pung") continue;
         const tile = meld.tiles[0]!;
         if (player.hand.includes(tile)) actions.push({ type: "AddedKong", seat, tile });
       }
@@ -82,7 +82,7 @@ export function legalActions(state: GameState, seat: Seat): Action[] {
   if (state.phase === "claim") {
     const window = state.claimWindow;
     if (window === null || state.turn !== seat || window.pending[0] !== seat) return [];
-    const options = claimOptions(state, seat, window.tile, window.discarder);
+    const options = claimOptions(state, seat, window.tile, window.discarder, window.kind);
     const actions: Action[] = options.map((option) => ({
       type: "Claim",
       seat,

@@ -289,7 +289,7 @@ describe("claims", () => {
     );
   });
 
-  it("refuses a chow from a seat that is not on the discarder's left", () => {
+  it("refuses a chow from a seat that is not on the discarder's right unless it wins", () => {
     const discarded = play(chowState(), { type: "Discard", seat: "E", tile: "o5" });
     const afterPass = play(discarded.state, { type: "Pass", seat: "S" });
     const wActions = legalActions(afterPass.state, "W");
@@ -298,11 +298,11 @@ describe("claims", () => {
     playError(
       afterPass.state,
       { type: "Claim", seat: "W", kind: "chow", tiles: ["o4", "o5", "o6"] },
-      /on your left/,
+      /on your right/,
     );
   });
 
-  it("never lets a chow complete the hand", () => {
+  it("allows a chow claim that completes the hand, exposing the chow", () => {
     const state = fixture({
       hands: {
         E: "b1 b1 b1 c1 c2 c3 c7 c8 c9 wE wS wW o5 o9",
@@ -318,18 +318,132 @@ describe("claims", () => {
     const sActions = legalActions(discarded.state, "S");
     assert.ok(sActions.some((action) => action.type === "Claim" && action.kind === "mahjong"));
     assert.ok(
-      !sActions.some(
+      sActions.some(
         (action) =>
           action.type === "Claim" &&
           action.kind === "chow" &&
           action.tiles.join(" ") === "o4 o5 o6",
       ),
     );
-    playError(
-      discarded.state,
-      { type: "Claim", seat: "S", kind: "chow", tiles: ["o4", "o5", "o6"] },
-      /illegal chow claim/,
+    const won = play(discarded.state, {
+      type: "Claim",
+      seat: "S",
+      kind: "chow",
+      tiles: ["o4", "o5", "o6"],
+    });
+    assert.equal(won.state.result?.winner, "S");
+    assert.deepEqual(won.state.players[1]!.melds, [
+      { kind: "chow", tiles: ["o4", "o5", "o6"], exposed: true },
+    ]);
+  });
+
+  it("adds the fourth tile to an exposed pung and takes a loose tile", () => {
+    const state = fixture({
+      hands: {
+        E: "b1 b5 b5 b5 b6 b7 b8 c1 c2 c3 c4",
+        S: "b7 b8 b9 c7 c8 c9 o1 o2 o3 wE wS wW wN",
+        W: "b2 b3 b4 b5 b6 c1 c2 c3 c4 c5 c6 c7 c8",
+        N: "b7 b8 b9 c7 c8 c9 o1 o2 o3 wE wS wW wN",
+      },
+      melds: {
+        E: [{ kind: "pung", tiles: ["b1", "b1", "b1"], exposed: true }],
+      },
+      wall: ["o1", "o2", "o3", "o9"],
+      phase: "discard",
+      turn: "E",
+      lastDraw: { seat: "E", tile: "b1", end: "front" },
+    });
+    const result = play(state, { type: "AddedKong", seat: "E", tile: "b1" });
+    assert.deepEqual(result.state.players[0]!.melds, [
+      { kind: "kong", tiles: ["b1", "b1", "b1", "b1"], exposed: true },
+    ]);
+    assert.equal(result.state.phase, "discard");
+    assert.equal(result.state.lastDraw?.end, "loose");
+  });
+
+  it("lets another player rob an added kong to win", () => {
+    const state = fixture({
+      hands: {
+        E: "b1 b5 b5 b5 b6 b7 b8 c1 c2 c3 c4",
+        S: "b1 b1 b2 b3 b4 b5 b5 b5 b7 b7 b7 b9 b9",
+        W: "c1 c1 c1 c2 c2 c2 c3 c3 c3 c4 c4 c4 c5",
+        N: "o1 o1 o1 o2 o2 o2 o3 o3 o3 o4 o4 o4 o5",
+      },
+      melds: {
+        E: [{ kind: "pung", tiles: ["b1", "b1", "b1"], exposed: true }],
+      },
+      wall: ["o1", "o2", "o3", "o9"],
+      phase: "discard",
+      turn: "E",
+      lastDraw: { seat: "E", tile: "b1", end: "front" },
+    });
+    const opened = play(state, { type: "AddedKong", seat: "E", tile: "b1" });
+    assert.equal(opened.state.phase, "claim");
+    assert.equal(opened.state.claimWindow?.kind, "kong");
+    const won = play(opened.state, {
+      type: "Claim",
+      seat: "S",
+      kind: "mahjong",
+      tiles: ["b1"],
+    });
+    assert.equal(won.state.result?.winner, "S");
+    assert.deepEqual(won.state.players[0]!.melds, [
+      { kind: "pung", tiles: ["b1", "b1", "b1"], exposed: true },
+    ]);
+    assert.ok(!handOf(won.state, "E").includes("b1"));
+  });
+
+  it("refuses a chow to a right-hand player who already has an exposed meld", () => {
+    const state = fixture({
+      hands: {
+        E: "b1 b1 b1 c1 c2 c3 c7 c8 c9 wE wS wW o5 o9",
+        S: "o3 o4 o6 o7 b1 b3 b5 c2 c4 c6",
+        W: "o5 o5 o3 o4 o6 o7 b2 b4 b6 c1 c3 c5 dR",
+        N: "b7 b8 b9 c7 c8 c9 o1 o2 o3 wE wS wW wN",
+      },
+      melds: {
+        S: [{ kind: "pung", tiles: ["b1", "b1", "b1"], exposed: true }],
+      },
+      wall: ["o1", "o2", "o3", "o4", "o5", "o6"],
+      phase: "discard",
+      turn: "E",
+    });
+    const discarded = play(state, { type: "Discard", seat: "E", tile: "o5" });
+    const sActions = legalActions(discarded.state, "S");
+    assert.ok(
+      !sActions.some((action) => action.type === "Claim" && action.kind === "chow"),
     );
+  });
+
+  it("ranks a winning chow above another seat's pung", () => {
+    const state = fixture({
+      hands: {
+        E: "b1 b1 b1 c1 c2 c3 c7 c8 c9 wE wS wW o5 o9",
+        S: "o1 o1 o1 o2 o2 o2 o3 o3 o3 o4 o6 o9 o9",
+        W: "o5 o5 b1 b2 b3 b4 b5 b6 b7 b8 b9 c1 c2",
+        N: "b7 b8 b9 c7 c8 c9 o1 o2 o3 wE wS wW wN",
+      },
+      wall: ["o1", "o2", "o3", "o4", "o5", "o6"],
+      phase: "discard",
+      turn: "E",
+    });
+    const discarded = play(state, { type: "Discard", seat: "E", tile: "o5" });
+    const chow = play(discarded.state, {
+      type: "Claim",
+      seat: "S",
+      kind: "chow",
+      tiles: ["o4", "o5", "o6"],
+    });
+    const pung = play(chow.state, {
+      type: "Claim",
+      seat: "W",
+      kind: "pung",
+      tiles: ["o5", "o5", "o5"],
+    });
+    assert.equal(pung.state.result?.winner, "S");
+    assert.deepEqual(pung.state.players[1]!.melds, [
+      { kind: "chow", tiles: ["o4", "o5", "o6"], exposed: true },
+    ]);
   });
 
   it("resolves an all-pass claim window by advancing the turn", () => {
@@ -501,10 +615,10 @@ describe("illegal actions", () => {
       pattern: /four copies/,
     },
     {
-      name: "added kong without a concealed pung",
+      name: "added kong without a pung",
       state: base,
       action: { type: "AddedKong", seat: "E", tile: "b1" },
-      pattern: /concealed pung/,
+      pattern: /needs your own pung/,
     },
     {
       name: "self-drawn win with an incomplete hand",
