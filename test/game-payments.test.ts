@@ -5,6 +5,7 @@ import {
   apply,
   claimOptions,
   fishingDeclarationFor,
+  fishingValueFor,
   isApplyError,
   legalActions,
   ledgerTotals,
@@ -362,13 +363,13 @@ describe("fishing restrictions", () => {
       fishing: [{ seat: "E", wait: ["b7"], tier: "half" }],
     });
 
-  it("offers a fishing player no pung, chow or claim-kong", () => {
+  it("still offers a fishing player pung and kong claims", () => {
     const state = fishingState();
     const options = claimOptions(state, "E", "o5", "S");
-    assert.deepEqual(options, []);
+    assert.ok(options.some((option) => option.kind === "pung"));
   });
 
-  it("rejects a fishing claim with the rule name", () => {
+  it("accepts a fishing player's pung claim", () => {
     const state = fixture({
       hands: {
         E: "o5 o5 b1 b1 b2 b2 b3 b3 b4 b4 b5 b5 b7",
@@ -387,21 +388,15 @@ describe("fishing restrictions", () => {
         claims: [],
       },
     });
-    playError(
-      state,
-      { type: "Claim", seat: "E", kind: "pung", tiles: ["o5", "o5", "o5"] },
-      /fishing player may not claim/,
-    );
-    playError(
-      state,
-      { type: "Claim", seat: "E", kind: "kong", tiles: ["o5", "o5", "o5", "o5"] },
-      /fishing player may not claim/,
-    );
-    playError(
-      state,
-      { type: "Claim", seat: "E", kind: "chow", tiles: ["o4", "o5", "o6"] },
-      /fishing player may not claim/,
-    );
+    const claimed = play(state, {
+      type: "Claim",
+      seat: "E",
+      kind: "pung",
+      tiles: ["o5", "o5", "o5"],
+    });
+    assert.deepEqual(claimed.state.players[0]!.melds, [
+      { kind: "pung", tiles: ["o5", "o5", "o5"], exposed: true },
+    ]);
   });
 
   it("keeps a concealed kong legal and the fixed wait unchanged", () => {
@@ -455,7 +450,23 @@ describe("fishing restrictions", () => {
     assert.deepEqual(kong.state.fishing, [{ seat: "E", wait: ["b7"], tier: "half" }]);
   });
 
-  it("refuses fishing when every copy of the wait is already dead", () => {
+  it("scores an ordinary fishing hand from the ground score without the Mah Jong 20", () => {
+    const state = fixture({
+      hands: {
+        E: "b1 b1 b1 b5 b5 b5 b6 b7 b8 b9 b9 b9 wE",
+        S: "c1 c2 c3 c4 c5 c6 c7 c8 c9 wE wS wW o5",
+        W: "c1 c1 c1 c2 c2 c2 c3 c3 c3 c4 c4 c4 c5",
+        N: "o1 o1 o1 o2 o2 o2 o3 o3 o3 o4 o4 o4 o5",
+      },
+      wall: ["o6"],
+      phase: "discard",
+      turn: "E",
+    });
+    const value = fishingValueFor(state, "E", ["wE"]);
+    assert.deepEqual(value, { tier: "calculate", value: 224 });
+  });
+
+  it("allows fishing when every copy of the wait is already dead", () => {
     const state = fixture({
       hands: {
         E: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 o9",
@@ -469,8 +480,8 @@ describe("fishing restrictions", () => {
       turn: "E",
     });
     const discarded = play(state, { type: "Discard", seat: "E", tile: "o9" });
-    assert.notEqual(discarded.state.phase, "announce");
-    assert.equal(fishingDeclarationFor(discarded.state, "E"), null);
+    assert.equal(discarded.state.phase, "announce");
+    assert.notEqual(fishingDeclarationFor(discarded.state, "E"), null);
   });
 });
 

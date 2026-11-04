@@ -4,7 +4,6 @@ import { describe, it } from "node:test";
 import {
   declareFishing,
   fishingTotal,
-  isWaitAlive,
   settleFishing,
 } from "../src/core/fishing.ts";
 import { TIER_FISHING } from "../src/core/patterns/types.ts";
@@ -30,20 +29,13 @@ describe("fishing declaration", () => {
     assert.deepEqual(declaration.wait, ["c3", "c6"]);
   });
 
-  it("is illegal once every copy of every wait tile is dead", () => {
-    assert.equal(isWaitAlive(["o5"], { o5: 3 }), true);
-    assert.equal(isWaitAlive(["o5"], { o5: 4 }), false);
-    assert.equal(isWaitAlive(["o5", "b2"], { o5: 4, b2: 1 }), true);
-    assert.throws(
-      () =>
-        declareFishing({
-          player: "west",
-          wait: "o5",
-          tier: "double",
-          deadTiles: { o5: 4 },
-        }),
-      /dead/,
-    );
+  it("accepts a dead wait: the printed pages set no dead-wait restriction", () => {
+    const declaration = declareFishing({
+      player: "west",
+      wait: "o5",
+      tier: "double",
+    });
+    assert.deepEqual(declaration.wait, ["o5"]);
   });
 
   it("rejects an empty wait", () => {
@@ -82,15 +74,26 @@ describe("fishing settlement", () => {
       half: 200,
       limit: 400,
       middle: 600,
-      double: 800,
+      double: 500,
       calculate: null,
     });
     const awards = settleFishing(declarations, "east");
     assert.deepEqual(
       awards.map((award) => award.points),
-      [200, 800],
+      [200, 500],
     );
-    assert.deepEqual(fishingTotal(awards), { points: 1000, unknown: 0 });
+    assert.deepEqual(fishingTotal(awards), { points: 700, unknown: 0 });
+  });
+
+  it("uses a declaration's printed figure when it has one", () => {
+    const special = declareFishing({
+      player: "west",
+      wait: "b3",
+      tier: "double",
+      value: 800,
+    });
+    const awards = settleFishing([special], "east");
+    assert.deepEqual(awards.map((award) => award.points), [800]);
   });
 
   it("sums known awards and counts unknown ones", () => {

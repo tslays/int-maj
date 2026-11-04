@@ -29,7 +29,7 @@ export const TIER_FISHING: Readonly<Record<Tier, number | null>> = Object.freeze
   half: 200,
   limit: 400,
   middle: 600,
-  double: 800,
+  double: 500,
   calculate: null,
 });
 

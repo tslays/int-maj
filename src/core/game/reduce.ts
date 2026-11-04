@@ -21,7 +21,7 @@
 import { createHand, type Hand, type Meld } from "../hand.ts";
 import { matchHand } from "../match.ts";
 import { scoreHand, type ScoreResult } from "../score.ts";
-import { declareFishing, isWaitAlive, settleFishing } from "../fishing.ts";
+import { declareFishing, settleFishing } from "../fishing.ts";
 import { TIER_FISHING, TIER_POINTS, type Tier } from "../patterns/types.ts";
 import {
   isBonus,
@@ -196,36 +196,33 @@ export function waitsOf(state: GameState, seat: Seat): string[] {
   return waits;
 }
 
-/**
- * Dead-tile census for the fishing rule (p. 34): discards + melds of every
- * seat, plus the declaring player's own concealed hand. Other concealed
- * hands are unknown to the table and are not counted.
- */
-export function deadTilesFor(state: GameState, seat: Seat): Record<string, number> {
-  const counts: Record<string, number> = {};
-  const add = (key: string) => {
-    counts[key] = (counts[key] ?? 0) + 1;
-  };
-  for (const player of state.players) {
-    for (const key of player.discards) add(key);
-    for (const meld of player.melds) for (const key of meld.tiles) add(key);
-  }
-  for (const key of playerOf(state, seat).hand) add(key);
-  return counts;
-}
-
 function tierRank(tier: Tier): number {
   const points = TIER_POINTS[tier];
   return points === null ? -1 : points;
 }
 
+/** Companion-only double-limit hands keep their printed 800 fishing figure. */
+const COMPANION_DOUBLE_FISHING = new Set(["up-you-go", "down-you-go"]);
+
+function fishingFigure(tier: Tier, patternId: string): number | null {
+  if (tier === "double" && COMPANION_DOUBLE_FISHING.has(patternId)) return 800;
+  if (tier === "calculate") return null;
+  return TIER_FISHING[tier];
+}
+
 /**
- * The tier a fishing declaration announces: the highest tier among the hands
- * that would complete the declared wait. Calculate stays Calculate.
+ * The announced tier and printed fishing figure: the highest among the hands
+ * that would complete the wait. An ordinary/Purity/All Honour completion uses
+ * its ground score without the 20 for Mah Jong (I p. 32).
  */
-export function fishingTier(state: GameState, seat: Seat, wait: readonly string[]): Tier | null {
-  let best: Tier | null = null;
-  let calculate = false;
+export function fishingValueFor(
+  state: GameState,
+  seat: Seat,
+  wait: readonly string[],
+): { readonly tier: Tier; readonly value: number | null } | null {
+  let bestTier: Tier | null = null;
+  let bestValue: number | null = null;
+  let bestRank = -1;
   for (const tile of wait) {
     const hand = buildHand(state, seat, {
       extra: tile,
@@ -233,27 +230,35 @@ export function fishingTier(state: GameState, seat: Seat, wait: readonly string[
       selfDrawn: true,
     });
     if (hand === null) continue;
-    const score = scoreHand(hand);
-    const tier = score.winning?.tier ?? null;
-    if (tier === null) continue;
-    if (tier === "calculate") calculate = true;
-    else if (best === null || tierRank(tier) > tierRank(best)) best = tier;
+    const score = scoreHand(hand, { withoutMahJongBonus: true });
+    const winning = score.winning;
+    if (winning === null) continue;
+    const value =
+      winning.tier === "calculate"
+        ? score.points
+        : fishingFigure(winning.tier, winning.pattern.id);
+    if (value === null) continue;
+    const rank = tierRank(winning.tier);
+    if (bestTier === null || rank > bestRank) {
+      bestTier = winning.tier;
+      bestValue = value;
+      bestRank = rank;
+    }
   }
-  return best ?? (calculate ? "calculate" : null);
+  return bestTier === null ? null : { tier: bestTier, value: bestValue };
 }
 
 /** Legal fishing declaration for the discarder, or null when none is legal. */
 export function fishingDeclarationFor(
   state: GameState,
   seat: Seat,
-): { readonly wait: string[]; readonly tier: Tier } | null {
+): { readonly wait: string[]; readonly tier: Tier; readonly value: number | null } | null {
   if (state.fishing.some((declaration) => declaration.seat === seat)) return null;
   const wait = waitsOf(state, seat);
   if (wait.length === 0) return null;
-  if (!isWaitAlive(wait, deadTilesFor(state, seat))) return null;
-  const tier = fishingTier(state, seat, wait);
-  if (tier === null) return null;
-  return { wait, tier };
+  const scored = fishingValueFor(state, seat, wait);
+  if (scored === null) return null;
+  return { wait, tier: scored.tier, value: scored.value };
 }
 
 function chowKeys(suit: PlayTile, start: number): string[] {
@@ -294,12 +299,10 @@ export function claimOptions(
   const player = playerOf(state, seat);
   if (effectiveCount(player) !== 13) return [];
   const options: ClaimRecord[] = [];
-  const fishing = state.fishing.some((declaration) => declaration.seat === seat);
 
   if (winsOnDiscard(state, seat, tile)) {
     options.push({ seat, kind: "mahjong", tiles: [tile] });
   }
-  if (fishing) return options;
   if (source === "kong") return options;
 
   const copies = countOf(player.hand, tile);
@@ -799,13 +802,6 @@ function applyClaim(
     window.discarder,
     window.kind,
   );
-  const fishing = draft.fishing.some((declaration) => declaration.seat === seat);
-  if (fishing && kind !== "mahjong") {
-    return {
-      error: "fishing player may not claim a pung, chow or kong from a discard",
-      state: draft as GameState,
-    };
-  }
   const match = options.find(
     (option) => option.kind === kind && sameTiles(option.tiles, tiles),
   );
@@ -855,7 +851,7 @@ function applyDeclareFishing(
   if (draft.turn !== seat) return { error: `not your turn: ${seat}`, state: draft as GameState };
   const declaration = fishingDeclarationFor(draft as GameState, seat);
   if (declaration === null) {
-    return { error: "fishing is not legal: no live wait", state: draft as GameState };
+    return { error: "fishing is not legal: no wait to announce", state: draft as GameState };
   }
   if (!sameTiles(declaration.wait, wait)) {
     return {
@@ -869,7 +865,7 @@ function applyDeclareFishing(
       player: seat,
       wait: declaration.wait,
       tier: declaration.tier,
-      deadTiles: deadTilesFor(draft as GameState, seat),
+      value: declaration.value,
     });
   } catch (error) {
     return {
@@ -881,6 +877,7 @@ function applyDeclareFishing(
     seat,
     wait: [...fixed.wait],
     tier: fixed.tier,
+    value: fixed.value ?? null,
   };
   draft.fishing.push(entry);
   emit({
