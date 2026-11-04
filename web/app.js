@@ -788,11 +788,44 @@ function renderRivers() {
   }
 }
 
+function renderHandBadge() {
+  const badge = $("#hand-badge");
+  if (badge === null) return;
+  const self = payload.table.find((entry) => entry.isYou);
+  if (self === undefined) {
+    badge.textContent = "";
+    return;
+  }
+  badge.textContent = `${self.wind} ${self.handCount}`;
+  badge.classList.toggle("is-turn", seatIsTurn(self.seat));
+  badge.setAttribute(
+    "aria-label",
+    `${WIND_NAME[self.wind]} wind, ${self.handCount} tiles, you`,
+  );
+  // Sit clear of the hand's left edge, like every opponent badge sits clear of
+  // its rack, rather than at the band's edge.
+  const hand = $("#hand");
+  const parent = badge.offsetParent;
+  if (hand !== null && parent !== null) {
+    const gap = 2;
+    const handRect = hand.getBoundingClientRect();
+    const parentRect = parent.getBoundingClientRect();
+    const offset = handRect.left - parentRect.left - badge.offsetWidth - gap;
+    requestAnimationFrame(() => {
+      const settled = hand.getBoundingClientRect();
+      const hostRect = parent.getBoundingClientRect();
+      badge.style.left = `${Math.max(0, settled.left - hostRect.left - badge.offsetWidth - gap)}px`;
+    });
+  }
+}
+
 function renderSeats() {
   for (const entry of payload.table) {
     if (entry.isYou) renderSelf(entry);
     else renderSeat(entry);
   }
+  renderSeatLine();
+  renderHandBadge();
   renderRivers();
 }
 
@@ -1765,6 +1798,7 @@ function render() {
   renderSeats();
   renderCenter();
   renderHand();
+  renderHandBadge();
   renderOwnMelds();
   renderOwnBonus();
   renderActions();
