@@ -21,6 +21,7 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn, type ChildProcess } from "node:child_process";
+import { pathToFileURL } from "node:url";
 
 import { createAppServer } from "../src/server/server.ts";
 import { GameStore } from "../src/server/session.ts";
@@ -160,7 +161,7 @@ interface CdpOptions {
   readonly sessionId?: string;
 }
 
-class Cdp {
+export class Cdp {
   private readonly socket: WebSocket;
   private readonly pending = new Map<number, { resolve: (value: unknown) => void; reject: (error: Error) => void }>();
   private readonly listeners = new Map<string, Array<(params: unknown) => void>>();
@@ -231,7 +232,7 @@ function chromeCandidates(): string[] {
   return candidates.filter((candidate) => candidate.length > 0).concat([home]);
 }
 
-async function findChrome(): Promise<string> {
+export async function findChrome(): Promise<string> {
   const direct = chromeCandidates();
   for (const candidate of direct.slice(0, -1)) {
     try {
@@ -284,7 +285,7 @@ async function waitForFile(path: string, timeoutMs = 10_000): Promise<void> {
   }
 }
 
-async function connectChrome(chromePath: string): Promise<{
+export async function connectChrome(chromePath: string): Promise<{
   cdp: Cdp;
   sessionId: string;
   browser: ChildProcess;
@@ -332,7 +333,7 @@ async function connectChrome(chromePath: string): Promise<{
   return { cdp, sessionId, browser, profile };
 }
 
-async function evaluate<T>(cdp: Cdp, sessionId: string, expression: string): Promise<T> {
+export async function evaluate<T>(cdp: Cdp, sessionId: string, expression: string): Promise<T> {
   const result = await cdp.send<{
     result: { value?: unknown };
     exceptionDetails?: { text?: string; exception?: { description?: string } };
@@ -349,7 +350,7 @@ async function evaluate<T>(cdp: Cdp, sessionId: string, expression: string): Pro
   return result.result.value as T;
 }
 
-async function setViewport(cdp: Cdp, sessionId: string, width: number, height: number): Promise<void> {
+export async function setViewport(cdp: Cdp, sessionId: string, width: number, height: number): Promise<void> {
   await cdp.send({
     method: "Emulation.setDeviceMetricsOverride",
     params: { width, height, deviceScaleFactor: 1, mobile: false },
@@ -362,7 +363,7 @@ async function setViewport(cdp: Cdp, sessionId: string, width: number, height: n
   );
 }
 
-async function navigate(cdp: Cdp, sessionId: string, url: string): Promise<void> {
+export async function navigate(cdp: Cdp, sessionId: string, url: string): Promise<void> {
   const loaded = cdp.once("Page.loadEventFired", sessionId);
   await cdp.send({ method: "Page.navigate", params: { url }, sessionId });
   await loaded;
@@ -522,7 +523,7 @@ async function screenshot(cdp: Cdp, sessionId: string, path: string): Promise<vo
 
 /* -------------------------------------------------------------- server */
 
-async function startServer(): Promise<{ url: string; stop: () => Promise<void> }> {
+export async function startServer(): Promise<{ url: string; stop: () => Promise<void> }> {
   const store = new GameStore({ defaultSeed: "layout" });
   const server = createAppServer({ store });
   {
@@ -1219,4 +1220,9 @@ async function main(): Promise<void> {
   }
 }
 
-await main();
+if (
+  process.argv[1] !== undefined &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  await main();
+}
