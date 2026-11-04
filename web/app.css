@@ -2758,3 +2758,52 @@ kbd {
 .variant-d .seat-right {
   justify-content: center;
 }
+
+
+/* Phone: one screen, two independent tile scales. The hand row may overflow
+   horizontally; the board keeps its own smaller scale. */
+.variant-d.phone .hand-band {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.variant-d.phone .hand-band::-webkit-scrollbar {
+  display: none;
+}
+
+.variant-d.phone .hand-layout {
+  width: max-content;
+  min-width: max-content;
+  justify-content: flex-start;
+}
+
+.variant-d.phone .hand {
+  flex-wrap: nowrap;
+}
+
+.variant-d.phone.hand-collapsed .hand-band {
+  display: none;
+}
+
+.hand-toggle {
+  display: none;
+}
+
+.variant-d.phone .hand-toggle {
+  position: absolute;
+  z-index: 8;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-7);
+  height: var(--space-7);
+  border: var(--stroke) solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  color: var(--on-felt);
+  font: inherit;
+  cursor: pointer;
+}
