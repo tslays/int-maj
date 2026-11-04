@@ -87,6 +87,24 @@ where one exists, and may not contradict Part I.
 
 ## Milestone C — engine reconciliation
 
+The owner asked that the rules be finished before any UI work starts. Work in
+these slices, in order, one commit each, tests green at every commit
+(`npm test`), and mark the audit rows resolved in `rules/AUDIT.md` as they land.
+
+| Slice | Audit rows | What it changes | Acceptance |
+|---|---|---|---|
+| C1 Scoring | A1, A5, A23, A26 | Ground score table, doubles, limit cap, terminal-as-honour, flower/season points, no middle tier on Illustrated hands | An ordinary hand scores ground × 2^doubles capped by the limit; a printed hand scores its printed tier; both tested |
+| C2 Payments | A2, A3, A7, A16, A24, A27 | Everyone pays the winner, East doubles, losers settle differences, rounding to 100, settlement levels, careless-discard liability | A worked hand reproduces the book's 84 × 2^5 = 2688, East 2000 / others 1000; ledger sums to zero |
+| C3 Deal and wall | A9, A10, A18 | Four-tile rounds, East starts at 14 and discards first, loose tiles at the break, bonus and kong replacement from loose tiles, dice seat assignment | A seeded deal produces 14/13/13/13 with the printed order; loose tiles are consumed and replaced |
+| C4 Calls and turns | A19, A20, A21, A22 | Kong from an exposed pung on your own draw, robbing the kong, chow only by the discarder's right-hand player or to win, chow-to-win precedence | Each case has positive and negative tests |
+| C5 Fishing | A4, A6, A8 | Fishing is the state of needing one tile, announced, any discard may be taken for the win; figures are fractions of the limit; the payer question stays an explicit assumption | Fishing settlement matches the printed figures; claiming while fishing works |
+| C6 Rounds and penalties | A11, A13, A14, A15, A17, A25 | Wind of the Round progression, dealer repeat, drawn hand, goulash, kitty, penalties, reshuffle, special hands optional | A four-round game with correct winds; each penalty path tested |
+| C7 Catalogue | 12 corrections, 3 additions, C1-C9 | Fix compositions and tiers; add Buried Treasure, All Kong, Mixed Pung; remove the Companion tiers the Illustrated book overrides | Catalogue fixtures for every corrected/added hand |
+| C8 Chinese variant | A12 | 136 tiles, dead wall of 14, mixed suits, any number of chows, as a variant profile | A Chinese-game test proves the dead wall is never drawn and mixed-suit hands match |
+| C9 Text sweep | — | README, docs/UI.md and every comment describe the framework, not the old rules | grep finds no stale rule claim |
+
+
+
 Change code and tests to the audited rules, one group per commit, each commit
 citing its audit entry. Recognition and scoring stay separate layers.
 
