@@ -1,17 +1,19 @@
 /**
  * The deterministic reducer: `GameState + Action -> { state, events }`.
  *
- * Every rule from rules/archive/PLAY.md is enforced here, in one place:
- *   - the 144-tile deal, 13 each, dealer draws first (#1, #3)
- *   - flowers/seasons are bonuses replaced immediately (#2)
- *   - kongs take a loose tile from the BACK of the wall (#4, p. 34)
- *   - claim precedence mah jong > pung/kong > chow, ties nearest (#6, p. 34)
- *   - chow only from the seat on your left, never to complete (#7)
- *   - no minimum hand; any catalogue match goes out (#5)
- *   - fishing: fixed wait, no pung/chow/claim-kong afterwards (fishing DECIDED)
- *   - payments: discarder pays, self-draw from all three, dealer pays double
- *     (#8); fishing is 40% of the announced tier from each of the three
- *   - dealer repeats only on a dealer win or a drawn hand (#9, p. 34)
+ * The rules in rules/RULES.md are enforced here, in one place:
+ *   - the 144-tile Western deal or 136-tile Chinese deal; East starts at 14
+ *     and discards first
+ *   - flowers/seasons are bonuses replaced immediately; kong and bonus
+ *     replacements come from the loose tiles (Western) or dead wall (Chinese)
+ *   - claim precedence win > pung/kong > chow; a chow comes from the
+ *     discarder's right or completes the hand
+ *   - fishing is the announced state of needing one tile; it does not restrict
+ *     claims and has no dead-wait rule
+ *   - payments: all three losers pay the winner, East pays/receives double,
+ *     rounded to 100; fishing keeps the recorded payer assumption
+ *   - the Wind of the Round advances when East passes; a drawn Western hand
+ *     repeats East once and makes the next hand a Goulash
  *
  * Purity: `apply` deep-clones the input, never mutates it, never throws for an
  * ordinary illegal move (it returns `{ error, state }` with the input state
@@ -250,7 +252,7 @@ export function fishingValueFor(
   return bestTier === null ? null : { tier: bestTier, value: bestValue };
 }
 
-/** Legal fishing declaration for the discarder, or null when none is legal. */
+/** The announcement available to a player who is one tile from mah jong. */
 export function fishingDeclarationFor(
   state: GameState,
   seat: Seat,
@@ -518,7 +520,7 @@ function ledgerFor(
 
   // Fishing settles independently of the winner. The payer set is the
   // recorded assumption (each of the other three seats); East doubles as for
-  // any other score. See rules/archive/ASSUMPTIONS.md and AUDIT A7.
+  // any other score. See rules/archive/ASSUMPTIONS.md (recorded assumption) and AUDIT A7.
   const declarations = draft.fishing.map((entry) => ({
     player: entry.seat,
     wait: entry.wait,

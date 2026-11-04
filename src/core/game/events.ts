@@ -10,19 +10,19 @@
  * log is strictly ordered and gaps are visible.
  *
  * The rule each event records:
- *   Dealt                 four 13-tile hands (p. 34 deal)
- *   Drew                  an ordinary front draw (p. 34 deal)
- *   FlowerReplaced        bonus tile, immediate replacement (PLAY.md #2)
+ *   Dealt                 East 14, the others 13
+ *   Drew                  an ordinary front draw
+ *   FlowerReplaced        bonus tile, immediate loose replacement
  *   Discarded             a tile leaves the hand face up
  *   Promoted              a claim moves the turn to the claimant
- *   Claimed               pung/kong/chow, precedence p. 34
- *   KongDeclared          concealed or added kong, replacement from the back
- *   KongReplacementDrawn  the loose tile taken after a kong (p. 34)
- *   FishingDeclared       fixed wait announcement (PLAY.md, fishing)
+ *   Claimed               pung/kong/chow or a winning chow
+ *   KongDeclared          concealed or added kong
+ *   KongReplacementDrawn  the loose (or Chinese dead-wall) tile
+ *   FishingDeclared       an announced wait, not a claim restriction
  *   WinDeclared           mah jong, self-drawn or on the discard
- *   HandScored            highest tier only, never summed
+ *   HandScored            the winning pattern and its points
  *   Payments              ledger entries; each names both sides and a reason
- *   DrawnHand             wall exhausted, dealer keeps the deal (p. 34)
+ *   DrawnHand             wall exhausted
  *   NextDeal              the next hand's dealer and hand number
  */
 

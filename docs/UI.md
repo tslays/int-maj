@@ -181,7 +181,7 @@ When a claim window opens for you, play **one short, quiet cue** — enough to n
 - Claims appear as a fixed bottom-centre bar that pushes nothing else around: exactly two decisions, **Claim** (Mahjong, else pung/kong/chow) and **Dismiss**. Enter takes Claim, Space takes Dismiss, and multiple chow runs appear as clickable tile groups under the row. There are no p/c/k/m claim shortcuts.
 - Illegal actions are absent, not greyed out, except during a claim window where Pass is always present.
 - The hand's keyboard focus is a cursor you can move with arrows; 1-9 jumps to a tile.
-- End of hand: a panel over the felt, not a new page — winner, the pattern that scored with its tier, the composed tiles, each fishing settlement and the four deltas, then "Next hand" as the primary action.
+- End of hand: a panel over the felt, not a new page — winner, the pattern and the points that scored, the composed tiles, each fishing settlement and the four deltas, then "Next hand" as the primary action.
 - Never move the hand, the board's centre or the rail when a claim or a result appears: layout shifts are the main reason the current table feels unstable.
 
 ## Phases and acceptance

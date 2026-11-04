@@ -24,14 +24,15 @@ normalize an odd rule to another mahjong convention. If the source is unclear
 or silent, record the exact page, evidence, uncertainty and the narrowest
 assumption in `rules/archive/ASSUMPTIONS.md`; never quietly invent a rule.
 
-## Existing rules and code are pending audit
+## Existing rules and code
 
-`rules/archive/PLAY.md`, `rules/archive/ASSUMPTIONS.md`, `rules/archive/NOTES.md`, `rules/archive/MISSING.md`,
-`rules/.generated/pages/`, earlier OCR, the pattern table and gameplay code were built
-from earlier work. They are useful as an audit checklist, but are not
-normative and may conflict with the primary scan. Until checked page by page,
-do not claim the catalogue or runtime is faithful to the primary source.
-See `rules/SOURCE.md` for the migration status and file hierarchy.
+The rules reconciliation is complete for slices C1-C9: `rules/RULES.md` is
+the normative framework, `rules/AUDIT.md` records the closed rows and the few
+deliberately deferred table rulings, and the engine follows the framework.
+Everything under `rules/archive/` — `PLAY.md`, `ASSUMPTIONS.md`, `NOTES.md`,
+`MISSING.md` — is historical audit material, not authority. The archive still
+holds the recorded assumptions for questions both books leave open; read it
+for provenance, never as a rule source.
 
 ## Engineering invariants
 
