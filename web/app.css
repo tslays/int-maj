@@ -2776,6 +2776,19 @@ kbd {
 .variant-d.phone .hand {
   flex-wrap: nowrap;
   gap: 0;
+  width: 100%;
+}
+
+/* Tiles share the width exactly: no leftover pixel runs out as a visible seam. */
+.variant-d.phone .hand-tile {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+}
+
+.variant-d.phone .hand-tile .tile,
+.variant-d.phone .hand-tile img {
+  width: 100%;
 }
 
 /* On a phone the drawn tile is marked in place, never by a gap. */
