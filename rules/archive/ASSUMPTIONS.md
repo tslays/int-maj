@@ -179,3 +179,12 @@ fishing player still scores the fishing value for their tier. A declaration is
 illegal once every copy of the needed tile is dead (p. 34). This is modelled
 as `FishingDeclaration { player, wait, tier }`, independent of the winning
 hand.
+
+## Milestone C2 — fishing payer (retained assumption)
+
+The Illustrated book prints the fishing figures and says East pays or receives
+double, but it does not name who pays a fishing player. The engine keeps the
+recorded assumption: each of the three other seats pays the fishing award, with
+East's payment or receipt doubled like any other score. This is an assumption,
+not a printed rule; it is tracked as AUDIT A7 and must not be described as a
+source reading.

@@ -29,6 +29,8 @@ export interface FixtureOptions {
   readonly hands?: Partial<Record<Seat, string | readonly string[]>>;
   readonly melds?: Partial<Record<Seat, readonly MeldState[]>>;
   readonly discards?: Partial<Record<Seat, readonly string[]>>;
+  readonly flowers?: Partial<Record<Seat, string | readonly string[]>>;
+  readonly seasons?: Partial<Record<Seat, string | readonly string[]>>;
   readonly wall?: readonly string[];
   readonly phase?: Phase;
   readonly turn?: Seat;
@@ -66,8 +68,10 @@ export function fixture(options: FixtureOptions = {}): GameState {
           tiles: [...meld.tiles],
         }))
       : [];
-    player.flowers = [];
-    player.seasons = [];
+    const flowers = options.flowers?.[player.seat as Seat];
+    const seasons = options.seasons?.[player.seat as Seat];
+    player.flowers = flowers === undefined ? [] : keysOf(flowers);
+    player.seasons = seasons === undefined ? [] : keysOf(seasons);
     player.discards = options.discards?.[player.seat as Seat]
       ? [...options.discards[player.seat as Seat]!]
       : [];
