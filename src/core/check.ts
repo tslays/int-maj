@@ -66,7 +66,7 @@ export interface WaitReport {
   /**
    * True when the only completed hands require the tile to be drawn. Such a
    * wait cannot be claimed off a discard, but it still finishes the hand and
-   * is exactly what a fishing declaration can fix.
+   * is exactly what an announced fishing wait names.
    */
   readonly selfDrawnOnly: boolean;
   /** Catalogue matches for the completed hand, best tier first. */

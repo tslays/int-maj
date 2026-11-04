@@ -44,7 +44,7 @@ Commands (at your decision):
   c        claim chow (c <n> picks the nth chow variant)
   k        claim kong (or a concealed/added kong on your turn)
   m        claim mahjong, or go out self-drawn
-  f        declare fishing; prints the fixed wait
+  f        announce the fishing wait
   space    pass
   u        undo the previous decision
   h        help
@@ -353,7 +353,7 @@ export function describeEvent(event: Event): string {
     case "KongReplacementDrawn":
       return `${event.seat} draws the loose tile ${event.tile}`;
     case "FishingDeclared":
-      return `${event.seat} declares fishing on ${event.wait.join(" ")} (${event.tier})`;
+      return `${event.seat} announces fishing on ${event.wait.join(" ")} (${event.tier})`;
     case "WinDeclared":
       return (
         `${event.seat} wins ${event.selfDrawn ? "self-drawn" : `on ${event.from}'s discard`}` +

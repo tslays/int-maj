@@ -74,7 +74,7 @@ const TABLE = {
   },
 
   fishing: {
-    title: "Fishing declared",
+    title: "Fishing announced",
     seed: "fishing-scene-8",
     at: (view) =>
       view.phase === "discard" &&

@@ -265,8 +265,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       "pair; the pair is in the fourth set's suit or is a wind pair.",
     source: "Synopsis p. 58; short-list tier convention.",
     notes:
-      "The p. 33 hand page prints MIDDLE LIMIT (Exposed). Exposed dragon " +
-      "pungs are allowed.",
+      "The Illustrated p. 49 prints LIMIT; the Companion's MIDDLE LIMIT " +
+      "(C p. 58) is superseded (AUDIT C8). Exposed dragon pungs are allowed.",
     match: ({ shape }) => {
       if (
         dragonCount(shape, "green") < 3 ||

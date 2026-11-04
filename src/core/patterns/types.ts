@@ -21,9 +21,10 @@ export const TIER_POINTS: Readonly<Record<Tier, number | null>> = Object.freeze(
 });
 
 /**
- * Printed fishing values, one per winning tier. The synopsis's right column
- * prints them beside each hand: half 200, limit 400, middle 600, double 800.
- * `calculate` has no fishing figure because the hand score is computed.
+ * Printed fishing values, one per winning tier. The Illustrated pages print
+ * fractions of the limit: half 200, limit 400, double 500. Middle 600 belongs
+ * only to Companion hands; a Companion double hand keeps its printed 800.
+ * `calculate` has no fixed fishing figure because the hand score is computed.
  */
 export const TIER_FISHING: Readonly<Record<Tier, number | null>> = Object.freeze({
   half: 200,
@@ -84,7 +85,8 @@ export interface HandPattern {
   readonly variantOf?: string;
   /**
    * True when the composition or its tier is a conservative reading of a
-   * cropped page. The reading and its reasoning are in rules/archive/ASSUMPTIONS.md.
+   * cropped page. The reading and its reasoning is in rules/archive/ASSUMPTIONS.md
+ * (historical); the normative rule is rules/RULES.md.
    */
   readonly provisional?: boolean;
   /** Transcription uncertainty or assumption; also recorded in rules/archive/NOTES.md. */

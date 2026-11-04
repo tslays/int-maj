@@ -9,15 +9,17 @@
  * hand; the other seat winds rotate with the deal, which is why `seatWindOf`
  * is derived from the dealer rather than stored on each player.
  *
- * Wall layout (p. 34): `tiles` is the shuffled wall. Ordinary draws take
- * `tiles[front++]`; kong and flower replacements take `tiles[back--]`. The
- * wall is exhausted when `front > back`.
+ * Wall layout (rules/RULES.md): `tiles` is the shuffled set. Ordinary draws
+ * take `tiles[front++]`; Western replacements take `loose` (refilled from
+ * `back`), Chinese kong replacements take `dead`. The live wall is exhausted
+ * when `front > back`.
  *
- * Every field encodes a rule from rules/archive/PLAY.md:
- *   dealer / prevailingWind  East round, dealer repeats only on a win (#9)
- *   wall.front / wall.back   loose tiles for kongs (#4)
- *   fishing                  announced, fixed wait (fishing DECIDED)
- *   ledger                   payments that sum to zero (#8)
+ * Every field encodes a rule from rules/RULES.md:
+ *   dealer / prevailingWind  round wind and dealer rotation
+ *   wall.front / wall.back   live wall; loose pairs and the Chinese dead wall
+ *   fishing                  announced state of needing one tile
+ *   ledger                   payments that sum to zero
+ *   variant                  Western (default) or Chinese
  *   eventSeq                 next event number for replay ordering
  */
 

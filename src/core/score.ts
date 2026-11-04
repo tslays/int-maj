@@ -8,7 +8,7 @@
  *     once per honour feature and capped by the limit;
  *   - a special hand scores its printed tier.
  *
- * Fishing is not part of the hand score: it is a declared wait settled
+ * Fishing is not part of the hand score: it is an announced wait settled
  * independently when another player wins (see fishing.ts).
  */
 

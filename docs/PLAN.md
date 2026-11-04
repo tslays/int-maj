@@ -4,7 +4,7 @@ Written down so every slice is judged against the same target: a quiet, crisp
 international-mahjong table that reads like Tenhou's, follows the owner-designated
 primary rule scan (see `rules/SOURCE.md`), and behaves like a finished game.
 
-## M0 — repository tidy (after the last rules agent finishes)
+## M0 — repository tidy (done 2026-11-04)
 
 Owner request, 2026-11-04: the folder structure and architecture should read as
 one tidy project once extraction is done. Do this only when no agent is running,
@@ -35,24 +35,22 @@ Acceptance: every path in `README.md`, `AGENTS.md`, `rules/*.md`, `docs/*.md`,
 nothing); `.gitignore` matches the new generated directory; `git status` clean;
 `npm test` green; no generated file is tracked.
 
-## Blocking priority — reconcile the rules source
+## Blocking priority — reconcile the rules source (done)
 
-The current rules, pattern catalogue and game behavior were built from earlier
-transcriptions and have not yet been fully checked against the primary scan.
-The page-by-page work is specified in [`docs/SOURCE-AUDIT.md`](SOURCE-AUDIT.md)
-(milestones A-D, spread map and evidence rules), and its result is
-[`rules/RULES.md`](RULES.md) — one framework: the Illustrated book as the
-normative rubric, the Companion as its supplement, with a provenance tag per
-rule.
-Reconcile each rule and pattern against its printed text/diagrams, let the scan
-overrule conflicting owner decisions, update citations/tests/docs, and keep
-unresolved source ambiguity explicit. Until this is complete, do not claim the
-runtime follows the primary source. This source-faithful reconciliation is in
-scope even though unrelated rules changes are not.
+The page-by-page work is complete: [`rules/RULES.md`](RULES.md) is the single
+framework (Illustrated book normative, Companion supplement, provenance tag per
+rule), and [`rules/AUDIT.md`](AUDIT.md) records the closed reconciliation rows.
+The C1-C9 slices are landed and `npm test` is green with 344 tests. A few
+table rulings are deliberately deferred and listed in `rules/AUDIT.md`; they
+are not claimed as implemented.
 
 ## Done so far
 
-Hand-pattern catalogue (85), table-side checker, deterministic turn engine,
+Audited catalogue (53 Illustrated entries plus the Companion supplement),
+ground-score/doubling scoring, all-three payments with East doubling, the
+printed deal and loose/dead walls, robbing the kong and chow precedence,
+fishing as an announced state, round-wind progression and Goulash marking, the
+Western and Chinese profiles, table-side checker, deterministic turn engine,
 soak test, console table, web table (server + client), Tenhou-scale board, the
 reference overlay, claims/wait/result panels, review states (`?state=`), and
 one design-token set (`docs/STYLE.md`) that the stylesheet reads exclusively.
@@ -85,9 +83,10 @@ states flash.
 ## M3 — A game, not a demo
 
 - Persistence: the server writes the session (seed, actions, scores) and
-  resumes it after reload or restart.
+  resumes it after reload or restart. Not started.
 - Multi-hand rounds: dealer rotation, East round progression, running
-  scorecard, hand history.
+  scorecard, hand history. The engine rounds are done (C6); the scorecard and
+  hand history in the client remain.
 - *Accept:* close the tab mid-hand, reopen, continue exactly; a round of four
   hands rotates the dealer correctly and the scorecard sums to zero.
 

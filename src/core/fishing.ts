@@ -1,7 +1,7 @@
 /**
  * Fishing is the printed state of needing one tile, announced.
  *
- * A player one tile from mah jong announces "fishing". If another player wins,
+ * A player one tile from mah jong announces the wait. If another player wins,
  * every fishing player still scores their fishing figure — a "mini win".
  * Settlement is independent of the winner's hand. The announcement does not
  * restrict what the player may claim: a player needing one tile may take any
@@ -41,7 +41,7 @@ export function declareFishing(input: DeclareFishingInput): FishingDeclaration {
   ).map(tileKey);
 
   if (wait.length === 0) {
-    throw new Error("A fishing declaration needs at least one wait tile");
+    throw new Error("An announced fishing wait needs at least one wait tile");
   }
 
   return Object.freeze({
