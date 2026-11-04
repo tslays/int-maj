@@ -86,7 +86,7 @@ export function scoreHand(hand: Hand, options: ScoreOptions = {}): ScoreResult {
     (match) => match.tier !== "calculate" && match.pattern.id !== "chow-chow",
   );
   const nonScoringBuried =
-    !fixedTier && buried !== undefined && isNonScoringBuried(hand);
+    !fixedTier && buried !== undefined && isNonScoringFourChows(hand);
   const winning = nonScoringBuried ? buried : (matches[0] ?? null);
 
   if (winning === null) {
@@ -103,6 +103,22 @@ export function scoreHand(hand: Hand, options: ScoreOptions = {}): ScoreResult {
   }
 
   if (nonScoringBuried) {
+    return {
+      matches,
+      winning,
+      tier: winning.tier,
+      points: 10,
+      ground: null,
+      doubles: null,
+      raw: null,
+      limit,
+    };
+  }
+
+  if (
+    winning.pattern.id === "chinese-ordinary" &&
+    isNonScoringFourChows(hand)
+  ) {
     return {
       matches,
       winning,
@@ -292,13 +308,12 @@ function calculateHand(hand: Hand, options: ScoreOptions): CalculatedScore | nul
   return { ground, doubles, raw: ground * 2 ** doubles };
 }
 
-function isNonScoringBuried(hand: Hand): boolean {
+function isNonScoringFourChows(hand: Hand): boolean {
   return decomposeStandard(normalizeHand(hand)).some(
     (decomposition) =>
       decomposition.sets.every((set) => set.kind === "chow") &&
       !decomposition.pair.startsWith("d") &&
-      !decomposition.pair.startsWith("w") &&
-      !isTerminalKey(decomposition.pair),
+      !decomposition.pair.startsWith("w"),
   );
 }
 

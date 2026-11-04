@@ -150,6 +150,7 @@ export function buildHand(
       selfDrawn: options.selfDrawn ?? false,
       seatWind: seatWindOf(state, seat),
       prevailingWind: state.prevailingWind,
+      variant: state.variant ?? "western",
     });
   } catch {
     return null;
@@ -345,6 +346,7 @@ function draftPlayer(draft: Draft, seat: Seat): Draft["players"][number] {
 
 /** Refill the loose pair from the replacement end of the wall. */
 function refillLoose(draft: Draft): void {
+  if (draft.variant === "chinese") return;
   while (draft.wall.loose.length < 2 && draft.wall.front <= draft.wall.back) {
     draft.wall.loose.push(draft.wall.tiles[draft.wall.back]!);
     draft.wall.back -= 1;
@@ -357,6 +359,9 @@ function drawFrom(draft: Draft, end: "front" | "loose"): string | null {
     const key = draft.wall.tiles[draft.wall.front]!;
     draft.wall.front += 1;
     return key;
+  }
+  if (draft.variant === "chinese") {
+    return draft.wall.dead?.pop() ?? null;
   }
   if (draft.wall.loose.length === 0) refillLoose(draft);
   const key = draft.wall.loose.shift();
@@ -1093,7 +1098,11 @@ function dealHand(
 ): void {
   const rng = createRng(seed);
   for (let step = 0; step < rngSteps; step++) rng.next();
-  const tiles = rng.shuffle(createTileSet()).map(tileKey);
+  const set =
+    draft.variant === "chinese"
+      ? createTileSet().filter((tile) => !isBonus(tile))
+      : createTileSet();
+  const tiles = rng.shuffle(set).map(tileKey);
   const stepsAfter = rngSteps + (tiles.length - 1);
 
   draft.seed = seed;
@@ -1108,8 +1117,19 @@ function dealHand(
     seasons: [],
     discards: [],
   }));
-  draft.wall = { tiles, front: 0, back: tiles.length - 1, loose: [] };
-  refillLoose(draft);
+  if (draft.variant === "chinese") {
+    const dead = tiles.slice(tiles.length - 14);
+    draft.wall = {
+      tiles,
+      front: 0,
+      back: tiles.length - 14 - 1,
+      loose: [],
+      dead,
+    };
+  } else {
+    draft.wall = { tiles, front: 0, back: tiles.length - 1, loose: [] };
+    refillLoose(draft);
+  }
   draft.turn = dealer;
   draft.phase = "discard";
   draft.lastDiscard = null;
