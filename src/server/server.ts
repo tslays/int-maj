@@ -16,7 +16,7 @@
  * server binds nothing itself; `bin/serve.ts` listens on 127.0.0.1 only.
  */
 
-import { readFile } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -80,6 +80,18 @@ function sendJson(res: ServerResponse, status: number, value: unknown, pretty = 
     "cache-control": "no-store",
   });
   res.end(body);
+}
+
+async function webStamp(webRoot: string): Promise<string> {
+  const names = await readdir(webRoot, { withFileTypes: true });
+  const parts: string[] = [];
+  for (const entry of names) {
+    if (!entry.isFile()) continue;
+    const info = await stat(join(webRoot, entry.name));
+    parts.push(`${entry.name}:${info.size}:${Math.floor(info.mtimeMs)}`);
+  }
+  parts.sort();
+  return `${parts.join("|")}`;
 }
 
 async function serveStatic(
@@ -199,6 +211,13 @@ async function handle(
         return;
       }
       sendJson(res, 200, statePayload(session), url.searchParams.has("pretty"));
+      return;
+    }
+
+    // A build stamp so an open page can notice that web/ changed and reload.
+    if (url.pathname === "/api/build") {
+      const stamp = await webStamp(webRoot);
+      sendJson(res, 200, { stamp });
       return;
     }
 

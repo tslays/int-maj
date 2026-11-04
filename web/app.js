@@ -1880,6 +1880,27 @@ function renderOutcome() {
   }
 }
 
+// Keep an open page honest: when web/ changes on disk the server's build stamp
+// changes and the page reloads itself, so nobody has to remember to refresh.
+let buildStamp = null;
+async function watchBuild() {
+  try {
+    const res = await fetch("/api/build", { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (buildStamp === null) {
+      buildStamp = data.stamp;
+      return;
+    }
+    if (data.stamp !== buildStamp) location.reload();
+  } catch {
+    // server restarting; try again next tick
+  }
+}
+
+setInterval(watchBuild, 1500);
+watchBuild();
+
 function render() {
   if (payload === null) return;
   applyLayout();
