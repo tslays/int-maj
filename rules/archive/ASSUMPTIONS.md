@@ -38,7 +38,7 @@ PDF; a prior owner confirmation is not an exception.
   and season replacement is intentionally left to the turn engine.
 - Dealer rotation, prevailing wind and payments are implemented in
   `src/core/game/`; the readings the book does not state are recorded in
-  `rules/PLAY.md` entries 11-19 and summarised in `rules/NOTES.md`.
+  `rules/archive/PLAY.md` entries 11-19 and summarised in `rules/archive/NOTES.md`.
 
 ## Hand and win representation
 

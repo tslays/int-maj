@@ -1,7 +1,7 @@
 /**
  * The deterministic reducer: `GameState + Action -> { state, events }`.
  *
- * Every rule from rules/PLAY.md is enforced here, in one place:
+ * Every rule from rules/archive/PLAY.md is enforced here, in one place:
  *   - the 144-tile deal, 13 each, dealer draws first (#1, #3)
  *   - flowers/seasons are bonuses replaced immediately (#2)
  *   - kongs take a loose tile from the BACK of the wall (#4, p. 34)

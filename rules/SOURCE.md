@@ -20,7 +20,7 @@ choice or project interpretation.
   trimmed copy was verified. Nothing was lost: the trimmed file was written as a
   copy of the same pages and still carries their full scan images. Its SHA-256
   is `059fd9cdf3140a44fd570c0fee43b3909cd97144422fb5ddf57545bb6694e9e8`.
-- **Crop method:** `rules/crop-primary-source.swift` detects each page edge and
+- **Crop method:** `rules/tools/crop-primary-source.swift` detects each page edge and
   writes a non-destructive PDF copy with per-page CropBoxes and a 0.25% safety
   border, leaving the scan images whole. It was run once, on the original that
   the owner has since deleted; it needs a fresh original to run again, and it
@@ -36,7 +36,7 @@ Two printed sources form the framework; they are not peers.
    source: it carries the enlarged special-hand catalogue, the limit tiers and
    the fishing figures. A Companion statement applies only where the primary
    source is silent, and only if it does not contradict it.
-3. **Recorded assumptions** in `rules/ASSUMPTIONS.md`, for questions both books
+3. **Recorded assumptions** in `rules/archive/ASSUMPTIONS.md`, for questions both books
    leave open.
 4. Any later explicit source designation from the owner.
 
@@ -59,10 +59,10 @@ Companion's catalogue without the primary book. The following are interim work
 products: they may be extended by the Companion, but anything they state that
 the Illustrated book contradicts is wrong and must change:
 
-- `rules/PLAY.md` — prior proposals and owner decisions;
-- `rules/ASSUMPTIONS.md` — prior rules and implementation assumptions;
-- `rules/NOTES.md` and `rules/MISSING.md` — prior source readings and gaps;
-- `rules/pages/`, `rules/companion-ocr.txt`, and other OCR/transcriptions —
+- `rules/archive/PLAY.md` — prior proposals and owner decisions;
+- `rules/archive/ASSUMPTIONS.md` — prior rules and implementation assumptions;
+- `rules/archive/NOTES.md` and `rules/archive/MISSING.md` — prior source readings and gaps;
+- `rules/.generated/pages/`, `rules/.generated/companion-ocr.txt`, and other OCR/transcriptions —
   earlier source material;
 - `src/core/patterns/table.ts`, gameplay code and tests — existing behavior.
 
@@ -81,6 +81,6 @@ audit is done.
   normalize it or preserve a conflicting house decision.
 - Where the source is genuinely unclear or silent, record the exact evidence,
   competing literal readings and chosen narrow assumption in
-  `rules/ASSUMPTIONS.md`; keep it clearly separate from transcribed facts.
+  `rules/archive/ASSUMPTIONS.md`; keep it clearly separate from transcribed facts.
 - Update implementation, tests and user-facing rule descriptions together.
   Test any behavioral change against the specific affected scenario.

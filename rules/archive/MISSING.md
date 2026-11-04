@@ -15,7 +15,7 @@ The right margin clips the label, not the value. The synopsis's right column
 prints the same per-tier figures beside every hand: **half 200, limit 400,
 middle 600, double 800**. They are transcribed in `TIER_FISHING`. The prose
 beside the page-4 block is still partly cut; the owner's definition in
-`rules/PLAY.md` is authoritative for the rule (an announced, fixed wait).
+`rules/archive/PLAY.md` is authoritative for the rule (an announced, fixed wait).
 
 ## 2. Pages 30-32 — FULL SYNOPSIS
 The synopsis is a spread. The right page was initially missed; page 57
@@ -62,7 +62,7 @@ The right column of both pages is cut mid-word. Page 34's "Problems and Solution
 ## CORRECTION 2026-10-31 - the OCR, not the print, was deficient
 The FULL SYNOPSIS pages (printed 58-59; scan p30-p31) DO print two numeric columns per hand: **Winning** and **Fishing**. The Vision OCR dropped both columns entirely, which is why tier values looked absent. Owner-confirmed from the printed page.
 
-- Read tiers from rules/pages/p30.png and p31.png (vision), never from companion-ocr.txt.
+- Read tiers from rules/.generated/pages/p30.png and p31.png (vision), never from companion-ocr.txt.
 - Confirmed pairs: 500/200, 1000/400, 1500/600, 2000/800 - fishing is 40% of winning.
 - Some rows print **Calculate** instead of a figure (Ordinary Mahjong, Purity Hand, All Honour Hand): those hands are summed from components, not looked up. Sparrow's Sanctuary is 1500/600, Gates of Heaven is 1000/400, and Chinese Odds is 1500/600 on the rendered spreads.
 - The Winning column is one value per hand; concealed vs exposed differences live only in the hand-page headings.
@@ -70,8 +70,8 @@ The FULL SYNOPSIS pages (printed 58-59; scan p30-p31) DO print two numeric colum
 ## ROOT CAUSE 2026-10-31 - the scan pages are rotated 270 degrees
 Every page of this PDF reports rotation 270 and a page box of 446 x 1208. Drawing it with `page.draw(with:to:)` ignores that rotation, so the render comes out sideways and text collapses into a strip: whole columns (the **Winning** and **Fishing** figures) fall outside what the OCR sees. That is why my first extraction reported "no numbers" - the numbers were never missing.
 
-Fix: render through `PDFPage.thumbnail(of:for: .mediaBox)`, which applies the rotation. `rules/ocr-page.swift` does that and prints `x0 y0 x1 y1 text` boxes:
-    swiftc -O rules/ocr-page.swift -o /tmp/ocr-page
+Fix: render through `PDFPage.thumbnail(of:for: .mediaBox)`, which applies the rotation. `rules/tools/ocr-page.swift` does that and prints `x0 y0 x1 y1 text` boxes:
+    swiftc -O rules/tools/ocr-page.swift -o /tmp/ocr-page
     /tmp/ocr-page "<pdf>" <page> 3000
 
 Verified on scan page 30 (printed 58): columns read `Winning` / `Fishing` and give e.g.
@@ -84,7 +84,7 @@ Verified on scan page 30 (printed 58): columns read `Winning` / `Fishing` and gi
 Any tier transcribed from companion-ocr.txt before this fix must be re-read from the render.
 
 ## Numeric columns must be read VISUALLY, not OCR'd (2026-10-31)
-The text layer in `rules/pages-text.txt` is reliable for names and compositions. It is NOT reliable for the **Winning / Fishing** figures: Vision misreads individual digits in that dense numeric column, and it also silently skips a row, which shifts every later pairing.
+The text layer in `rules/.generated/pages-text.txt` is reliable for names and compositions. It is NOT reliable for the **Winning / Fishing** figures: Vision misreads individual digits in that dense numeric column, and it also silently skips a row, which shifts every later pairing.
 
 Evidence - the same column read three ways on scan page 31 (DRAGONS):
 - whole-page pass: 30 values for 31 rows (a row was dropped)
@@ -99,7 +99,7 @@ Where my OCR disagrees with the owner's photograph of the printed page, the phot
 | Lily of the Valley | 2000 / ... | 1000 / 400 |
 | Red Waratah | 1000 / 400 | 2000 / 800 |
 
-**Rule for the catalogue:** read every Winning/Fishing pair off the upright renders in `rules/pages/` visually, never from any text dump. Then validate mechanically:
+**Rule for the catalogue:** read every Winning/Fishing pair off the upright renders in `rules/.generated/pages/` visually, never from any text dump. Then validate mechanically:
 - winning must be one of 500, 1000, 1500, 2000, or the word `Calculate`
 - fishing must be exactly 40% of winning (200, 400, 600, 800) or `Calculate`
 - a row pair that fails either check is a misread, not a book variant

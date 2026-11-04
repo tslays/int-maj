@@ -2,7 +2,7 @@
 
 Extracted from the owner-designated primary scan
 (`scans/The Game of Mah Jong Illustrated - trimmed.pdf`) by reading the
-renders in `rules/primary-pages/`. Page numbers are **printed** pages. The
+renders in `rules/.generated/primary-pages/`. Page numbers are **printed** pages. The
 synopsis is printed pp. 60-61; the score summary for the further variations is
 printed p. 50; the short list and the two unnumbered hands are printed p. 30.
 

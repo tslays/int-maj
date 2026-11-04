@@ -13,7 +13,7 @@ Winning/Fishing values are transcribed; `calculate` hands keep a null value.
 
 ## Source limitations
 
-- `rules/companion-ocr.txt` is an OCR index. It keeps the prose but loses the
+- `rules/.generated/companion-ocr.txt` is an OCR index. It keeps the prose but loses the
   tile diagrams; composition always comes from the page renders.
 - The synopsis is a spread: the left page 56 carries pages 9-19, the right
   page 57 pages 20-30; likewise 58/59 and 60/61. Both pages were read with
@@ -86,7 +86,7 @@ mutually exclusive.
 
 `provisional: true` means the composition or its structural reading is an
 inference, not a transcribed diagram. The reasoning is repeated in
-`rules/ASSUMPTIONS.md`.
+`rules/archive/ASSUMPTIONS.md`.
 
 | Hand | Reading | Why |
 |---|---|---|
@@ -152,7 +152,7 @@ inference, not a transcribed diagram. The reasoning is repeated in
   fishing declaration rule is implemented from the owner's authoritative
   explanation, not from the prose.
 - Who pays fishing points, and whether a fishing player may still claim, are
-  open in `rules/PLAY.md`.
+  open in `rules/archive/PLAY.md`.
 - No synopsis hand is left without a pattern.
 
 ## Turn engine (2026-11-01)
@@ -161,7 +161,7 @@ The reducer in `src/core/game/` is the first place the book's play rules meet
 the catalogue. It does not re-derive any hand: scoring still comes from
 `matchHand`/`scoreHand`, and fishing still comes from `fishing.ts`.
 
-Readings recorded in `rules/PLAY.md` entries 11-19:
+Readings recorded in `rules/archive/PLAY.md` entries 11-19:
 
 - **Flower replacement end**: the back end, because p. 34 names the back as
   the loose-tile end and a flower replacement is a replacement draw. Kong

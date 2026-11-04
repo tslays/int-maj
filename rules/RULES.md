@@ -9,9 +9,9 @@ and the code changes.
 
 | Tag | Meaning |
 |---|---|
-| `[I p.N]` | Transcribed from *The Game of Mah Jong Illustrated* — primary and normative. Page numbers are the book's **printed** pages; the render is `rules/primary-pages/pNN.png` (each render is a two-page spread, printed `2NN-2` and `2NN-1`). |
+| `[I p.N]` | Transcribed from *The Game of Mah Jong Illustrated* — primary and normative. Page numbers are the book's **printed** pages; the render is `rules/.generated/primary-pages/pNN.png` (each render is a two-page spread, printed `2NN-2` and `2NN-1`). |
 | `[C p.N]` | From *The Mah Jong Player's Companion* — a supplement that extends this framework where the primary book is silent. It never overrides an `[I]` rule. |
-| `[A]` | A recorded assumption for a question both books leave open; the reasoning is in `rules/ASSUMPTIONS.md`. |
+| `[A]` | A recorded assumption for a question both books leave open; the reasoning is in `rules/archive/ASSUMPTIONS.md`. |
 
 Quoted sentences are printed wording, copied from the render. Text without
 quotes is still a page-cited reading of that page. Nothing here comes from OCR,
@@ -30,7 +30,7 @@ from another mahjong variant, or from the old catalogue's habits.
    Companion's. The replacement is recorded in `rules/AUDIT.md` — it is not
    preserved as a house rule or a variant.
 4. Where both are silent, the narrowest literal reading is chosen and recorded
-   as `[A]` in `rules/ASSUMPTIONS.md`.
+   as `[A]` in `rules/archive/ASSUMPTIONS.md`.
 
 ## Status
 
@@ -899,7 +899,7 @@ the Companion readings that differ are listed in `rules/AUDIT.md` under
 "Catalogue and Part III conflicts" and are not applied here.
 
 Page tags `[C p. N]` are the Companion's **printed** pages. The render
-`rules/pages/pNN.png` is the spread of printed pages `2NN-4` and `2NN-3`
+`rules/.generated/pages/pNN.png` is the spread of printed pages `2NN-4` and `2NN-3`
 (so `p04.png` is printed pp. 4-5, `p30.png` is pp. 56-57).
 
 ## 1. The tier ladder
@@ -1156,7 +1156,7 @@ These Companion statements conflict with Part I or Part II and are recorded in
 
 - `rules/PRIMARY-RULES.md` — the raw Milestone A extraction (this framework's
   Part I is that text, renumbered, unchanged).
-- `rules/AUDIT.md` — conflicts with `rules/PLAY.md`, `rules/ASSUMPTIONS.md` and
+- `rules/AUDIT.md` — conflicts with `rules/archive/PLAY.md`, `rules/archive/ASSUMPTIONS.md` and
   the engine; Milestone C work list.
 - `docs/SOURCE-AUDIT.md` — the audit plan, spread map and evidence rules.
 - `rules/SOURCE.md` — source precedence and how to read a page.

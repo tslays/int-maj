@@ -1,10 +1,10 @@
 # Audit — primary pages vs prior rules and engine
 
 Milestone A scope: printed pages 4-33 and 62-63 (general play). Each row is a
-conflict between the primary scan and `rules/PLAY.md`,
-`rules/ASSUMPTIONS.md`, or the engine (`src/core/game/`, `src/core/fishing.ts`,
+conflict between the primary scan and `rules/archive/PLAY.md`,
+`rules/archive/ASSUMPTIONS.md`, or the engine (`src/core/game/`, `src/core/fishing.ts`,
 `src/core/score.ts`). Page numbers are printed pages; the corresponding render
-is `rules/primary-pages/pNN.png`.
+is `rules/.generated/primary-pages/pNN.png`.
 
 "Printed" is the literal reading of the page (quotes and rule numbers refer to
 `rules/PRIMARY-RULES.md`). "Old / engine" is what the tree currently says or
@@ -35,7 +35,7 @@ does. Nothing in this slice was changed; this is the Milestone C work list.
 | A19 | 21, 14 | A player with an **exposed** pung who draws the fourth tile may add it to form a kong (R56, R65). | `applyKong(..., added: true)` requires a pung with `!candidate.exposed` ("added kong needs your own concealed pung"). | `src/core/game/reduce.ts` (`applyKong`) | The printed exposed-pung-to-kong move is impossible; only concealed pungs can be extended. |
 | A20 | 21 | If the fourth tile is added to an exposed pung, "any other player who can use this tile immediately to go Mah Jong may claim it" (R65). | `applyKong` converts the meld and immediately draws the replacement; no claim window is opened. | `src/core/game/reduce.ts` (`applyKong`, claim pipeline) | Robbing the kong is impossible. |
 | A21 | 21 | Another player may claim a discard for a chow **only if it completes his hand** (R61); a winning hand has priority over all claims (R53, R62). | `claimOptions` refuses a chow when `completesAsChow` is true and only offers chow to `nextSeat(discarder)`; the win must be taken as a `mahjong` claim instead. | `src/core/game/reduce.ts` (`claimOptions`, `completesAsChow`, `finishWin`) | A winning chow claim is not representable; the win is scored as a concealed hand rather than as a claimed exposed chow. (The page does not settle the exposure question; Not stated 7-8.) |
-| A22 | 14, 21 | A chow may be claimed by "the player sitting on the right of the discarder" (R60, R61). | `PLAY.md` #7 says "only from the player to your left"; the reducer allows `seat === nextSeat(discarder)` but the error text says "on your left". | `rules/PLAY.md` #7; `src/core/game/reduce.ts` (`applyClaim`) | Behaviour matches the printed right-hand seat; the written rule and error message say the opposite. |
+| A22 | 14, 21 | A chow may be claimed by "the player sitting on the right of the discarder" (R60, R61). | `PLAY.md` #7 says "only from the player to your left"; the reducer allows `seat === nextSeat(discarder)` but the error text says "on your left". | `rules/archive/PLAY.md` #7; `src/core/game/reduce.ts` (`applyClaim`) | Behaviour matches the printed right-hand seat; the written rule and error message say the opposite. |
 | A23 | 6, 30 | "Honour tiles—Winds, Dragons, and 1s and 9s of each suit"; the glossary repeats "Honour Tiles Winds, Dragons and terminals" (R2, R4, R107). | `isHonour` / `isHonourKey` return true only for winds and dragons; terminals are a separate `isTerminal`/`isTerminalKey`. | `src/core/tiles.ts` (`isHonour`, `isHonourKey`), `src/core/patterns/predicates.ts`, `src/core/patterns/table.ts` | Latent: any predicate or future scoring code that reads `isHonourKey` as "honour" will disagree with the printed classification and the ground-score table. |
 | A24 | 24 | Settlement levels: beginners pay the winning hand only; intermediate also fishing hands; advanced pays all hands (R94). | Always winner plus fishing declarations; no setting and no all-hand settlement. | `src/core/game/reduce.ts` (`ledgerFor`) | The printed advanced mode is unavailable. |
 | A25 | 30, 63 | Special hands are optional and must be agreed; tournament play uses at most fourteen, removes jokers/flowers, passes East every hand, sets the limit at 1000, and bans repeating the same special hand more than twice (R105, R106). | The full pattern table is always active; no tournament options; normal dealer rotation. | `src/core/patterns/table.ts`, `src/core/game/reduce.ts` (`newGame`) | No way to play the printed tournament or agreed-special-hands variants. |
