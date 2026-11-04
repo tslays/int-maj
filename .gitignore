@@ -1,6 +1,8 @@
 node_modules/
 .DS_Store
 rules/pages/
+# Local-only primary book scans (large scanned source and derived crop).
+scans/
 rules/companion-ocr.txt
 rules/pages-text.txt
 rules/ocr-boxes.tsv
@@ -10,3 +12,7 @@ reference/
 web/reference.png
 web/reference2.png
 web/reference3.png
+
+# Generated renders and OCR of the primary scan (regenerate with rules/primary-pages.swift).
+rules/primary-pages/
+rules/primary-ocr-*.txt

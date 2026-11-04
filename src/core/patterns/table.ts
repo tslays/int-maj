@@ -1,10 +1,11 @@
 /**
  * The single pattern table.
  *
- * Source hierarchy: page renders in rules/pages/ are authoritative for tile
- * composition; rules/companion-ocr.txt is an index only. Every hand keeps all
- * of its printed page references, and repeated printings of one shape share a
- * single canonical id (`variantOf` marks genuine scoring variants).
+ * Rule authority is documented in rules/SOURCE.md. This is an existing
+ * derived implementation, not a source of truth: its entries came from earlier
+ * transcriptions and remain unverified until checked against the primary scan.
+ * Keep citations and repeated-printing metadata, but let the primary scan
+ * override any conflicting entry or previous decision.
  *
  * This table is data. `match.ts` only iterates it; each entry's predicate is
  * built from the reusable helpers in predicates.ts.

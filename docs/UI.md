@@ -69,7 +69,7 @@ Taken from how these tables read in play (AJ Martinez, worldsbe.st, on Mahjong S
 
 ## Where the game design comes from
 
-The rules, the hands and the scoring are the Companion's and nothing else: no riichi yaku, no dora, no furiten, no riichi sticks. What may be borrowed from Riichi City and Mahjong Soul is **interface and game-feel** — the shape of a turn, how a claim is offered, how a result is presented, how the table waits for you, what the player can see at a glance. Research those clients (public screenshots, articles, wikis) for interaction patterns, then translate them onto our rules. When the two disagree about a rule, the Companion wins; when they disagree about how something *feels*, the reference wins.
+The rules, hands and scoring are governed by the owner-designated primary scan in `rules/SOURCE.md`. The existing catalogue and engine are still pending reconciliation, so prior descriptions are not rule authority. Other clients may inform **interface and game-feel** only — how a claim is offered, a result is presented, or the table communicates state. Visual references never settle rule semantics; the primary scan wins any rule conflict.
 
 > **Reference update (owner, 2026-11-01): copy Tenhou only.** The board's layout,
 > spacing, tile placement and chrome are Tenhou's, full stop — the Mahjong Soul

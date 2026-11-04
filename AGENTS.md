@@ -1,33 +1,50 @@
 # AGENTS.md — int-maj
 
-Thompson & Maloney international mahjong: 144 tiles (3 suits × 9 × 4 = 108, 4 winds × 4, 3 dragons × 4, 4 flowers, 4 seasons).
+## Rule authority — the owner-designated primary scan
 
-## Variant — do not substitute another ruleset
-This is the Thompson & Maloney "Mah Jong" school (Kangaroo Press, 1997), which the book itself calls "a Western version of Mah Jong" collecting hands "already played in many countries" — an international set drawn from many regional games, not one country's ruleset: limit tiers half limit 500 / limit 1000 / middle 1500 / double 2000, plus "fishing". It is NOT MCR (Chinese Official, World Mahjong Organization, fan-pattern scoring with a point minimum) and NOT Riichi. Never import MCR fan values, Riichi yaku, or their minimums; where the book is silent, record the decision in rules/ASSUMPTIONS.md instead.
+Two printed sources form the rules framework, in this order:
 
-KNOWN ONLY FROM THIS COMMUNITY: this ruleset is played in a small expat circle and the book is effectively the only written source. Treat that book as the NORMATIVE spec, not as a sample of some larger standard — there is no outside authority to settle a dispute. Consequence for the code: every point the book leaves open (deal, flower handling, kong replacement, payment, minimum) becomes a named, defaulted flag in a variant profile object, with its rationale in rules/ASSUMPTIONS.md, so a house-rule change is a config edit and never a code change.
+1. **`scans/The Game of Mah Jong Illustrated - trimmed.pdf`** (primary,
+   normative). It governs every rule, hand, tile, deal, wall, replacement,
+   turn, call, win, score, payment and exception, and it overrides every
+   conflicting prior decision, transcription, test or document.
+2. **The Mah Jong Player's Companion** (supplement). It extends the primary
+   source with its larger special-hand catalogue and its tiers; it applies
+   only where the primary book is silent and never contradicts it.
 
-SCORING IS VERBATIM AND OPTIONAL: most players in this circle do not score at all; when they do, the book's tiers are used strictly as printed, with no house rules. So `score.ts` is a literal lookup over the transcribed tiers and fishing rule, and it MUST NOT influence `match.ts` — recognition and scoring are separate layers, and the matcher is the primary product.
+`rules/RULES.md` is the single normative framework that records both, with a
+provenance tag on every rule (`[I p.N]` primary, `[C p.N]` supplement,
+`[A]` recorded assumption). `rules/SOURCE.md` holds the precedence and reading
+protocol. Do not preserve a previous choice just because it was
+owner-confirmed or already encoded.
 
-RECOGNITION IS THE PRODUCT: the core question a player asks is "what is this 14-tile hand, and which hands could it still become". Keep `match(hand)` and a wait/completion query (`tiles that finish a given pattern`) first-class and independently usable.
+Read the actual cropped page, including diagrams, before making rule claims.
+OCR is a navigation aid, not authority. Implement the source literally; do not
+normalize an odd rule to another mahjong convention. If the source is unclear
+or silent, record the exact page, evidence, uncertainty and the narrowest
+assumption in `rules/ASSUMPTIONS.md`; never quietly invent a rule.
 
-REPEATED HANDS: the book prints the same hand under several groups (Wriggly Snake, Gertie's Garter, Dragon's Tail 1 & 2, Hachi Ban). Dedupe on canonical id, keep every page reference, and use `variantOf` — one shape must never yield two competing wins.
+## Existing rules and code are pending audit
 
-## Invariants (do not break)
-- `src/core/**` is pure: no I/O, no clock, no `Math.random` (seeded RNG only), no network, zero runtime deps.
-- Hand patterns are DATA. One pattern table is the single source of truth; never write hand-specific `if` logic in the matcher.
-- Scoring is computed at win time from the pattern matches, not accumulated during play. Highest tier wins; tiers are not additive.
-- No UI, no server, no persistence until the evaluator and scorer are green.
-- Every pattern in the table has at least one positive and one negative test.
+`rules/PLAY.md`, `rules/ASSUMPTIONS.md`, `rules/NOTES.md`, `rules/MISSING.md`,
+`rules/pages/`, earlier OCR, the pattern table and gameplay code were built
+from earlier work. They are useful as an audit checklist, but are not
+normative and may conflict with the primary scan. Until checked page by page,
+do not claim the catalogue or runtime is faithful to the primary source.
+See `rules/SOURCE.md` for the migration status and file hierarchy.
 
-## Truth & uncertainty
-- `rules/companion-ocr.txt` is OCR of a scan: it keeps the prose but LOSES the tile diagrams. Never infer a hand's tile composition from OCR alone; page renders (PNG) are the source for diagrams.
-- The right margin trims one or two letters on pp. 4 and 30-32; nothing substantive is missing there (owner-confirmed). Read the evident meaning; do not mark a pattern provisional merely because a word is clipped.
-- Unresolvable composition goes in `rules/NOTES.md`; play-rule choices go in `rules/ASSUMPTIONS.md`. Do not silently invent rules.
+## Engineering invariants
 
-## Definition of done for a change
-- `npm test` green, and the count of implemented patterns moved only by patterns that have tests.
-- One hand group per commit, commit message naming the group.
+- `src/core/**` stays pure: no I/O, clock, `Math.random` (use seeded RNG), or
+  network; zero runtime dependencies.
+- Hand-pattern data stays declarative; matching logic stays generic rather
+  than accumulating hand-specific `if` cases.
+- Keep positive and negative tests for implemented patterns. When a pattern or
+  rule is corrected from the primary scan, update its tests and citations too.
+- Run the relevant test or scenario after behavioral changes; report honestly
+  whether the tested tree includes uncommitted work.
 
-## The book outranks convenience
-If the book states something, implement it as written - even when it looks odd or contradicts what other mahjong variants do. The book is sometimes unclear; where it is, pick the reading that follows its printed words most literally, and record the reading in rules/ASSUMPTIONS.md. Never substitute a "more standard" rule for a printed one.
+## Interpretation discipline
+
+The source is for international mahjong; do not substitute another variant's
+rules. Interface references may guide presentation only, never rule semantics.
