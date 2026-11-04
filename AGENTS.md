@@ -22,12 +22,12 @@ Read the actual cropped page, including diagrams, before making rule claims.
 OCR is a navigation aid, not authority. Implement the source literally; do not
 normalize an odd rule to another mahjong convention. If the source is unclear
 or silent, record the exact page, evidence, uncertainty and the narrowest
-assumption in `rules/ASSUMPTIONS.md`; never quietly invent a rule.
+assumption in `rules/archive/ASSUMPTIONS.md`; never quietly invent a rule.
 
 ## Existing rules and code are pending audit
 
-`rules/PLAY.md`, `rules/ASSUMPTIONS.md`, `rules/NOTES.md`, `rules/MISSING.md`,
-`rules/pages/`, earlier OCR, the pattern table and gameplay code were built
+`rules/archive/PLAY.md`, `rules/archive/ASSUMPTIONS.md`, `rules/archive/NOTES.md`, `rules/archive/MISSING.md`,
+`rules/.generated/pages/`, earlier OCR, the pattern table and gameplay code were built
 from earlier work. They are useful as an audit checklist, but are not
 normative and may conflict with the primary scan. Until checked page by page,
 do not claim the catalogue or runtime is faithful to the primary source.

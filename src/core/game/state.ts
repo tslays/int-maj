@@ -13,7 +13,7 @@
  * `tiles[front++]`; kong and flower replacements take `tiles[back--]`. The
  * wall is exhausted when `front > back`.
  *
- * Every field encodes a rule from rules/PLAY.md:
+ * Every field encodes a rule from rules/archive/PLAY.md:
  *   dealer / prevailingWind  East round, dealer repeats only on a win (#9)
  *   wall.front / wall.back   loose tiles for kongs (#4)
  *   fishing                  announced, fixed wait (fishing DECIDED)

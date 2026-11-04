@@ -84,10 +84,10 @@ export interface HandPattern {
   readonly variantOf?: string;
   /**
    * True when the composition or its tier is a conservative reading of a
-   * cropped page. The reading and its reasoning are in rules/ASSUMPTIONS.md.
+   * cropped page. The reading and its reasoning are in rules/archive/ASSUMPTIONS.md.
    */
   readonly provisional?: boolean;
-  /** Transcription uncertainty or assumption; also recorded in rules/NOTES.md. */
+  /** Transcription uncertainty or assumption; also recorded in rules/archive/NOTES.md. */
   readonly notes?: string;
   readonly match: PatternPredicate;
 }

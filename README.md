@@ -29,7 +29,7 @@ documentation; do not claim source fidelity before the audit is complete.
 
 The scanned source is local under `scans/` as one page-edge-trimmed PDF (not
 committed; see `.gitignore`). Its pages keep the full scan behind the crop
-boxes. `rules/crop-primary-source.swift` rebuilds the trimmed copy from a fresh
+boxes. `rules/tools/crop-primary-source.swift` rebuilds the trimmed copy from a fresh
 original.
 Earlier OCR and page renders under `rules/` are useful only as historical
 audit material. See `rules/SOURCE.md` before relying on any rule document.

@@ -10,9 +10,9 @@ statement here is checked off.
 | What | Where |
 |---|---|
 | Primary source | `scans/The Game of Mah Jong Illustrated - trimmed.pdf` (33 spreads) |
-| Page renders | `rules/primary-pages/pNN.png` (1800 px, crop boxes applied) |
-| OCR aid | `rules/primary-ocr-1.txt`, `rules/primary-ocr-2.txt` (navigation only) |
-| Re-render | `swift rules/primary-pages.swift "<pdf>" rules/primary-pages <out>.txt FROM TO` |
+| Page renders | `rules/.generated/primary-pages/pNN.png` (1800 px, crop boxes applied) |
+| OCR aid | `rules/.generated/primary-ocr-1.txt`, `rules/.generated/primary-ocr-2.txt` (navigation only) |
+| Re-render | `swift rules/tools/primary-pages.swift "<pdf>" rules/.generated/primary-pages <out>.txt FROM TO` |
 
 Each PDF page is an open-book spread (two printed pages). Spread map, from the
 opening lines of each render:
@@ -58,7 +58,7 @@ Mah Jong; scoring (tiers, doubling, wind of the round, seat wind, flowers,
 payments); courtesies; and whether "fishing" exists at all.
 
 Anything the source does not state is listed as **not stated**, not filled in.
-Every conflict with `rules/PLAY.md`, `rules/ASSUMPTIONS.md` or the engine goes
+Every conflict with `rules/archive/PLAY.md`, `rules/archive/ASSUMPTIONS.md` or the engine goes
 in `rules/AUDIT.md` with both readings and the page.
 
 *Acceptance:* every general rule used by the engine either cites a page or is
@@ -96,7 +96,7 @@ changed behavior is named in the commit message with its page.
 
 ## Milestone D — docs and UI text
 
-`README.md`, `docs/UI.md`, `rules/PLAY.md` and `rules/ASSUMPTIONS.md` describe
+`README.md`, `docs/UI.md`, `rules/archive/PLAY.md` and `rules/archive/ASSUMPTIONS.md` describe
 the audited rules only; superseded text is replaced, not appended to.
 
 ## Evidence rules
