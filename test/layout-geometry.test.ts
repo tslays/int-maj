@@ -14,6 +14,7 @@
 import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
 
+import { computeLayout } from "../web/layout.js";
 import {
   connectChrome,
   evaluate,
@@ -40,18 +41,55 @@ interface Measurement {
   readonly visibleBadges: number;
 }
 
-const DESKTOP = [
-  [1440, 900],
-  [1280, 800],
-  [1024, 768],
+const SIZES = [
+  [1440, 900, "desktop"],
+  [1280, 800, "desktop"],
+  [1024, 768, "desktop"],
+  [932, 430, "landscape"],
+  [844, 390, "landscape"],
+  [430, 932, "portrait"],
+  [390, 844, "portrait"],
 ] as const;
 
-const PHONE = [
-  [844, 390],
-  [932, 430],
-  [390, 844],
-  [430, 932],
-] as const;
+type Mode = "desktop" | "landscape" | "portrait";
+
+const BREAKPOINTS: Record<
+  Mode,
+  {
+    riverColumns: number;
+    handBandFraction: number;
+    minTileWidth: number;
+    maxTileWidth: number;
+  }
+> = {
+  desktop: {
+    riverColumns: 6,
+    handBandFraction: 0.12,
+    minTileWidth: 26,
+    maxTileWidth: 46,
+  },
+  landscape: {
+    riverColumns: 4,
+    handBandFraction: 0.24,
+    minTileWidth: 18,
+    maxTileWidth: 46,
+  },
+  portrait: {
+    riverColumns: 3,
+    handBandFraction: 0.18,
+    minTileWidth: 18,
+    maxTileWidth: 46,
+  },
+};
+
+function expectedLayout(width: number, height: number, mode: Mode) {
+  return computeLayout({
+    width,
+    height,
+    mode,
+    ...BREAKPOINTS[mode],
+  });
+}
 
 const MEASURE = `(() => {
   const R = (element) => {
@@ -160,14 +198,18 @@ async function measure(width: number, height: number): Promise<Measurement> {
   return evaluate<Measurement>(cdp, sessionId, MEASURE);
 }
 
-function assertBadges(measurement: Measurement, label: string): void {
+function assertBadges(
+  measurement: Measurement,
+  expectedGap: number,
+  label: string,
+): void {
   assert.equal(measurement.visibleBadges, 4, `${label}: expected four badges`);
   for (const seat of ["top", "left", "right", "self"] as const) {
     const badge = measurement.badges[seat];
     assert.ok(badge !== null, `${label}: ${seat} badge missing`);
     assert.ok(
-      Math.abs(badge.gap - 2) <= 0.05,
-      `${label}: ${seat} gap is ${badge.gap}, expected 2`,
+      Math.abs(badge.gap - expectedGap) <= 0.05,
+      `${label}: ${seat} gap is ${badge.gap}, expected ${expectedGap}`,
     );
     assert.ok(
       badge.offset <= 0.05,
@@ -176,23 +218,27 @@ function assertBadges(measurement: Measurement, label: string): void {
   }
 }
 
-function assertDesktop(measurement: Measurement, label: string): void {
+function assertGeometry(
+  measurement: Measurement,
+  expected: ReturnType<typeof expectedLayout>,
+  label: string,
+): void {
   assert.deepEqual(measurement.overlaps, [], `${label}: overlapping regions`);
   assert.deepEqual(measurement.outside, [], `${label}: region outside board`);
-  assertBadges(measurement, label);
+  assertBadges(measurement, expected.gap, label);
   assert.ok(
-    measurement.tileWidth >= 26,
-    `${label}: tile width ${measurement.tileWidth} is below 26`,
+    Math.abs(measurement.tileWidth - expected.tileWidth) <= 0.05,
+    `${label}: tile width ${measurement.tileWidth}, solver says ${expected.tileWidth}`,
   );
-}
-
-function assertPhone(measurement: Measurement, label: string): void {
-  assert.deepEqual(measurement.overlaps, [], `${label}: overlapping regions`);
-  assert.deepEqual(measurement.outside, [], `${label}: region outside board`);
-  assertBadges(measurement, label);
   assert.ok(
-    measurement.tileWidth >= 18,
-    `${label}: tile width ${measurement.tileWidth} is below 18`,
+    measurement.tileWidth >= expected.minimumLegalWidth / 14 - 4,
+    `${label}: tile below the phone floor`,
+  );
+  const min = BREAKPOINTS[expected.mode].minTileWidth;
+  assert.ok(measurement.tileWidth >= min, `${label}: tile below ${min}`);
+  assert.ok(
+    measurement.tileWidth <= BREAKPOINTS[expected.mode].maxTileWidth + 0.05,
+    `${label}: tile above the cap`,
   );
 }
 
@@ -213,19 +259,14 @@ after(async () => {
 });
 
 describe("variant D computed geometry", () => {
-  for (const [width, height] of DESKTOP) {
-    it(`${width}x${height} meets the desktop contract`, async () => {
-      assertDesktop(await measure(width, height), `${width}x${height}`);
+  for (const [width, height, mode] of SIZES) {
+    it(`${width}x${height} meets the computed-layout contract`, async () => {
+      const expected = expectedLayout(width, height, mode);
+      assertGeometry(
+        await measure(width, height),
+        expected,
+        `${width}x${height}`,
+      );
     });
-  }
-
-  for (const [width, height] of PHONE) {
-    it(
-      `${width}x${height} phone layout (expected to fail)`,
-      { todo: "TODO responsive formula: landscape controls leave the board and the hand band collides with side seats/controls; portrait tiles fall below 18px; 4/3-column rivers and 24/18% hand bands are not implemented" },
-      async () => {
-        assertPhone(await measure(width, height), `${width}x${height}`);
-      },
-    );
   }
 });

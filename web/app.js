@@ -14,6 +14,7 @@ import {
   BONUS_TILE_KEYS,
   PLAY_TILE_KEYS,
 } from "./tiles.js";
+import { computeLayout } from "./layout.js";
 
 const SEATS = ["E", "S", "W", "N"];
 const WIND_NAME = { E: "East", S: "South", W: "West", N: "North" };
@@ -788,6 +789,70 @@ function renderRivers() {
   }
 }
 
+function layoutSpec(width, height) {
+  if (width >= 1024) {
+    return {
+      mode: "desktop",
+      riverColumns: 6,
+      handBandFraction: 0.12,
+      minTileWidth: 26,
+      maxTileWidth: 46,
+    };
+  }
+  if (height > width) {
+    return {
+      mode: "portrait",
+      riverColumns: 3,
+      handBandFraction: 0.18,
+      minTileWidth: 18,
+      maxTileWidth: 46,
+    };
+  }
+  return {
+    mode: "landscape",
+    riverColumns: 4,
+    handBandFraction: 0.24,
+    minTileWidth: 18,
+    maxTileWidth: 46,
+  };
+}
+
+function applyLayout() {
+  const layout = computeLayout({
+    width: window.innerWidth,
+    height: window.innerHeight,
+    ...layoutSpec(window.innerWidth, window.innerHeight),
+  });
+  const root = document.documentElement.style;
+  const px = (value) => `${value}px`;
+  root.setProperty("--layout-gap", px(layout.gap));
+  root.setProperty("--layout-tile-w", px(layout.tileWidth));
+  root.setProperty("--layout-tile-h", px(layout.tileHeight));
+  root.setProperty("--layout-back-w", px(layout.tileWidth * 0.73));
+  const sideHeight = Math.min(layout.seats.left[3], layout.seats.right[3]);
+  root.setProperty(
+    "--layout-back-h",
+    px(Math.min(layout.tileWidth * 0.96, (sideHeight - 12) / 13)),
+  );
+  root.setProperty("--layout-river-columns", String(layout.riverColumns));
+  const setRect = (name, rect) => {
+    root.setProperty(`--layout-${name}-x`, px(rect[0]));
+    root.setProperty(`--layout-${name}-y`, px(rect[1]));
+    root.setProperty(`--layout-${name}-w`, px(rect[2]));
+    root.setProperty(`--layout-${name}-h`, px(rect[3]));
+  };
+  setRect("hand", layout.handBand);
+  setRect("centre", layout.centre);
+  setRect("river-top", layout.rivers.top);
+  setRect("river-left", layout.rivers.left);
+  setRect("river-right", layout.rivers.right);
+  setRect("river-bottom", layout.rivers.bottom);
+  setRect("seat-top", layout.seats.top);
+  setRect("seat-left", layout.seats.left);
+  setRect("seat-right", layout.seats.right);
+  setRect("controls", layout.controls);
+}
+
 function renderHandBadge() {
   const badge = $("#hand-badge");
   if (badge === null) return;
@@ -807,7 +872,10 @@ function renderHandBadge() {
   const hand = $("#hand");
   const parent = badge.offsetParent;
   if (hand !== null && parent !== null) {
-    const gap = 2;
+    const gap =
+      Number.parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue("--layout-gap"),
+      ) || 2;
     requestAnimationFrame(() => {
       const settled = hand.getBoundingClientRect();
       const hostRect = parent.getBoundingClientRect();
@@ -1790,6 +1858,7 @@ function renderOutcome() {
 
 function render() {
   if (payload === null) return;
+  applyLayout();
   $("#board").classList.toggle("is-claiming", isOwnClaimWindow());
   renderMeta();
   renderSeats();
@@ -2262,6 +2331,9 @@ function bindEvents() {
   overlay.addEventListener("error", applyReference);
   window.addEventListener("pointerdown", unlockAudio, { capture: true });
   window.addEventListener("keydown", unlockAudio, { capture: true });
+  window.addEventListener("resize", () => {
+    if (payload !== null) render();
+  });
 }
 
 function initialRail() {
