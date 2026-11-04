@@ -41,17 +41,17 @@ describe("payments", () => {
       lastDraw: { seat: "E", tile: "b5", end: "front" },
     });
     const won = play(state, { type: "Win", seat: "E", kind: "self-drawn" });
-    assert.equal(won.state.result?.points, 1500);
+    assert.equal(won.state.result?.points, 1000);
     assert.equal(won.state.result?.nextDealer, "E");
     assert.deepEqual(
       won.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
       [
-        ["S", "E", 1500],
-        ["W", "E", 1500],
-        ["N", "E", 1500],
+        ["S", "E", 1000],
+        ["W", "E", 1000],
+        ["N", "E", 1000],
       ],
     );
-    assert.deepEqual(ledgerTotals(won.state).totals, { E: 4500, S: -1500, W: -1500, N: -1500 });
+    assert.deepEqual(ledgerTotals(won.state).totals, { E: 3000, S: -1000, W: -1000, N: -1000 });
     zeroSum(won.state);
   });
 
@@ -72,9 +72,9 @@ describe("payments", () => {
     assert.deepEqual(
       won.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
       [
-        ["E", "S", 3000],
-        ["W", "S", 1500],
-        ["N", "S", 1500],
+        ["E", "S", 2000],
+        ["W", "S", 1000],
+        ["N", "S", 1000],
       ],
     );
     assert.match(won.state.ledger[0]!.reason, /dealer double/);
@@ -104,7 +104,7 @@ describe("payments", () => {
     assert.equal(won.state.result?.selfDrawn, false);
     assert.deepEqual(
       won.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
-      [["E", "S", 1500]],
+      [["E", "S", 1000]],
     );
     assert.equal(won.state.result?.nextDealer, "S");
     zeroSum(won.state);
@@ -174,12 +174,12 @@ describe("payments", () => {
     assert.ok(!won.state.ledger.some((entry) => entry.reason.startsWith("fishing")));
     assert.deepEqual(
       won.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
-      [["S", "E", 1500]],
+      [["S", "E", 1000]],
     );
     zeroSum(won.state);
   });
 
-  it("surfaces Calculate as unscored instead of inventing a figure", () => {
+  it("scores a Calculate hand from the ground score instead of a flat tier", () => {
     const state = fixture({
       hands: {
         E: "c6 c6 c6 c7 c7 c7 c8 c8 c8 c9 c9 c9 c5 c5",
@@ -192,11 +192,11 @@ describe("payments", () => {
     });
     const won = play(state, { type: "Win", seat: "E", kind: "self-drawn" });
     assert.equal(won.state.result?.tier, "calculate");
-    assert.equal(won.state.result?.points, null);
-    assert.ok(won.state.ledger.every((entry) => entry.points === null));
-    assert.equal(ledgerTotals(won.state).unknown, 3);
-    assert.deepEqual(ledgerTotals(won.state).totals, { E: 0, S: 0, W: 0, N: 0 });
-    assert.ok(won.events.some((event) => event.type === "HandScored" && event.points === null));
+    assert.equal(won.state.result?.points, 1000);
+    assert.ok(won.state.ledger.every((entry) => entry.points === 1000));
+    assert.equal(ledgerTotals(won.state).unknown, 0);
+    assert.deepEqual(ledgerTotals(won.state).totals, { E: 3000, S: -1000, W: -1000, N: -1000 });
+    assert.ok(won.events.some((event) => event.type === "HandScored" && event.points === 1000));
   });
 });
 

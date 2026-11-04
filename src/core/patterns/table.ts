@@ -255,10 +255,10 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "three-great-scholars",
     name: "Three Great Scholars",
-    pages: [33],
+    pages: [33, 49],
     category: "honour",
-    tier: "middle",
-    exposedTier: "middle",
+    tier: "limit",
+    exposedTier: "limit",
     requiresSelfDrawn: false,
     description:
       "Pungs/kongs of all three dragons, plus one pung/kong or chow and a " +
@@ -1315,10 +1315,10 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "civil-war",
     name: "Civil War",
-    pages: [30],
+    pages: [30, 53],
     category: "honour",
-    tier: "middle",
-    exposedTier: "middle",
+    tier: "double",
+    exposedTier: "double",
     requiresSelfDrawn: false,
     description:
       "Pungs/kongs of North and South Winds, plus 1, 1, 6, 8 in one suit and " +
@@ -1353,10 +1353,10 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "four-blessings",
     name: "The Four Blessings",
-    pages: [30],
+    pages: [30, 49],
     category: "honour",
-    tier: "middle",
-    exposedTier: "middle",
+    tier: "limit",
+    exposedTier: "limit",
     requiresSelfDrawn: false,
     description: "Pungs/kongs of all four winds plus any pair.",
     source: "Synopsis p. 56; illustration p. 30.",
@@ -1914,9 +1914,9 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "sparrows-sanctuary",
     name: "Sparrow's Sanctuary",
-    pages: [21, 49, 53],
+    pages: [21, 44, 49, 53],
     category: "suit",
-    tier: "middle",
+    tier: "limit",
     exposedTier: null,
     requiresSelfDrawn: false,
     description:
@@ -2340,10 +2340,10 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "chinese-odds",
     name: "Chinese Odds",
-    pages: [49],
+    pages: [40, 49],
     category: "suit",
-    tier: "middle",
-    exposedTier: "middle",
+    tier: "limit",
+    exposedTier: "limit",
     requiresSelfDrawn: false,
     description:
       "Four pungs/kongs of odd numbers plus an odd pair, all in one suit.",

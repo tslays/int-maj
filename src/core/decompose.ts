@@ -54,8 +54,10 @@ function walk(
   sets: StandardSet[],
   pair: string,
   results: StandardDecomposition[],
+  setCount: number,
+  allowKongs: boolean,
 ): void {
-  if (sets.length === 4) {
+  if (sets.length === setCount) {
     if (counts.every((count) => count === 0)) results.push({ sets: sets.slice(), pair });
     return;
   }
@@ -66,10 +68,10 @@ function walk(
   const key = PLAY_TILE_KEYS[first]!;
   const count = counts[first]!;
 
-  if (count >= 4) {
+  if (allowKongs && count >= 4) {
     counts[first] = count - 4;
     sets.push({ kind: "kong", tile: key });
-    walk(counts, sets, pair, results);
+    walk(counts, sets, pair, results, setCount, allowKongs);
     sets.pop();
     counts[first] = count;
   }
@@ -77,7 +79,7 @@ function walk(
   if (count >= 3) {
     counts[first] = count - 3;
     sets.push({ kind: "pung", tile: key });
-    walk(counts, sets, pair, results);
+    walk(counts, sets, pair, results, setCount, allowKongs);
     sets.pop();
     counts[first] = count;
   }
@@ -87,7 +89,7 @@ function walk(
     counts[first + 1]! -= 1;
     counts[first + 2]! -= 1;
     sets.push({ kind: "chow", suit: SUIT_BY_INDEX[first]!, start: (first % 9) + 1 });
-    walk(counts, sets, pair, results);
+    walk(counts, sets, pair, results, setCount, allowKongs);
     sets.pop();
     counts[first] = count;
     counts[first + 1]! += 1;
@@ -95,14 +97,26 @@ function walk(
   }
 }
 
-export function decomposeStandard(shape: HandShape): StandardDecomposition[] {
+export interface DecomposeOptions {
+  /** How many sets to form after the pair. Default 4 (an ordinary hand). */
+  readonly setCount?: number;
+  /** Allow four identical tiles to form a kong. Default true. */
+  readonly allowKongs?: boolean;
+}
+
+export function decomposeStandard(
+  shape: HandShape,
+  options: DecomposeOptions = {},
+): StandardDecomposition[] {
+  const setCount = options.setCount ?? 4;
+  const allowKongs = options.allowKongs ?? true;
   const base = PLAY_TILE_KEYS.map((key) => shape.counts[key] ?? 0);
   const results: StandardDecomposition[] = [];
   for (let index = 0; index < base.length; index++) {
     if (base[index]! < 2) continue;
     const counts = base.slice();
     counts[index]! -= 2;
-    walk(counts, [], PLAY_TILE_KEYS[index]!, results);
+    walk(counts, [], PLAY_TILE_KEYS[index]!, results, setCount, allowKongs);
   }
   return results;
 }
