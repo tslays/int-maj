@@ -92,3 +92,45 @@ the answers.
 - The variant switch is a query parameter (`?variant=a|b|c`), defaulting to the
   current look, and costs one CSS block plus one class.
 - No engine or test change.
+
+## Geometry is computed, not eyeballed
+
+No position, gap or size may be guessed from a picture. Each one derives from
+one number - the board box - through the spacing scale:
+
+    tile_w   = round(board_w * hand_row_fraction)      // one unit, everything else follows
+    tile_h   = round(tile_w * tile_aspect)
+    gap      = round(tile_w * 0.25)                     // the only gap scale
+    inset    = gap                                      // every region is inset by the same gap
+    rack     = tile_w * 0.73 x tile_h * 0.96            // a face-down tile
+    river    = 6 columns of tile_w + 5 gaps
+    centre_w = board_w - 2 * (river_w + inset)
+    centre_h = board_h - 2 * (river_h + inset) - hand_band_h
+
+Every region is then a rectangle computed from those values, in this order:
+hand band, centre, four rivers, four seat bands, controls. A seat badge is
+placed at `rack_edge +/- gap` and centred on the rack's midpoint - the same
+formula for all four seats, which is what makes them consistent.
+
+The implementation must expose the computed rects (a `layout` object on the
+view) so a test can assert, at any viewport:
+
+- no two region rects intersect;
+- each badge's gap to its rack equals `gap` and its centre offset is 0;
+- `tile_w >= 26` on desktop and `>= 18` on a phone;
+- nothing is placed outside the board box.
+
+Screenshots judge taste only. If taste and the computed rects disagree, the
+rects win until the formula changes.
+
+## Responsive targets
+
+| Target | Size | Board rule |
+|---|---|---|
+| Desktop | 1440x900, 1280x800, 1024x768 | As above; hand band 12% of height |
+| Tablet | 1024x768, 834x1112 | Same formulas; hand band 14% |
+| Phone landscape | 844x390, 932x430 | Board fills the width; hand band 24%; rivers 4 columns; seat badges move into the hand row |
+| Phone portrait | 390x844, 430x932 | Rotate the table: rivers 3 columns, hand band 18%, controls full width under the hand |
+
+Portrait is a real target, not a fallback: the same formulas must hold with
+`river_columns` as a breakpoint variable instead of a constant.
