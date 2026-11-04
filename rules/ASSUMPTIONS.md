@@ -1,20 +1,24 @@
+> **Superseded by `rules/RULES.md` (2026-11-04):** this document is prior
+> project material. The normative framework is `rules/RULES.md` — the scanned
+> *The Game of Mah Jong Illustrated* as the rubric, the Companion as supplement.
+> Anything here that conflicts with it is wrong; see `rules/AUDIT.md` for the
+> conflict list.
+
 # Assumptions
 
 Every rule below is an assumption unless it is explicitly attributed to a
-source. The book is a special-hands catalogue and scoring table, not a complete
-ruleset; tile set, deal, claims and payments are the owner's rulings in
-`rules/PLAY.md`, read as literally as the book allows.
+source. The Illustrated book states the game and its hands; the Companion adds
+hands and tiers. Only questions both books leave open are assumptions, and each
+one is recorded here with the page that was checked. `rules/RULES.md` is the
+framework these feed into.
 
-## Sources
+## Source status
 
-1. `rules/pages/p*.png` — page renders of the scan. **Authoritative for tile
-   composition.** The OCR loses the diagrams.
-2. `rules/companion-ocr.txt` — searchable index of hand names and prose. Not
-   authoritative for composition.
-3. Book page numbers in the pattern table are the printed book page numbers
-   from the short list and the "Full Synopsis of Special Hands" (pp. 56-61 of
-   the book). The scan contains spreads for book pages 6-65; only page 9 and
-   pages outside that range are absent.
+Everything below is an earlier-source transcription or implementation
+assumption and is pending audit against the owner-designated primary scan.
+`rules/SOURCE.md` is authoritative for source precedence. The old local page
+renders and OCR are not authoritative where they conflict with the primary
+PDF; a prior owner confirmation is not an exception.
 
 ## Tile set
 

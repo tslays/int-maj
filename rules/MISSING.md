@@ -1,3 +1,9 @@
+> **Superseded by `rules/RULES.md` (2026-11-04):** this document is prior
+> project material. The normative framework is `rules/RULES.md` — the scanned
+> *The Game of Mah Jong Illustrated* as the rubric, the Companion as supplement.
+> Anything here that conflicts with it is wrong; see `rules/AUDIT.md` for the
+> conflict list.
+
 # What this scan loses (measured, page by page)
 
 > **Owner confirmation, 2026-10-31:** nothing substantive is missing on pages 4 and 30-32. The right margin trims the last one or two letters of a few words ("Fishing", "hands", "Exposed"); no value, hand or rule is absent. Treat truncated fragments on those pages as COMPLETE — read the evident meaning and move on. The list below is a record of where the margin bites, not a list of unknowns.

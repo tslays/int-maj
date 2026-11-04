@@ -1,3 +1,9 @@
+> **Superseded by `rules/RULES.md` (2026-11-04):** this document is prior
+> project material. The normative framework is `rules/RULES.md` — the scanned
+> *The Game of Mah Jong Illustrated* as the rubric, the Companion as supplement.
+> Anything here that conflicts with it is wrong; see `rules/AUDIT.md` for the
+> conflict list.
+
 # Play rules — the decisions the book does not make
 
 The Companion is a hand catalogue: it never states the tile set, the deal, the wall, claim precedence or payments. The turn engine needs each of these as a value. Nothing here is transcribed from the book — every line is a **proposal** with my reasoning, awaiting your yes/no. When you answer, the entry moves to DECIDED and the engine reads it from the variant profile.

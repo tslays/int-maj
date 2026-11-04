@@ -1,3 +1,9 @@
+> **Superseded by `rules/RULES.md` (2026-11-04):** this document is prior
+> project material. The normative framework is `rules/RULES.md` — the scanned
+> *The Game of Mah Jong Illustrated* as the rubric, the Companion as supplement.
+> Anything here that conflicts with it is wrong; see `rules/AUDIT.md` for the
+> conflict list.
+
 # Notes: source problems and transcription decisions
 
 The catalogue covers both columns of the Full Synopsis (book pp. 56-61) and

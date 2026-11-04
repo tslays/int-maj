@@ -1,38 +1,41 @@
 # int-maj
 
-Pure, deterministic core for international mahjong as Patricia Thompson and
-Betty Maloney print it: the hands of *The Mah Jong Player's Companion*, gathered
-from games played in many countries. Zero runtime dependencies; TypeScript runs directly on Node 24+ via
-type stripping.
+A deterministic international-mahjong implementation. The owner-designated
+primary rule source is the scanned *The Game of Mah Jong Illustrated*;
+`rules/SOURCE.md` records the source, precedence and reading protocol. Zero
+runtime dependencies; TypeScript runs directly on Node 24+ via type stripping.
 
-## Status
+## Rule-source status
 
-The hand-pattern catalogue is complete: 85 canonical patterns covering every
-hand in the Full Synopsis (both columns of book pp. 56-61) plus the hands that
-appear only on a scanned catalogue page. Every pattern has a positive and a
-near-miss negative test. Repeated printings are deduped into one canonical id
-with all page references; `big-robert-mixed` is the only `variantOf` scoring
-variant. The synopsis's printed Winning/Fishing values are transcribed;
-`calculate` hands keep a null point value.
+The current pattern catalogue and game engine come from earlier project work
+and have **not yet been fully reconciled** with the primary scan. Treat all
+encoded rule details as unverified until checked against the cropped pages.
+The scan overrides conflicting owner decisions, assumptions, code, tests and
+documentation; do not claim source fidelity before the audit is complete.
 
-- Engine: tile model, 144-tile wall, seeded RNG, hand/meld model, normalised
-  shape, standard decomposition, declared fishing state, generic matcher,
-  precedence scorer.
-- Turn engine: `GameState + Action -> { state, events }`, claims and
-  precedence, fishing declarations, payments, dealer rotation, event-log
-  replay. Rules the book leaves open are in `rules/PLAY.md` entries 11-19.
-- Console table: `npm run play` seats you against three bots, with a pure
-  policy in `src/core/game/bot.ts` and the table text in `console.ts`.
+## Current implementation
+
+- Pattern table with tests, tile/hand modelling, seeded wall generation,
+  matching and scoring code. Its current rule content is interim, not a
+  verified transcription of the primary source.
+- Turn engine with claims, fishing state, dealer rotation and event-log replay;
+  semantics are likewise pending source audit.
+- Console table: `npm run play` seats you against three bots.
 - Web table: `npm run serve` serves a plain HTML/ES-module table from a
-  zero-dependency `node:http` server; every response is a `viewFor`
-  projection, and the table-side checker is built into the page.
+  zero-dependency `node:http` server; responses are `viewFor` projections.
 - Not started: persistence.
-- Sources: local OCR working files (untracked, regenerable with the
-  extractor tools in `rules/`), page renders in `rules/pages/` (tile diagrams,
-  also local only), assumptions in `rules/ASSUMPTIONS.md`,
-  unresolved/provisional notes in `rules/NOTES.md`.
 
-## Coverage
+## Source material
+
+The untouched scanned source and its trimmed reading copy are local under
+`scans/` (not committed; see `.gitignore`). Regenerate the copy with
+`swift rules/crop-primary-source.swift "scans/The Game of Mah Jong Illustrated.pdf" "scans/The Game of Mah Jong Illustrated - trimmed.pdf"`.
+Earlier OCR and page renders under `rules/` are useful only as historical
+audit material. See `rules/SOURCE.md` before relying on any rule document.
+
+## Legacy catalogue coverage — pending primary-source audit
+
+> This table describes the earlier Companion-derived implementation only. It is an audit checklist, not evidence of the primary scan’s contents or completeness.
 
 | Book group | Patterns | Provisional | Unresolved |
 |---|---:|---:|---:|

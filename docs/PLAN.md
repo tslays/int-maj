@@ -1,8 +1,23 @@
 # Plan
 
 Written down so every slice is judged against the same target: a quiet, crisp
-international-mahjong table that reads like Tenhou's, plays by the Companion's
-rules, and behaves like a finished game.
+international-mahjong table that reads like Tenhou's, follows the owner-designated
+primary rule scan (see `rules/SOURCE.md`), and behaves like a finished game.
+
+## Blocking priority — reconcile the rules source
+
+The current rules, pattern catalogue and game behavior were built from earlier
+transcriptions and have not yet been fully checked against the primary scan.
+The page-by-page work is specified in [`docs/SOURCE-AUDIT.md`](SOURCE-AUDIT.md)
+(milestones A-D, spread map and evidence rules), and its result is
+[`rules/RULES.md`](RULES.md) — one framework: the Illustrated book as the
+normative rubric, the Companion as its supplement, with a provenance tag per
+rule.
+Reconcile each rule and pattern against its printed text/diagrams, let the scan
+overrule conflicting owner decisions, update citations/tests/docs, and keep
+unresolved source ambiguity explicit. Until this is complete, do not claim the
+runtime follows the primary source. This source-faithful reconciliation is in
+scope even though unrelated rules changes are not.
 
 ## Done so far
 
@@ -57,5 +72,5 @@ states flash.
 
 ## Out of scope, deliberately
 
-Avatars, emotes, gacha, timers, riichi furniture; any change to the rules or
-the pattern catalogue.
+Avatars, emotes, gacha, timers, riichi furniture; unrelated rules changes.
+Source-faithful corrections required by `rules/SOURCE.md` are in scope.
