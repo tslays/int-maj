@@ -27,9 +27,10 @@ documentation; do not claim source fidelity before the audit is complete.
 
 ## Source material
 
-The untouched scanned source and its trimmed reading copy are local under
-`scans/` (not committed; see `.gitignore`). Regenerate the copy with
-`swift rules/crop-primary-source.swift "scans/The Game of Mah Jong Illustrated.pdf" "scans/The Game of Mah Jong Illustrated - trimmed.pdf"`.
+The scanned source is local under `scans/` as one page-edge-trimmed PDF (not
+committed; see `.gitignore`). Its pages keep the full scan behind the crop
+boxes. `rules/crop-primary-source.swift` rebuilds the trimmed copy from a fresh
+original.
 Earlier OCR and page renders under `rules/` are useful only as historical
 audit material. See `rules/SOURCE.md` before relying on any rule document.
 
