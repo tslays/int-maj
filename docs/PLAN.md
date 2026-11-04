@@ -4,6 +4,37 @@ Written down so every slice is judged against the same target: a quiet, crisp
 international-mahjong table that reads like Tenhou's, follows the owner-designated
 primary rule scan (see `rules/SOURCE.md`), and behaves like a finished game.
 
+## M0 — repository tidy (after the last rules agent finishes)
+
+Owner request, 2026-11-04: the folder structure and architecture should read as
+one tidy project once extraction is done. Do this only when no agent is running,
+because the moves touch files the extraction is citing.
+
+Problems now: `rules/` mixes the normative documents with eight OCR scripts and
+several generated dumps; two superseded notes files sit beside the framework;
+generated renders (135 MB) live inside `rules/`; tools are split between `rules/`
+and `tools/`.
+
+Target layout:
+
+- `rules/` — normative and evidence only: `RULES.md`, `SOURCE.md`, `AUDIT.md`,
+  `PRIMARY-RULES.md`, `PRIMARY-HANDS.md`.
+- `rules/archive/` — superseded notes kept for the audit trail: `PLAY.md`,
+  `ASSUMPTIONS.md`, `NOTES.md`, `MISSING.md`, with a one-line header saying what
+  replaced them.
+- `rules/tools/` — every script that produces evidence: `ocr*.swift`,
+  `cellocr.swift`, `dump.swift`, `crop-primary-source.swift`,
+  `primary-pages.swift`.
+- `rules/.generated/` — gitignored renders, OCR text and TSV dumps (`pages/`,
+  `primary-pages/`, `*.txt`, `*.tsv`), produced by those tools.
+- `docs/` — `PLAN.md`, `SOURCE-AUDIT.md`, `STYLE.md`, `UI.md`; audit briefs stay
+  with the plan, not with the rule text.
+
+Acceptance: every path in `README.md`, `AGENTS.md`, `rules/*.md`, `docs/*.md`,
+`src/**` and the tools resolves after the move (grep for the old paths returns
+nothing); `.gitignore` matches the new generated directory; `git status` clean;
+`npm test` green; no generated file is tracked.
+
 ## Blocking priority — reconcile the rules source
 
 The current rules, pattern catalogue and game behavior were built from earlier
