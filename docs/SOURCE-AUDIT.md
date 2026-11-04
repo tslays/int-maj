@@ -101,6 +101,24 @@ these slices, in order, one commit each, tests green at every commit
 | C6 Rounds and penalties | A11, A13, A14, A15, A17, A25 | Wind of the Round progression, dealer repeat, drawn hand, goulash, kitty, penalties, reshuffle, special hands optional | A four-round game with correct winds; each penalty path tested |
 | C7 Catalogue | 12 corrections, 3 additions, C1-C9 | Fix compositions and tiers; add Buried Treasure, All Kong, Mixed Pung; remove the Companion tiers the Illustrated book overrides | Catalogue fixtures for every corrected/added hand |
 | C8 Chinese variant | A12 | 136 tiles, dead wall of 14, mixed suits, any number of chows, as a variant profile | A Chinese-game test proves the dead wall is never drawn and mixed-suit hands match |
+
+### The bar for every C slice
+
+1. **Test first.** A behaviour change starts with a test that fails on the old
+   code; the commit message names it.
+2. **Reproduce the book.** Every worked example the pages print is a test with
+   the printed figures, not a rounded approximation.
+3. **Invariants, not just cases.** Payments sum to zero across the table; a
+   higher doubling count never scores less before the cap; a capped hand never
+   exceeds the limit; a hand scores the same however its tiles are ordered; a
+   seat's view never contains another seat's concealed tiles.
+4. **No orphan paths.** If a rule is replaced, the old branch, flag or constant
+   is deleted in the same commit — no dead `if` left behind for safety.
+5. **Close the row.** Each audit row is closed in `rules/AUDIT.md` with the
+   commit hash and the test that proves it; a row that cannot be closed says why.
+6. **Self-review the diff.** Read your own `git diff` before committing: no
+   commented-out code, no TODOs, no rule applied "just in case".
+
 | C9 Text sweep | — | README, docs/UI.md and every comment describe the framework, not the old rules | grep finds no stale rule claim |
 
 
