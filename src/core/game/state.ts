@@ -64,6 +64,14 @@ export interface ClaimWindow {
   readonly tile: string;
   readonly pending: readonly Seat[];
   readonly claims: readonly ClaimRecord[];
+  /** A discard window by default; "kong" is a rob-the-kong window. */
+  readonly kind?: "discard" | "kong";
+  /** Present on a rob window: the added kong that may be robbed. */
+  readonly kong?: {
+    readonly seat: Seat;
+    readonly tile: string;
+    readonly meldIndex: number;
+  };
 }
 
 export interface FishingState {

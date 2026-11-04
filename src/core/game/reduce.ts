@@ -289,6 +289,7 @@ export function claimOptions(
   seat: Seat,
   tile: string,
   discarder: Seat,
+  source: "discard" | "kong" = "discard",
 ): ClaimRecord[] {
   const player = playerOf(state, seat);
   if (effectiveCount(player) !== 13) return [];
@@ -299,28 +300,31 @@ export function claimOptions(
     options.push({ seat, kind: "mahjong", tiles: [tile] });
   }
   if (fishing) return options;
+  if (source === "kong") return options;
 
   const copies = countOf(player.hand, tile);
   if (copies >= 2) options.push({ seat, kind: "pung", tiles: [tile, tile, tile] });
-  if (copies >= 3 && wallRemaining(state) > 0) {
+  if (copies >= 3 && (wallRemaining(state) > 0 || state.wall.loose.length > 0)) {
     options.push({ seat, kind: "kong", tiles: [tile, tile, tile, tile] });
   }
 
-  // Chow only from the player on your left — the seat that discarded just
-  // before you in turn order — and never when the chow would complete the
-  // hand (PLAY.md #7). In turn order that is the seat after the discarder.
-  if (seat === nextSeat(discarder)) {
-    const parsed = parseTile(tile);
-    if (isSuited(parsed)) {
-      for (const start of [parsed.rank - 2, parsed.rank - 1, parsed.rank]) {
-        if (start < 1 || start > 7) continue;
-        const chow = chowKeys(parsed, start);
-        const needed = chow.filter((key) => key !== tile);
-        if (needed.length !== 2) continue;
-        if (!needed.every((key) => countOf(player.hand, key) > 0)) continue;
-        if (completesAsChow(state, seat, player.hand, chow, needed)) continue;
-        options.push({ seat, kind: "chow", tiles: sortKeys(chow) });
-      }
+  // A chow may be claimed by the player on the discarder's right (the next
+  // seat in turn order), or by any player when it completes the hand. A
+  // player who already has an exposed meld may claim a chow only to win.
+  const parsed = parseTile(tile);
+  if (isSuited(parsed)) {
+    const right = seat === nextSeat(discarder);
+    const hasExposed = player.melds.some((meld) => meld.exposed);
+    for (const start of [parsed.rank - 2, parsed.rank - 1, parsed.rank]) {
+      if (start < 1 || start > 7) continue;
+      const chow = chowKeys(parsed, start);
+      const needed = chow.filter((key) => key !== tile);
+      if (needed.length !== 2) continue;
+      if (!needed.every((key) => countOf(player.hand, key) > 0)) continue;
+      const wins = completesAsChow(state, seat, player.hand, chow, needed);
+      if (!right && !wins) continue;
+      if (hasExposed && !wins) continue;
+      options.push({ seat, kind: "chow", tiles: sortKeys(chow) });
     }
   }
   return options;
@@ -607,16 +611,43 @@ function resolveClaims(draft: Draft, events: Event[], emit: Emit): ApplyError | 
   draft.claimWindow = null;
   draft.lastDiscard = null;
 
+  if (window.kind === "kong") {
+    const kong = window.kong!;
+    if (claims.length === 0) {
+      return finishKongReplacement(
+        draft,
+        kong.seat,
+        kong.tile,
+        true,
+        kong.meldIndex,
+        events,
+        emit,
+      );
+    }
+    removeKeys(draftPlayer(draft, kong.seat).hand as string[], [kong.tile]);
+    const winner = draftPlayer(draft, claims[0]!.seat);
+    winner.hand.push(kong.tile);
+    winner.hand.splice(0, winner.hand.length, ...sortKeys(winner.hand));
+    return finishWin(draft, claims[0]!.seat, kong.seat, false, kong.tile, emit);
+  }
+
   if (claims.length === 0) {
     advanceTurn(draft, discarder, events, emit);
     return null;
   }
 
-  const priority = (kind: ClaimKind): number =>
-    kind === "mahjong" ? 3 : kind === "kong" || kind === "pung" ? 2 : 1;
+  const winsOnClaim = (claim: ClaimRecord): boolean => {
+    if (claim.kind === "mahjong") return true;
+    if (claim.kind !== "chow") return false;
+    const claimant = playerOf(draft as GameState, claim.seat);
+    const needed = claim.tiles.filter((key) => key !== tile);
+    return completesAsChow(draft as GameState, claim.seat, claimant.hand, claim.tiles, needed);
+  };
+  const priority = (claim: ClaimRecord): number =>
+    winsOnClaim(claim) ? 3 : claim.kind === "kong" || claim.kind === "pung" ? 2 : 1;
   const distance = (seat: Seat): number =>
     (seatIndex(seat) - seatIndex(discarder) + SEATS.length) % SEATS.length;
-  claims.sort((a, b) => priority(b.kind) - priority(a.kind) || distance(a.seat) - distance(b.seat));
+  claims.sort((a, b) => priority(b) - priority(a) || distance(a.seat) - distance(b.seat));
   const claim = claims[0]!;
 
   if (claim.kind === "mahjong") {
@@ -624,6 +655,19 @@ function resolveClaims(draft: Draft, events: Event[], emit: Emit): ApplyError | 
     const winner = draftPlayer(draft, claim.seat);
     winner.hand.push(tile);
     winner.hand.splice(0, winner.hand.length, ...sortKeys(winner.hand));
+    return finishWin(draft, claim.seat, discarder, false, tile, emit);
+  }
+
+  if (winsOnClaim(claim)) {
+    takeDiscard(draft, discarder, tile);
+    const winner = draftPlayer(draft, claim.seat);
+    const needed = claim.tiles.filter((key) => key !== tile);
+    removeKeys(winner.hand as string[], needed);
+    addMeld(draft, claim.seat, {
+      kind: "chow",
+      tiles: sortKeys(claim.tiles),
+      exposed: true,
+    });
     return finishWin(draft, claim.seat, discarder, false, tile, emit);
   }
 
@@ -748,7 +792,13 @@ function applyClaim(
   if (window.pending[0] !== seat || draft.turn !== seat) {
     return { error: `not your claim to answer: ${seat}`, state: draft as GameState };
   }
-  const options = claimOptions(draft as GameState, seat, window.tile, window.discarder);
+  const options = claimOptions(
+    draft as GameState,
+    seat,
+    window.tile,
+    window.discarder,
+    window.kind,
+  );
   const fishing = draft.fishing.some((declaration) => declaration.seat === seat);
   if (fishing && kind !== "mahjong") {
     return {
@@ -761,7 +811,7 @@ function applyClaim(
   );
   if (match === undefined) {
     if (kind === "chow" && seat !== nextSeat(window.discarder)) {
-      return { error: "chow is only allowed from the player on your left", state: draft as GameState };
+      return { error: "chow is only allowed from the player on your right", state: draft as GameState };
     }
     return { error: `illegal ${kind} claim on ${window.tile}`, state: draft as GameState };
   }
@@ -843,43 +893,22 @@ function applyDeclareFishing(
   return null;
 }
 
-function applyKong(
+function finishKongReplacement(
   draft: Draft,
   seat: Seat,
   tile: string,
   added: boolean,
+  meldIndex: number,
   events: Event[],
   emit: Emit,
 ): ApplyError | null {
-  if (draft.phase !== "discard") {
-    return { error: `cannot kong in phase ${draft.phase}`, state: draft as GameState };
-  }
-  if (draft.turn !== seat) return { error: `not your turn: ${seat}`, state: draft as GameState };
   const player = draftPlayer(draft, seat);
-  if (wallRemaining(draft as GameState) === 0) {
-    return { error: "no replacement tile available for a kong", state: draft as GameState };
-  }
-
   if (added) {
-    const meld = player.melds.find(
-      (candidate) => candidate.kind === "pung" && !candidate.exposed && candidate.tiles[0] === tile,
-    );
-    if (meld === undefined) {
-      return {
-        error: "added kong needs your own concealed pung of that tile",
-        state: draft as GameState,
-      };
-    }
-    if (countOf(player.hand, tile) < 1) {
-      return { error: `tile not in hand: ${tile}`, state: draft as GameState };
-    }
     removeKeys(player.hand as string[], [tile]);
+    const meld = player.melds[meldIndex]!;
     meld.kind = "kong";
     meld.tiles = [tile, tile, tile, tile];
   } else {
-    if (countOf(player.hand, tile) < 4) {
-      return { error: `concealed kong needs four copies: ${tile}`, state: draft as GameState };
-    }
     removeKeys(player.hand as string[], [tile, tile, tile, tile]);
     addMeld(draft, seat, { kind: "kong", tiles: [tile, tile, tile, tile], exposed: false });
   }
@@ -899,6 +928,71 @@ function applyKong(
   draft.phase = "discard";
   draft.turn = seat;
   return null;
+}
+
+function applyKong(
+  draft: Draft,
+  seat: Seat,
+  tile: string,
+  added: boolean,
+  events: Event[],
+  emit: Emit,
+): ApplyError | null {
+  if (draft.phase !== "discard") {
+    return { error: `cannot kong in phase ${draft.phase}`, state: draft as GameState };
+  }
+  if (draft.turn !== seat) return { error: `not your turn: ${seat}`, state: draft as GameState };
+  const player = draftPlayer(draft, seat);
+  if (wallRemaining(draft as GameState) === 0 && draft.wall.loose.length === 0) {
+    return { error: "no replacement tile available for a kong", state: draft as GameState };
+  }
+
+  if (!added) {
+    if (countOf(player.hand, tile) < 4) {
+      return { error: `concealed kong needs four copies: ${tile}`, state: draft as GameState };
+    }
+    return finishKongReplacement(draft, seat, tile, false, -1, events, emit);
+  }
+
+  const meldIndex = player.melds.findIndex(
+    (candidate) => candidate.kind === "pung" && candidate.tiles[0] === tile,
+  );
+  if (meldIndex < 0) {
+    return {
+      error: "added kong needs your own pung of that tile",
+      state: draft as GameState,
+    };
+  }
+  if (countOf(player.hand, tile) < 1) {
+    return { error: `tile not in hand: ${tile}`, state: draft as GameState };
+  }
+
+  // An exposed pung may be robbed by any player who can win on the fourth
+  // tile (I p. 21). A concealed pung has no rob window.
+  const meld = player.melds[meldIndex]!;
+  if (meld.exposed) {
+    const pending: Seat[] = [];
+    let candidate = nextSeat(seat);
+    for (let step = 0; step < SEATS.length - 1; step++) {
+      if (winsOnDiscard(draft as GameState, candidate, tile)) pending.push(candidate);
+      candidate = nextSeat(candidate);
+    }
+    if (pending.length > 0) {
+      draft.phase = "claim";
+      draft.turn = pending[0]!;
+      draft.claimWindow = {
+        discarder: seat,
+        tile,
+        pending,
+        claims: [],
+        kind: "kong",
+        kong: { seat, tile, meldIndex },
+      };
+      return null;
+    }
+  }
+
+  return finishKongReplacement(draft, seat, tile, true, meldIndex, events, emit);
 }
 
 function applyWinSelfDrawn(draft: Draft, seat: Seat, events: Event[], emit: Emit): ApplyError | null {
