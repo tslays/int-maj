@@ -2457,6 +2457,63 @@ kbd {
   display: none !important;
 }
 
+/* One badge shape for every seat: wind, then a tabular tile count, set 2px
+   clear of that seat's own rack and centred on it. */
+.variant-d .seat-badge,
+.variant-d .hand-badge {
+  position: absolute;
+  z-index: 4;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4ch;
+  color: var(--on-felt);
+  font-size: var(--fs-label);
+  line-height: 1;
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.variant-d .seat-top .seat-badge,
+.variant-d .seat-left .seat-badge {
+  top: 50%;
+  right: calc(100% + var(--space-1));
+  transform: translateY(-50%);
+}
+
+.variant-d .seat-right .seat-badge {
+  top: 50%;
+  left: calc(100% + var(--space-1));
+  transform: translateY(-50%);
+}
+
+.variant-d .seat.is-turn .seat-badge,
+.variant-d .hand-badge.is-turn {
+  color: var(--accent);
+}
+
+.variant-d .seat-badge .seat-count {
+  display: inline;
+  opacity: 0.72;
+}
+
+.variant-d .hand-band {
+  position: relative;
+}
+
+.variant-d .hand-badge {
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+}
+
+.variant-d .seat-line,
+.variant-d .self-label {
+  display: none !important;
+}
+
 .hand-badge {
   display: none;
 }
