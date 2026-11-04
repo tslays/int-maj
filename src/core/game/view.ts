@@ -62,7 +62,7 @@ export interface GameView {
   readonly lastDraw: {
     readonly seat: Seat;
     readonly tile: string;
-    readonly end: "front" | "back";
+    readonly end: "front" | "loose";
   } | null;
   readonly claimWindow: ClaimWindowView | null;
   readonly fishing: readonly FishingState[];

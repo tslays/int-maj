@@ -225,16 +225,12 @@ describe("console rendering", () => {
 describe("undo", () => {
   it("replays to the exact state before the previous human decision", () => {
     let session = startSession("undo-test");
-    const draw = viewFor(session.state, "E").legalActions.find(
-      (action) => action.type === "Draw",
-    )!;
-    session = recordAction(session, draw, false);
+    const first = legalActions(session.state, session.state.dealer)[0]!;
+    session = recordAction(session, first, false);
 
     const before = session.state;
-    const discard = viewFor(before, "E").legalActions.find(
-      (action) => action.type === "Discard",
-    )!;
-    session = recordAction(session, discard, true);
+    const next = legalActions(before, before.turn)[0]!;
+    session = recordAction(session, next, true);
     assert.deepEqual(session.humanActions, [1]);
 
     let guard = 0;
@@ -251,7 +247,7 @@ describe("undo", () => {
     const undone = undoLastDecision(session);
     assert.notEqual(undone, null);
     assert.equal(serialize(undone!.state), serialize(before));
-    assert.deepEqual(undone!.actions, [draw]);
+    assert.deepEqual(undone!.actions, [first]);
     assert.deepEqual(undone!.humanActions, []);
     assert.equal(undoLastDecision(undone!), null);
   });
@@ -260,8 +256,8 @@ describe("undo", () => {
     const session = startSession("undo-illegal");
     const before = serialize(session.state);
     assert.throws(
-      () => recordAction(session, { type: "Discard", seat: "E", tile: "b1" }, true),
-      /tile not in hand|cannot discard/,
+      () => recordAction(session, { type: "Draw", seat: session.state.dealer }, true),
+      /cannot draw in phase discard/,
     );
     assert.equal(serialize(session.state), before);
   });

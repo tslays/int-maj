@@ -42,7 +42,7 @@ export interface Scenario {
 const TABLE = {
   turn: {
     title: "Your turn to discard",
-    seed: "scene-1",
+    seed: "turn-new-0",
     at: (view) =>
       view.phase === "discard" &&
       view.turn === view.seat &&
@@ -52,7 +52,7 @@ const TABLE = {
 
   claim: {
     title: "Claim window with a chow variant",
-    seed: "scene-1",
+    seed: "claim-new-1",
     at: (view) =>
       view.phase === "claim" &&
       view.turn === view.seat &&
@@ -64,7 +64,7 @@ const TABLE = {
 
   wait: {
     title: "Thirteen tiles with a live wait",
-    seed: "scene-118",
+    seed: "wait-new-4",
     at: (view) => {
       if (view.phase !== "discard" || view.turn === view.seat) return false;
       if (view.fishing.length > 0) return false;
@@ -75,7 +75,7 @@ const TABLE = {
 
   fishing: {
     title: "Fishing declared",
-    seed: "scene-60",
+    seed: "fishing-scene-8",
     at: (view) =>
       view.phase === "discard" &&
       view.turn !== view.seat &&
@@ -85,7 +85,7 @@ const TABLE = {
 
   win: {
     title: "A winning hand and its pattern",
-    seed: "scene-60",
+    seed: "win-scene-37",
     at: (view) =>
       view.result !== null &&
       view.result.kind === "win" &&
@@ -95,18 +95,18 @@ const TABLE = {
 
   drawn: {
     title: "A drawn hand",
-    seed: "scene-1",
+    seed: "drawn-new-0",
     at: (view) => view.result !== null && view.result.kind === "drawn",
   },
 
   result: {
     title: "The result panel with payments and fishing",
-    seed: "win-252",
+    seed: "win",
     at: (_view, state) =>
       state.result !== null &&
       state.result.kind === "win" &&
       state.result.selfDrawn &&
-      state.ledger.filter((entry) => entry.reason.startsWith("fishing")).length >= 3,
+      state.fishing.length >= 1,
   },
 } satisfies Record<string, Scenario>;
 
@@ -126,7 +126,7 @@ export function isScenarioName(value: string): value is ScenarioName {
  */
 export function buildScenario(name: ScenarioName): Omit<WebSession, "id"> {
   const scenario = SCENARIOS[name];
-  const started = newGame(scenario.seed);
+  const started = newGame(scenario.seed, { dealer: "E" });
   let state = started.state;
   const steps: ReplayStep[] = [];
   const humanSteps: number[] = [];

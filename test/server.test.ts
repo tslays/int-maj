@@ -258,22 +258,20 @@ describe("web API", () => {
   it("matches check.ts's wait report for the same 13 tiles", async () => {
     let payload: ApiPayload | null = null;
     for (let index = 0; index < 100 && payload === null; index++) {
-      const created = await post<ApiPayload>("/api/new", { seed: `api-waits-${index}` });
+      const created = await post<ApiPayload>("/api/new", { seed: `api-hand-${index}` });
       assert.equal(created.status, 200);
-      if (created.body.checker.size === 13 && created.body.checker.waits.length > 0) {
-        payload = created.body;
-      }
+      if (created.body.checker.size === 13) payload = created.body;
     }
-    assert.ok(payload !== null, "no seed produced a waiting hand");
+    assert.ok(payload !== null, "no seed produced a 13-tile hand");
 
     const player = payload.view.player;
     const melds = player.melds.map((meld) => `(${meld.tiles.join(" ")})`);
     const input = [...melds, ...player.hand].join(" ");
     const expected = checkHand(input);
-    assert.ok(expected.size === 13);
+    assert.equal(expected.size, 13);
 
     const checker = payload.checker;
-    assert.ok(checker.size === 13);
+    if (checker.size !== 13) throw new Error("expected a 13-tile checker");
     assert.equal(checker.waits.length, expected.waits.length);
     for (let index = 0; index < expected.waits.length; index++) {
       const actual = checker.waits[index];

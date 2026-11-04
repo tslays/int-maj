@@ -116,6 +116,7 @@ function assertTileCensus(state: GameState, seed: string, step: number): void {
     for (const meld of player.melds) addKeys(census, meld.tiles);
   }
   addKeys(census, state.wall.tiles.slice(state.wall.front, state.wall.back + 1));
+  addKeys(census, state.wall.loose);
 
   const total = [...census.values()].reduce((sum, count) => sum + count, 0);
   assert.equal(total, 144, `${seed} step ${step}: ${total} tiles exist`);

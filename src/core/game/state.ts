@@ -104,11 +104,20 @@ export interface GameState {
   readonly handNumber: number;
   readonly dealer: Seat;
   readonly prevailingWind: Wind;
+  /** Dice roll and East's chosen seat for the game, when the deal selected it. */
+  readonly seatSelection?: {
+    readonly rolls: Readonly<Record<Seat, number>>;
+    readonly dealer: Seat;
+  };
   readonly players: readonly PlayerState[];
   readonly wall: {
     readonly tiles: readonly string[];
+    /** First live tile at the open (dealing) end. */
     readonly front: number;
+    /** Last live tile at the replacement end. */
     readonly back: number;
+    /** The loose tiles lifted at the break; replacements come from here. */
+    readonly loose: readonly string[];
   };
   readonly turn: Seat;
   readonly phase: Phase;
@@ -121,7 +130,7 @@ export interface GameState {
   readonly lastDraw: {
     readonly seat: Seat;
     readonly tile: string;
-    readonly end: "front" | "back";
+    readonly end: "front" | "loose";
   } | null;
   readonly result: HandResult | null;
 }

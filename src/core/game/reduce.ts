@@ -334,15 +334,25 @@ function draftPlayer(draft: Draft, seat: Seat): Draft["players"][number] {
   return draft.players[seatIndex(seat)]!;
 }
 
-function drawFrom(draft: Draft, end: "front" | "back"): string | null {
-  if (draft.wall.front > draft.wall.back) return null;
+/** Refill the loose pair from the replacement end of the wall. */
+function refillLoose(draft: Draft): void {
+  while (draft.wall.loose.length < 2 && draft.wall.front <= draft.wall.back) {
+    draft.wall.loose.push(draft.wall.tiles[draft.wall.back]!);
+    draft.wall.back -= 1;
+  }
+}
+
+function drawFrom(draft: Draft, end: "front" | "loose"): string | null {
   if (end === "front") {
+    if (draft.wall.front > draft.wall.back) return null;
     const key = draft.wall.tiles[draft.wall.front]!;
     draft.wall.front += 1;
     return key;
   }
-  const key = draft.wall.tiles[draft.wall.back]!;
-  draft.wall.back -= 1;
+  if (draft.wall.loose.length === 0) refillLoose(draft);
+  const key = draft.wall.loose.shift();
+  if (key === undefined) return null;
+  if (draft.wall.loose.length === 0) refillLoose(draft);
   return key;
 }
 
@@ -371,7 +381,7 @@ function replaceBonus(
     // turned over, so it belongs to the pool. Dropping it here made the
     // final bonus tile vanish from the 144-tile census.
     addBonus(draft, seat, current);
-    const replacement = drawFrom(draft, "back");
+    const replacement = drawFrom(draft, "loose");
     if (replacement === null) {
       finishDrawn(draft, "wall exhausted while replacing a bonus tile", emit);
       return null;
@@ -532,7 +542,7 @@ function finishWin(
   });
   if (hand === null) return { error: "winning hand is not a valid hand", state: draft as GameState };
   const score = scoreHand(hand, {
-    wonOnLooseTile: selfDrawn && draft.lastDraw?.end === "back",
+    wonOnLooseTile: selfDrawn && draft.lastDraw?.end === "loose",
     wonOnLastWallTile:
       selfDrawn &&
       draft.lastDraw?.end === "front" &&
@@ -658,7 +668,7 @@ function resolveClaims(draft: Draft, events: Event[], emit: Emit): ApplyError | 
   draft.lastDraw = null;
 
   if (claim.kind === "kong") {
-    const replacement = drawFrom(draft, "back");
+    const replacement = drawFrom(draft, "loose");
     if (replacement === null) {
       finishDrawn(draft, "wall exhausted while replacing a claimed kong", emit);
       return null;
@@ -666,7 +676,7 @@ function resolveClaims(draft: Draft, events: Event[], emit: Emit): ApplyError | 
     emit({ type: "KongReplacementDrawn", seat: claim.seat, tile: replacement });
     const tileAfter = replaceBonus(draft, claim.seat, replacement, events, emit);
     if (tileAfter === null) return null;
-    draft.lastDraw = { seat: claim.seat, tile: tileAfter, end: "back" };
+    draft.lastDraw = { seat: claim.seat, tile: tileAfter, end: "loose" };
     draftPlayer(draft, claim.seat).hand.push(tileAfter);
     draftPlayer(draft, claim.seat).hand.splice(
       0,
@@ -875,7 +885,7 @@ function applyKong(
   }
 
   emit({ type: "KongDeclared", seat, kind: added ? "added" : "concealed", tile });
-  const replacement = drawFrom(draft, "back");
+  const replacement = drawFrom(draft, "loose");
   if (replacement === null) {
     finishDrawn(draft, "wall exhausted while replacing a kong", emit);
     return null;
@@ -885,7 +895,7 @@ function applyKong(
   if (after === null) return null;
   player.hand.push(after);
   player.hand.splice(0, player.hand.length, ...sortKeys(player.hand));
-  draft.lastDraw = { seat, tile: after, end: "back" };
+  draft.lastDraw = { seat, tile: after, end: "loose" };
   draft.phase = "discard";
   draft.turn = seat;
   return null;
@@ -1002,9 +1012,10 @@ function dealHand(
     seasons: [],
     discards: [],
   }));
-  draft.wall = { tiles, front: 0, back: tiles.length - 1 };
+  draft.wall = { tiles, front: 0, back: tiles.length - 1, loose: [] };
+  refillLoose(draft);
   draft.turn = dealer;
-  draft.phase = "draw";
+  draft.phase = "discard";
   draft.lastDiscard = null;
   draft.claimWindow = null;
   draft.fishing = [];
@@ -1012,10 +1023,20 @@ function dealHand(
   draft.lastDraw = null;
   draft.result = null;
 
-  for (let index = 0; index < SEATS.length * 13; index++) {
-    const key = drawFrom(draft, "front")!;
-    draftPlayer(draft, SEATS[index % SEATS.length]!).hand.push(key);
+  // Four tiles at a time for three rounds (12 each), then one each, then
+  // East's extra tile: East starts at 14 and discards first (I p. 18).
+  for (let round = 0; round < 3; round++) {
+    for (const seat of SEATS) {
+      const player = draftPlayer(draft, seat);
+      for (let index = 0; index < 4; index++) {
+        player.hand.push(drawFrom(draft, "front")!);
+      }
+    }
   }
+  for (const seat of SEATS) {
+    draftPlayer(draft, seat).hand.push(drawFrom(draft, "front")!);
+  }
+  draftPlayer(draft, dealer).hand.push(drawFrom(draft, "front")!);
   for (const seat of SEATS) {
     const player = draftPlayer(draft, seat);
     player.hand.splice(0, player.hand.length, ...sortKeys(player.hand));
@@ -1046,9 +1067,26 @@ export interface NewGameOptions {
   readonly dealer?: Seat;
 }
 
-/** Start hand 1 from a seed. The dealer's first draw is the first action. */
+/** Roll two dice per seat; the unique highest total becomes East (I p. 18). */
+function rollForSeats(seed: string | number): {
+  rolls: Record<Seat, number>;
+  dealer: Seat;
+} {
+  const rng = createRng(`${seed}:seats`);
+  for (;;) {
+    const rolls = Object.fromEntries(
+      SEATS.map((seat) => [seat, rng.int(6) + 1 + rng.int(6) + 1]),
+    ) as Record<Seat, number>;
+    const best = Math.max(...SEATS.map((seat) => rolls[seat]));
+    const winners = SEATS.filter((seat) => rolls[seat] === best);
+    if (winners.length === 1) return { rolls, dealer: winners[0]! };
+  }
+}
+
+/** Start hand 1 from a seed. East starts at 14 and discards first. */
 export function newGame(seed: string | number, options: NewGameOptions = {}): ApplyOk {
-  const dealer = options.dealer ?? "E";
+  const selected = options.dealer === undefined ? rollForSeats(seed) : null;
+  const dealer = options.dealer ?? selected!.dealer;
   const events: Event[] = [];
   let seq = 0;
   const emit: Emit = (event) => {
@@ -1074,6 +1112,7 @@ export function newGame(seed: string | number, options: NewGameOptions = {}): Ap
     lastDraw: null,
     result: null,
   } as unknown as Draft;
+  if (selected !== null) draft.seatSelection = selected;
   dealHand(draft, seed, 0, dealer, 1, events, emit);
   draft.eventSeq = seq;
   return { state: draft as GameState, events };
