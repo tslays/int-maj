@@ -16,6 +16,7 @@ import {
   serialize,
   type Action,
   type GameState,
+  viewFor,
 } from "../src/core/game/index.ts";
 import { fixture, handOf, play, playError } from "./game-fixture.ts";
 
@@ -179,13 +180,16 @@ describe("payments", () => {
     assert.equal(won.state.result?.winner, "E");
     assert.ok(!won.state.ledger.some((entry) => entry.reason.startsWith("fishing")));
     assert.deepEqual(
-      won.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
+      won.state.ledger
+        .filter((entry) => !entry.reason.startsWith("careless"))
+        .map((entry) => [entry.from, entry.to, entry.points]),
       [
         ["S", "E", 2000],
         ["W", "E", 2000],
         ["N", "E", 2000],
       ],
     );
+    assert.ok(won.state.ledger.some((entry) => entry.reason.startsWith("careless")));
     zeroSum(won.state);
   });
 
@@ -212,6 +216,16 @@ describe("payments", () => {
     });
     const won = play(state, { type: "Win", seat: "W", kind: "self-drawn" });
     assert.equal(won.state.result?.points, 1000);
+    assert.equal(won.state.result?.ground, 84);
+    assert.equal(won.state.result?.doubles, 5);
+    assert.equal(won.state.result?.raw, 2688);
+    assert.equal(won.state.result?.limit, 1000);
+    const view = viewFor(won.state, "W");
+    assert.equal(view.result?.ground, 84);
+    assert.equal(view.result?.doubles, 5);
+    assert.equal(view.result?.raw, 2688);
+    assert.equal(view.result?.points, 1000);
+    assert.equal(view.result?.limit, 1000);
     assert.deepEqual(
       won.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
       [

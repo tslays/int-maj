@@ -56,6 +56,15 @@ export function stepsFromEvents(events: readonly Event[]): ReplayStep[] {
             : { type: "Claim", seat: event.seat, kind: "mahjong", tiles: [event.tile] },
         );
         break;
+      case "GoulashExchanged":
+        steps.push(
+          { type: "GoulashExchange", seat: event.a.seat, tiles: event.a.tiles },
+          { type: "GoulashExchange", seat: event.b.seat, tiles: event.b.tiles },
+        );
+        break;
+      case "Reshuffled":
+        steps.push({ type: "RequestReshuffle", seat: event.seat });
+        break;
       case "NextDeal":
         steps.push({ type: "NextHand" });
         break;

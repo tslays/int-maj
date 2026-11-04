@@ -11,9 +11,12 @@
  *   - fishing is the announced state of needing one tile; it does not restrict
  *     claims and has no dead-wait rule
  *   - payments: all three losers pay the winner, East pays/receives double,
- *     rounded to 100; fishing keeps the recorded payer assumption
+ *     rounded to 100; fishing is paid the same way (R69-R71, R76)
+ *   - settlement levels: beginner winner only, intermediate winner plus
+ *     fishing, advanced all hands with pairwise loser differences (R94)
  *   - the Wind of the Round advances when East passes; a drawn Western hand
- *     repeats East once and makes the next hand a Goulash
+ *     repeats East once and makes the next hand a Goulash with three chosen
+ *     three-tile exchanges (R100-R104)
  *
  * Purity: `apply` deep-clones the input, never mutates it, never throws for an
  * ordinary illegal move (it returns `{ error, state }` with the input state
@@ -22,7 +25,7 @@
 
 import { createHand, type Hand, type Meld } from "../hand.ts";
 import { matchHand } from "../match.ts";
-import { scoreHand, type ScoreResult } from "../score.ts";
+import { DEFAULT_LIMIT, scoreHand, type ScoreResult } from "../score.ts";
 import { declareFishing, settleFishing } from "../fishing.ts";
 import { TIER_FISHING, TIER_POINTS, type Tier } from "../patterns/types.ts";
 import {
@@ -51,6 +54,7 @@ import {
   type ClaimRecord,
   type ClaimWindow,
   type FishingState,
+  type SettlementLevel,
   type GameState,
   type LedgerEntry,
   type MeldState,
@@ -159,13 +163,44 @@ export function buildHand(
   }
 }
 
+/** Tournament/agreed special-hand filter (R105(7)-(8), R106). */
+const ORDINARY_PATTERNS = new Set(["ordinary-mahjong", "chinese-ordinary"]);
+
+export function allowedPattern(state: GameState, patternId: string): boolean {
+  if (
+    state.specialHands !== undefined &&
+    !ORDINARY_PATTERNS.has(patternId) &&
+    !state.specialHands.includes(patternId)
+  ) {
+    return false;
+  }
+  if (
+    state.tournament === true &&
+    !ORDINARY_PATTERNS.has(patternId) &&
+    state.specialHands?.includes(patternId) !== false
+  ) {
+    const recent = state.recentSpecialHands ?? [];
+    if (
+      recent.length >= 2 &&
+      recent[recent.length - 1] === patternId &&
+      recent[recent.length - 2] === patternId
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /** True when the seat's current hand plus `tile` matches a catalogue hand. */
 export function winsOnDiscard(state: GameState, seat: Seat, tile: string): boolean {
   const player = playerOf(state, seat);
   if (effectiveCount(player) !== 13) return false;
   if (countOf(player.hand, tile) >= 4) return false;
   const hand = buildHand(state, seat, { extra: tile, winningTile: tile, selfDrawn: false });
-  return hand !== null && matchHand(hand).length > 0;
+  return (
+    hand !== null &&
+    matchHand(hand).some((match) => allowedPattern(state, match.pattern.id))
+  );
 }
 
 /** True when the seat's current 14-effective hand is already a win. */
@@ -174,8 +209,9 @@ export function handIsComplete(state: GameState, seat: Seat, winningTile: string
   if (effectiveCount(player) !== 14) return null;
   const hand = buildHand(state, seat, { winningTile, selfDrawn: true });
   if (hand === null) return null;
-  const score = scoreHand(hand);
-  return score.winning === null ? null : score;
+  const score = scoreHand(hand, { limit: state.limit ?? DEFAULT_LIMIT });
+  if (score.winning === null || !allowedPattern(state, score.winning.pattern.id)) return null;
+  return score;
 }
 
 /**
@@ -195,7 +231,12 @@ export function waitsOf(state: GameState, seat: Seat): string[] {
     // A wait is a tile that would win when drawn, so self-drawn-only patterns
     // count here even though they can never be claimed off a discard.
     const hand = buildHand(state, seat, { extra: key, selfDrawn: true });
-    if (hand !== null && matchHand(hand).length > 0) waits.push(key);
+    if (
+      hand !== null &&
+      matchHand(hand).some((match) => allowedPattern(state, match.pattern.id))
+    ) {
+      waits.push(key);
+    }
   }
   return waits;
 }
@@ -290,8 +331,8 @@ function completesAsChow(
 
 /**
  * Every claim the seat may make on `tile`, in one deterministic order:
- * mahjong, pung, kong, then each chow variant. Fishing narrows this to
- * mahjong only (no pung, no chow, no claim-kong).
+ * mahjong, pung, kong, then each chow variant. Fishing does not narrow the
+ * claim list: a fishing player may still pung, kong or chow (R67-R68).
  */
 export function claimOptions(
   state: GameState,
@@ -421,11 +462,27 @@ function finishDrawn(draft: Draft, reason: string, emit: Emit): void {
     patternName: null,
     tier: null,
     points: null,
+    ground: null,
+    doubles: null,
+    raw: null,
+    limit: draft.limit ?? DEFAULT_LIMIT,
     nextDealer:
-      draft.drawRepeatUsed === true ? nextSeat(draft.dealer) : draft.dealer,
+      draft.tournament === true
+        ? nextSeat(draft.dealer)
+        : draft.drawRepeatUsed === true
+          ? nextSeat(draft.dealer)
+          : draft.dealer,
     reason,
-    goulash: draft.variant !== "chinese",
+    goulash: draft.tournament === true ? false : draft.variant !== "chinese",
   };
+  if (draft.goulash === true && (draft.goulashPool ?? 0) > 0) {
+    draft.goulashPool = (draft.goulashPool ?? 0) * 2;
+  }
+  const penalties = overfullEntries(draft);
+  if (penalties.length > 0) {
+    draft.ledger.push(...penalties);
+    emit({ type: "Payments", entries: penalties });
+  }
   if (draft.variant === "chinese") draft.kitty = (draft.kitty ?? 0) + 1;
   emit({ type: "DrawnHand", reason, dealer: draft.dealer });
 }
@@ -489,6 +546,66 @@ export function roundTo100(points: number): number {
   return remainder > 50 ? base + Math.sign(points) * 100 : base;
 }
 
+/** The best ground-score route for a losing 13-tile hand, without the 20 (R69/R94). */
+function losingHandPoints(draft: Draft, seat: Seat): number {
+  const player = playerOf(draft as GameState, seat);
+  if (effectiveCount(player) > 14) return 0;
+  const limit = draft.limit ?? DEFAULT_LIMIT;
+  let best = 0;
+  for (const tile of waitsOf(draft as GameState, seat)) {
+    const hand = buildHand(draft as GameState, seat, {
+      extra: tile,
+      winningTile: tile,
+      selfDrawn: true,
+    });
+    if (hand === null) continue;
+    const score = scoreHand(hand, {
+      limit,
+      withoutMahJongBonus: true,
+      goulash: draft.goulash === true,
+    });
+    if (score.ground !== null) best = Math.max(best, score.ground);
+  }
+  return best;
+}
+
+/** Doubles held by a 13-tile hand, used for the careless-discard exemption (R79). */
+function heldDoubles(draft: Draft, seat: Seat): number {
+  for (const tile of waitsOf(draft as GameState, seat)) {
+    const hand = buildHand(draft as GameState, seat, {
+      extra: tile,
+      winningTile: tile,
+      selfDrawn: true,
+    });
+    if (hand === null) continue;
+    const score = scoreHand(hand, {
+      limit: draft.limit ?? DEFAULT_LIMIT,
+      goulash: draft.goulash === true,
+    });
+    return score.doubles ?? 0;
+  }
+  return 0;
+}
+
+/** Too many tiles: pays every other player, scores nothing (R81). */
+function overfullEntries(draft: Draft): LedgerEntry[] {
+  const entries: LedgerEntry[] = [];
+  const penalty = (draft.limit ?? DEFAULT_LIMIT) / 2;
+  for (const player of draft.players) {
+    if (effectiveCount(player) <= 14) continue;
+    for (const other of SEATS) {
+      if (other === player.seat) continue;
+      entries.push({
+        from: player.seat,
+        to: other,
+        points: roundTo100(penalty),
+        reason: `too many tiles (${effectiveCount(player)})`,
+      });
+    }
+  }
+  return entries;
+}
+
 function ledgerFor(
   draft: Draft,
   winner: Seat,
@@ -496,18 +613,20 @@ function ledgerFor(
   selfDrawn: boolean,
   tier: Tier,
   points: number | null,
+  winningTile: string,
+  discarderHeldDoubles: number,
 ): LedgerEntry[] {
   const entries: LedgerEntry[] = [];
   const others = SEATS.filter((seat) => seat !== winner);
+  const winnerEntries: LedgerEntry[] = [];
 
   // All three losers pay the winner; the winner pays nobody. East pays and
-  // receives double (I p. 21): East's own payment is doubled, and when East
-  // wins every loser pays double.
+  // receives double (I p. 21, R76-R78).
   for (const payer of others) {
     const doubled = payer === draft.dealer || winner === draft.dealer;
     const amount = points === null ? null : roundTo100(points * (doubled ? 2 : 1));
     const base = selfDrawn ? "self-drawn" : "win";
-    entries.push({
+    const entry: LedgerEntry = {
       from: payer,
       to: winner,
       points: amount,
@@ -515,35 +634,95 @@ function ledgerFor(
         points === null
           ? `${base} ${tier} (calculate, unscored)`
           : `${base} ${tier}${doubled ? " (dealer double)" : ""}`,
-    });
+    };
+    winnerEntries.push(entry);
+    entries.push(entry);
   }
 
-  // Fishing settles independently of the winner. The payer set is the
-  // recorded assumption (each of the other three seats); East doubles as for
-  // any other score. See rules/archive/ASSUMPTIONS.md (recorded assumption) and AUDIT A7.
-  const declarations = draft.fishing.map((entry) => ({
-    player: entry.seat,
-    wait: entry.wait,
-    tier: entry.tier,
-  }));
-  const awards = settleFishing(declarations, winner, TIER_FISHING);
-  for (const award of awards) {
-    for (const payer of SEATS) {
-      if (payer === award.player) continue;
-      const doubled = payer === draft.dealer || award.player === draft.dealer;
-      const amount =
-        award.points === null ? null : roundTo100(award.points * (doubled ? 2 : 1));
+  // Careless discard: a discard visibly needed by an announced fishing wait
+  // makes the discarder pay the other two losers' debts too, unless the
+  // discarder was fishing or held at least three doubles (I p. 22, R79).
+  if (from !== null && from !== winner) {
+    const discarderFishing = draft.fishing.some((entry) => entry.seat === from);
+    const visiblyNeeded = draft.fishing.some(
+      (entry) => entry.seat !== from && entry.wait.includes(winningTile),
+    );
+    if (visiblyNeeded && !discarderFishing && discarderHeldDoubles < 3) {
+      for (const entry of winnerEntries) {
+        if (entry.from === from) continue;
+        entries.push({
+          from,
+          to: winner,
+          points: entry.points,
+          reason: `careless discard for ${entry.from}`,
+        });
+      }
+    }
+  }
+
+  const settlement = draft.settlement ?? "intermediate";
+  if (settlement === "intermediate") {
+    // Fishing settles independently of the winner: all three pay the
+    // fishing hand, East double, exactly as a winning hand (R69-R70, R76).
+    const declarations = draft.fishing.map((entry) => ({
+      player: entry.seat,
+      wait: entry.wait,
+      tier: entry.tier,
+    }));
+    const awards = settleFishing(declarations, winner, TIER_FISHING);
+    for (const award of awards) {
+      for (const payer of SEATS) {
+        if (payer === award.player) continue;
+        const doubled = payer === draft.dealer || award.player === draft.dealer;
+        const amount =
+          award.points === null ? null : roundTo100(award.points * (doubled ? 2 : 1));
+        entries.push({
+          from: payer,
+          to: award.player,
+          points: amount,
+          reason:
+            award.points === null
+              ? `fishing ${award.tier} (calculate, unscored)`
+              : `fishing ${award.tier}${doubled ? " (dealer double)" : ""}`,
+        });
+      }
+    }
+  } else if (settlement === "advanced") {
+    // The winner is paid first and pays nobody. The losers then settle the
+    // differences between their own scores (R76, R94).
+    const losers = others.filter((seat) => effectiveCount(playerOf(draft as GameState, seat)) <= 14);
+    const scores = new Map(losers.map((seat) => [seat, losingHandPoints(draft, seat)]));
+    for (let i = 0; i < losers.length; i++) {
+      for (let j = i + 1; j < losers.length; j++) {
+        const a = losers[i]!;
+        const b = losers[j]!;
+        const delta = (scores.get(a) ?? 0) - (scores.get(b) ?? 0);
+        if (delta === 0) continue;
+        const higher = delta > 0 ? a : b;
+        const lower = delta > 0 ? b : a;
+        const doubled = lower === draft.dealer || higher === draft.dealer;
+        entries.push({
+          from: lower,
+          to: higher,
+          points: roundTo100(Math.abs(delta) * (doubled ? 2 : 1)),
+          reason: `losing hand difference${doubled ? " (dealer double)" : ""}`,
+        });
+      }
+    }
+  }
+
+  if (draft.goulash === true && (draft.goulashPool ?? 0) > 0) {
+    for (const payer of others) {
       entries.push({
         from: payer,
-        to: award.player,
-        points: amount,
-        reason:
-          award.points === null
-            ? `fishing ${award.tier} (calculate, unscored)`
-            : `fishing ${award.tier}${doubled ? " (dealer double)" : ""}`,
+        to: winner,
+        points: draft.goulashPool!,
+        reason: "goulash pool",
       });
     }
   }
+
+  entries.push(...overfullEntries(draft));
   return entries;
 }
 
@@ -561,6 +740,7 @@ function finishWin(
   });
   if (hand === null) return { error: "winning hand is not a valid hand", state: draft as GameState };
   const score = scoreHand(hand, {
+    limit: draft.limit ?? DEFAULT_LIMIT,
     goulash: draft.goulash === true,
     wonOnLooseTile: selfDrawn && draft.lastDraw?.end === "loose",
     wonOnLastWallTile:
@@ -571,6 +751,18 @@ function finishWin(
   const winning = score.winning;
   if (winning === null) {
     return { error: "hand does not match any catalogue pattern", state: draft as GameState };
+  }
+  if (!allowedPattern(draft as GameState, winning.pattern.id)) {
+    return {
+      error: `pattern not allowed at this table: ${winning.pattern.id}`,
+      state: draft as GameState,
+    };
+  }
+  if (draft.tournament === true && !ORDINARY_PATTERNS.has(winning.pattern.id)) {
+    draft.recentSpecialHands = [
+      ...(draft.recentSpecialHands ?? []),
+      winning.pattern.id,
+    ].slice(-2);
   }
 
   emit({
@@ -590,10 +782,23 @@ function finishWin(
     patternName: winning.pattern.name,
     tier: winning.tier,
     points: score.points,
+    ground: score.ground,
+    doubles: score.doubles,
+    raw: score.raw,
+    limit: score.limit,
     matches: score.matches.map((match) => match.pattern.id),
   });
 
-  const entries = ledgerFor(draft, seat, from, selfDrawn, winning.tier, score.points);
+  const entries = ledgerFor(
+    draft,
+    seat,
+    from,
+    selfDrawn,
+    winning.tier,
+    score.points,
+    winningTile,
+    from === null ? 0 : heldDoubles(draft, from),
+  );
   draft.ledger.push(...entries);
   emit({ type: "Payments", entries });
 
@@ -611,7 +816,16 @@ function finishWin(
     patternName: winning.pattern.name,
     tier: winning.tier,
     points: score.points,
-    nextDealer: seat === draft.dealer ? draft.dealer : nextSeat(draft.dealer),
+    ground: score.ground,
+    doubles: score.doubles,
+    raw: score.raw,
+    limit: score.limit,
+    nextDealer:
+      draft.tournament === true
+        ? nextSeat(draft.dealer)
+        : seat === draft.dealer
+          ? draft.dealer
+          : nextSeat(draft.dealer),
     reason: `win by ${winning.pattern.id}`,
   };
   return null;
@@ -829,6 +1043,149 @@ function applyClaim(
   window.pending.shift();
   if (window.pending.length === 0) return resolveClaims(draft, events, emit);
   draft.turn = window.pending[0]!;
+  return null;
+}
+
+/** R82: no Wind, Dragon, pair, Pung/Chow, terminal, Season or Flower. */
+export function isFeaturelessHand(state: GameState, seat: Seat): boolean {
+  const player = playerOf(state, seat);
+  if (player.flowers.length > 0 || player.seasons.length > 0) return false;
+  const counts = new Map<string, number>();
+  for (const key of player.hand) counts.set(key, (counts.get(key) ?? 0) + 1);
+  for (const [key, count] of counts) {
+    const tile = parseTile(key);
+    if (tile.kind === "wind" || tile.kind === "dragon") return false;
+    if (tile.kind === "suited" && (tile.rank === 1 || tile.rank === 9)) return false;
+    if (count >= 2) return false;
+  }
+  for (const [key] of counts) {
+    const tile = parseTile(key);
+    if (tile.kind !== "suited") continue;
+    for (const start of [tile.rank - 2, tile.rank - 1, tile.rank]) {
+      if (start < 1 || start > 7) continue;
+      const run = [start, start + 1, start + 2].map((rank) =>
+        suitTileKey(tile.suit, rank),
+      );
+      if (run.every((runKey) => counts.has(runKey))) return false;
+    }
+  }
+  return true;
+}
+
+function applyReshuffle(
+  draft: Draft,
+  seat: Seat,
+  events: Event[],
+  emit: Emit,
+): ApplyError | null {
+  if (draft.phase !== "discard") {
+    return { error: "a reshuffle is requested only before play", state: draft as GameState };
+  }
+  if (draft.players.some((player) => player.discards.length > 0 || player.melds.length > 0)) {
+    return { error: "a reshuffle is requested before the first discard", state: draft as GameState };
+  }
+  if (!isFeaturelessHand(draft as GameState, seat)) {
+    return { error: `${seat} was not dealt a featureless hand`, state: draft as GameState };
+  }
+  emit({ type: "Reshuffled", seat, hand: draft.handNumber });
+  dealHand(draft, draft.seed, draft.rngSteps + 144, draft.dealer, draft.handNumber, events, emit);
+  return null;
+}
+
+function applyFalseMahJong(draft: Draft, seat: Seat, emit: Emit): ApplyError | null {
+  if (draft.phase === "finished") {
+    return { error: "the hand is already finished", state: draft as GameState };
+  }
+  const exposed = draft.players.some((player) =>
+    player.melds.some((meld) => meld.exposed),
+  );
+  if (!exposed) {
+    return {
+      error: "play continues: no other player has exposed a hand",
+      state: draft as GameState,
+    };
+  }
+  const amount = roundTo100((draft.limit ?? DEFAULT_LIMIT) / 2);
+  const entries: LedgerEntry[] = SEATS.filter((other) => other !== seat).map((other) => ({
+    from: seat,
+    to: other,
+    points: amount,
+    reason: "false Mah Jong (half limit)",
+  }));
+  draft.ledger.push(...entries);
+  emit({ type: "Payments", entries });
+  return null;
+}
+
+function applyGoulashExchange(
+  draft: Draft,
+  seat: Seat,
+  tiles: readonly string[],
+  emit: Emit,
+): ApplyError | null {
+  if (draft.phase !== "exchange" || draft.turn !== seat) {
+    return { error: `not your exchange: ${seat}`, state: draft as GameState };
+  }
+  if (tiles.length !== 3) {
+    return { error: "a Goulash exchange is exactly three tiles", state: draft as GameState };
+  }
+  const player = draftPlayer(draft, seat);
+  const remaining = [...player.hand];
+  for (const tile of tiles) {
+    const index = remaining.indexOf(tile);
+    if (index < 0) return { error: `not in hand: ${tile}`, state: draft as GameState };
+    remaining.splice(index, 1);
+  }
+  const picks = { ...(draft.goulashPicks ?? {}) };
+  if (picks[seat] !== undefined) {
+    return { error: `already exchanged: ${seat}`, state: draft as GameState };
+  }
+  picks[seat] = [...tiles];
+  draft.goulashPicks = picks;
+
+  const next = SEATS.find((candidate) => picks[candidate] === undefined);
+  if (next !== undefined) {
+    draft.turn = next;
+    return null;
+  }
+
+  const stage = draft.goulashStage ?? 0;
+  const pairs: readonly (readonly [Seat, Seat])[] =
+    stage === 0
+      ? [["E", "W"], ["S", "N"]]
+      : stage === 1
+        ? [["E", "S"], ["W", "N"]]
+        : [["E", "N"], ["W", "S"]];
+  for (const [a, b] of pairs) {
+    const pickedA = picks[a]!;
+    const pickedB = picks[b]!;
+    const handA = draftPlayer(draft, a).hand as string[];
+    const handB = draftPlayer(draft, b).hand as string[];
+    removeKeys(handA, pickedA);
+    removeKeys(handB, pickedB);
+    handA.push(...pickedB);
+    handB.push(...pickedA);
+    handA.splice(0, handA.length, ...sortKeys(handA));
+    handB.splice(0, handB.length, ...sortKeys(handB));
+    emit({
+      type: "GoulashExchanged",
+      stage,
+      a: { seat: a, tiles: [...pickedA] },
+      b: { seat: b, tiles: [...pickedB] },
+    });
+  }
+
+  if (stage < 2) {
+    draft.goulashStage = (stage + 1) as 1 | 2;
+    draft.goulashPicks = {};
+    draft.turn = draft.dealer;
+  } else {
+    draft.goulashStage = undefined;
+    draft.goulashPicks = undefined;
+    draft.phase = "discard";
+    draft.turn = draft.dealer;
+    draft.lastDraw = null;
+  }
   return null;
 }
 
@@ -1055,6 +1412,15 @@ export function apply(state: GameState, action: Action): ApplyResult {
     case "Pass":
       failure = applyPass(draft, action.seat, events, emit);
       break;
+    case "GoulashExchange":
+      failure = applyGoulashExchange(draft, action.seat, action.tiles, emit);
+      break;
+    case "RequestReshuffle":
+      failure = applyReshuffle(draft, action.seat, events, emit);
+      break;
+    case "FalseMahJong":
+      failure = applyFalseMahJong(draft, action.seat, emit);
+      break;
     case "Win":
       if (action.kind === "self-drawn") {
         failure = applyWinSelfDrawn(draft, action.seat, events, emit);
@@ -1101,7 +1467,7 @@ function dealHand(
   const rng = createRng(seed);
   for (let step = 0; step < rngSteps; step++) rng.next();
   const set =
-    draft.variant === "chinese"
+    draft.variant === "chinese" || draft.tournament === true
       ? createTileSet().filter((tile) => !isBonus(tile))
       : createTileSet();
   const tiles = rng.shuffle(set).map(tileKey);
@@ -1179,11 +1545,26 @@ function dealHand(
       // Do not advance: the replacement itself may be another bonus.
     }
   }
+
+  if (draft.goulash === true) {
+    draft.phase = "exchange";
+    draft.turn = dealer;
+    draft.goulashStage = 0;
+    draft.goulashPicks = {};
+    draft.lastDraw = null;
+  }
 }
 
 export interface NewGameOptions {
   readonly dealer?: Seat;
   readonly variant?: "western" | "chinese";
+  readonly limit?: number;
+  readonly settlement?: SettlementLevel;
+  readonly tournament?: boolean;
+  readonly specialHands?: readonly string[];
+  readonly goulash?: boolean;
+  readonly goulashJokers?: "blank" | "two-bamboo";
+  readonly goulashPool?: number;
 }
 
 /** Roll two dice per seat; the unique highest total becomes East (I p. 18). */
@@ -1204,6 +1585,9 @@ function rollForSeats(seed: string | number): {
 
 /** Start hand 1 from a seed. East starts at 14 and discards first. */
 export function newGame(seed: string | number, options: NewGameOptions = {}): ApplyOk {
+  if (options.specialHands !== undefined && options.specialHands.length > 14) {
+    throw new Error("at most fourteen special hands may be selected");
+  }
   const selected = options.dealer === undefined ? rollForSeats(seed) : null;
   const dealer = options.dealer ?? selected!.dealer;
   const events: Event[] = [];
@@ -1220,6 +1604,12 @@ export function newGame(seed: string | number, options: NewGameOptions = {}): Ap
     dealer,
     prevailingWind: "E" as Wind,
     gameOver: false,
+    limit: options.tournament === true ? 1000 : (options.limit ?? DEFAULT_LIMIT),
+    settlement: options.settlement ?? "intermediate",
+    tournament: options.tournament === true,
+    recentSpecialHands: [],
+    goulash: options.goulash === true,
+    goulashPool: options.goulashPool ?? 0,
     drawRepeatUsed: false,
     variant: options.variant ?? "western",
     kitty: 0,
@@ -1237,6 +1627,8 @@ export function newGame(seed: string | number, options: NewGameOptions = {}): Ap
     result: null,
   } as unknown as Draft;
   if (selected !== null) draft.seatSelection = selected;
+  if (options.specialHands !== undefined) draft.specialHands = [...options.specialHands];
+  if (options.goulashJokers !== undefined) draft.goulashJokers = options.goulashJokers;
   dealHand(draft, seed, 0, dealer, 1, events, emit);
   draft.eventSeq = seq;
   return { state: draft as GameState, events };

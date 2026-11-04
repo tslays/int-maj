@@ -100,6 +100,10 @@ export interface OutcomePayload {
   readonly patternName: string | null;
   readonly tier: Tier | null;
   readonly points: number | null;
+  readonly ground: number | null;
+  readonly doubles: number | null;
+  readonly raw: number | null;
+  readonly limit: number;
   readonly reason: string;
   /** The tile that completed the hand, as shown on the table. */
   readonly winningTile: string | null;
@@ -294,6 +298,10 @@ function outcomeFor(session: WebSession, view: GameView): OutcomePayload | null 
     patternName: result.patternName,
     tier: result.tier,
     points: result.points,
+    ground: result.ground,
+    doubles: result.doubles,
+    raw: result.raw,
+    limit: result.limit,
     reason: result.reason,
     winningTile: win?.type === "WinDeclared" ? win.tile : null,
     hand,
