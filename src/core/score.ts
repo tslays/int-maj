@@ -81,7 +81,13 @@ export function tierPoints(tier: Tier, limit = DEFAULT_LIMIT): number | null {
 export function scoreHand(hand: Hand, options: ScoreOptions = {}): ScoreResult {
   const limit = options.limit ?? DEFAULT_LIMIT;
   const matches = matchHand(hand);
-  const winning = matches[0] ?? null;
+  const buried = matches.find((match) => match.pattern.id === "buried-treasure");
+  const fixedTier = matches.some(
+    (match) => match.tier !== "calculate" && match.pattern.id !== "chow-chow",
+  );
+  const nonScoringBuried =
+    !fixedTier && buried !== undefined && isNonScoringBuried(hand);
+  const winning = nonScoringBuried ? buried : (matches[0] ?? null);
 
   if (winning === null) {
     return {
@@ -89,6 +95,19 @@ export function scoreHand(hand: Hand, options: ScoreOptions = {}): ScoreResult {
       winning,
       tier: null,
       points: null,
+      ground: null,
+      doubles: null,
+      raw: null,
+      limit,
+    };
+  }
+
+  if (nonScoringBuried) {
+    return {
+      matches,
+      winning,
+      tier: winning.tier,
+      points: 10,
       ground: null,
       doubles: null,
       raw: null,
@@ -271,6 +290,16 @@ function calculateHand(hand: Hand, options: ScoreOptions): CalculatedScore | nul
   if (bouquetFlowers) doubles += 3;
 
   return { ground, doubles, raw: ground * 2 ** doubles };
+}
+
+function isNonScoringBuried(hand: Hand): boolean {
+  return decomposeStandard(normalizeHand(hand)).some(
+    (decomposition) =>
+      decomposition.sets.every((set) => set.kind === "chow") &&
+      !decomposition.pair.startsWith("d") &&
+      !decomposition.pair.startsWith("w") &&
+      !isTerminalKey(decomposition.pair),
+  );
 }
 
 function terminalsOneSuit(hand: Hand): boolean {

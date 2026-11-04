@@ -170,6 +170,8 @@ citations (p. 9); the primary pages are 36 and 36.
 | `lillypilly` | 41 / p. 54 | LIMIT / HALF LIMIT (Pungs from discard). | `limit`/`limit`. | Change `exposedTier` to `half`. Composition matches (發×3, 白×2, 4C/8C/9C pungs). |
 | `all-pair-jade` | 24 / p. 44 | "6 Pairs of green Bamboos (2,3,4,6 and 8). At least one Pair of Green Dragons." Illustration: 6 bamboo pairs (4B twice) + 發 pair. | Allows either 6 bamboo + 1 Green Dragon pair or 5 bamboo + 2 Green Dragon pairs. | Restrict to the printed 6 + 1 shape. The 5 + 2 variant is not printed; if kept, it needs an explicit assumption. |
 
+All twelve corrections are applied in C7.
+
 ## Missing from the table (3)
 
 | Primary hand | Page | Printed composition and score | Where it belongs |
@@ -177,6 +179,8 @@ citations (p. 9); the primary pages are 36 and 36.
 | 11. CONCEALED MAH JONG (BURIED TREASURE) | 38 | Any one suit; as many chows or pungs as desired, may include Winds, Dragons or both and a Pair; every tile from the wall including the last; no Kongs; score "10 POINTS FOR NON-SCORING HAND" (synopsis: 2 doubles and extras). Illustration: 234, 345, 678, 678 Characters + 99 Characters. | New pattern, concealed/self-drawn, distinct from `ordinary-mahjong` and `seven-twins`. |
 | ALL KONG | 30 | Four Kongs and one Pair, all in one suit; Winds, Dragons or both may be included. Score: Limit. No illustration. | New pattern (four kongs + pair, one suited suit, honours allowed). |
 | MIXED PUNG | 30 | Four Pungs and a Pair in any of the three suits; Winds, Dragons or both may be included; every tile including the last from the wall. Score: Limit. No illustration. | New pattern (four pungs + pair, any suits, honours allowed, self-drawn). |
+
+All three missing hands are added in C7.
 
 ## Not printed in this book (35) — Companion supplement
 

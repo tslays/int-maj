@@ -95,6 +95,16 @@ describe("ground score and doubles", () => {
     assert.equal(scoreHand(withBonus).ground! - scoreHand(bare).ground!, 8);
   });
 
+  it("scores a non-scoring Buried Treasure at the printed 10 points", () => {
+    const hand = createHand({
+      concealed: "b2 b3 b4 b3 b4 b5 b6 b7 b8 b6 b7 b8 b9 b9",
+      selfDrawn: true,
+    });
+    const result = scoreHand(hand);
+    assert.equal(result.winning?.pattern.id, "buried-treasure");
+    assert.equal(result.points, 10);
+  });
+
   it("scores a bouquet as three doubles", () => {
     const bare = createHand({
       concealed: "b1 b1 b1 b5 b5 b5 b6 b7 b8 wS wS wS wE wE",
