@@ -790,6 +790,15 @@ function renderRivers() {
 }
 
 function layoutSpec(width, height) {
+  if (width <= 500 || height <= 500) {
+    return {
+      mode: "phone",
+      riverColumns: width > height ? 4 : 3,
+      handBandFraction: 0.5,
+      minTileWidth: 26,
+      maxTileWidth: 46,
+    };
+  }
   if (width >= 1024) {
     return {
       mode: "desktop",
@@ -824,7 +833,10 @@ function applyLayout() {
     ...layoutSpec(window.innerWidth, window.innerHeight),
   });
   const root = document.documentElement.style;
+  const phone = layout.mode === "phone";
+  document.documentElement.classList.toggle("phone", phone);
   const px = (value) => `${value}px`;
+  root.setProperty("--layout-board-h", px(window.innerHeight));
   root.setProperty("--layout-gap", px(layout.gap));
   root.setProperty("--layout-tile-w", px(layout.tileWidth));
   root.setProperty("--layout-tile-h", px(layout.tileHeight));
@@ -841,6 +853,16 @@ function applyLayout() {
     root.setProperty(`--layout-${name}-w`, px(rect[2]));
     root.setProperty(`--layout-${name}-h`, px(rect[3]));
   };
+  setRect("table", layout.table);
+  setRect("control", layout.control);
+  root.setProperty("--layout-table-x", px(layout.table[0]));
+  root.setProperty("--layout-table-y", px(layout.table[1]));
+  root.setProperty("--layout-table-w", px(layout.table[2]));
+  root.setProperty("--layout-table-h", px(layout.table[3]));
+  root.setProperty("--layout-control-x", px(layout.control[0]));
+  root.setProperty("--layout-control-y", px(layout.control[1]));
+  root.setProperty("--layout-control-w", px(layout.control[2]));
+  root.setProperty("--layout-control-h", px(layout.control[3]));
   setRect("hand", layout.handBand);
   setRect("centre", layout.centre);
   setRect("river-top", layout.rivers.top);
@@ -2320,6 +2342,11 @@ function setRail(open) {
 
 function bindEvents() {
   $("#new-game").addEventListener("click", () => newGame(randomSeed()));
+  $("#hand-toggle").addEventListener("click", () => {
+    const collapsed = document.documentElement.classList.toggle("hand-collapsed");
+    $("#hand-toggle").setAttribute("aria-expanded", String(!collapsed));
+    $("#hand-toggle").setAttribute("aria-label", collapsed ? "Expand hand" : "Collapse hand");
+  });
   $("#undo").addEventListener("click", undo);
   $("#help-button").addEventListener("click", openHelp);
   $("#rail-hide").addEventListener("click", () => setRail(false));

@@ -38,6 +38,10 @@ interface Measurement {
   readonly outside: readonly string[];
   readonly badges: Readonly<Record<"top" | "left" | "right" | "self", Badge>>;
   readonly tileWidth: number;
+  readonly handTiles: readonly number[];
+  readonly handScrollWidth: number;
+  readonly handClientWidth: number;
+  readonly lastTileDrawn: boolean;
   readonly visibleBadges: number;
 }
 
@@ -45,10 +49,10 @@ const SIZES = [
   [1440, 900, "desktop"],
   [1280, 800, "desktop"],
   [1024, 768, "desktop"],
-  [932, 430, "landscape"],
-  [844, 390, "landscape"],
-  [430, 932, "portrait"],
-  [390, 844, "portrait"],
+  [932, 430, "phone"],
+  [844, 390, "phone"],
+  [430, 932, "phone"],
+  [390, 844, "phone"],
 ] as const;
 
 type Mode = "desktop" | "landscape" | "portrait";
@@ -80,6 +84,12 @@ const BREAKPOINTS: Record<
     minTileWidth: 18,
     maxTileWidth: 46,
   },
+  phone: {
+    riverColumns: 3,
+    handBandFraction: 0.5,
+    minTileWidth: 26,
+    maxTileWidth: 46,
+  },
 };
 
 function expectedLayout(width: number, height: number, mode: Mode) {
@@ -88,6 +98,7 @@ function expectedLayout(width: number, height: number, mode: Mode) {
     height,
     mode,
     ...BREAKPOINTS[mode],
+    ...(mode === "phone" ? { riverColumns: width > height ? 4 : 3 } : {}),
   });
 }
 
@@ -174,14 +185,21 @@ const MEASURE = `(() => {
         rect.height > 0
       );
     }).length;
-  const tile = R(document.querySelector("#hand .hand-tile"));
+  const handTiles = [...document.querySelectorAll("#hand .hand-tile")].map(R);
+  const handBand = document.querySelector(".hand-band");
+  const handTile = R(document.querySelector("#hand .hand-tile"));
+  const lastTile = document.querySelector("#hand .hand-tile:last-child");
 
   return {
     rects,
     overlaps: collisions,
     outside,
     badges,
-    tileWidth: tile === null ? 0 : tile[2],
+    tileWidth: handTile === null ? 0 : handTile[2],
+    handTiles: handTiles.map((tile) => tile[2]),
+    handScrollWidth: handBand === null ? 0 : handBand.scrollWidth,
+    handClientWidth: handBand === null ? 0 : handBand.clientWidth,
+    lastTileDrawn: lastTile === null ? false : lastTile.classList.contains("is-drawn"),
     visibleBadges,
   };
 })()`;
@@ -223,16 +241,36 @@ function assertGeometry(
   expected: ReturnType<typeof expectedLayout>,
   label: string,
 ): void {
+  if (expected.mode === "phone") {
+    // Board regions only: the hand and controls are the bottom overlay zone.
+    const boardRegions = ["centre", "riverTop", "riverLeft", "riverRight", "riverBottom", "seatTop", "seatLeft", "seatRight"];
+    assert.deepEqual(measurement.outside, [], `${label}: region outside board`);
+    assert.ok(
+      measurement.handTiles.length === 14,
+      `${label}: expected 14 hand tiles`,
+    );
+    for (const width of measurement.handTiles) {
+      assert.ok(width >= 40, `${label}: hand tile ${width} below 40`);
+    }
+    assert.ok(
+      measurement.handScrollWidth > measurement.handClientWidth,
+      `${label}: hand row does not overflow`,
+    );
+    const ratio = expected.handTileWidth! / expected.boardTileWidth!;
+    assert.ok(ratio >= 1.5 && ratio <= 1.7, `${label}: hand ratio ${ratio}`);
+    assert.ok(
+      Math.abs(measurement.tileWidth - expected.handTileWidth!) <= 0.05,
+      `${label}: hand tile width`,
+    );
+    return;
+  }
+
   assert.deepEqual(measurement.overlaps, [], `${label}: overlapping regions`);
   assert.deepEqual(measurement.outside, [], `${label}: region outside board`);
   assertBadges(measurement, expected.gap, label);
   assert.ok(
     Math.abs(measurement.tileWidth - expected.tileWidth) <= 0.05,
     `${label}: tile width ${measurement.tileWidth}, solver says ${expected.tileWidth}`,
-  );
-  assert.ok(
-    measurement.tileWidth >= expected.minimumLegalWidth / 14 - 4,
-    `${label}: tile below the phone floor`,
   );
   const min = BREAKPOINTS[expected.mode].minTileWidth;
   assert.ok(measurement.tileWidth >= min, `${label}: tile below ${min}`);
