@@ -9,16 +9,17 @@ const SIZES = [
   [1440, 900, "desktop"],
   [1280, 800, "desktop"],
   [1024, 768, "desktop"],
-  [932, 430, "landscape"],
-  [844, 390, "landscape"],
-  [430, 932, "portrait"],
-  [390, 844, "portrait"],
+  [932, 430, "phone"],
+  [844, 390, "phone"],
+  [430, 932, "phone"],
+  [390, 844, "phone"],
 ] as const;
 
 const BREAKPOINTS = {
   desktop: { riverColumns: 6, handBandFraction: 0.12, minTileWidth: 26, maxTileWidth: 46 },
   landscape: { riverColumns: 4, handBandFraction: 0.24, minTileWidth: 18, maxTileWidth: 46 },
   portrait: { riverColumns: 3, handBandFraction: 0.18, minTileWidth: 18, maxTileWidth: 46 },
+  phone: { riverColumns: 3, handBandFraction: 0.5, minTileWidth: 26, maxTileWidth: 46 },
 } as const;
 
 function layout(width: number, height: number, mode: keyof typeof BREAKPOINTS) {
@@ -43,22 +44,45 @@ describe("computeLayout", () => {
   for (const [width, height, mode] of SIZES) {
     it(`${width}x${height} computes one consistent board`, () => {
       const result = layout(width, height, mode);
-      assert.ok(result.tileWidth >= BREAKPOINTS[mode].minTileWidth);
-      assert.ok(result.tileWidth <= BREAKPOINTS[mode].maxTileWidth);
-      assert.equal(result.handWidth, HAND_TILE_COUNT * result.tileWidth + 13 * result.gap);
+      const phone = mode === "phone";
+      if (phone) {
+        assert.ok(result.handTileWidth >= 40, "hand floor");
+        const ratio = result.handTileWidth / result.boardTileWidth!;
+        assert.ok(ratio >= 1.5 && ratio <= 1.7, `hand ratio ${ratio}`);
+        assert.ok(
+          result.handWidth > width,
+          `${width}: hand row does not overflow (${result.handWidth})`,
+        );
+        assert.equal(result.handWidth, HAND_TILE_COUNT * result.handTileWidth + 13 * result.handGap);
+      } else {
+        assert.ok(result.tileWidth >= BREAKPOINTS[mode].minTileWidth);
+        assert.ok(result.tileWidth <= BREAKPOINTS[mode].maxTileWidth);
+        assert.equal(result.handWidth, HAND_TILE_COUNT * result.tileWidth + 13 * result.gap);
+      }
 
-      const regions = [
-        result.handBand,
-        result.centre,
-        result.rivers.top,
-        result.rivers.left,
-        result.rivers.right,
-        result.rivers.bottom,
-        result.seats.top,
-        result.seats.left,
-        result.seats.right,
-        result.controls,
-      ];
+      const regions = phone
+        ? [
+            result.centre,
+            result.rivers.top,
+            result.rivers.left,
+            result.rivers.right,
+            result.rivers.bottom,
+            result.seats.top,
+            result.seats.left,
+            result.seats.right,
+          ]
+        : [
+            result.handBand,
+            result.centre,
+            result.rivers.top,
+            result.rivers.left,
+            result.rivers.right,
+            result.rivers.bottom,
+            result.seats.top,
+            result.seats.left,
+            result.seats.right,
+            result.controls,
+          ];
       for (const rect of regions) {
         assertInside(rect, result.board);
       }
@@ -73,6 +97,7 @@ describe("computeLayout", () => {
       }
 
       // Badge gap and centring are the same formula for all four seats.
+      if (!phone) {
       const seatRects = [
         result.seats.top,
         result.seats.left,
@@ -92,23 +117,22 @@ describe("computeLayout", () => {
         assert.ok(Math.abs(gap - result.gap) <= 0.51, `${key} gap`);
         assert.ok(offset <= 0.51, `${key} centre`);
       }
+      }
     });
   }
 
-  it("shrinks the gap before dropping below a legal phone tile", () => {
-    const result = layout(390, 844, "portrait");
-    assert.ok(result.tileWidth >= 18);
-    assert.equal(result.gap, 1);
-    assert.ok(
-      result.handWidth + 2 * (result.badges.self[2] + result.gap) <= 390,
-    );
+  it("uses the independent hand scale and overflows on a phone", () => {
+    const result = layout(390, 844, "phone");
+    assert.ok(result.handTileWidth! >= 40);
+    assert.ok(result.handTileWidth! / result.boardTileWidth! >= 1.5);
+    assert.ok(result.handTileWidth! / result.boardTileWidth! <= 1.7);
+    assert.ok(result.handWidth > 390);
+    assert.equal(result.handTileWidth, 41.6);
   });
 
-  it("states the smallest legal portrait viewport from the same formula", () => {
-    // 14 x 18px tiles plus the four badges need 340px; one more pixel of
-    // height keeps the mode portrait. Anything narrower drops below 18px.
-    const result = layout(340, 341, "portrait");
-    assert.ok(result.tileWidth >= 18);
-    assert.equal(result.gap, 1);
+  it("states the smallest legal phone width at the 26px board floor", () => {
+    const result = layout(390, 600, "phone");
+    assert.ok(result.supported);
+    assert.ok(result.handWidth > 390);
   });
 });
