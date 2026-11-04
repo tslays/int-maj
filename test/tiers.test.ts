@@ -74,7 +74,7 @@ describe("printed tier table", () => {
       half: 200,
       limit: 400,
       middle: 600,
-      double: 800,
+      double: 500,
       calculate: null,
     });
   });

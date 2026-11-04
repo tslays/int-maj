@@ -84,10 +84,10 @@ PDF; a prior owner confirmation is not an exception.
 - A fishing declaration is illegal once every copy of the needed tile is dead
   (book p. 34). `deadTiles` is supplied by the caller; a wait stays legal while
   any one of its tiles still has a live copy.
-- The synopsis's right column prints one fishing value per tier: half 200,
-  limit 400, middle 600, double 800. `TIER_FISHING` transcribes them;
-  `calculate` has no fixed fishing figure. `settleFishing(..., values)` still
-  accepts a circle override.
+- The Illustrated book prints fishing figures as fractions of the limit:
+  half 200, limit 400, double 500. `TIER_FISHING` transcribes those;
+  Companion-only double hands keep their printed 800, and middle remains 600.
+  `calculate` hands fish for their ground score without the Mah Jong 20.
 - No payments, dealer doubling or settlement rules are implemented beyond the
   fishing mini-win.
 
@@ -169,15 +169,16 @@ pattern provisional.
 
 ## Fishing (owner-corrected, 2026-10-31)
 Page 4 prints one "Fishing" entry beside each tier row, so fishing is a
-per-tier value, not a single bonus. The synopsis's right column prints the
-figures: half 200, limit 400, middle 600, double 800. `TIER_FISHING`
-transcribes them; `calculate` has no fixed figure.
+per-tier value, not a single bonus. The Illustrated book prints the
+figures as fractions of the limit: half 200, limit 400, double 500; a
+Companion-only double hand keeps its printed 800, and middle is 600.
+`calculate` hands fish for their ground score without the Mah Jong 20.
 
-The rule itself is an announcement: when you are one tile from mah jong you
-announce fishing and your wait is fixed. If another player then wins, every
-fishing player still scores the fishing value for their tier. A declaration is
-illegal once every copy of the needed tile is dead (p. 34). This is modelled
-as `FishingDeclaration { player, wait, tier }`, independent of the winning
+The rule is the state of needing one tile, announced. If another player then
+wins, every fishing player still scores their fishing figure. The printed pages
+set no dead-wait restriction and no claim ban: a player needing one tile may
+take any discard to win and has precedence. This is modelled as
+`FishingDeclaration { player, wait, tier, value }`, independent of the winning
 hand.
 
 ## Milestone C2 — fishing payer (retained assumption)

@@ -64,7 +64,7 @@ const TABLE = {
 
   wait: {
     title: "Thirteen tiles with a live wait",
-    seed: "wait-new-4",
+    seed: "wait-c5-165",
     at: (view) => {
       if (view.phase !== "discard" || view.turn === view.seat) return false;
       if (view.fishing.length > 0) return false;
@@ -101,7 +101,7 @@ const TABLE = {
 
   result: {
     title: "The result panel with payments and fishing",
-    seed: "win",
+    seed: "result-c5-22",
     at: (_view, state) =>
       state.result !== null &&
       state.result.kind === "win" &&

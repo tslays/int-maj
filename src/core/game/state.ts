@@ -77,8 +77,10 @@ export interface ClaimWindow {
 export interface FishingState {
   readonly seat: Seat;
   readonly wait: readonly string[];
-  /** Tier of the hand the player announced for; fishing is 40% of it. */
+  /** Tier of the hand the player announced for. */
   readonly tier: Tier;
+  /** Printed fishing figure, or null when unknown. */
+  readonly value?: number | null;
 }
 
 export interface LedgerEntry {

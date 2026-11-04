@@ -41,6 +41,8 @@ export interface ScoreOptions {
   readonly wonOnLastWallTile?: boolean;
   /** Double (h)(iii): the winning tile robbed a kong. */
   readonly robbedKong?: boolean;
+  /** Fishing for an ordinary hand scores ground without the 20 for Mah Jong. */
+  readonly withoutMahJongBonus?: boolean;
 }
 
 export interface ScoreResult {
@@ -200,7 +202,7 @@ function calculateHand(hand: Hand, options: ScoreOptions): CalculatedScore | nul
   if (options.onlyPossibleChow) ground += 2;
   if (hand.selfDrawn) ground += 2;
   if (hand.winningTile !== null && tileKey(hand.winningTile) === pair) ground += 2;
-  ground += 20;
+  if (!options.withoutMahJongBonus) ground += 20;
 
   const shape = normalizeHand(hand);
   const suits = usedSuits(shape);
