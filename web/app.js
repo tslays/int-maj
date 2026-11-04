@@ -631,7 +631,8 @@ function fillSeatLabel(slot, entry) {
   );
   const wind = span("seat-wind", entry.wind);
   const name = span("seat-name", entry.isYou ? "You" : `${WIND_NAME[entry.wind]} bot`);
-  slot.replaceChildren(wind, name);
+  const count = span("seat-count", String(entry.handCount));
+  slot.replaceChildren(wind, name, count);
 }
 
 function rackLine(entry) {
@@ -747,6 +748,13 @@ function renderSeat(entry) {
   root.dataset.count = String(entry.handCount);
   root.style.setProperty("--seat-color", seatColor(entry.seat));
   root.replaceChildren();
+
+  const badge = div("seat-badge");
+  badge.append(
+    span("seat-wind", entry.wind),
+    span("seat-count", String(entry.handCount)),
+  );
+  root.append(badge);
 
   const rack = rackLine(entry);
   const melds = meldRow(entry.melds);
