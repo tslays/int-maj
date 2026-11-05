@@ -170,14 +170,15 @@ hand, and the action row above it - the rivers and the face-down racks stay
 because they are the game state, not chrome. The audit fails if any of those
 markers comes back or if `.playfield` regains a border.
 
-### The hand is one wall (2026-11-05)
+### The hand is one close-pushed wall (2026-11-05)
 
-The hand's tiles touch: each tile slides left over its right-hand neighbour by
-the width of the art's green 3D side, so the white fronts connect and no felt,
-shadow or bevel shows between them. Only the last tile keeps a visible side -
-exactly what a row of real tiles pushed together looks like.
+The hand's tiles sit close: each tile slides left over its right-hand neighbour
+by most of the art's green 3D side, so the white fronts almost connect and only
+a narrow seam of felt shows between them. Only the last tile keeps a visible
+side - exactly what a row of real tiles pushed together looks like, without
+reading as a single fused slab.
 
-    HAND_OVERLAP = 0.263                       // of a tile's width
+    HAND_OVERLAP = 0.17                        // of a tile's width
     pitch        = hand_tile * (1 - HAND_OVERLAP)
     hand_tile    = (14 * board_tile + 13 * gap) / (14 - 13 * HAND_OVERLAP)
 
