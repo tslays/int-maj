@@ -2143,6 +2143,9 @@ function clearScenario() {
 
 function onHandClick(index) {
   if (payload === null) return;
+  // The table is still answering: the turn has not come back to you yet, so a
+  // tap now would be a discard out of turn.
+  if (discardQueue.length > 0 || discardTimer !== null) return;
   // A click that lands while a request is in flight (the automatic draw) is
   // remembered and applied the moment the table answers, so a fast click is
   // never swallowed.
@@ -2165,6 +2168,7 @@ function drawnIndex() {
 
 function discardAt(index) {
   if (payload === null || busy) return;
+  if (discardQueue.length > 0 || discardTimer !== null) return;
   const tile = displayHand()[index];
   if (tile === undefined) return;
   if (sendDiscard(tile, index)) return;
