@@ -182,5 +182,23 @@ then shifts every region by `inset`, so the hand, the three walls, the rivers
 and the action row all sit a breath away from the edge. `layout.inset` is
 exported; the board box stays full-bleed because the felt is the background.
 
+### The discard rhythm (2026-11-05)
+
+A round should read as a sequence, not a jump cut. The opponents answer in one
+payload, but the table lands their discards one beat at a time:
+
+    BEAT = 420 ms
+    queue  = every discard the viewer has not seen, in seat order after theirs
+    beat   = reveal one: the tile drops in, a back flies from that wall, a clack
+
+The seen-count per seat (`revealedDiscards`) is the single source of truth, so a
+render mid-beat can neither hide nor double-show a tile. Your own throw lands at
+once. A claim window stops the beat and shows everything, because the offer
+needs its tile on the table. The clack is synthesised with WebAudio (a short
+band-passed noise burst), so the table ships without audio files.
+
+There is no throw button: a tap on a hand tile throws it. The action row holds
+only what the table offers you - claim, chow variants, dismiss, kong, fishing.
+
 ### The hand is one close-pushed wall (2026-11-05)
 ### The hand is one close-pushed wall (2026-11-05)

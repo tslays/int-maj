@@ -849,7 +849,9 @@ async function referencePass(
   assertAnchor(label, "centre bottom", 465, centre[1] + centre[3]);
   assertAnchor(label, "north rack top", 17, rackTop[1]);
   assertAnchor(label, "north rack height", 45, rackTop[3]);
-  assertAnchor(label, "action top", 853, actions[1]);
+  // The action row no longer holds a throw button (a tap on a hand tile
+  // throws), so its top is whatever the calls need; the reference number only
+  // measured the old button stack.
   assertAnchor(label, "action bottom", 890, actions[1] + actions[3]);
   assertAnchor(label, "felt frame top", 9, frame[1]);
 
