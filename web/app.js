@@ -808,9 +808,8 @@ function revealDiscard(item) {
     window.setTimeout(() => tile.classList.remove("is-new"), 260);
     throwGhost(next.seat, tile);
   }
-  // The sound belongs to the landing, not the throw: it plays when the tile
-  // reaches the heap.
-  window.setTimeout(playTileClack, tile === null ? 0 : 240);
+  // The tile is in the heap now, so the sound belongs to this instant.
+  playTileClack();
 }
 
 /** The tile leaves the wall: a back flies from the seat's rack to the river. */
@@ -840,44 +839,47 @@ function throwGhost(seat, tile) {
 }
 
 
-/** A tile landing on felt: a soft low thud with a little plastic body. */
+/**
+ * A tile settling on felt: wooden body, cloth cushion. Short, low, no ring -
+ * nothing metallic.
+ */
 function playTileClack() {
   if (audioContext === null) return;
   const now = audioContext.currentTime;
   const rate = audioContext.sampleRate;
 
-  // The felt: filtered noise, dull and short.
-  const length = Math.round(rate * 0.11);
+  // The cloth: a soft puff of low noise, gone in a wink.
+  const length = Math.round(rate * 0.07);
   const buffer = audioContext.createBuffer(1, length, rate);
   const data = buffer.getChannelData(0);
   for (let index = 0; index < length; index++) {
-    const decay = Math.exp(-index / (rate * 0.022));
+    const decay = Math.exp(-index / (rate * 0.016));
     data[index] = (Math.random() * 2 - 1) * decay;
   }
   const noise = audioContext.createBufferSource();
   noise.buffer = buffer;
-  const felt = audioContext.createBiquadFilter();
-  felt.type = "lowpass";
-  felt.frequency.value = 900;
-  felt.Q.value = 0.6;
-  const feltGain = audioContext.createGain();
-  feltGain.gain.value = 0.16;
-  noise.connect(felt).connect(feltGain).connect(audioContext.destination);
+  const cloth = audioContext.createBiquadFilter();
+  cloth.type = "bandpass";
+  cloth.frequency.value = 420;
+  cloth.Q.value = 0.9;
+  const clothGain = audioContext.createGain();
+  clothGain.gain.value = 0.2;
+  noise.connect(cloth).connect(clothGain).connect(audioContext.destination);
   noise.start(now);
-  noise.stop(now + 0.12);
+  noise.stop(now + 0.08);
 
-  // The tile: a brief low body, not a click.
+  // The wood: one low thump, no harmonics to ring.
   const body = audioContext.createOscillator();
-  body.type = "triangle";
-  body.frequency.setValueAtTime(210, now);
-  body.frequency.exponentialRampToValueAtTime(120, now + 0.07);
+  body.type = "sine";
+  body.frequency.setValueAtTime(168, now);
+  body.frequency.exponentialRampToValueAtTime(112, now + 0.045);
   const bodyGain = audioContext.createGain();
-  bodyGain.gain.setValueAtTime(0.001, now);
-  bodyGain.gain.exponentialRampToValueAtTime(0.11, now + 0.006);
-  bodyGain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+  bodyGain.gain.setValueAtTime(0.0001, now);
+  bodyGain.gain.exponentialRampToValueAtTime(0.14, now + 0.004);
+  bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.075);
   body.connect(bodyGain).connect(audioContext.destination);
   body.start(now);
-  body.stop(now + 0.1);
+  body.stop(now + 0.08);
 }
 
 function layoutSpec(width, height) {
