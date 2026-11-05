@@ -199,10 +199,10 @@ stay on their side: yours south, the right-hand player's east, the left-hand
 player's west, the far seat's north. A tile may lie at any angle; no two discs
 ever overlap, and the audit proves it with a rotated-rectangle test.
 
-The heap settles on every throw: the layout is re-solved with a new seed, so the
-tiles already down shift a couple of pixels (animated), like a real pile taking
-the weight of the next tile. If a window is too short to hold a long hand at the
-solver's size, the heap shrinks its tile rather than overlap.
+A tile never moves once it has landed: each throw takes the innermost free spot
+from the spots still open, and the heap is left exactly as it was. If a window
+is too short to hold the whole hand at the solver's size, the heap is rebuilt
+once, smaller, rather than let two tiles touch or drop a throw.
 
 Your own throw animates too: it leaves the hand, flies to its spot and clacks.
 
