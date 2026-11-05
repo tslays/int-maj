@@ -380,6 +380,7 @@ function assertActionRow(measurement: Measurement, label: string): void {
 /** Every opponent keeps a visible wall of 13 or 14 face-down tiles, and no
     back may sit outside its seat's band. */
 function assertOpponentHands(measurement: Measurement, label: string): void {
+  const sizes = new Set<string>();
   for (const place of ["top", "left", "right"] as const) {
     const rack = measurement.racks[place];
     assert.ok(rack.seat, `${label}: no ${place} seat`);
@@ -397,7 +398,17 @@ function assertOpponentHands(measurement: Measurement, label: string): void {
         `${label}: a ${place} back sits outside its seat: ${JSON.stringify(box)}`,
       );
     }
+    const first = rack.boxes[0];
+    if (first !== undefined) {
+      // The three opponents are the same kind of seat: one back size for all.
+      sizes.add(`${first[2].toFixed(1)}x${first[3].toFixed(1)}`);
+    }
   }
+  assert.equal(
+    sizes.size,
+    1,
+    `${label}: the three walls use different tile sizes (${[...sizes].join(", ")})`,
+  );
 }
 
 

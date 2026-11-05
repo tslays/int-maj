@@ -185,3 +185,25 @@ The hand carries no outline and no highlight anywhere; the drawn tile is marked
 by the row's gap on wide tables only.
 
 ### Opponents' hands
+
+The three opponents show their walls face down: 13 backs for a waiting hand,
+14 after the draw. Every seat gets exactly the same back, because they are the
+same kind of seat to you - one width, one height, one design:
+
+    rack_h = min(board_tile * 0.96, (side_seat_h - 12) / 13)
+    rack_w = rack_h * 0.75                        // the same 3:4 tile everywhere
+    top_seat  = 13 * rack_w + 12 x rack_h
+    side_seat = rack_w x 13 * rack_h + 12
+
+The side stack is the binding constraint: thirteen backs must fit the height
+left between the top seat and the action row, so that height sets the size and
+the top wall takes it too, centred in its band. No back may sit outside its
+seat band, and the three walls may never differ in size.
+
+### The hand is never hidden
+
+The hand is the one thing that must always be on screen. There is no
+collapse control, no arrow, nothing that hides, shrinks away or scrolls the
+hand band at any viewport - if something has to give, it gives elsewhere. The
+geometry audit fails if a `.hand-toggle` element exists, if `hand-collapsed` is
+set, or if the hand band measures zero.
