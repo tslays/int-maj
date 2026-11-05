@@ -952,6 +952,10 @@ kbd {
   flex-direction: column;
 }
 
+.rack.side .tile-back {
+  height: var(--layout-back-side-h, var(--back-h));
+}
+
 .rack .tile-back {
   width: var(--back-w);
   height: var(--back-h);
@@ -2443,7 +2447,8 @@ kbd {
   display: none !important;
 }
 
-.variant-d .seat .rack-line,
+/* The three opponents keep their hands face down on the felt: the rack is
+   the one part of a seat variant D shows. */
 .variant-d .seat .meld-row,
 .variant-d .seat .bonus-row {
   visibility: hidden;

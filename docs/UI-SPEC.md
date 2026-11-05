@@ -170,6 +170,22 @@ hand, and the action row above it - the rivers and the face-down racks stay
 because they are the game state, not chrome. The audit fails if any of those
 markers comes back or if `.playfield` regains a border.
 
+### Opponents' hands
+
+The three opponents show their walls face down: 13 backs for a waiting hand,
+14 after the draw. The rack and the seat band are one size, taken from the
+solver, not from the hand scale:
+
+    rack_w   = board_tile * 0.73          // one back across the wall
+    rack_h   = board_tile * 0.96          // the top row's back
+    side_h   = min(rack_h, (seat_h - 12) / 13)   // the side stacks run downhill
+    top_seat = 13 * round(rack_w) + 12 x round(rack_h)
+    side_seat = round(rack_w) x 13 * side_h + 12
+
+The top wall keeps the 3:4 face; a side wall may compress its backs so thirteen
+still fit the height left between the top seat and the action row. No back may
+sit outside its seat band.
+
 ### The hand is never hidden
 
 The hand is the one thing that must always be on screen. There is no
