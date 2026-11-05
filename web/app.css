@@ -2629,10 +2629,11 @@ h3 {
 
 .variant-d .hand-band {
   position: absolute;
-  left: 0;
+  left: var(--layout-hand-x);
   top: var(--layout-hand-y);
-  width: 100%;
+  width: var(--layout-hand-w);
   height: var(--layout-hand-h);
+  justify-content: center;
 }
 
 .variant-d .center {
