@@ -27,7 +27,7 @@ Target layout:
   `primary-pages.swift`.
 - `rules/.generated/` — gitignored renders, OCR text and TSV dumps (`pages/`,
   `primary-pages/`, `*.txt`, `*.tsv`), produced by those tools.
-- `docs/` — `PLAN.md`, `SOURCE-AUDIT.md`, `STYLE.md`, `UI.md`; audit briefs stay
+- `docs/` — `PLAN.md`, `SOURCE-AUDIT.md`, `STYLE.md`, `UI-SPEC.md`; audit briefs stay
   with the plan, not with the rule text.
 
 Acceptance: every path in `README.md`, `AGENTS.md`, `rules/*.md`, `docs/*.md`,

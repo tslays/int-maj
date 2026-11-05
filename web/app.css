@@ -56,7 +56,6 @@
   --button-bg-muted: rgba(5, 18, 12, 0.66);
   --button-bg-muted-hover: rgba(14, 40, 27, 0.9);
   --preview-bg: rgba(5, 18, 12, 0.9);
-  --variant-bg: rgba(6, 22, 15, 0.82);
   --gallery-bg: rgba(0, 0, 0, 0.18);
   --scrim: rgba(4, 12, 8, 0.58);
   --scrim-strong: rgba(0, 0, 0, 0.62);
@@ -317,10 +316,6 @@ h3 {
   --hand-h: calc(var(--hand-w) * var(--hand-aspect));
   --tile-w: calc(var(--hand-w) * var(--tile-ratio));
   --tile-h: calc(var(--hand-h) * var(--tile-ratio));
-  --river-w6: calc(6 * var(--tile-w) + 5 * var(--tile-gap));
-  --river-h3: calc(3 * var(--tile-h) + 2 * var(--tile-gap));
-  --river-w3: var(--river-h3);
-  --river-h6: var(--river-w6);
   --back-w: calc(var(--hand-w) * var(--back-ratio-w));
   --back-h: calc(var(--hand-w) * var(--back-ratio-h));
   --meld-w: calc(var(--hand-w) * var(--meld-ratio));
@@ -360,29 +355,6 @@ h3 {
   display: grid;
   grid-column: 1;
   grid-row: 1;
-  grid-template-columns:
-    var(--frame-x)
-    var(--rack-pad)
-    var(--back-w)
-    minmax(0, 1fr)
-    var(--river-w3)
-    var(--river-w6)
-    var(--river-w3)
-    minmax(0, 1fr)
-    var(--back-w)
-    var(--rack-pad)
-    var(--frame-x);
-  grid-template-rows:
-    var(--rack-top)
-    auto
-    var(--ring-gap)
-    var(--river-h3)
-    var(--river-h3)
-    var(--river-h3)
-    minmax(0, 1fr)
-    var(--hand-h)
-    var(--hand-lift)
-    var(--action-row);
   overflow: hidden;
   background:
     radial-gradient(ellipse at 50% 38%, var(--felt-high) 0%, var(--felt) 52%, var(--felt-low) 100%);
@@ -1041,16 +1013,6 @@ h3 {
   user-select: none;
 }
 
-/* Every river reserves its whole block at mount time: empty slots keep
-   their space, so the four blocks meet around the centre and never reflow.
-   North and south read six across; east and west are the same block turned,
-   six down, each tile rotated to face its own player. Each zone is a grid
-   item: north/south in the centre column, east/west in their side columns,
-   the side blocks centred on the centre row. */
-.river-zone {
-  pointer-events: auto;
-}
-
 .zone-top {
   grid-area: 4 / 6 / 5 / 7;
 }
@@ -1067,69 +1029,6 @@ h3 {
 .zone-right {
   grid-area: 4 / 7 / 7 / 8;
   align-self: center;
-}
-
-.river {
-  display: grid;
-  gap: var(--tile-gap);
-  align-content: start;
-  justify-content: start;
-}
-
-.river-flat {
-  width: var(--river-w6);
-  height: var(--river-h3);
-  grid-template-columns: repeat(6, var(--tile-w));
-  grid-template-rows: repeat(3, var(--tile-h));
-}
-
-.river-side {
-  width: var(--river-w3);
-  height: var(--river-h6);
-  grid-template-columns: repeat(3, var(--tile-h));
-  grid-template-rows: repeat(6, var(--tile-w));
-}
-
-.river-slot {
-  width: var(--tile-w);
-  height: var(--tile-h);
-}
-
-.river-side .river-slot {
-  position: relative;
-  width: var(--tile-h);
-  height: var(--tile-w);
-}
-
-.river .tile {
-  width: var(--tile-w);
-  height: var(--tile-h);
-  filter: var(--tile-shadow);
-}
-
-.river-side .river-slot .tile {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%) rotate(90deg);
-}
-
-.river-side.river-east .river-slot .tile {
-  transform: translate(-50%, -50%) rotate(-90deg);
-}
-
-.river-flat.river-north .tile {
-  transform: rotate(180deg);
-}
-
-.river .tile.last {
-  outline: var(--stroke) solid var(--accent);
-  outline-offset: var(--stroke);
-}
-
-.river .tile.claimable {
-  outline: var(--stroke-strong) solid var(--accent);
-  outline-offset: var(--stroke);
 }
 
 /* The pile: every discard the same size, scattered where it was thrown. */
@@ -1171,15 +1070,6 @@ h3 {
   }
 }
 
-.river .tile.is-new {
-  animation: river-in var(--dur-fast) var(--ease);
-}
-
-/* Discards arrive in one payload but land one beat at a time. */
-.river .tile.is-queued {
-  visibility: hidden;
-}
-
 .throw-ghost {
   position: fixed;
   z-index: 40;
@@ -1192,111 +1082,7 @@ h3 {
     opacity 260ms var(--ease-in);
 }
 
-@keyframes river-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
 
-/* -------------------------------------------------------------- centre */
-
-/* The centre is the hole the four river blocks leave: one river block wide,
-   three river rows tall (251x166 at the reference size, against 251x163
-   measured). The panel is that box: round and hand at the top, the wall
-   count in the middle, the four scores in the corners. */
-.center {
-  grid-area: 5 / 6 / 6 / 7;
-  position: relative;
-  overflow: hidden;
-  border: var(--stroke) solid var(--line-field);
-  border-radius: var(--radius-md);
-  background: var(--field);
-}
-
-.wall-dial {
-  position: absolute;
-  left: 50%;
-  top: var(--dial-y);
-  display: grid;
-  width: calc(var(--hand-w) * var(--dial-ratio));
-  height: calc(var(--hand-w) * var(--dial-ratio));
-  transform: translate(-50%, -50%);
-  place-items: center;
-}
-
-.wall-dial svg {
-  position: absolute;
-  inset: 0;
-  transform: rotate(-90deg);
-}
-
-.wall-track,
-.wall-ring {
-  fill: none;
-  stroke-width: var(--dial-stroke);
-}
-
-.wall-track {
-  stroke: var(--border);
-}
-
-.wall-ring {
-  stroke: var(--accent);
-  stroke-linecap: round;
-  transition: stroke-dashoffset var(--dur-enter) var(--ease);
-}
-
-.wall-count {
-  color: var(--on-felt);
-  font-size: var(--fs-body);
-  font-variant-numeric: tabular-nums;
-  font-weight: var(--fw-bold);
-  line-height: 1;
-}
-
-.wall-label {
-  position: absolute;
-  bottom: calc(var(--hand-w) * var(--dial-label-ratio));
-  color: var(--on-felt-muted);
-  font-size: var(--fs-label);
-  line-height: 1;
-}
-
-.center-meta {
-  position: absolute;
-  left: 50%;
-  top: var(--space-3);
-  transform: translateX(-50%);
-  color: var(--on-felt-muted);
-  font-size: var(--fs-label);
-  white-space: nowrap;
-}
-
-.center-meta strong {
-  color: var(--on-felt);
-  font-weight: var(--fw-bold);
-}
-
-.center-scores {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-}
-
-.center-score {
-  display: flex;
-  gap: var(--space-2);
-  align-items: center;
-  padding: var(--space-1) var(--space-3);
-  color: var(--on-felt-muted);
-  font-size: var(--fs-label);
-  font-variant-numeric: tabular-nums;
-  line-height: var(--lh-snug);
 }
 
 .corner-nw {
@@ -1321,35 +1107,6 @@ h3 {
   grid-area: 2 / 2;
   align-self: end;
   justify-self: end;
-}
-
-.center-score.is-turn {
-  color: var(--on-felt);
-}
-
-.center-wind {
-  color: var(--seat-color, var(--accent));
-  font-weight: var(--fw-black);
-}
-
-.center-points {
-  color: var(--on-felt);
-  font-weight: var(--fw-strong);
-}
-
-.center-points.is-up {
-  color: var(--positive-felt);
-}
-
-.center-points.is-down {
-  color: var(--negative-felt);
-}
-
-.center-dealer {
-  width: var(--space-2);
-  height: var(--space-2);
-  border-radius: 50%;
-  background: var(--accent);
 }
 
 /* ------------------------------------------------------------- actions */
@@ -2290,183 +2047,6 @@ h3 {
   }
 }
 
-/* --------------------------------------------------------- UI variants */
-/* `?variant=a|b|c` adds one class to the root. A is the default board and
-   keeps the existing block; B and C change only surface, seats, table extras
-   and chrome. Geometry is untouched. */
-.variant-a {
-  /* A — Felt: the default look. */
-}
-
-.variant-b .app {
-  background: var(--paper-surface);
-}
-
-.variant-b .board {
-  --on-felt: var(--paper-ink);
-  --on-felt-muted: var(--paper-muted);
-  --accent: var(--paper-ink);
-  --accent-strong: var(--paper-ink);
-  --accent-hover: var(--paper-ink);
-  --accent-soft: var(--paper-line);
-  --accent-line: var(--paper-line);
-  --accent-fill: rgba(27, 26, 23, 0.06);
-  --accent-ring: var(--paper-line);
-  --line-frame: transparent;
-  --tile-shadow: none;
-  --hand-shadow: none;
-  --hand-shadow-lift: none;
-  --card-shadow: none;
-  --preview-shadow: none;
-  --toggle-shadow: none;
-  background: var(--paper-surface);
-  color: var(--paper-ink);
-}
-
-.variant-b .board::after,
-.variant-b .playfield {
-  display: none;
-}
-
-.variant-b .tile {
-  outline: var(--stroke) solid var(--paper-line);
-  outline-offset: calc(var(--stroke) * -1);
-}
-
-.variant-b .tile img,
-.variant-b .river .tile {
-  filter: none;
-}
-
-.variant-b .meld,
-.variant-b .center {
-  border-color: transparent;
-  background: transparent;
-}
-
-.variant-b .center {
-  position: static;
-  overflow: visible;
-}
-
-.variant-b .center-scores,
-.variant-b .center-meta {
-  display: none;
-}
-
-.variant-b .wall-dial {
-  top: 0;
-  left: 50%;
-  width: auto;
-  height: auto;
-  transform: translateX(-50%);
-}
-
-.variant-b .wall-dial svg,
-.variant-b .wall-label {
-  display: none;
-}
-
-.variant-b .wall-count {
-  color: var(--paper-ink);
-}
-
-.variant-b .seat::before,
-.variant-c .seat::before {
-  content: attr(data-wind);
-  position: absolute;
-  z-index: 3;
-  color: var(--seat-color);
-  font-size: var(--fs-body);
-  font-weight: var(--fw-black);
-  line-height: 1;
-  pointer-events: none;
-}
-
-.variant-b .seat-top::before,
-.variant-c .seat-top::before {
-  top: 50%;
-  left: 0;
-  transform: translate(-100%, -50%);
-}
-
-.variant-b .seat-left::before,
-.variant-c .seat-left::before {
-  top: 0;
-  left: 50%;
-  transform: translate(-50%, -100%);
-}
-
-.variant-b .seat-right::before,
-.variant-c .seat-right::before {
-  top: 0;
-  left: 50%;
-  transform: translate(-50%, -100%);
-}
-
-.variant-b .seat-name {
-  visibility: hidden;
-}
-
-.variant-c .app {
-  background: var(--mat-surface);
-}
-
-.variant-c .board {
-  --on-felt: var(--mat-ink);
-  --on-felt-muted: var(--mat-muted);
-  --accent: var(--mat-ink);
-  --accent-strong: var(--mat-ink);
-  --accent-hover: var(--mat-ink);
-  --accent-soft: var(--mat-line);
-  --accent-line: var(--mat-line);
-  --accent-fill: rgba(232, 228, 216, 0.06);
-  --accent-ring: var(--mat-line);
-  --tile-shadow: none;
-  --hand-shadow: none;
-  --hand-shadow-lift: none;
-  --card-shadow: none;
-  --preview-shadow: none;
-  --toggle-shadow: none;
-  background: var(--mat-surface);
-  color: var(--mat-ink);
-}
-
-.variant-c .board::after {
-  display: none;
-}
-
-.variant-c .playfield {
-  border-color: var(--mat-line);
-}
-
-.variant-c .center,
-.variant-c .meld {
-  border-color: transparent;
-  background: transparent;
-}
-
-.variant-c .wall-dial {
-  display: none;
-}
-
-.variant-c .center-score.is-turn::after {
-  content: " · " attr(data-wall);
-}
-
-.variant-c .seat-name,
-.variant-c .rack-line,
-.variant-c .meld-row,
-.variant-c .bonus-row {
-  visibility: hidden;
-}
-
-.variant-c .tile img,
-.variant-c .river .tile {
-  filter: none;
-}
-
-
 /* ------------------------------------------------------- variant D: bare */
 /* Subtraction, not restyling: the rail, log, notes, result card and seat
    furniture leave; felt, rivers, hand, centre and one action row remain. */
@@ -2499,101 +2079,13 @@ h3 {
   display: none !important;
 }
 
-/* One badge shape for every seat: wind, then a tabular tile count, set 2px
-   clear of that seat's own rack and centred on it. */
-.variant-d .seat-badge,
-.variant-d .hand-badge {
-  position: absolute;
-  z-index: 4;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.4ch;
-  color: var(--on-felt);
-  font-size: var(--fs-label);
-  line-height: 1;
-  font-weight: var(--fw-bold);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-.variant-d .seat-top .seat-badge,
-.variant-d .seat-left .seat-badge {
-  top: 50%;
-  right: calc(100% + var(--space-1));
-  transform: translateY(-50%);
-}
-
-.variant-d .seat-right .seat-badge {
-  top: 50%;
-  left: calc(100% + var(--space-1));
-  transform: translateY(-50%);
-}
-
-.variant-d .seat.is-turn .seat-badge,
-.variant-d .hand-badge.is-turn {
-  color: var(--accent);
-}
-
-.variant-d .seat-badge .seat-count {
-  display: inline;
-  opacity: 0.72;
-}
-
 .variant-d .hand-band {
   position: relative;
-}
-
-.variant-d .hand-badge {
-  top: 50%;
-  left: 0;
-  transform: translateY(-50%);
 }
 
 .variant-d .seat-line,
 .variant-d .self-label {
   display: none !important;
-}
-
-.hand-badge {
-  display: none;
-}
-
-.variant-d .center {
-  border: 0;
-  background: transparent;
-  overflow: visible;
-}
-
-.variant-d .center-scores,
-.variant-d .wall-track,
-.variant-d .wall-ring,
-.variant-d .wall-label {
-  display: none;
-}
-
-.variant-d .wall-dial {
-  width: auto;
-  height: auto;
-}
-
-.variant-d .wall-count {
-  font-size: var(--fs-heading);
-}
-
-.variant-d .center-meta {
-  font-size: 0;
-}
-
-.variant-d .center-meta::before {
-  content: attr(data-round);
-  font-size: var(--fs-body);
-}
-
-.variant-d .center-meta::after {
-  content: " · " attr(data-current);
-  font-size: var(--fs-label);
 }
 
 .variant-d .action-cluster,
@@ -2692,85 +2184,13 @@ h3 {
   justify-content: center;
 }
 
-.variant-d .center {
-  position: absolute;
-  left: var(--layout-centre-x);
-  top: var(--layout-centre-y);
-  width: var(--layout-centre-w);
-  height: var(--layout-centre-h);
-}
 
-.variant-d .river-zone {
-  position: absolute;
-  overflow: hidden;
-}
 
-.variant-d .zone-top {
-  left: var(--layout-river-top-x);
-  top: var(--layout-river-top-y);
-  width: var(--layout-river-top-w);
-  height: var(--layout-river-top-h);
-}
 
-.variant-d .zone-bottom {
-  left: var(--layout-river-bottom-x);
-  top: var(--layout-river-bottom-y);
-  width: var(--layout-river-bottom-w);
-  height: var(--layout-river-bottom-h);
-}
 
-.variant-d .zone-left {
-  left: var(--layout-river-left-x);
-  top: var(--layout-river-left-y);
-  width: var(--layout-river-left-w);
-  height: var(--layout-river-left-h);
-}
 
-.variant-d .zone-right {
-  left: var(--layout-river-right-x);
-  top: var(--layout-river-right-y);
-  width: var(--layout-river-right-w);
-  height: var(--layout-river-right-h);
-}
 
-.variant-d .river-flat,
-.variant-d .river-side {
-  width: 100%;
-  height: 100%;
-}
 
-/* River cells come from the computed capacity grid, not the hand scale. */
-.variant-d .river-flat {
-  grid-template-columns: repeat(var(--river-columns), var(--river-tile-w));
-  grid-template-rows: repeat(var(--river-rows), var(--river-tile-h));
-  justify-content: center;
-}
-
-.variant-d .river-flat .river-slot {
-  width: var(--river-tile-w);
-  height: var(--river-tile-h);
-}
-
-.variant-d .river-flat .tile {
-  width: var(--river-tile-w);
-  height: var(--river-tile-h);
-}
-
-.variant-d .river-side {
-  grid-template-columns: repeat(var(--river-columns), var(--river-side-tile-h));
-  grid-template-rows: repeat(var(--river-rows), var(--river-side-tile-w));
-  align-content: center;
-}
-
-.variant-d .river-side .river-slot {
-  width: var(--river-side-tile-h);
-  height: var(--river-side-tile-w);
-}
-
-.variant-d .river-side .river-slot .tile {
-  width: var(--river-side-tile-w);
-  height: var(--river-side-tile-h);
-}
 
 .variant-d .seat {
   position: absolute;
@@ -2868,23 +2288,6 @@ throw: they line up from its left edge, the throw from its right. */
   min-height: var(--layout-controls-h);
   height: var(--layout-controls-h);
   padding-block: 0;
-}
-
-
-
-
-.variant-d .seat-top .seat-badge,
-.variant-d .seat-left .seat-badge {
-  right: calc(100% + var(--layout-gap));
-}
-
-.variant-d .seat-right .seat-badge {
-  left: calc(100% + var(--layout-gap));
-}
-
-.variant-d .hand-badge {
-  top: calc(100% - var(--hand-h) / 2);
-  transform: translateY(-50%);
 }
 
 .variant-d .seat-left,
