@@ -49,6 +49,8 @@ interface Measurement {
   readonly riverSlots: Readonly<Record<"top" | "left" | "right" | "bottom", readonly Rect[]>>;
   readonly firstDiscards: Readonly<Record<"top" | "left" | "right" | "bottom", Rect | null>>;
   readonly discard: Rect | null;
+  readonly handToggle: boolean;
+  readonly handCollapsed: boolean;
 }
 
 const SIZES = [
@@ -229,6 +231,8 @@ const MEASURE = `(() => {
     handClientWidth: handBand === null ? 0 : handBand.clientWidth,
     lastTileDrawn: lastTile === null ? false : lastTile.classList.contains("is-drawn"),
     discard: R(document.querySelector('.action-button[data-action="discard"]')),
+    handToggle: document.querySelector(".hand-toggle") !== null,
+    handCollapsed: document.documentElement.classList.contains("hand-collapsed"),
     visibleBadges,
   };
 })()`;
@@ -392,12 +396,31 @@ function assertActionRow(measurement: Measurement, label: string): void {
 }
 
 
+/** The hand is the one thing that must never be out of sight: no control may
+    collapse, hide or scroll it away. */
+function assertHandAlwaysVisible(measurement: Measurement, label: string): void {
+  assert.equal(measurement.handToggle, false, `${label}: a hand toggle exists`);
+  assert.equal(
+    measurement.handCollapsed,
+    false,
+    `${label}: the hand is collapsed`,
+  );
+  const band = measurement.rects.handBand;
+  assert.ok(band, `${label}: no hand band`);
+  assert.ok(
+    band[2] > 0 && band[3] > 0,
+    `${label}: the hand band is empty (${band[2]}x${band[3]})`,
+  );
+}
+
+
 function assertGeometry(
   measurement: Measurement,
   expected: ReturnType<typeof expectedLayout>,
   label: string,
 ): void {
   assertActionRow(measurement, label);
+  assertHandAlwaysVisible(measurement, label);
 
   if (expected.mode === "phone") {
     // Board regions only: the hand and controls are the bottom overlay zone.

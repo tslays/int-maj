@@ -160,6 +160,14 @@ into the hand band. On a phone a chow offer plus its variants is wider than the
 screen: the row keeps its height and scrolls sideways instead of painting over
 the felt, so the primary `Claim` and `Dismiss` stay visible without scrolling.
 
+### The hand is never hidden
+
+The hand is the one thing that must always be on screen. There is no
+collapse control, no arrow, nothing that hides, shrinks away or scrolls the
+hand band at any viewport - if something has to give, it gives elsewhere. The
+geometry audit fails if a `.hand-toggle` element exists, if `hand-collapsed` is
+set, or if the hand band measures zero.
+
 Screenshots judge taste only. If taste and the computed rects disagree, the
 rects win until the formula changes.
 
