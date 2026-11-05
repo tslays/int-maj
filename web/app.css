@@ -1047,6 +1047,10 @@ h3 {
   height: var(--discard-h, 32px);
   transform-origin: 50% 50%;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+  transition:
+    left 220ms var(--ease),
+    top 220ms var(--ease),
+    transform 220ms var(--ease);
 }
 
 .variant-d .pile .discard .tile {

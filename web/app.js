@@ -712,21 +712,18 @@ function syncRevealed() {
     for (const key of seatEntry(seat)?.discards ?? []) all.push({ seat, key });
   }
   if (!rhythmReady) {
-    // Slots are assigned later, once the layout is known.
-    pileTiles = all.map((item) => ({ ...item, slot: null }));
+    pileKeys = all.slice();
+    layoutPile();
     for (const seat of SEATS) {
       revealedDiscards[seat] = seatEntry(seat)?.discards.length ?? 0;
     }
     rhythmReady = true;
     return;
   }
-  // A claim takes the offered tile off the table; drop it from the pile.
-  for (const entry of pileTiles.slice()) {
-    const index = pileTiles.indexOf(entry);
-    if (index >= 0 && !all.some((item) => item.key === entry.key)) {
-      pileTiles.splice(index, 1);
-    }
-  }
+  // A claim takes the offered tile off the table; drop it from the heap.
+  const before = pileKeys.length;
+  pileKeys = pileKeys.filter((item) => all.some((other) => other.key === item.key));
+  if (pileKeys.length !== before) layoutPile();
   for (const seat of SEATS) {
     const count = seatEntry(seat)?.discards.length ?? 0;
     revealedDiscards[seat] = Math.min(revealedDiscards[seat], count);
@@ -778,23 +775,20 @@ function scheduleDiscard() {
 function revealDiscard(item) {
   const next = item ?? discardQueue.shift();
   if (next === undefined) return;
-  const { seat, key } = next;
-  if (pileSlots === null) pileSlots = buildPileSlots();
-  const taken = new Set(pileTiles.map((entry) => entry.slot));
-  const slot = nextPileSlot(seat, taken);
-  if (slot < 0) return;
-  revealedDiscards[seat] = (revealedDiscards[seat] ?? 0) + 1;
-  pileTiles.push({ key, slot });
+  revealedDiscards[next.seat] = (revealedDiscards[next.seat] ?? 0) + 1;
+  pileKeys.push(next);
+  // Every throw settles the heap afresh, a few pixels this way and that.
+  pileSeed += 1;
+  layoutPile();
   renderPile();
   const tile = $("#pile .discard:last-child");
   if (tile !== null) {
     tile.classList.add("is-new");
     window.setTimeout(() => tile.classList.remove("is-new"), 260);
-    throwGhost(seat, tile);
+    throwGhost(next.seat, tile);
   }
   playTileClack();
 }
-
 
 /** The tile leaves the wall: a back flies from the seat's rack to the river. */
 function throwGhost(seat, tile) {
@@ -959,14 +953,18 @@ function renderSeats() {
 /* ------------------------------------------------------------- the pile */
 
 /**
- * Discards are thrown into the middle, not laid out in rows: one tile size for
- * everyone, scattered on a fixed grid of slots so a tile never moves once it
- * has landed. The slots are seeded, so every reload looks the same.
+ * Discards are thrown into one heap in the middle: it grows out of the centre,
+ * each throw lands on its own side, tiles lie at every angle, and no two ever
+ * overlap. A landing tile nudges its neighbours a couple of pixels, so the heap
+ * settles like real tiles would.
  */
-const PILE_CAPACITY = 84;
-let pileSlots = null;
-let pileTiles = [];
-
+const PILE_GOLDEN = Math.PI * (3 - Math.sqrt(5));
+const SEAT_ANGLE = {
+  top: -Math.PI / 2,
+  right: 0,
+  bottom: Math.PI / 2,
+  left: Math.PI,
+};
 function mulberry32(seed) {
   let state = seed >>> 0;
   return () => {
@@ -978,124 +976,150 @@ function mulberry32(seed) {
   };
 }
 
-function pileSlotCount() {
-  return Math.min(PILE_CAPACITY, currentLayout?.pileCapacity ?? PILE_CAPACITY);
-}
+const PILE_CAPACITY = 84;
+let pileItems = [];
+let pileKeys = [];
+let pileSeed = 0x5eed;
+let pileSize = { w: 0, h: 0 };
+let pileRandom = mulberry32(0x5eed);
 
-/** Best-candidate scatter: each tile takes the roomiest of a few random spots. */
-/**
- * The pile is a flower: slots spiral out from the centre (Vogel's sunflower),
- * spaced so no two tiles can ever touch, and each throw takes the innermost
- * free slot on its own side of the table.
- */
-const PILE_GOLDEN = Math.PI * (3 - Math.sqrt(5));
-const SEAT_ANGLE = { top: -Math.PI / 2, right: 0, bottom: Math.PI / 2, left: Math.PI };
-
-function buildPileSlots() {
-  const pile = currentLayout?.pile;
-  if (pile === undefined) return [];
-  const width = currentLayout.discardTileWidth;
-  const height = currentLayout.discardTileHeight;
-  if (width === undefined || height === undefined) return [];
-  const diagonal = Math.hypot(width, height);
-  const centreX = pile[2] / 2;
-  const centreY = pile[3] / 2;
-  // A circle, not the whole rectangle: the pile reads as one round heap.
-  const reach = Math.max(0, Math.min(pile[2], pile[3]) / 2 - diagonal / 2);
-  const candidates = 420;
-  const slots = [];
-  for (let index = 0; index < candidates; index++) {
-    const fill = Math.sqrt((index + 0.4) / candidates);
-    const theta = index * PILE_GOLDEN;
-    const x = centreX + Math.cos(theta) * reach * fill - width / 2;
-    const y = centreY + Math.sin(theta) * reach * fill - height / 2;
-    let clear = true;
-    for (const slot of slots) {
-      const gap = Math.hypot(slot.x - x, slot.y - y);
-      if (gap < diagonal * 1.04) {
-        clear = false;
-        break;
-      }
-    }
-    if (!clear) continue;
-    slots.push({
-      x,
-      y,
-      theta,
-      radius: Math.hypot(x + width / 2 - centreX, y + height / 2 - centreY),
-      angle: (theta * 180) / Math.PI + 90,
-    });
-    if (slots.length >= pileSlotCount()) break;
-  }
-  return slots;
-}
-
-/** Angular distance between two angles, 0..π. */
 function angleDistance(a, b) {
   const turn = Math.abs(((a - b + Math.PI) % (Math.PI * 2)) - Math.PI);
   return Math.min(turn, Math.PI * 2 - turn);
 }
 
-/**
- * The innermost free slot near the thrower's side: your own tiles land south,
- * the right-hand player's east, the left-hand player's west, the far seat's
- * north. The circle therefore grows out of the middle.
- */
-function nextPileSlot(seat, taken) {
-  if (pileSlots === null) pileSlots = buildPileSlots();
+/** Separating-axis test for two rotated rectangles. */
+function boxesOverlap(a, b, gap = 0) {
+  const axes = [a.angle, b.angle];
+  for (const angle of axes) {
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const project = (box) => {
+      const ex = (box.w / 2) * Math.abs(Math.cos(box.angle) * cos + Math.sin(box.angle) * sin);
+      const ey = (box.h / 2) * Math.abs(-Math.sin(box.angle) * cos + Math.cos(box.angle) * sin);
+      const centre = (box.x + box.w / 2) * cos + (box.y + box.h / 2) * sin;
+      return [centre - (ex + ey), centre + (ex + ey)];
+    };
+    const [aMin, aMax] = project(a);
+    const [bMin, bMax] = project(b);
+    if (aMax + gap <= bMin || bMax + gap <= aMin) return false;
+  }
+  return true;
+}
+
+function placementFits(list, candidate) {
+  for (const item of list) {
+    if (boxesOverlap(item, candidate, 0.5)) return false;
+  }
+  return true;
+}
+
+/** A dense, jittered grid of spots inside the heap, ordered from the centre. */
+function pileCandidates(w, h) {
+  const pile = currentLayout.pile;
+  const centreX = pile[2] / 2;
+  const centreY = pile[3] / 2;
+  const reachX = Math.max(1, pile[2] / 2 - w / 2);
+  const reachY = Math.max(1, pile[3] / 2 - h / 2);
+  const stepX = w * 1.04;
+  const stepY = h * 1.03;
+  const list = [];
+  for (let gy = -reachY; gy <= reachY; gy += stepY) {
+    for (let gx = -reachX; gx <= reachX; gx += stepX) {
+      const jx = gx + (pileRandom() - 0.5) * stepX * 0.14;
+      const jy = gy + (pileRandom() - 0.5) * stepY * 0.14;
+      if ((jx / reachX) ** 2 + (jy / reachY) ** 2 > 1) continue;
+      list.push({
+        x: centreX + jx - w / 2,
+        y: centreY + jy - h / 2,
+        w,
+        h,
+        radius: Math.hypot(jx, jy),
+        theta: Math.atan2(jy, jx),
+        angle: (pileRandom() - 0.5) * 0.9,
+      });
+    }
+  }
+  list.sort((a, b) => a.radius - b.radius || a.theta - b.theta);
+  return list;
+}
+
+/** The innermost free spot on the thrower's side, or null when the heap is full. */
+function tryPlace(seat, list, placed, w, h) {
   const preferred = SEAT_ANGLE[PLACE[seat]] ?? 0;
-  // Own the wedge first; widen only when that wedge is full.
-  for (const spread of [Math.PI / 4, Math.PI / 3, Math.PI / 2]) {
-    let best = -1;
-    let bestRadius = Infinity;
-    for (let index = 0; index < pileSlots.length; index++) {
-      if (taken.has(index)) continue;
-      const slot = pileSlots[index];
-      if (angleDistance(slot.theta, preferred) > spread) continue;
-      if (slot.radius < bestRadius) {
-        bestRadius = slot.radius;
-        best = index;
+  for (const spread of [Math.PI / 4, Math.PI / 3, Math.PI / 2, Math.PI]) {
+    for (const candidate of list) {
+      if (angleDistance(candidate.theta, preferred) > spread) continue;
+      // A tile may lie at any careless angle; try a few before giving up on
+      // the spot, so the heap packs as tightly as the geometry allows.
+      for (const turn of [0, 0.18, -0.18, 0.34, -0.34]) {
+        const tilted = { ...candidate, angle: candidate.angle + turn };
+        if (placementFits(placed, tilted)) return tilted;
       }
     }
-    if (best >= 0) return best;
   }
-  return -1;
+  return null;
+}
+
+/**
+ * Lays the heap out at the largest tile that still holds every discard without
+ * a single overlap: a phone shrinks the tiles a little, a desk never does.
+ */
+function layoutPile() {
+  if (currentLayout === null) return;
+  const baseW = currentLayout.discardTileWidth;
+  const baseH = currentLayout.discardTileHeight;
+  for (let step = 0; step < 12; step++) {
+    const w = baseW * Math.pow(0.93, step);
+    const h = baseH * Math.pow(0.93, step);
+    pileRandom = mulberry32(pileSeed);
+    const list = pileCandidates(w, h);
+    const placed = [];
+    let complete = true;
+    for (const item of pileKeys) {
+      const spot = tryPlace(item.seat, list, placed, w, h);
+      if (spot === null) {
+        complete = false;
+        break;
+      }
+      placed.push({ key: item.key, seat: item.seat, ...spot });
+    }
+    if (complete) {
+      pileItems = placed;
+      pileSize = { w, h };
+      return;
+    }
+  }
+  // Nothing fits (a very short window): keep the last attempt.
+  pileItems = [];
+  pileSize = { w: baseW, h: baseH };
 }
 
 function renderPile() {
   const element = $("#pile");
   if (element === null || currentLayout === null) return;
-  pileSlots = buildPileSlots();
-  const width = currentLayout.discardTileWidth;
-  const height = currentLayout.discardTileHeight;
-  element.style.setProperty("--discard-w", `${width}px`);
-  element.style.setProperty("--discard-h", `${height}px`);
+  element.style.setProperty("--discard-w", `${pileSize.w}px`);
+  element.style.setProperty("--discard-h", `${pileSize.h}px`);
   element.replaceChildren();
   const claimWindow = payload?.view.claimWindow ?? null;
-  const taken = new Set();
-  pileTiles.forEach((entry, index) => {
-    if (entry.slot === null || taken.has(entry.slot)) {
-      entry.slot = nextPileSlot(entry.seat, taken);
-    }
-    const slot = entry.slot === null ? undefined : pileSlots[entry.slot];
-    if (slot === undefined) return;
-    taken.add(entry.slot);
-    const tile = tileElement(entry.key);
+  pileItems.forEach((item, index) => {
+    const tile = tileElement(item.key);
     tile.classList.add("discard");
-    tile.style.left = `${slot.x}px`;
-    tile.style.top = `${slot.y}px`;
-    tile.style.transform = `rotate(${slot.angle}deg)`;
+    tile.style.left = `${item.x}px`;
+    tile.style.top = `${item.y}px`;
+    tile.style.transform = `rotate(${(item.angle * 180) / Math.PI}deg)`;
     tile.style.zIndex = String(index + 1);
-    if (index === pileTiles.length - 1) {
+    if (index === pileItems.length - 1) {
       tile.classList.add("last");
-      if (claimWindow !== null && claimWindow.tile === entry.key) {
+      if (claimWindow !== null && claimWindow.tile === item.key) {
         tile.classList.add("claimable");
       }
     }
     element.append(tile);
   });
-  element.setAttribute("aria-label", `${pileTiles.length} discards`);
+  element.setAttribute("aria-label", `${pileItems.length} discards`);
 }
+
 
 function renderHand() {
   const view = payload.view;
@@ -1930,8 +1954,8 @@ watchBuild();
 
 function render() {
   if (payload === null) return;
-  syncRevealed();
   applyLayout();
+  syncRevealed();
   $("#board").classList.toggle("is-claiming", isOwnClaimWindow());
   renderMeta();
   renderSeats();
