@@ -11,11 +11,12 @@ export const HAND_TILE_COUNT = 14;
 
 /**
  * How much of a tile its right neighbour covers. The art draws every face with
- * a green 3D side on its right and a white ceramic front; shifting each tile
- * left by this share makes the white fronts touch, the way tiles pushed
- * together on a real table do.
+ * a green 3D side on its right and a white ceramic front (0.263 of the width);
+ * shifting each tile left by this share would make the white fronts touch. We
+ * stop just short, so tiles sit close but keep a narrow seam, the way tiles
+ * pushed together on a real table do.
  */
-export const HAND_OVERLAP = 0.263;
+export const HAND_OVERLAP = 0.17;
 
 /** Width of a hand row: one tile plus the thirteen that follow it. */
 export function handRowWidth(tile, gap, overlap = HAND_OVERLAP) {
@@ -308,7 +309,7 @@ export function computeLayout({
   // tile and the band grows to hold it. The rivers and seats keep the board
   // tile above.
   // The row keeps the footprint it had edge to edge; overlapping turns that
-  // footprint into slightly larger tiles that touch.
+  // footprint into slightly larger tiles with a narrow seam between them.
   const handTile =
     (HAND_TILE_COUNT * tileWidth + (HAND_TILE_COUNT - 1) * gap) /
     (HAND_TILE_COUNT - (HAND_TILE_COUNT - 1) * HAND_OVERLAP);

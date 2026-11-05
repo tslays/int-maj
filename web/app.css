@@ -1546,7 +1546,7 @@ h3 {
 }
 
 /* Tiles are pushed together: every tile slides left over its neighbour by
-   the width of the art's green 3D side, so the white fronts connect. */
+   most of the art's green 3D side, leaving a narrow seam between the fronts. */
 .hand-tile {
   position: relative;
   display: flex;
@@ -1574,9 +1574,8 @@ h3 {
   transform-origin: 50% 100%;
 }
 
-/* Tiles are pushed together: each one slides left over its neighbour by the
-   width of the art's green 3D side, so the white fronts connect with nothing
-   between them. */
+/* Tiles are pushed together: each one slides left over its neighbour by most
+   of the art's green 3D side, so the white fronts sit a narrow seam apart. */
 .variant-d .hand-tile + .hand-tile {
   margin-left: calc(var(--layout-hand-gap) - var(--layout-hand-overlap, 0px));
 }
