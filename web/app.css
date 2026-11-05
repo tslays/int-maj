@@ -1136,6 +1136,23 @@ h3 {
   animation: river-in var(--dur-fast) var(--ease);
 }
 
+/* Discards arrive in one payload but land one beat at a time. */
+.river .tile.is-queued {
+  visibility: hidden;
+}
+
+.throw-ghost {
+  position: fixed;
+  z-index: 40;
+  border-radius: var(--radius-xs);
+  background: linear-gradient(160deg, #e9efe6, #cddacd 60%, #9fb79f);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  transition:
+    transform 260ms var(--ease-in),
+    opacity 260ms var(--ease-in);
+}
+
 @keyframes river-in {
   from {
     opacity: 0;

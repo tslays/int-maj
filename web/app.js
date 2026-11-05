@@ -328,6 +328,7 @@ function sendDiscard(tile, index) {
   // Instant: the tile leaves the hand the moment it is thrown, no confirmation
   // and no animation hold.
   if (button instanceof HTMLElement) button.classList.add("is-leaving");
+  playTileClack();
   sendAction(action);
   return true;
 }
@@ -722,7 +723,7 @@ function riverWrapper(entry) {
 
   const claimWindow = payload.view.claimWindow;
   const last = entry.discards.length - 1;
-  const previous = tableInitialized ? (previousDiscards[entry.seat] ?? 0) : entry.discards.length;
+  const seen = revealedDiscards[entry.seat] ?? entry.discards.length;
 
   // The reserved block is decided before the first discard. Each screen
   // cell maps back to the throw index that belongs there.
@@ -736,7 +737,9 @@ function riverWrapper(entry) {
     const slot = div("river-slot");
     const key = index === undefined ? undefined : entry.discards[index];
     if (key !== undefined) {
-      const tile = riverTile(key, index === last, index >= previous, entry.seat, claimWindow);
+      const unseen = index >= seen;
+      const tile = riverTile(key, index === last, index >= seen, entry.seat, claimWindow);
+      if (unseen) tile.classList.add("is-queued");
       // The first discard is the block's row flush against the centre; the
       // layout check uses the marker to prove the growth direction.
       if (index === 0) tile.classList.add("first");
@@ -796,6 +799,141 @@ function renderSeat(entry) {
   // The side racks hug the edge; their melds sit inboard of the rack.
   root.append(rack);
   if (melds !== null) root.append(melds);
+}
+
+/* --------------------------------------------------- discard rhythm */
+
+/**
+ * The opponents answer in one payload, but a table answers one seat at a time.
+ * Every fresh discard waits in a queue and is dropped in turn - sound, tile and
+ * the ghost of the tile leaving the wall - so the round reads as a sequence:
+ * who threw, in what order, and when it comes back to you.
+ */
+const DISCARD_BEAT_MS = 420;
+let discardQueue = [];
+let discardTimer = null;
+/** Discards the viewer has already seen land, per seat. */
+const revealedDiscards = { E: 0, S: 0, W: 0, N: 0 };
+let rhythmReady = false;
+
+/** Keeps the seen-count honest: history shows, new throws wait their beat. */
+function syncRevealed() {
+  for (const seat of SEATS) {
+    const count = seatEntry(seat)?.discards.length ?? 0;
+    if (!rhythmReady) revealedDiscards[seat] = count;
+    else revealedDiscards[seat] = Math.min(revealedDiscards[seat], count);
+  }
+  rhythmReady = true;
+}
+
+/** Seat order after the human's, which is the order the table answers in. */
+function turnOrderAfter(seat) {
+  const start = SEATS.indexOf(seat);
+  return [...SEATS.slice(start + 1), ...SEATS.slice(0, start + 1)];
+}
+
+function planDiscards() {
+  if (payload === null) return;
+  if (discardTimer !== null) {
+    clearTimeout(discardTimer);
+    discardTimer = null;
+  }
+  discardQueue = [];
+  // A claim is the one thing that interrupts the beat: the offer needs its
+  // tile on the table now, so everything waiting lands at once.
+  if (payload.view.claimWindow !== null) {
+    for (const seat of SEATS) {
+      revealedDiscards[seat] = seatEntry(seat)?.discards.length ?? revealedDiscards[seat];
+    }
+    renderRivers();
+    return;
+  }
+  // Your own throw lands at once; the table answers at its own pace.
+  if (payload.seat in revealedDiscards) {
+    revealedDiscards[payload.seat] =
+      seatEntry(payload.seat)?.discards.length ?? revealedDiscards[payload.seat];
+  }
+  for (const seat of turnOrderAfter(payload.seat)) {
+    if (seat === payload.seat) continue;
+    const count = seatEntry(seat)?.discards.length ?? 0;
+    for (let index = revealedDiscards[seat]; index < count; index++) {
+      discardQueue.push({ seat, index });
+    }
+  }
+  if (discardQueue.length > 0) scheduleDiscard();
+}
+
+function scheduleDiscard() {
+  discardTimer = setTimeout(() => {
+    discardTimer = null;
+    revealDiscard();
+    if (discardQueue.length > 0) scheduleDiscard();
+  }, DISCARD_BEAT_MS);
+}
+
+function revealDiscard() {
+  const next = discardQueue.shift();
+  if (next === undefined) return;
+  const { seat, index } = next;
+  revealedDiscards[seat] = Math.max(revealedDiscards[seat], index + 1);
+  // Rebuild the rivers from the seen counts: one source of truth, so a render
+  // that happens mid-beat can never leave a tile hidden or double-shown.
+  renderRivers();
+  const zone = document.querySelector(`#river-${PLACE[seat]}`);
+  const tile = zone === null ? null : zone.querySelectorAll(".tile")[index] ?? null;
+  if (tile !== null) {
+    tile.classList.add("is-new");
+    window.setTimeout(() => tile.classList.remove("is-new"), 300);
+    throwGhost(seat, tile);
+  }
+  playTileClack();
+}
+
+
+/** The tile leaves the wall: a back flies from the seat's rack to the river. */
+function throwGhost(seat, tile) {
+  const rack = document.querySelector(`#seat-${PLACE[seat]} .rack`);
+  if (rack === null) return;
+  const from = rack.getBoundingClientRect();
+  const to = tile.getBoundingClientRect();
+  if (from.width === 0 || to.width === 0) return;
+  const ghost = div("throw-ghost");
+  ghost.style.left = `${from.left + from.width / 2}px`;
+  ghost.style.top = `${from.top + from.height / 2}px`;
+  ghost.style.width = `${Math.min(18, from.width)}px`;
+  ghost.style.height = `${Math.min(24, from.height)}px`;
+  document.body.append(ghost);
+  requestAnimationFrame(() => {
+    ghost.style.transform = `translate(${to.left + to.width / 2 - (from.left + from.width / 2)}px, ${
+      to.top + to.height / 2 - (from.top + from.height / 2)
+    }px) scale(0.9)`;
+    ghost.style.opacity = "0";
+  });
+  window.setTimeout(() => ghost.remove(), 320);
+}
+
+/** One short ceramic clack, synthesised so the table ships without audio. */
+function playTileClack() {
+  if (audioContext === null) return;
+  const now = audioContext.currentTime;
+  const length = Math.round(audioContext.sampleRate * 0.05);
+  const buffer = audioContext.createBuffer(1, length, audioContext.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let index = 0; index < length; index++) {
+    const decay = Math.exp(-index / (audioContext.sampleRate * 0.008));
+    data[index] = (Math.random() * 2 - 1) * decay;
+  }
+  const source = audioContext.createBufferSource();
+  source.buffer = buffer;
+  const filter = audioContext.createBiquadFilter();
+  filter.type = "bandpass";
+  filter.frequency.value = 1900;
+  filter.Q.value = 1.1;
+  const gain = audioContext.createGain();
+  gain.gain.value = 0.22;
+  source.connect(filter).connect(gain).connect(audioContext.destination);
+  source.start(now);
+  source.stop(now + 0.06);
 }
 
 function renderRivers() {
@@ -969,23 +1107,7 @@ function renderHand() {
     element.append(button);
   });
 
-  updateDiscardHint();
 }
-function updateDiscardHint() {
-  if (payload === null) return;
-  const button = document.querySelector('.action-button[data-action="discard"]');
-  if (button === null) return;
-  const drawn = drawnIndex();
-  const index = drawn >= 0 ? drawn : displayHand().length - 1;
-  const tile = displayHand()[index];
-  if (tile === undefined) return;
-  const label = `Discard ${tileName(tile)} (tile ${index + 1})`;
-  button.title = label;
-  button.setAttribute("aria-label", label);
-  const art = button.querySelector(".tile");
-  if (art !== null) art.replaceWith(tileElement(tile));
-}
-
 function renderOwnMelds() {
   const slot = $("#own-melds");
   const melds = meldRow(payload.view.player.melds);
@@ -1183,27 +1305,6 @@ function renderActions() {
 
   let discardButton;
 
-  // The turn's one obvious action: throw the tile you just drew. Tapping any
-  // other tile on the hand throws that one instead.
-  if (view.phase === "discard" && view.turn === view.seat) {
-    const drawn = drawnIndex();
-    const index = drawn >= 0 ? drawn : displayHand().length - 1;
-    const tile = displayHand()[index];
-    if (tile !== undefined) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.dataset.action = "discard";
-      button.className = "action-button primary discard-action";
-      button.append(tileElement(tile));
-      button.append(document.createTextNode("Discard"));
-      const label = `Discard ${tileName(tile)} (tile ${index + 1})`;
-      button.title = label;
-      button.setAttribute("aria-label", label);
-      button.addEventListener("click", () => discardDrawn());
-      discardButton = button;
-    }
-  }
-
   const fishingAction = actions.find((action) => action.type === "DeclareFishing");
   if (fishingAction !== undefined) {
     // The preview sits beside the buttons, below the east river, so nothing
@@ -1247,7 +1348,6 @@ function renderActions() {
   if (discardButton !== undefined) column.append(discardButton);
 
   element.append(column);
-  updateDiscardHint();
 }
 
 function renderScorecard() {
@@ -1796,6 +1896,7 @@ watchBuild();
 
 function render() {
   if (payload === null) return;
+  syncRevealed();
   applyLayout();
   $("#board").classList.toggle("is-claiming", isOwnClaimWindow());
   renderMeta();
@@ -1827,6 +1928,10 @@ function render() {
   // Deferred: render() runs while a request is still in flight, so the draw
   // must wait for `busy` to clear or it is dropped.
   setTimeout(autoDraw, 0);
+
+  // The opponents' discards arrive together but are shown one at a time, so
+  // the round keeps a rhythm you can follow.
+  planDiscards();
 }
 
 /* -------------------------------------------------------------- gallery */
@@ -1952,12 +2057,6 @@ function discardAt(index) {
   log("That tile cannot be discarded now.");
 }
 
-function discardDrawn() {
-  if (payload === null || busy) return;
-  if (!isYourDiscardPhase()) return;
-  const index = drawnIndex();
-  discardAt(index >= 0 ? index : displayHand().length - 1);
-}
 function pass() {
   const action = legalAction("Pass");
   if (action === undefined) return;

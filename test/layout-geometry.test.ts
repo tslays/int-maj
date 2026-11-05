@@ -357,18 +357,12 @@ function assertRivers(
 
 function assertActionRow(measurement: Measurement, label: string): void {
   const controls = measurement.rects.controls;
-  const discard = measurement.discard;
   assert.ok(controls, `${label}: no controls row`);
-  assert.ok(discard, `${label}: no discard button in the turn state`);
-  const right = discard[0] + discard[2];
-  const bandRight = controls[0] + controls[2];
-  assert.ok(
-    Math.abs(right - bandRight) <= 1,
-    `${label}: discard ends at ${right}, the row at ${bandRight}`,
-  );
-  assert.ok(
-    discard[1] >= controls[1] - 1 && discard[1] + discard[3] <= controls[1] + controls[3] + 1,
-    `${label}: discard box leaves the reserved row`,
+  // There is no throw button: a tap on a hand tile is the discard.
+  assert.equal(
+    measurement.discard,
+    null,
+    `${label}: a discard button is back on the action row`,
   );
 }
 
