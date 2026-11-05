@@ -140,7 +140,25 @@ view) so a test can assert, at any viewport:
 - `river_tile <= region_w / columns` and `<= region_h / rows`, with a 3:4
   face (`+/- 0.02`), and the first discard of every seat sits inside its own
   river region;
-- nothing is placed outside the board box.
+- nothing is placed outside the board box;
+- the reserved control row holds one block at a time and nothing grows out of
+  it: your throw is flush with its right edge, the calls the table offers you
+  start at its left edge, and both sit inside its height (`+/- 1 px`).
+
+### The action row
+
+The row directly above the hand is the only place a control may appear:
+
+    controls  = full board width x control_h, sitting on top of the hand band
+    throw     = last child of the row, flush right (margin-left: auto)
+    calls     = the same row, filled from the left edge
+    claim     = the same row, so a claim cannot open a second overlay
+
+`control_h` is the reserved height, so a control's box must equal it rather
+than the hand-rolled button height - a 37 px button in a 34 px row leaks 1.5 px
+into the hand band. On a phone a chow offer plus its variants is wider than the
+screen: the row keeps its height and scrolls sideways instead of painting over
+the felt, so the primary `Claim` and `Dismiss` stay visible without scrolling.
 
 Screenshots judge taste only. If taste and the computed rects disagree, the
 rects win until the formula changes.
