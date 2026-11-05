@@ -745,7 +745,8 @@ function discardsFromEvents(lines) {
   for (const line of lines) {
     const match = /^([ESWN]) discards (\S+)/.exec(line);
     if (match === null) continue;
-    const entry = payload?.table.find((row) => row.wind === match[1]);
+    // The log prints the seat id (E/S/W/N), never the wind, which rotates.
+    const entry = payload?.table.find((row) => row.seat === match[1]);
     if (entry === undefined) continue;
     out.push({ seat: entry.seat, key: match[2] });
   }
