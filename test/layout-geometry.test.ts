@@ -282,6 +282,23 @@ function assertPile(
       Math.abs(height - (expected.discardTileWidth * 4) / 3) <= 1,
     `${label}: discard is ${width}x${height}, solver says ${expected.discardTileWidth}`,
   );
+  // No two discards may touch: their centres are at least a diagonal apart,
+  // which holds whatever angle each one lies at.
+  const diagonal = Math.hypot(width, height);
+  for (let first = 0; first < measurement.discards.length; first++) {
+    for (let second = first + 1; second < measurement.discards.length; second++) {
+      const a = measurement.discards[first]!;
+      const b = measurement.discards[second]!;
+      const gap = Math.hypot(
+        a[0] + a[2] / 2 - (b[0] + b[2] / 2),
+        a[1] + a[3] / 2 - (b[1] + b[3] / 2),
+      );
+      assert.ok(
+        gap >= diagonal * 0.98,
+        `${label}: two discards overlap (centres ${gap.toFixed(1)} apart, diagonal ${diagonal.toFixed(1)})`,
+      );
+    }
+  }
   // A tile lies at an angle, so allow its rotated bounding box to poke out by
   // the diagonal margin, never more.
   const margin = Math.hypot(width, height) / 2;
