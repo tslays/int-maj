@@ -1326,6 +1326,8 @@ function renderActions() {
   const actions = orderedActions(payload.legalActions);
   const column = div("action-buttons");
 
+  let discardButton;
+
   // The turn's one obvious action: throw the tile under the keyboard cursor.
   // A click on the hand does the same thing; this makes the action nameable.
   if (view.phase === "discard" && view.turn === view.seat) {
@@ -1339,7 +1341,7 @@ function renderActions() {
       button.append(tileElement(tile));
       button.append(document.createTextNode("Discard"));
       button.addEventListener("click", () => discardCandidate());
-      column.append(button);
+      discardButton = button;
     }
   }
 
@@ -1362,6 +1364,8 @@ function renderActions() {
       note.textContent = "";
     }
     if (note.textContent) column.append(note);
+    if (discardButton !== undefined) column.append(discardButton);
+
     if (column.childElementCount > 0) element.append(column);
     return;
   }
@@ -1381,6 +1385,8 @@ function renderActions() {
     button.addEventListener("click", () => sendAction(action));
     column.append(button);
   });
+  if (discardButton !== undefined) column.append(discardButton);
+
   element.append(column);
   updateDiscardHint();
 }

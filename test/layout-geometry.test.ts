@@ -48,6 +48,7 @@ interface Measurement {
   readonly riverZones: Readonly<Record<"top" | "left" | "right" | "bottom", Rect | null>>;
   readonly riverSlots: Readonly<Record<"top" | "left" | "right" | "bottom", readonly Rect[]>>;
   readonly firstDiscards: Readonly<Record<"top" | "left" | "right" | "bottom", Rect | null>>;
+  readonly discard: Rect | null;
 }
 
 const SIZES = [
@@ -227,6 +228,7 @@ const MEASURE = `(() => {
     handScrollWidth: handBand === null ? 0 : handBand.scrollWidth,
     handClientWidth: handBand === null ? 0 : handBand.clientWidth,
     lastTileDrawn: lastTile === null ? false : lastTile.classList.contains("is-drawn"),
+    discard: R(document.querySelector('.action-button[data-action="discard"]')),
     visibleBadges,
   };
 })()`;
@@ -369,11 +371,34 @@ function assertBadges(
   }
 }
 
+/** The reserved row above the hand holds exactly one control block at a time:
+    the calls the table offers line up from its left edge, your own throw sits
+    at its right edge, and neither may grow out of the row. */
+function assertActionRow(measurement: Measurement, label: string): void {
+  const controls = measurement.rects.controls;
+  const discard = measurement.discard;
+  assert.ok(controls, `${label}: no controls row`);
+  assert.ok(discard, `${label}: no discard button in the turn state`);
+  const right = discard[0] + discard[2];
+  const bandRight = controls[0] + controls[2];
+  assert.ok(
+    Math.abs(right - bandRight) <= 1,
+    `${label}: discard ends at ${right}, the row at ${bandRight}`,
+  );
+  assert.ok(
+    discard[1] >= controls[1] - 1 && discard[1] + discard[3] <= controls[1] + controls[3] + 1,
+    `${label}: discard box leaves the reserved row`,
+  );
+}
+
+
 function assertGeometry(
   measurement: Measurement,
   expected: ReturnType<typeof expectedLayout>,
   label: string,
 ): void {
+  assertActionRow(measurement, label);
+
   if (expected.mode === "phone") {
     // Board regions only: the hand and controls are the bottom overlay zone.
     const boardRegions = ["centre", "riverTop", "riverLeft", "riverRight", "riverBottom", "seatTop", "seatLeft", "seatRight"];
@@ -449,4 +474,69 @@ describe("variant D computed geometry", () => {
       assertGeometry(measurement, expected, `${width}x${height}`);
     });
   }
+});
+
+/** The claim offer is the same reserved row as the throw: it cannot invent a
+    second overlay elsewhere on the felt. */
+const MEASURE_CLAIM = `(() => {
+  const R = (element) => {
+    if (element === null) return null;
+    const r = element.getBoundingClientRect();
+    return [r.x, r.y, r.width, r.height];
+  };
+  const bar = document.querySelector("#claim-bar");
+  return {
+    band: R(bar),
+    buttons: [...document.querySelectorAll("#claim-bar .claim-button")].map(R),
+    variants: [...document.querySelectorAll("#claim-bar .claim-variant")].map(R),
+    controls: R(document.querySelector("#actions")),
+    scroll: bar ? [bar.scrollWidth, bar.clientWidth] : [0, 0],
+    overflow: bar ? getComputedStyle(bar).overflowX : "",
+    viewport: innerWidth,
+  };
+})()`;
+
+describe("variant D action row", () => {
+  it("offers the calls from the left edge of the reserved row", async () => {
+    await setViewport(cdp, sessionId, 1440, 900);
+    await navigate(cdp, sessionId, `${server.url}/?state=claim&variant=d`);
+    const claim = await evaluate<{
+      band: Rect;
+      buttons: Rect[];
+      variants: Rect[];
+      controls: Rect;
+    }>(cdp, sessionId, MEASURE_CLAIM);
+    assert.ok(claim.buttons.length > 0, "a claim window offers a button");
+    assert.ok(
+      Math.abs(claim.buttons[0][0] - claim.band[0]) <= 1,
+      `the first call starts at ${claim.buttons[0][0]}, the row at ${claim.band[0]}`,
+    );
+    for (const box of [...claim.buttons, ...claim.variants]) {
+      assert.ok(
+        box[1] >= claim.band[1] - 1 &&
+          box[1] + box[3] <= claim.band[1] + claim.band[3] + 1,
+        `a call leaves the reserved row: ${JSON.stringify(box)}`,
+      );
+    }
+  });
+
+  it("keeps an over-wide chow offer inside the phone row", async () => {
+    await setViewport(cdp, sessionId, 390, 844);
+    await navigate(cdp, sessionId, `${server.url}/?state=claim&variant=d`);
+    const claim = await evaluate<{
+      band: Rect;
+      scroll: [number, number];
+      overflow: string;
+      viewport: number;
+    }>(cdp, sessionId, MEASURE_CLAIM);
+    assert.equal(claim.band[0], 0, "the row starts at the screen edge");
+    assert.equal(claim.band[2], claim.viewport, "the row is the screen width");
+    if (claim.scroll[0] > claim.scroll[1]) {
+      assert.equal(
+        claim.overflow,
+        "auto",
+        "a wider offer scrolls inside the row instead of painting over the felt",
+      );
+    }
+  });
 });

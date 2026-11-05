@@ -2765,6 +2765,71 @@ kbd {
   align-self: auto;
 }
 
+
+/* Your own throw sits at the row's right end, above the hand; every call the
+table offers you lines up from the left edge of the same row. */
+
+.variant-d .action-buttons {
+  width: 100%;
+}
+
+
+.variant-d .action-button.discard-action {
+  margin-left: auto;
+}
+
+
+/* The reserved row is the button's box: no control may leak into the hand
+band above which it sits. */
+
+.variant-d .action-button {
+  min-height: var(--layout-controls-h);
+  height: var(--layout-controls-h);
+  padding-block: 0;
+}
+
+
+/* The calls the table offers you use the same reserved row as your own
+throw: they line up from its left edge, the throw from its right. */
+
+.variant-d .claim-bar {
+  position: absolute;
+  top: var(--layout-controls-y);
+  left: var(--layout-controls-x);
+  width: var(--layout-controls-w);
+  height: var(--layout-controls-h);
+  margin: 0;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-4);
+
+  /* A chow offer plus its variants is wider than a phone: the row keeps its
+  reserved height and scrolls sideways rather than painting over the felt. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+
+.variant-d .claim-row,
+.variant-d .claim-variants {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+
+.variant-d .claim-button {
+  min-height: var(--layout-controls-h);
+  height: var(--layout-controls-h);
+  padding-block: 0;
+}
+
+
+
+
 .variant-d .seat-top .seat-badge,
 .variant-d .seat-left .seat-badge {
   right: calc(100% + var(--layout-gap));
