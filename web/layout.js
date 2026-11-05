@@ -81,8 +81,10 @@ export function computeLayout({
     const boardTileHeight = (boardScale * 4) / 3;
     const handTileHeight = (handScale * 4) / 3;
     const topSeatHeight = round(boardScale * 0.96);
-    const rackWidth = round(boardScale * 0.73);
-    const rackHeight = boardScale * 0.96;
+    // One back for all three opponents: a 3:4 tile whose height still lets
+    // thirteen of them stack down a side seat.
+    let rackHeight = boardScale * 0.96;
+    let rackWidth = rackHeight * 0.75;
     const badgeWidth = Math.max(34, round(boardScale * 0.8));
     const badgeHeight = round(boardScale * 0.36);
     const sideInset = 0;
@@ -109,6 +111,10 @@ export function computeLayout({
       1,
       available - 2 * riverHeight - 2 * boardGap,
     );
+
+    // The side seat is the binding constraint: thirteen backs must fit it.
+    rackHeight = Math.min(rackHeight, (available - 12) / 13);
+    rackWidth = rackHeight * 0.75;
 
     const topRiverY = stackTop;
     const centreY = topRiverY + riverHeight + boardGap;
@@ -307,8 +313,10 @@ export function computeLayout({
   const supported = tileWidth >= tileFloor && handWidth <= width;
 
   const tileHeight = tileHeightOf(tileWidth);
-  const rackWidth = tileWidth * 0.73;
-  const rackHeight = tileWidth * 0.96;
+  // One back for all three opponents: a 3:4 tile, never taller than the side
+  // stack allows (see below).
+  let rackHeight = tileWidth * 0.96;
+  let rackWidth = rackHeight * 0.75;
   const sideSeatWidth = round(rackWidth);
   const sideSeatHeight = 13 * rackHeight + 12;
   const topSeatHeight = round(rackHeight);
@@ -334,6 +342,8 @@ export function computeLayout({
   const availableSideHeight = phone
     ? tableHeight - gap - (topSeatHeight + gap)
     : handBandY - gap - (topSeatHeight + gap);
+  rackHeight = Math.min(rackHeight, (availableSideHeight - 12) / 13);
+  rackWidth = rackHeight * 0.75;
   const topRiverY = topSeatHeight + gap;
   const bottomRiverY = (phone ? tableHeight - gap : handBandY - gap) - riverHeight;
   const centreY = topRiverY + riverHeight + gap;

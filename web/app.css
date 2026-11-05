@@ -938,9 +938,6 @@ h3 {
   flex-direction: column;
 }
 
-.rack.side .tile-back {
-  height: var(--layout-back-side-h, var(--back-h));
-}
 
 .rack .tile-back {
   width: var(--back-w);
