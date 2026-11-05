@@ -256,6 +256,7 @@ function applyResponse(data, note, replaceLog = false) {
   if (note) log(note);
   if (Array.isArray(data.events)) {
     for (const line of data.events) log(line);
+    pendingDiscards = discardsFromEvents(data.events);
   }
   render();
   if (pendingClick !== null) {
@@ -698,8 +699,10 @@ function renderSeat(entry) {
  * the ghost of the tile leaving the wall - so the round reads as a sequence:
  * who threw, in what order, and when it comes back to you.
  */
-const DISCARD_BEAT_MS = 420;
+const DISCARD_BEAT_MS = 1000;
 let discardQueue = [];
+let pendingDiscards = [];
+let claimHeld = false;
 let discardTimer = null;
 /** Discards the viewer has already seen land, per seat. */
 const revealedDiscards = { E: 0, S: 0, W: 0, N: 0 };
@@ -736,31 +739,33 @@ function turnOrderAfter(seat) {
   return [...SEATS.slice(start + 1), ...SEATS.slice(0, start + 1)];
 }
 
+/** The event log names who threw what, in the order it happened. */
+function discardsFromEvents(lines) {
+  const out = [];
+  for (const line of lines) {
+    const match = /^([ESWN]) discards (\S+)/.exec(line);
+    if (match === null) continue;
+    const entry = payload?.table.find((row) => row.wind === match[1]);
+    if (entry === undefined) continue;
+    out.push({ seat: entry.seat, key: match[2] });
+  }
+  return out;
+}
+
 function planDiscards() {
   if (payload === null) return;
-  if (discardTimer !== null) {
-    clearTimeout(discardTimer);
-    discardTimer = null;
-  }
-  discardQueue = [];
-  // Your own throw lands at once - but it still flies from the hand.
-  const mine = seatEntry(payload.seat)?.discards ?? [];
-  for (let index = revealedDiscards[payload.seat] ?? 0; index < mine.length; index++) {
-    revealDiscard({ seat: payload.seat, key: mine[index] });
-  }
-  const stopTheBeat = payload.view.claimWindow !== null;
-  for (const seat of turnOrderAfter(payload.seat)) {
-    if (seat === payload.seat) continue;
-    const discards = seatEntry(seat)?.discards ?? [];
-    for (let index = revealedDiscards[seat] ?? 0; index < discards.length; index++) {
-      if (stopTheBeat) {
-        revealDiscard({ seat, key: discards[index] });
-      } else {
-        discardQueue.push({ seat, key: discards[index] });
-      }
+  // Queue whatever this answer threw, in the order the events name them.
+  for (const item of pendingDiscards) {
+    if (!discardQueue.some((queued) => queued.key === item.key)) {
+      discardQueue.push(item);
     }
   }
-  if (!stopTheBeat && discardQueue.length > 0) scheduleDiscard();
+  pendingDiscards = [];
+  if (payload.view.claimWindow !== null && discardQueue.length > 0) {
+    // The offer waits for its tile to land, so the beat never jumps.
+    claimHeld = true;
+  }
+  if (discardQueue.length > 0 && discardTimer === null) scheduleDiscard();
 }
 
 
@@ -768,7 +773,12 @@ function scheduleDiscard() {
   discardTimer = setTimeout(() => {
     discardTimer = null;
     revealDiscard();
-    if (discardQueue.length > 0) scheduleDiscard();
+    if (discardQueue.length > 0) {
+      scheduleDiscard();
+    } else if (claimHeld) {
+      claimHeld = false;
+      renderActions();
+    }
   }, DISCARD_BEAT_MS);
 }
 
@@ -1344,7 +1354,7 @@ function renderActions() {
   const element = $("#actions");
   const bar = $("#claim-bar");
 
-  if (isOwnClaimWindow()) {
+  if (isOwnClaimWindow() && !claimHeld) {
     renderClaimBar();
     element.replaceChildren();
     element.classList.remove("has-fishing-preview");
