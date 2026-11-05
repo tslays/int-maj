@@ -458,17 +458,19 @@ function assertGeometry(
       measurement.handClientWidth,
       `${label}: hand row overflows its band`,
     );
-    const handWidth = Math.floor(measurement.handClientWidth / 14);
+    // The hand is one overlapping strip that spans the band: every tile the
+    // solver's size, every gap the same overlap.
+    const overlap = expected.handOverlap!;
     for (const width of measurement.handTiles) {
       assert.ok(
-        Math.abs(width - handWidth) <= 1,
-        `${label}: hand tile ${width} is not ${handWidth} (+/- 1)`,
+        Math.abs(width - expected.handTileWidth!) <= 1,
+        `${label}: hand tile ${width} is not ${expected.handTileWidth}`,
       );
     }
     for (const gap of measurement.handGaps) {
       assert.ok(
-        Math.abs(gap) <= 0.5,
-        `${label}: hand gap ${gap} is not zero`,
+        Math.abs(gap + overlap) <= 1,
+        `${label}: hand gap ${gap} is not -${overlap}`,
       );
     }
     assert.ok(
@@ -482,14 +484,16 @@ function assertGeometry(
   assert.deepEqual(measurement.overlaps, [], `${label}: overlapping regions`);
   assert.deepEqual(measurement.outside, [], `${label}: region outside board`);
   assert.ok(
-    Math.abs(measurement.tileWidth - expected.tileWidth) <= 0.05,
-    `${label}: tile width ${measurement.tileWidth}, solver says ${expected.tileWidth}`,
+    Math.abs(measurement.tileWidth - expected.handTileWidth!) <= 1,
+    `${label}: tile width ${measurement.tileWidth}, solver says ${expected.handTileWidth}`,
   );
   const min = BREAKPOINTS[expected.mode].minTileWidth;
   assert.ok(measurement.tileWidth >= min, `${label}: tile below ${min}`);
+  // The hand tile is larger than the board tile by the overlap factor, so the
+  // cap applies to the board, the hand to its own solved size.
   assert.ok(
-    measurement.tileWidth <= BREAKPOINTS[expected.mode].maxTileWidth + 0.05,
-    `${label}: tile above the cap`,
+    expected.boardTileWidth! <= BREAKPOINTS[expected.mode].maxTileWidth + 0.05,
+    `${label}: board tile above the cap`,
   );
 }
 

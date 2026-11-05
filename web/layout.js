@@ -8,6 +8,19 @@
  */
 
 export const HAND_TILE_COUNT = 14;
+
+/**
+ * How much of a tile its right neighbour covers. The art draws every face with
+ * a green 3D side on its right and a white ceramic front; shifting each tile
+ * left by this share makes the white fronts touch, the way tiles pushed
+ * together on a real table do.
+ */
+export const HAND_OVERLAP = 0.263;
+
+/** Width of a hand row: one tile plus the thirteen that follow it. */
+export function handRowWidth(tile, gap, overlap = HAND_OVERLAP) {
+  return tile + (HAND_TILE_COUNT - 1) * (tile * (1 - overlap) + gap);
+}
 const REGION_ROWS = 3;
 const RIVER_GAP = 1;
 
@@ -75,7 +88,7 @@ export function computeLayout({
     const boardScale = Math.max(26, round(width * 0.045));
     // The hand is its own scale: exactly fourteen tiles across the screen,
     // touching, so the row never scrolls and no tile is clipped.
-    const handScale = width / HAND_TILE_COUNT;
+    const handScale = width / (HAND_TILE_COUNT - (HAND_TILE_COUNT - 1) * HAND_OVERLAP);
     const handGap = 0;
     const boardGap = Math.max(2, round(boardScale * 0.25));
     const boardTileHeight = (boardScale * 4) / 3;
@@ -91,7 +104,7 @@ export function computeLayout({
 
     // The bottom of the stack is fixed by the hand and its controls; the
     // rivers and centre share what is left, so no discard can reach the hand.
-    const handWidth = HAND_TILE_COUNT * handScale + (HAND_TILE_COUNT - 1) * handGap;
+    const handWidth = handRowWidth(handScale, handGap);
     const handBandY = height - handTileHeight - 2 * handGap;
     const handY = handBandY + handGap;
     const controlsY = handBandY - handGap - controlHeight;
@@ -220,6 +233,8 @@ export function computeLayout({
       rackWidth,
       rackHeight,
       handTileWidth: handScale,
+      handTileHeight,
+      handOverlap: handScale * HAND_OVERLAP,
       tileHeight: handTileHeight,
       gap: 2,
       boardGap,
@@ -246,7 +261,7 @@ export function computeLayout({
   const handBandHeight = round(height * handBandFraction);
   const maxTileForWidth = phone
     ? Math.min(maxTileWidth, Math.floor((width - 13 * minGap) / HAND_TILE_COUNT))
-    : Math.min(maxTileWidth, Math.floor(width / HAND_UNITS));
+    : Math.min(maxTileWidth, Math.floor(width / (HAND_UNITS - 13 * HAND_OVERLAP * 0.75)));
 
   const gapFor = (tile, gapFloor) =>
     Math.max(gapFloor, round(tile * 0.25));
@@ -262,12 +277,16 @@ export function computeLayout({
     const seatHeight = tile * 0.96;
     const riverHeight = riverHeightOf(tile);
     const centreMin = Math.max(tileHeight, 24);
+    // A taller hand row makes its own band taller instead of capping the tile.
+    const band = phone
+      ? handBandHeight
+      : Math.max(handBandHeight, tileHeight + 2 * gap);
     const used = phone
       ? seatHeight + 2 * riverHeight + centreMin + 5 * gap
       : seatHeight +
         2 * riverHeight +
         centreMin +
-        handBandHeight +
+        band +
         controlHeight +
         5 * gap;
     return used <= height;
@@ -284,6 +303,16 @@ export function computeLayout({
   let tileWidth = low;
   let gap = gapFor(tileWidth, minGap);
 
+  // The hand is its own scale, like on a phone: its fourteen fronts must span
+  // the board with each tile overlapping the next, so the row width sets the
+  // tile and the band grows to hold it. The rivers and seats keep the board
+  // tile above.
+  // The row keeps the footprint it had edge to edge; overlapping turns that
+  // footprint into slightly larger tiles that touch.
+  const handTile =
+    (HAND_TILE_COUNT * tileWidth + (HAND_TILE_COUNT - 1) * gap) /
+    (HAND_TILE_COUNT - (HAND_TILE_COUNT - 1) * HAND_OVERLAP);
+
   // No badge slot is needed beside the hand on a phone: the self badge sits
   // above it. On the single-screen layouts the badge reserves the left slot.
   if (!phone) {
@@ -293,11 +322,11 @@ export function computeLayout({
       let candidateGap = idealGap;
       while (
         candidateGap > 1 &&
-        14 * tileWidth + 13 * candidateGap + 2 * (badgeWidth + candidateGap) > width
+        handRowWidth(tileWidth, candidateGap) + 2 * (badgeWidth + candidateGap) > width
       ) {
         candidateGap -= 1;
       }
-      const handWidth = 14 * tileWidth + 13 * candidateGap;
+      const handWidth = handRowWidth(tileWidth, 0);
       if (handWidth + 2 * (badgeWidth + candidateGap) <= width) {
         gap = candidateGap;
         break;
@@ -307,10 +336,12 @@ export function computeLayout({
   }
 
   // Shrink the gap before letting a phone tile fall below the 26px floor.
-  const maxGap = Math.floor((width - 14 * tileWidth) / 13);
-  gap = Math.min(gap, Math.max(minGap, maxGap));
-  const handWidth = HAND_TILE_COUNT * tileWidth + (HAND_TILE_COUNT - 1) * gap;
-  const supported = tileWidth >= tileFloor && handWidth <= width;
+  // The row overlaps, so its tiles carry no gap of their own, and it spans
+  // the board: fourteen fronts, thirteen overlaps.
+  const handGapPx = 0;
+  const handTileHeight = tileHeightOf(handTile);
+  const handWidth = handRowWidth(handTile, handGapPx);
+  const supported = tileWidth >= tileFloor && handWidth <= width + 1;
 
   const tileHeight = tileHeightOf(tileWidth);
   // One back for all three opponents: a 3:4 tile, never taller than the side
@@ -327,14 +358,17 @@ export function computeLayout({
   const riverHeight = REGION_ROWS * tileHeight + (REGION_ROWS - 1) * gap;
 
   const tableHeight = phone ? height : height;
+  const handBandHeightUsed = phone
+    ? handBandHeight
+    : Math.max(handBandHeight, handTileHeight + 2 * gap);
   const handBandY = phone
     ? height + gap
-    : height - controlHeight - gap - handBandHeight;
+    : height - controlHeight - gap - handBandHeightUsed;
   const handBand = [
     0,
     handBandY,
     width,
-    phone ? tileHeight + 2 * gap : handBandHeight,
+    phone ? tileHeight + 2 * gap : handBandHeightUsed,
   ];
   const handY = handBandY + (phone ? gap : handBand[3] - tileHeight);
   const hand = [(width - handWidth) / 2, handY, handWidth, tileHeight];
@@ -462,10 +496,15 @@ export function computeLayout({
     badges,
     rackWidth: sideSeatWidth,
     rackHeight,
+    handTileWidth: handTile,
+    handTileHeight,
+    handOverlap: handTile * HAND_OVERLAP,
+    boardTileWidth: tileWidth,
+    boardTileHeight: tileHeight,
     tileWidth,
     tileHeight,
     gap,
-    handGap: gap,
+    handGap: handGapPx,
     inset: gap,
     riverColumns,
     riverRows,
