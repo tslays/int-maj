@@ -39,8 +39,6 @@ const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 let payload = null;
 let currentLayout = null;
 let pendingClick = null;
-let selected = null;
-let cursor = 0;
 let busy = false;
 let railOpen = true;
 let referenceShown = false;
@@ -54,8 +52,6 @@ let previousHand = [];
 let previousDiscards = { E: 0, S: 0, W: 0, N: 0 };
 let announced = "";
 let focusedOutcomeKey = null;
-let focusHandOnRender = false;
-
 let scoresKey = null;
 let sessionScores = { E: 0, S: 0, W: 0, N: 0 };
 let appliedOutcome = null;
@@ -98,7 +94,6 @@ function toggleMute() {
 
 /** Audio starts on the first gesture, as browser autoplay rules require. */
 function unlockAudio(event) {
-  if (event.type === "keydown" && (event.key === "m" || event.key === "M")) return;
   if (audioContext === null) {
     const Constructor = window.AudioContext ?? window.webkitAudioContext;
     if (Constructor === undefined) return;
@@ -177,8 +172,8 @@ function tileElement(key) {
   const element = document.createElement("span");
   element.className = "tile";
   element.dataset.key = key;
-  element.title = `${key} — ${tileName(key)}`;
-  element.setAttribute("aria-label", `${tileName(key)}, key ${key}`);
+  element.title = tileName(key);
+  element.setAttribute("aria-label", tileName(key));
 
   const url = artUrl(key);
   if (url === null) {
@@ -265,7 +260,6 @@ function applyResponse(data, note, replaceLog = false) {
   if (Array.isArray(data.events)) {
     for (const line of data.events) log(line);
   }
-  selected = null;
   render();
   if (pendingClick !== null) {
     const index = pendingClick;
@@ -324,13 +318,12 @@ function autoDraw() {
   sendAction(draw);
 }
 
-function sendDiscard(tile) {
+function sendDiscard(tile, index) {
   if (payload === null || busy) return false;
   const action = payload.legalActions.find(
     (candidate) => candidate.type === "Discard" && candidate.tile === tile,
   );
   if (action === undefined) return false;
-  const index = selected ?? cursor;
   const button = document.querySelector(`#hand .hand-tile[data-index="${index}"]`);
   // Instant: the tile leaves the hand the moment it is thrown, no confirmation
   // and no animation hold.
@@ -927,15 +920,7 @@ function renderHand() {
   const view = payload.view;
   const hand = displayHand();
   const element = $("#hand");
-  const hadFocus =
-    document.activeElement instanceof HTMLElement &&
-    document.activeElement.classList.contains("hand-tile")
-      ? Number(document.activeElement.dataset.index)
-      : null;
-
-  if (cursor >= hand.length) cursor = Math.max(0, hand.length - 1);
   element.replaceChildren();
-  element.classList.toggle("has-selection", selected !== null);
 
   if (hand.length === 0) {
     const empty = div("hand-placeholder");
@@ -944,76 +929,45 @@ function renderHand() {
     return;
   }
 
-  const draw = view.lastDraw;
-  const hasDrawn =
-    draw !== null &&
-    draw.seat === view.seat &&
-    view.player.hand.includes(draw.tile);
-  const drawnIndex = hasDrawn ? hand.length - 1 : -1;
-  if (
-    drawnIndex >= 0 &&
-    (hand.length > previousHand.length || !handInitialized)
-  ) {
-    cursor = drawnIndex;
-  }
+  const drawn = drawnIndex();
+  const drawnTile = drawn >= 0 ? drawn : -1;
 
   hand.forEach((key, index) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "hand-tile";
     button.dataset.index = String(index);
-    if (index === cursor) button.dataset.cursor = "true";
-    button.tabIndex = index === cursor ? 0 : -1;
-    button.title = `${key} — ${tileName(key)}`;
+    button.title = tileName(key);
     button.setAttribute(
       "aria-label",
-      `Tile ${index + 1}: ${tileName(key)}, key ${key}${
-        index === drawnIndex ? ", just drawn" : ""
-      }.`,
+      `Tile ${index + 1}: ${tileName(key)}${
+        index === drawnTile ? ", just drawn" : ""
+      }. Discards it.`,
     );
-    if (index === selected) {
-      button.classList.add("selected");
-      button.setAttribute("aria-pressed", "true");
-      button.setAttribute("aria-current", "true");
-    }
-    if (index === drawnIndex) {
+    if (index === drawnTile) {
       button.classList.add("is-drawn");
       // Phones mark the extra tile in place; wider tables keep the gap.
       if (index > 0 && !document.documentElement.classList.contains("phone")) {
         button.classList.add("is-drawn-gap");
       }
     }
-    if (
-      handInitialized &&
-      drawnIndex >= 0 &&
-      index === drawnIndex &&
-      hand.length > previousHand.length
-    ) {
+    if (handInitialized && index === drawnTile && hand.length > previousHand.length) {
       button.classList.add("is-new");
     }
 
     button.append(tileElement(key));
-
     button.addEventListener("click", () => onHandClick(index));
-    button.addEventListener("focus", () => {
-      cursor = index;
-      syncCursorDom();
-    });
     element.append(button);
   });
 
-  if (hadFocus !== null) {
-    const button = element.querySelector(`.hand-tile[data-index="${Math.min(hadFocus, hand.length - 1)}"]`);
-    if (button instanceof HTMLElement) button.focus({ preventScroll: true });
-  }
   updateDiscardHint();
 }
-
 function updateDiscardHint() {
   if (payload === null) return;
   const button = document.querySelector('.action-button[data-action="discard"]');
   if (button === null) return;
-  const index = selected ?? cursor;
+  const drawn = drawnIndex();
+  const index = drawn >= 0 ? drawn : displayHand().length - 1;
   const tile = displayHand()[index];
   if (tile === undefined) return;
   const label = `Discard ${tileName(tile)} (tile ${index + 1})`;
@@ -1021,16 +975,6 @@ function updateDiscardHint() {
   button.setAttribute("aria-label", label);
   const art = button.querySelector(".tile");
   if (art !== null) art.replaceWith(tileElement(tile));
-}
-
-function syncCursorDom() {
-  const buttons = document.querySelectorAll(".hand-tile");
-  buttons.forEach((button, index) => {
-    button.tabIndex = index === cursor ? 0 : -1;
-    if (index === cursor) button.dataset.cursor = "true";
-    else delete button.dataset.cursor;
-  });
-  updateDiscardHint();
 }
 
 function renderOwnMelds() {
@@ -1081,7 +1025,7 @@ function bestClaimAction(actions) {
 
 function makeClaimButton(
   action,
-  { primary = false, label = "", tiles = null, keycap = "", className = "" } = {},
+  { primary = false, label = "", tiles = null, className = "" } = {},
 ) {
   const button = document.createElement("button");
   button.type = "button";
@@ -1107,13 +1051,6 @@ function makeChowVariant(action) {
   variant.setAttribute("aria-label", actionLabel(action));
   for (const key of action.tiles) variant.append(tileElement(key));
   variant.addEventListener("click", () => sendAction(action));
-  variant.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " " || event.key === "Spacebar") {
-      event.preventDefault();
-      event.stopPropagation();
-      sendAction(action);
-    }
-  });
   return variant;
 }
 
@@ -1153,14 +1090,12 @@ function renderClaimBar() {
         label: "Claim",
         tiles:
           claim.type === "Claim" && claim.kind !== "mahjong" ? claim.tiles : null,
-        keycap: "enter",
       }),
     );
   }
   row.append(
     makeClaimButton(pass, {
       label: "Dismiss",
-      keycap: "space",
       className: "claim-pass",
     }),
   );
@@ -1239,10 +1174,11 @@ function renderActions() {
 
   let discardButton;
 
-  // The turn's one obvious action: throw the tile under the keyboard cursor.
-  // A click on the hand does the same thing; this makes the action nameable.
+  // The turn's one obvious action: throw the tile you just drew. Tapping any
+  // other tile on the hand throws that one instead.
   if (view.phase === "discard" && view.turn === view.seat) {
-    const index = selected ?? cursor;
+    const drawn = drawnIndex();
+    const index = drawn >= 0 ? drawn : displayHand().length - 1;
     const tile = displayHand()[index];
     if (tile !== undefined) {
       const button = document.createElement("button");
@@ -1251,7 +1187,10 @@ function renderActions() {
       button.className = "action-button primary discard-action";
       button.append(tileElement(tile));
       button.append(document.createTextNode("Discard"));
-      button.addEventListener("click", () => discardCandidate());
+      const label = `Discard ${tileName(tile)} (tile ${index + 1})`;
+      button.title = label;
+      button.setAttribute("aria-label", label);
+      button.addEventListener("click", () => discardDrawn());
       discardButton = button;
     }
   }
@@ -1811,7 +1750,6 @@ function renderOutcome() {
   next.className = "result-next";
   next.textContent = "Next hand";
   next.addEventListener("click", () => {
-    focusHandOnRender = true;
     focusedOutcomeKey = null;
     void request("/api/next", { game: payload.game });
   });
@@ -1863,10 +1801,6 @@ function render() {
   renderFishing();
   renderOutcome();
 
-  if (focusHandOnRender) {
-    focusHandOnRender = false;
-    if (payload.outcome === null) focusHand(cursor);
-  }
 
   previousHand = displayHand();
   if (tableInitialized) {
@@ -1979,11 +1913,6 @@ function clearScenario() {
 
 /* ------------------------------------------------------------- commands */
 
-function focusHand(index) {
-  const button = document.querySelector(`#hand .hand-tile[data-index="${index}"]`);
-  if (button instanceof HTMLElement) button.focus({ preventScroll: true });
-}
-
 function onHandClick(index) {
   if (payload === null) return;
   // A click that lands while a request is in flight (the automatic draw) is
@@ -1994,100 +1923,32 @@ function onHandClick(index) {
     return;
   }
   if (index < 0 || index >= displayHand().length) return;
-  cursor = index;
-  selected = index;
-  // A click throws the tile: nothing about a mahjong hand needs a two-step
-  // "select, then confirm" gesture. Keyboard keeps Enter for the same act.
-  if (isYourDiscardPhase()) {
-    discardSelected();
-    return;
-  }
-  renderHand();
-  focusHand(index);
+  // A tap throws the tile. There is no select step and nothing to confirm.
+  if (isYourDiscardPhase()) discardAt(index);
 }
-
-function selectTile(index) {
-  if (payload === null || busy) return;
-  if (index < 0 || index >= displayHand().length) {
-    log(`There is no tile ${index + 1}.`);
-    return;
-  }
-  selected = index;
-  cursor = index;
-  renderHand();
-  focusHand(index);
-}
-
-function clearSelection() {
-  selected = null;
-  renderHand();
-}
-
-function discardSelected() {
-  if (payload === null || busy) return;
-  if (selected === null) {
-    log("Pick a tile with 1–9 first.");
-    return;
-  }
-  const tile = displayHand()[selected];
-  if (tile !== undefined && sendDiscard(tile)) return;
-  log("That tile cannot be discarded now.");
-}
-
-function discardCandidate() {
-  if (payload === null || busy) return;
-  if (selected !== null) {
-    discardSelected();
-    return;
-  }
-  if (!isYourDiscardPhase()) return;
-  const tile = displayHand()[cursor];
-  if (tile !== undefined && sendDiscard(tile)) return;
-  log("That tile cannot be discarded now.");
-}
-
-function confirmSelection() {
-  if (payload === null || busy) return;
-  if (!document.getElementById("outcome").hidden) {
-    document.getElementById("result-next")?.click();
-    return;
-  }
-  // The announce turn has exactly one primary action: fix the wait.
-  if (payload.view.phase === "announce" && payload.view.turn === payload.seat) {
-    declareFishing();
-    return;
-  }
-  if (selected !== null) {
-    discardSelected();
-    return;
-  }
-  const win = legalAction("Win");
-  if (win !== undefined) {
-    sendAction(win);
-    return;
-  }
-  const draw = legalAction("Draw");
-  if (draw !== undefined) {
-    sendAction(draw);
-    return;
-  }
-  if (isYourDiscardPhase()) {
-    discardCandidate();
-    return;
-  }
-  log("Pick a tile with 1–9 first.");
-}
-
-function moveCursor(delta) {
-  if (payload === null) return;
+function drawnIndex() {
+  if (payload === null) return -1;
+  const view = payload.view;
+  const draw = view.lastDraw;
   const hand = displayHand();
-  if (hand.length === 0) return;
-  cursor = (cursor + delta + hand.length) % hand.length;
-  syncCursorDom();
-  focusHand(cursor);
+  if (draw === null || draw.seat !== view.seat) return -1;
+  return view.player.hand.includes(draw.tile) ? hand.length - 1 : -1;
 }
 
+function discardAt(index) {
+  if (payload === null || busy) return;
+  const tile = displayHand()[index];
+  if (tile === undefined) return;
+  if (sendDiscard(tile, index)) return;
+  log("That tile cannot be discarded now.");
+}
 
+function discardDrawn() {
+  if (payload === null || busy) return;
+  if (!isYourDiscardPhase()) return;
+  const index = drawnIndex();
+  discardAt(index >= 0 ? index : displayHand().length - 1);
+}
 function pass() {
   const action = legalAction("Pass");
   if (action === undefined) return;
@@ -2111,23 +1972,18 @@ function claimBest() {
 
 function undo() {
   if (payload === null) return;
-  selected = null;
   revertScores();
-  focusHandOnRender = true;
   void request("/api/undo", { game: payload.game }, null, true);
 }
 
 function newGame(seed) {
   clearScenario();
-  selected = null;
-  cursor = 0;
   handInitialized = false;
   tableInitialized = false;
   previousHand = [];
   previousDiscards = { E: 0, S: 0, W: 0, N: 0 };
   announced = "";
   focusedOutcomeKey = null;
-  focusHandOnRender = true;
   void request(
     "/api/new",
     seed === undefined ? {} : { seed },
@@ -2136,137 +1992,6 @@ function newGame(seed) {
 }
 
 /* --------------------------------------------------------------- events */
-
-function onKeydown(event) {
-  const target = event.target;
-  if (target instanceof HTMLElement && target.closest("input, textarea, select")) return;
-  if (event.metaKey || event.ctrlKey || event.altKey) return;
-  if (document.querySelector("dialog[open]") !== null) return;
-
-  // The overlay is a debug view, so it stays reachable in every table state.
-  if (event.key === "o" || event.key === "O") {
-    event.preventDefault();
-    toggleReference();
-    return;
-  }
-
-  if (payload === null) return;
-
-  if (event.key === "m" || event.key === "M") {
-    event.preventDefault();
-    toggleMute();
-    return;
-  }
-
-  const isHand = target instanceof HTMLElement && target.closest(".hand-tile") !== null;
-  const isButton =
-    target instanceof HTMLElement &&
-    target.closest("button, a, summary") !== null;
-  const passOffered = payload.legalActions.some((action) => action.type === "Pass");
-  const nativeActivation =
-    (event.key === "Enter" || event.key === " " || event.key === "Spacebar") &&
-    isButton &&
-    !isHand &&
-    !(event.key !== "Enter" && passOffered);
-  if (nativeActivation) return;
-
-  const outcomeOpen = !document.getElementById("outcome").hidden;
-  if (outcomeOpen) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      document.getElementById("result-next")?.click();
-    } else if (event.key === "u" || event.key === "U") {
-      event.preventDefault();
-      undo();
-    } else if (event.key === "n" || event.key === "N") {
-      event.preventDefault();
-      newGame(randomSeed());
-    } else if (event.key === "?") {
-      event.preventDefault();
-      openHelp();
-    }
-    return;
-  }
-
-  if (isOwnClaimWindow()) {
-    const key = event.key;
-    if (key === "Enter") {
-      event.preventDefault();
-      claimBest();
-      return;
-    }
-    if (key === " " || key === "Spacebar") {
-      event.preventDefault();
-      pass();
-      return;
-    }
-    // n, u and ? keep working; every other key is swallowed while the
-    // claim is open. There are no p/c/k/m or chow-number shortcuts.
-    if (!["n", "N", "u", "U", "?"].includes(key)) return;
-  }
-
-  switch (event.key) {
-    case "?":
-      event.preventDefault();
-      openHelp();
-      break;
-    case "n":
-    case "N":
-      event.preventDefault();
-      newGame(randomSeed());
-      break;
-    case "u":
-    case "U":
-      event.preventDefault();
-      undo();
-      break;
-    case "f":
-    case "F":
-      event.preventDefault();
-      declareFishing();
-      break;
-    case " ":
-    case "Spacebar":
-      event.preventDefault();
-      pass();
-      break;
-    case "Enter":
-      event.preventDefault();
-      confirmSelection();
-      break;
-    case "ArrowLeft":
-    case "ArrowUp":
-      event.preventDefault();
-      moveCursor(-1);
-      break;
-    case "ArrowRight":
-    case "ArrowDown":
-      event.preventDefault();
-      moveCursor(1);
-      break;
-    case "Home":
-      event.preventDefault();
-      moveCursor(-cursor);
-      break;
-    case "End":
-      event.preventDefault();
-      moveCursor(displayHand().length - 1 - cursor);
-      break;
-    case "Escape":
-      selected = null;
-      renderHand();
-      break;
-    default:
-      if (/^[1-9]$/.test(event.key)) {
-        event.preventDefault();
-        selectTile(Number(event.key) - 1);
-      }
-  }
-}
-
-function openHelp() {
-  // The key list is gone; the keyboard still works without it.
-}
 
 function persistRail() {
   try {
@@ -2295,11 +2020,6 @@ function applyReference() {
   }
 }
 
-function toggleReference() {
-  referenceShown = !referenceShown;
-  applyReference();
-}
-
 function setRail(open) {
   railOpen = open;
   applyRail();
@@ -2311,12 +2031,10 @@ function bindEvents() {
   $("#undo").addEventListener("click", undo);
   $("#rail-hide").addEventListener("click", () => setRail(false));
   $("#rail-show").addEventListener("click", () => setRail(true));
-  document.addEventListener("keydown", onKeydown);
   const overlay = $("#reference-overlay");
   overlay.addEventListener("load", applyReference);
   overlay.addEventListener("error", applyReference);
   window.addEventListener("pointerdown", unlockAudio, { capture: true });
-  window.addEventListener("keydown", unlockAudio, { capture: true });
   window.addEventListener("resize", () => {
     if (payload !== null) render();
   });

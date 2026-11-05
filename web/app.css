@@ -259,21 +259,7 @@ h3 {
   text-transform: uppercase;
 }
 
-kbd {
-  display: inline-block;
-  min-width: 1.5em;
-  padding: 0 0.3em;
-  border: var(--stroke) solid currentColor;
-  border-bottom-width: var(--stroke-strong);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: var(--fs-label);
-  line-height: var(--lh-label);
-  text-align: center;
-  opacity: 0.9;
-}
+
 
 [hidden] {
   display: none !important;
@@ -1384,15 +1370,9 @@ kbd {
   background: var(--accent-hover);
 }
 
-.action-button kbd,
-.claim-button kbd {
-  border-color: currentColor;
-}
 
-.action-button.primary kbd,
-.claim-button.primary kbd {
-  background: var(--accent-ink);
-}
+
+
 
 .action-note {
   max-width: var(--note-w);
@@ -1596,6 +1576,11 @@ kbd {
   transform-origin: 50% 100%;
 }
 
+.hand-tile:hover .tile {
+  transform: translateY(calc(var(--lift-hover) * -1));
+  filter: var(--hand-shadow-lift) brightness(1.03);
+}
+
 .hand-tile .tile img {
   border-radius: var(--radius-xs);
 }
@@ -1631,37 +1616,19 @@ kbd {
   }
 }
 
-.hand-tile:hover:not(.selected) .tile {
-  transform: translateY(calc(var(--lift-hover) * -1));
-  filter: var(--hand-shadow-lift) brightness(1.03);
-}
 
-.hand-tile.selected .tile {
-  transform: translateY(calc(var(--lift-select) * -1));
-}
 
-.hand.has-selection .hand-tile:not(.selected) .tile {
-  opacity: 0.55;
-  filter: var(--tile-shadow) brightness(0.82);
-}
 
-.hand.has-selection .hand-tile:hover:not(.selected) .tile {
-  opacity: 0.8;
-}
 
-.hand-tile:focus-visible {
-  outline: none;
-}
 
-.hand-tile:focus-visible .tile {
-  outline: var(--stroke-strong) solid var(--accent);
-  outline-offset: var(--space-1);
-}
 
-.hand-tile[data-cursor="true"]:not(.selected):not(:focus-visible) .tile {
-  outline: var(--stroke) solid var(--accent-ring);
-  outline-offset: var(--space-1);
-}
+
+
+
+
+
+
+
 
 .hand-tile.is-drawn-gap {
   margin-left: calc(var(--hand-w) * var(--draw-gap-ratio));
@@ -1710,7 +1677,12 @@ kbd {
   white-space: nowrap;
 }
 
+/* The tray is a corner note, not part of the hand row: it must not pull the
+   hand off the board's centre. */
 .own-bonus {
+  position: absolute;
+  left: var(--space-2);
+  bottom: var(--space-2);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -2890,9 +2862,6 @@ throw: they line up from its left edge, the throw from its right. */
   margin-left: 0;
 }
 
-.variant-d.phone .hand-tile.is-drawn .tile {
-  outline: var(--stroke) solid var(--accent);
-  outline-offset: calc(-1 * var(--space-1));
-}
+
 
 

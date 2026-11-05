@@ -170,56 +170,18 @@ hand, and the action row above it - the rivers and the face-down racks stay
 because they are the game state, not chrome. The audit fails if any of those
 markers comes back or if `.playfield` regains a border.
 
+### Mouse and touch only (2026-11-05)
+
+There are no keyboard shortcuts, no focus ring, no cursor and no selection
+step. The whole table is pointer-driven:
+
+    tap a hand tile   -> throws that tile
+    Discard button    -> throws the tile you just drew (it shows it)
+    Claim / Dismiss   -> throw the offer or pass
+    ?overlay=1        -> the reference overlay (a URL flag, not a key)
+
+A thrown tile leaves the moment it is clicked: nothing asks for confirmation.
+The hand carries no outline and no highlight anywhere; the drawn tile is marked
+by the row's gap on wide tables only.
+
 ### Opponents' hands
-
-The three opponents show their walls face down: 13 backs for a waiting hand,
-14 after the draw. The rack and the seat band are one size, taken from the
-solver, not from the hand scale:
-
-    rack_w   = board_tile * 0.73          // one back across the wall
-    rack_h   = board_tile * 0.96          // the top row's back
-    side_h   = min(rack_h, (seat_h - 12) / 13)   // the side stacks run downhill
-    top_seat = 13 * round(rack_w) + 12 x round(rack_h)
-    side_seat = round(rack_w) x 13 * side_h + 12
-
-The top wall keeps the 3:4 face; a side wall may compress its backs so thirteen
-still fit the height left between the top seat and the action row. No back may
-sit outside its seat band.
-
-### The hand is never hidden
-
-The hand is the one thing that must always be on screen. There is no
-collapse control, no arrow, nothing that hides, shrinks away or scrolls the
-hand band at any viewport - if something has to give, it gives elsewhere. The
-geometry audit fails if a `.hand-toggle` element exists, if `hand-collapsed` is
-set, or if the hand band measures zero.
-
-Screenshots judge taste only. If taste and the computed rects disagree, the
-rects win until the formula changes.
-
-## Responsive targets
-
-| Target | Size | Board rule |
-|---|---|---|
-| Desktop | 1440x900, 1280x800, 1024x768 | As above; hand band 12% of height |
-| Tablet | 1024x768, 834x1112 | Same formulas; hand band 14% |
-| Phone landscape | 844x390, 932x430 | Board fills the height; 5x5 river grid; 14 touching hand tiles across the width, controls above the hand |
-| Phone portrait | 390x844, 430x932 | Rotate the table; 4x6 river grid; 14 touching hand tiles across the width, controls full width above the hand |
-
-Portrait is a real target, not a fallback: the same formulas must hold with
-`river_columns` as a breakpoint variable instead of a constant.
-
-## Phone: hand fills the width, board keeps its own scale
-
-Owner rule (2026-11-04): on a phone the hand row shows all 14 tiles at once,
-none clipped, with **no gap between tiles**. Hand tile width is
-`floor(screenWidth / 14)`; the drawn tile is marked by a lift or outline, never
-by a gap, and stays in its ordered position at the right end. No horizontal
-scrolling in the hand.
-
-The board keeps an independent scale so it still fits the viewport with no
-overlaps: rivers, walls and centre are sized by board scale, the hand by screen
-width. Measured: 27 px per hand tile at 390 wide, 60 px at 844.
-
-Tests assert `handScrollWidth == clientWidth`, 14 hand tiles, zero gap between
-adjacent tiles, and tile width == floor(width / 14) at 390x844 and 844x390.
