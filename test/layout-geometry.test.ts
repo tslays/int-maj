@@ -17,7 +17,7 @@
 import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
 
-import { computeLayout } from "../web/layout.js";
+import { computeLayout, tableInset } from "../web/layout.js";
 import {
   connectChrome,
   evaluate,
@@ -577,8 +577,17 @@ describe("variant D action row", () => {
       overflow: string;
       viewport: number;
     }>(cdp, sessionId, MEASURE_CLAIM);
-    assert.equal(claim.band[0], 0, "the row starts at the screen edge");
-    assert.equal(claim.band[2], claim.viewport, "the row is the screen width");
+    const inset = tableInset(390, 844);
+    assert.equal(
+      Math.round(claim.band[0]),
+      inset,
+      "the row starts at the table rim, not the screen edge",
+    );
+    assert.equal(
+      Math.round(claim.band[2]),
+      claim.viewport - 2 * inset,
+      "the row spans the board inside the rim",
+    );
     if (claim.scroll[0] > claim.scroll[1]) {
       assert.equal(
         claim.overflow,
