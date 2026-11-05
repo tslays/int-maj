@@ -32,9 +32,6 @@ const PLACE = {
 const RAIL_KEY = "mahjong-rail";
 const GAME_KEY = "mahjong-game";
 const MUTE_KEY = "mahjong-mute";
-const STARTING_WALL = 92;
-const RING_RADIUS = 31;
-const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 
 let payload = null;
 let currentLayout = null;
@@ -616,20 +613,6 @@ function renderMeta() {
 }
 
 /** Tenhou's seat is only a wind and a name, set straight into the felt. */
-function fillSeatLabel(slot, entry) {
-  slot.style.setProperty("--seat-color", seatColor(entry.seat));
-  slot.classList.toggle("is-turn", seatIsTurn(entry.seat));
-  slot.setAttribute(
-    "aria-label",
-    `${entry.isYou ? "You" : `${WIND_NAME[entry.wind]} bot`}, ${entry.wind} wind` +
-      `${entry.dealer ? ", dealer" : ""}`,
-  );
-  const wind = span("seat-wind", entry.wind);
-  const name = span("seat-name", entry.isYou ? "You" : `${WIND_NAME[entry.wind]} bot`);
-  const count = span("seat-count", String(entry.handCount));
-  slot.replaceChildren(wind, name, count);
-}
-
 function rackLine(entry) {
   const line = div("rack-line");
   const rack = div("rack");
@@ -2151,10 +2134,8 @@ async function boot() {
   railOpen = initialRail();
   applyRail();
   const params = new URLSearchParams(window.location.search);
-  const variant = params.get("variant");
-  if (variant === "a" || variant === "b" || variant === "c" || variant === "d") {
-    document.documentElement.classList.add(`variant-${variant}`);
-  }
+  // The table has one look now; the class stays so the CSS reads by variant.
+  document.documentElement.classList.add("variant-d");
   referenceShown = params.get("overlay") === "1";
   applyReference();
 

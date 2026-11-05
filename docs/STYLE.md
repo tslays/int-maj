@@ -3,7 +3,7 @@
 `web/app.css` opens with one token block. **After that block, every length in a
 rule is a `var()` from it, a count, or 0.** No other file holds a number about
 how the table looks: the client script sets only state (positions, counts,
-strings), and `docs/UI.md` describes the intent behind the numbers below.
+strings). `docs/UI-SPEC.md` describes the intent behind the numbers below.
 
 The block is grouped exactly as this file is: colour, type, space, the tile
 unit, fitted geometry, motion.

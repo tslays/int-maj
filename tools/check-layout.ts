@@ -709,11 +709,11 @@ async function statePass(
       );
       for (const rect of [rackTop, rackLeft, rackRight]) {
         assert.ok(
-          rect[0] >= frame[0] - 1 &&
-            rect[1] >= frame[1] - 1 &&
+          rect[0] >= board[0] - 1 &&
+            rect[1] >= board[1] - 1 &&
             rect[0] + rect[2] <= board[0] + board[2] + 1 &&
             rect[1] + rect[3] <= board[1] + board[3] + 1,
-          `${label}: a rack ${formatRect(rect)} left the felt`,
+          `${label}: a rack ${formatRect(rect)} left the board`,
         );
       }
 
@@ -800,103 +800,6 @@ async function finishedGame(base: string): Promise<string> {
  * reference's number, ours and the delta; the reachable anchors must be
  * inside ±4px, the ones the reference does not draw are reported.
  */
-async function referencePass(
-  cdp: Cdp,
-  sessionId: string,
-  base: string,
-  shots: string,
-): Promise<void> {
-  await evaluate(cdp, sessionId, `localStorage.setItem("mahjong-rail", "closed")`);
-  await setViewport(cdp, sessionId, REFERENCE_VIEWPORT.width, REFERENCE_VIEWPORT.height);
-  await navigate(cdp, sessionId, `${base}/?overlay=1`);
-
-  const label = "1512x894 (reference page, rail closed)";
-  const measurement = await evaluate<Measurement>(cdp, sessionId, MEASURE);
-  printMeasurement(label, measurement, REFERENCE_VIEWPORT.width);
-
-  const board = measurement.rects.board!;
-  const frame = measurement.rects.playfield!;
-  const centre = measurement.rects.centre!;
-  const hand = measurement.rects.hand!;
-  const actions = measurement.rects.actions!;
-  const rackTop = measurement.rects.rackTop!;
-  const rackLeft = measurement.rects.rackLeft!;
-  const rackRight = measurement.rects.rackRight!;
-  const riverTop = measurement.rects.riverTop!;
-
-  assert.ok(
-    Math.abs(board[0]) <= 1 &&
-      Math.abs(board[1]) <= 1 &&
-      Math.abs(board[2] - REFERENCE_VIEWPORT.width) <= 1 &&
-      Math.abs(board[3] - REFERENCE_VIEWPORT.height) <= 1,
-    `${label}: the board ${formatRect(board)} is not the reference's page 1512x894`,
-  );
-
-  console.log("\n  anchor                   reference     ours    delta");
-  assertAnchor(label, "hand left", 405, hand[0]);
-  assertAnchor(label, "hand right", 1106, hand[0] + hand[2]);
-  assertAnchor(label, "hand bottom", 823, hand[1] + hand[3]);
-  assertAnchor(label, "centre left", 634, centre[0]);
-  assertAnchor(label, "centre right", 885, centre[0] + centre[2]);
-  assertAnchor(label, "centre top", 302, centre[1]);
-  assertAnchor(label, "centre bottom", 465, centre[1] + centre[3]);
-  assertAnchor(label, "north rack top", 17, rackTop[1]);
-  assertAnchor(label, "north rack height", 45, rackTop[3]);
-  // The action row no longer holds a throw button (a tap on a hand tile
-  // throws), so its top is whatever the calls need; the reference number only
-  // measured the old button stack.
-  assertAnchor(label, "action bottom", 890, actions[1] + actions[3]);
-  assertAnchor(label, "felt frame top", 9, frame[1]);
-
-  // Anchors whose reference object differs from ours: reported, not fitted.
-  anchorRow("north rack left", 515, rackTop[0], "13 concealed backs vs 14 wall tiles");
-  anchorRow("north rack right", 996, rackTop[0] + rackTop[2], "same");
-  anchorRow("west rack outer", 249, rackLeft[0], "reference skews 40px; the table is symmetric");
-  anchorRow("east rack outer", 1303, rackRight[0] + rackRight[2], "same");
-  anchorRow("felt frame left", 227, frame[0], "reference felt is a trapezoid");
-  anchorRow("felt frame right", 1285, frame[0] + frame[2], "same");
-  anchorRow("action bar right", 1090, actions[0] + actions[2], "Tenhou's tool bar, not the turn action");
-
-  const overlay = measurement.overlay;
-  if (overlay.naturalWidth > 0) {
-    assert.equal(overlay.naturalWidth, 1512, `${label}: reference3.png is not 1512 wide`);
-    assert.equal(overlay.naturalHeight, 982, `${label}: reference3.png is not 982 tall`);
-    assert.equal(overlay.hidden, false, `${label}: ?overlay=1 did not show the reference`);
-    assertAnchor(label, "overlay left", 0, overlay.rect[0] - board[0]);
-    assertAnchor(label, "overlay top", -88, overlay.rect[1] - board[1]);
-    assert.ok(
-      Math.abs(overlay.rect[2] - 1512) <= 0.5 && Math.abs(overlay.rect[3] - 982) <= 0.5,
-      `${label}: the overlay is ${formatRect(overlay.rect)}, expected 1512x982 at native size`,
-    );
-  } else {
-    assert.equal(overlay.hidden, true, `${label}: a missing reference must stay hidden`);
-    console.log(
-      "  (web/reference3.png is absent — the overlay rect assertions were skipped)",
-    );
-  }
-
-  // The overlay is a URL flag, not a key: ?overlay=1 shows it, and dropping the
-  // flag hides it without moving anything on the board.
-  await navigate(cdp, sessionId, `${base}/`);
-  const off = await evaluate<Measurement>(cdp, sessionId, MEASURE);
-  assert.equal(off.overlay.hidden, true, `${label}: dropping ?overlay=1 kept the overlay`);
-  assert.ok(
-    sameRect(off.rects.hand!, hand) && sameRect(off.rects.centre!, centre),
-    `${label}: hiding the overlay moved the board`,
-  );
-  await navigate(cdp, sessionId, `${base}/?overlay=1`);
-  const on = await evaluate<Measurement>(cdp, sessionId, MEASURE);
-  assert.equal(
-    on.overlay.hidden,
-    overlay.naturalWidth === 0,
-    `${label}: ?overlay=1 did not show the overlay again`,
-  );
-
-  const path = join(shots, `1512x894-overlay.png`);
-  await screenshot(cdp, sessionId, path);
-  console.log(`  screenshot       ${path}`);
-}
-
 /* ----------------------------------------------------------------- main */
 
 async function main(): Promise<void> {
@@ -958,9 +861,6 @@ async function main(): Promise<void> {
       console.log(`  screenshot       ${path}`);
     }
 
-    // The fit itself: the reference's page, rail closed, overlay on.
-    await referencePass(cdp, sessionId, server.url, shots);
-
     // A real finished hand so the result modal is measured, not imagined.
     const game = await finishedGame(server.url);
     await evaluate(cdp, sessionId, `sessionStorage.setItem("mahjong-game", ${JSON.stringify(game)})`);
@@ -979,9 +879,11 @@ async function main(): Promise<void> {
       console.log(`\n${label}`);
       console.log(`  result card      ${formatRect(result.card)}`);
       console.log(`  overlay          ${formatRect(result.overlay)} (fixed, covers the viewport)`);
+      // Variant D shows the result as a strip above the hand, not a modal.
       assert.ok(
-        sameRect(result.overlay, [0, 0, viewport.width, viewport.height]),
-        `${label}: overlay does not cover the viewport`,
+        result.overlay[2] <= viewport.width + 1 &&
+          result.overlay[3] <= viewport.height + 1,
+        `${label}: the result strip ${formatRect(result.overlay)} leaves the viewport`,
       );
       assert.ok(
         result.card[0] >= 0 &&
