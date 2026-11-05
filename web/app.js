@@ -716,7 +716,9 @@ function syncRevealed() {
   }
   if (!rhythmReady) {
     pileKeys = all.slice();
-    layoutPile();
+    pileItems = [];
+    pileSpots = null;
+    for (const item of pileKeys) addToPile(item);
     for (const seat of SEATS) {
       revealedDiscards[seat] = seatEntry(seat)?.discards.length ?? 0;
     }
@@ -726,7 +728,7 @@ function syncRevealed() {
   // A claim takes the offered tile off the table; drop it from the heap.
   const before = pileKeys.length;
   pileKeys = pileKeys.filter((item) => all.some((other) => other.key === item.key));
-  if (pileKeys.length !== before) layoutPile();
+  if (pileKeys.length !== before) rebuildPile();
   for (const seat of SEATS) {
     const count = seatEntry(seat)?.discards.length ?? 0;
     revealedDiscards[seat] = Math.min(revealedDiscards[seat], count);
@@ -788,9 +790,7 @@ function revealDiscard(item) {
   if (next === undefined) return;
   revealedDiscards[next.seat] = (revealedDiscards[next.seat] ?? 0) + 1;
   pileKeys.push(next);
-  // Every throw settles the heap afresh, a few pixels this way and that.
-  pileSeed += 1;
-  layoutPile();
+  addToPile(next);
   renderPile();
   const tile = $("#pile .discard:last-child");
   if (tile !== null) {
@@ -990,7 +990,6 @@ function mulberry32(seed) {
 const PILE_CAPACITY = 84;
 let pileItems = [];
 let pileKeys = [];
-let pileSeed = 0x5eed;
 let pileSize = { w: 0, h: 0 };
 let pileRandom = mulberry32(0x5eed);
 
@@ -1072,38 +1071,56 @@ function tryPlace(seat, list, placed, w, h) {
   return null;
 }
 
+/** The tile size the heap is using, and its candidate spots (built once). */
+let pileSpots = null;
+
+function spotsFor(w, h) {
+  pileRandom = mulberry32(0x5eed);
+  pileSpots = pileCandidates(w, h);
+  pileSize = { w, h };
+  return pileSpots;
+}
+
 /**
- * Lays the heap out at the largest tile that still holds every discard without
- * a single overlap: a phone shrinks the tiles a little, a desk never does.
+ * Adds one tile to the heap and never moves the tiles already down: the spot is
+ * chosen once, from what is still free. Only a heap that is genuinely full is
+ * rebuilt smaller.
  */
-function layoutPile() {
+function addToPile(item) {
   if (currentLayout === null) return;
+  if (pileSpots === null) {
+    spotsFor(currentLayout.discardTileWidth, currentLayout.discardTileHeight);
+  }
+  const spot = tryPlace(item.seat, pileSpots, pileItems, pileSize.w, pileSize.h);
+  if (spot !== null) {
+    pileItems.push({ key: item.key, seat: item.seat, ...spot });
+    return;
+  }
+  rebuildPile();
+}
+
+/** Last resort: the window cannot hold the hand at this size. */
+function rebuildPile() {
   const baseW = currentLayout.discardTileWidth;
   const baseH = currentLayout.discardTileHeight;
-  for (let step = 0; step < 12; step++) {
+  for (let step = 1; step < 12; step++) {
     const w = baseW * Math.pow(0.93, step);
     const h = baseH * Math.pow(0.93, step);
-    pileRandom = mulberry32(pileSeed);
-    const list = pileCandidates(w, h);
+    const list = spotsFor(w, h);
     const placed = [];
-    let complete = true;
     for (const item of pileKeys) {
       const spot = tryPlace(item.seat, list, placed, w, h);
       if (spot === null) {
-        complete = false;
+        placed.length = 0;
         break;
       }
       placed.push({ key: item.key, seat: item.seat, ...spot });
     }
-    if (complete) {
+    if (placed.length === pileKeys.length) {
       pileItems = placed;
-      pileSize = { w, h };
       return;
     }
   }
-  // Nothing fits (a very short window): keep the last attempt.
-  pileItems = [];
-  pileSize = { w: baseW, h: baseH };
 }
 
 function renderPile() {
