@@ -678,100 +678,6 @@ const LEGACY_RIVER_GRID = {
   right: { cols: 3, rows: 6, flat: false, cell: (r, c) => [r, 5 - c] },
 };
 
-function computedRiverGrid(place, columns, rows) {
-  const side = place === "left" || place === "right";
-  return {
-    cols: columns,
-    rows,
-    flat: !side,
-    cell: (index) => {
-      if (place === "bottom") {
-        return [index % columns, Math.floor(index / columns)];
-      }
-      if (place === "top") {
-        return [
-          columns - 1 - (index % columns),
-          rows - 1 - Math.floor(index / columns),
-        ];
-      }
-      const column = columns - 1 - Math.floor(index / rows);
-      const row = index % rows;
-      return place === "right"
-        ? [Math.floor(index / rows), rows - 1 - row]
-        : [column, row];
-    },
-  };
-}
-
-function riverGrid(place) {
-  if (!document.documentElement.classList.contains("variant-d")) {
-    return LEGACY_RIVER_GRID[place];
-  }
-  return computedRiverGrid(
-    place,
-    currentLayout?.riverColumns ?? 6,
-    currentLayout?.riverRows ?? 4,
-  );
-}
-
-function riverWrapper(entry) {
-  const place = PLACE[entry.seat];
-  const grid = riverGrid(place);
-  const river = div(
-    `river ${grid.flat ? "river-flat" : "river-side"} river-${place}`,
-  );
-
-  const claimWindow = payload.view.claimWindow;
-  const last = entry.discards.length - 1;
-  const seen = revealedDiscards[entry.seat] ?? entry.discards.length;
-
-  // The reserved block is decided before the first discard. Each screen
-  // cell maps back to the throw index that belongs there.
-  const cells = new Array(grid.cols * grid.rows);
-  for (let index = 0; index < cells.length; index++) {
-    const [x, y] = grid.cell(index);
-    cells[y * grid.cols + x] = index;
-  }
-
-  for (const index of cells) {
-    const slot = div("river-slot");
-    const key = index === undefined ? undefined : entry.discards[index];
-    if (key !== undefined) {
-      const unseen = index >= seen;
-      const tile = riverTile(key, index === last, index >= seen, entry.seat, claimWindow);
-      if (unseen) tile.classList.add("is-queued");
-      // The first discard is the block's row flush against the centre; the
-      // layout check uses the marker to prove the growth direction.
-      if (index === 0) tile.classList.add("first");
-      slot.append(tile);
-    } else {
-      slot.setAttribute("aria-hidden", "true");
-    }
-    river.append(slot);
-  }
-
-  river.setAttribute(
-    "aria-label",
-    `${entry.isYou ? "Your" : `${WIND_NAME[entry.wind]} seat`} ${entry.discards.length} discards`,
-  );
-  return river;
-}
-
-function riverTile(key, isLast, isNew, seat, claimWindow) {
-  const tile = tileElement(key);
-  if (isLast) tile.classList.add("last");
-  if (
-    isLast &&
-    claimWindow !== null &&
-    claimWindow.discarder === seat &&
-    claimWindow.tile === key
-  ) {
-    tile.classList.add("claimable");
-  }
-  if (isNew) tile.classList.add("is-new");
-  return tile;
-}
-
 function renderSeat(entry) {
   const place = PLACE[entry.seat];
   if (place === "bottom") return;
@@ -816,14 +722,27 @@ let discardTimer = null;
 const revealedDiscards = { E: 0, S: 0, W: 0, N: 0 };
 let rhythmReady = false;
 
-/** Keeps the seen-count honest: history shows, new throws wait their beat. */
+/** Keeps the seen-counts honest when the table loses tiles (undo, claim). */
 function syncRevealed() {
+  const all = [];
+  for (const seat of SEATS) all.push(...(seatEntry(seat)?.discards ?? []));
+  if (!rhythmReady) {
+    pileTiles = all.slice();
+    for (const seat of SEATS) {
+      revealedDiscards[seat] = seatEntry(seat)?.discards.length ?? 0;
+    }
+    rhythmReady = true;
+    return;
+  }
+  // A claim takes the offered tile off the table; drop it from the pile.
+  for (const key of pileTiles.slice()) {
+    const index = pileTiles.indexOf(key);
+    if (index >= 0 && !all.includes(key)) pileTiles.splice(index, 1);
+  }
   for (const seat of SEATS) {
     const count = seatEntry(seat)?.discards.length ?? 0;
-    if (!rhythmReady) revealedDiscards[seat] = count;
-    else revealedDiscards[seat] = Math.min(revealedDiscards[seat], count);
+    revealedDiscards[seat] = Math.min(revealedDiscards[seat], count);
   }
-  rhythmReady = true;
 }
 
 /** Seat order after the human's, which is the order the table answers in. */
@@ -839,26 +758,26 @@ function planDiscards() {
     discardTimer = null;
   }
   discardQueue = [];
-  // A claim is the one thing that interrupts the beat: the offer needs its
-  // tile on the table now, so everything waiting lands at once.
-  if (payload.view.claimWindow !== null) {
-    for (const seat of SEATS) {
-      revealedDiscards[seat] = seatEntry(seat)?.discards.length ?? revealedDiscards[seat];
-    }
-    renderRivers();
-    return;
-  }
   // Your own throw lands at once; the table answers at its own pace.
-  if (payload.seat in revealedDiscards) {
-    revealedDiscards[payload.seat] =
-      seatEntry(payload.seat)?.discards.length ?? revealedDiscards[payload.seat];
-  }
+  revealedDiscards[payload.seat] =
+    seatEntry(payload.seat)?.discards.length ?? revealedDiscards[payload.seat];
+  const stopTheBeat = payload.view.claimWindow !== null;
   for (const seat of turnOrderAfter(payload.seat)) {
     if (seat === payload.seat) continue;
-    const count = seatEntry(seat)?.discards.length ?? 0;
-    for (let index = revealedDiscards[seat]; index < count; index++) {
-      discardQueue.push({ seat, index });
+    const entry = seatEntry(seat);
+    const discards = entry?.discards ?? [];
+    for (let index = revealedDiscards[seat] ?? 0; index < discards.length; index++) {
+      if (stopTheBeat) {
+        revealedDiscards[seat] = discards.length;
+        if (!pileTiles.includes(discards[index])) pileTiles.push(discards[index]);
+      } else {
+        discardQueue.push({ seat, key: discards[index] });
+      }
     }
+  }
+  if (stopTheBeat) {
+    renderPile();
+    return;
   }
   if (discardQueue.length > 0) scheduleDiscard();
 }
@@ -874,13 +793,11 @@ function scheduleDiscard() {
 function revealDiscard() {
   const next = discardQueue.shift();
   if (next === undefined) return;
-  const { seat, index } = next;
-  revealedDiscards[seat] = Math.max(revealedDiscards[seat], index + 1);
-  // Rebuild the rivers from the seen counts: one source of truth, so a render
-  // that happens mid-beat can never leave a tile hidden or double-shown.
-  renderRivers();
-  const zone = document.querySelector(`#river-${PLACE[seat]}`);
-  const tile = zone === null ? null : zone.querySelectorAll(".tile")[index] ?? null;
+  const { seat, key } = next;
+  revealedDiscards[seat] = (revealedDiscards[seat] ?? 0) + 1;
+  pileTiles.push(key);
+  renderPile();
+  const tile = $("#pile .discard:last-child");
   if (tile !== null) {
     tile.classList.add("is-new");
     window.setTimeout(() => tile.classList.remove("is-new"), 300);
@@ -934,15 +851,6 @@ function playTileClack() {
   source.connect(filter).connect(gain).connect(audioContext.destination);
   source.start(now);
   source.stop(now + 0.06);
-}
-
-function renderRivers() {
-  for (const entry of payload.table) {
-    const place = PLACE[entry.seat];
-    const zone = $(`#river-${place}`);
-    if (zone === null) continue;
-    zone.replaceChildren(riverWrapper(entry));
-  }
 }
 
 function layoutSpec(width, height) {
@@ -1022,12 +930,6 @@ function applyLayout() {
     "--layout-back-h",
     px(layout.rackHeight ?? layout.tileWidth * 0.96),
   );
-  root.setProperty("--river-columns", String(layout.riverColumns));
-  root.setProperty("--river-rows", String(layout.riverRows));
-  root.setProperty("--river-tile-w", px(layout.riverFlatTileWidth));
-  root.setProperty("--river-tile-h", px(layout.riverFlatTileHeight));
-  root.setProperty("--river-side-tile-w", px(layout.riverSideTileWidth));
-  root.setProperty("--river-side-tile-h", px(layout.riverSideTileHeight));
   const setRect = (name, rect) => {
     root.setProperty(`--layout-${name}-x`, px(rect[0]));
     root.setProperty(`--layout-${name}-y`, px(rect[1]));
@@ -1046,10 +948,7 @@ function applyLayout() {
   root.setProperty("--layout-control-h", px(layout.control[3]));
   setRect("hand", layout.handBand);
   setRect("centre", layout.centre);
-  setRect("river-top", layout.rivers.top);
-  setRect("river-left", layout.rivers.left);
-  setRect("river-right", layout.rivers.right);
-  setRect("river-bottom", layout.rivers.bottom);
+  setRect("pile", layout.pile);
   setRect("seat-top", layout.seats.top);
   setRect("seat-left", layout.seats.left);
   setRect("seat-right", layout.seats.right);
@@ -1060,7 +959,94 @@ function renderSeats() {
   for (const entry of payload.table) {
     renderSeat(entry);
   }
-  renderRivers();
+  renderPile();
+}
+
+/* ------------------------------------------------------------- the pile */
+
+/**
+ * Discards are thrown into the middle, not laid out in rows: one tile size for
+ * everyone, scattered on a fixed grid of slots so a tile never moves once it
+ * has landed. The slots are seeded, so every reload looks the same.
+ */
+const PILE_CAPACITY = 84;
+let pileSlots = null;
+let pileTiles = [];
+
+function mulberry32(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function pileSlotCount() {
+  return Math.min(PILE_CAPACITY, currentLayout?.pileCapacity ?? PILE_CAPACITY);
+}
+
+/** Best-candidate scatter: each tile takes the roomiest of a few random spots. */
+function buildPileSlots() {
+  const pile = currentLayout?.pile;
+  if (pile === undefined) return [];
+  const width = currentLayout.discardTileWidth;
+  const height = currentLayout.discardTileHeight;
+  if (width === undefined || height === undefined) return [];
+  const random = mulberry32(0x5eed);
+  const centreX = pile[2] / 2 - width / 2;
+  const centreY = pile[3] / 2 - height / 2;
+  const reachX = Math.max(1, (pile[2] - width) / 2);
+  const reachY = Math.max(1, (pile[3] - height) / 2);
+  const slots = [];
+  for (let index = 0; index < pileSlotCount(); index++) {
+    // Thrown into the middle: dense at the centre, thinner at the rim, and
+    // allowed to land on the tiles already there.
+    const angle = random() * Math.PI * 2;
+    const radius = Math.pow(random(), 0.62);
+    const x = Math.min(
+      pile[2] - width,
+      Math.max(0, centreX + Math.cos(angle) * reachX * radius),
+    );
+    const y = Math.min(
+      pile[3] - height,
+      Math.max(0, centreY + Math.sin(angle) * reachY * radius),
+    );
+    slots.push({ x, y, angle: (random() * 2 - 1) * 22 });
+  }
+  return slots;
+}
+
+function renderPile() {
+  const element = $("#pile");
+  if (element === null || currentLayout === null) return;
+  pileSlots = buildPileSlots();
+  const width = currentLayout.discardTileWidth;
+  const height = currentLayout.discardTileHeight;
+  element.style.setProperty("--discard-w", `${width}px`);
+  element.style.setProperty("--discard-h", `${height}px`);
+  element.replaceChildren();
+  const claimWindow = payload?.view.claimWindow ?? null;
+  pileTiles.forEach((key, index) => {
+    const slot = pileSlots[index];
+    if (slot === undefined) return;
+    const tile = tileElement(key);
+    tile.classList.add("discard");
+    tile.style.left = `${slot.x}px`;
+    tile.style.top = `${slot.y}px`;
+    tile.style.transform = `rotate(${slot.angle}deg)`;
+    tile.style.zIndex = String(index + 1);
+    if (index === pileTiles.length - 1) {
+      tile.classList.add("last");
+      if (claimWindow !== null && claimWindow.tile === key) {
+        tile.classList.add("claimable");
+      }
+    }
+    element.append(tile);
+  });
+  element.setAttribute("aria-label", `${pileTiles.length} discards`);
 }
 
 function renderHand() {
