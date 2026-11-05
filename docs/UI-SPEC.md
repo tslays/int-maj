@@ -182,20 +182,24 @@ then shifts every region by `inset`, so the hand, the three walls, the rivers
 and the action row all sit a breath away from the edge. `layout.inset` is
 exported; the board box stays full-bleed because the felt is the background.
 
-### One messy pile (2026-11-05)
+### One round pile (2026-11-05)
 
-The four ordered rivers are gone: Chinese mahjong throws tiles into the middle,
-so there is no per-seat river and no order to read.
+There are no rivers: discards go into one round heap in the middle, and no two
+discards may ever touch.
 
-    pile          = the strip between the seat bands and the action row
-    discard tile  = min(board_tile, sqrt(pile_area * 0.62 / (84 * 4/3)))
-    placement     = seeded radial scatter, dense at the centre, allowed to overlap
+    discard tile = min(board_tile, sqrt(pile_area * 0.34 / (84 * 4/3)))
+    slots        = Vogel sunflower inside the pile's circle, accepted greedily
+                   so every centre is at least one tile diagonal from its others
+    seat wedge   = top -90deg, right 0deg, bottom +90deg, left 180deg
 
-Every discard is the same size - there is no flat/side difference any more (that
-difference was the thing that made the left and right discards look wrong). The
-scatter is seeded and fixed per slot, so a tile never moves once it has landed;
-newer tiles land on top. The audit fails if two discards differ in size or if a
-discard leaves the pile.
+A throw takes the innermost free slot in its own wedge (widening to a third,
+then to half the circle only when that wedge is full), so the heap grows out of
+the centre in rings while each player's tiles stay on their side: yours south,
+the right-hand player's east, the left-hand player's west, the far seat's north.
+Because the acceptance test is the diagonal, rotation can never cause an
+overlap - the audit fails if any two centres come closer than that.
+
+Your own throw animates too: it leaves the hand, flies to its slot, and clacks.
 
 ### The discard rhythm (2026-11-05)
 ### The discard rhythm (2026-11-05)

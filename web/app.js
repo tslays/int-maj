@@ -708,9 +708,12 @@ let rhythmReady = false;
 /** Keeps the seen-counts honest when the table loses tiles (undo, claim). */
 function syncRevealed() {
   const all = [];
-  for (const seat of SEATS) all.push(...(seatEntry(seat)?.discards ?? []));
+  for (const seat of SEATS) {
+    for (const key of seatEntry(seat)?.discards ?? []) all.push({ seat, key });
+  }
   if (!rhythmReady) {
-    pileTiles = all.slice();
+    // Slots are assigned later, once the layout is known.
+    pileTiles = all.map((item) => ({ ...item, slot: null }));
     for (const seat of SEATS) {
       revealedDiscards[seat] = seatEntry(seat)?.discards.length ?? 0;
     }
@@ -718,9 +721,11 @@ function syncRevealed() {
     return;
   }
   // A claim takes the offered tile off the table; drop it from the pile.
-  for (const key of pileTiles.slice()) {
-    const index = pileTiles.indexOf(key);
-    if (index >= 0 && !all.includes(key)) pileTiles.splice(index, 1);
+  for (const entry of pileTiles.slice()) {
+    const index = pileTiles.indexOf(entry);
+    if (index >= 0 && !all.some((item) => item.key === entry.key)) {
+      pileTiles.splice(index, 1);
+    }
   }
   for (const seat of SEATS) {
     const count = seatEntry(seat)?.discards.length ?? 0;
@@ -741,29 +746,26 @@ function planDiscards() {
     discardTimer = null;
   }
   discardQueue = [];
-  // Your own throw lands at once; the table answers at its own pace.
-  revealedDiscards[payload.seat] =
-    seatEntry(payload.seat)?.discards.length ?? revealedDiscards[payload.seat];
+  // Your own throw lands at once - but it still flies from the hand.
+  const mine = seatEntry(payload.seat)?.discards ?? [];
+  for (let index = revealedDiscards[payload.seat] ?? 0; index < mine.length; index++) {
+    revealDiscard({ seat: payload.seat, key: mine[index] });
+  }
   const stopTheBeat = payload.view.claimWindow !== null;
   for (const seat of turnOrderAfter(payload.seat)) {
     if (seat === payload.seat) continue;
-    const entry = seatEntry(seat);
-    const discards = entry?.discards ?? [];
+    const discards = seatEntry(seat)?.discards ?? [];
     for (let index = revealedDiscards[seat] ?? 0; index < discards.length; index++) {
       if (stopTheBeat) {
-        revealedDiscards[seat] = discards.length;
-        if (!pileTiles.includes(discards[index])) pileTiles.push(discards[index]);
+        revealDiscard({ seat, key: discards[index] });
       } else {
         discardQueue.push({ seat, key: discards[index] });
       }
     }
   }
-  if (stopTheBeat) {
-    renderPile();
-    return;
-  }
-  if (discardQueue.length > 0) scheduleDiscard();
+  if (!stopTheBeat && discardQueue.length > 0) scheduleDiscard();
 }
+
 
 function scheduleDiscard() {
   discardTimer = setTimeout(() => {
@@ -773,17 +775,21 @@ function scheduleDiscard() {
   }, DISCARD_BEAT_MS);
 }
 
-function revealDiscard() {
-  const next = discardQueue.shift();
+function revealDiscard(item) {
+  const next = item ?? discardQueue.shift();
   if (next === undefined) return;
   const { seat, key } = next;
+  if (pileSlots === null) pileSlots = buildPileSlots();
+  const taken = new Set(pileTiles.map((entry) => entry.slot));
+  const slot = nextPileSlot(seat, taken);
+  if (slot < 0) return;
   revealedDiscards[seat] = (revealedDiscards[seat] ?? 0) + 1;
-  pileTiles.push(key);
+  pileTiles.push({ key, slot });
   renderPile();
   const tile = $("#pile .discard:last-child");
   if (tile !== null) {
     tile.classList.add("is-new");
-    window.setTimeout(() => tile.classList.remove("is-new"), 300);
+    window.setTimeout(() => tile.classList.remove("is-new"), 260);
     throwGhost(seat, tile);
   }
   playTileClack();
@@ -792,9 +798,13 @@ function revealDiscard() {
 
 /** The tile leaves the wall: a back flies from the seat's rack to the river. */
 function throwGhost(seat, tile) {
-  const rack = document.querySelector(`#seat-${PLACE[seat]} .rack`);
-  if (rack === null) return;
-  const from = rack.getBoundingClientRect();
+  // Your own throw leaves the hand; an opponent's leaves that seat's wall.
+  const source =
+    seat === payload?.seat
+      ? document.querySelector("#hand")
+      : document.querySelector(`#seat-${PLACE[seat]} .rack`);
+  if (source === null) return;
+  const from = source.getBoundingClientRect();
   const to = tile.getBoundingClientRect();
   if (from.width === 0 || to.width === 0) return;
   const ghost = div("throw-ghost");
@@ -811,6 +821,7 @@ function throwGhost(seat, tile) {
   });
   window.setTimeout(() => ghost.remove(), 320);
 }
+
 
 /** One short ceramic clack, synthesised so the table ships without audio. */
 function playTileClack() {
@@ -972,34 +983,83 @@ function pileSlotCount() {
 }
 
 /** Best-candidate scatter: each tile takes the roomiest of a few random spots. */
+/**
+ * The pile is a flower: slots spiral out from the centre (Vogel's sunflower),
+ * spaced so no two tiles can ever touch, and each throw takes the innermost
+ * free slot on its own side of the table.
+ */
+const PILE_GOLDEN = Math.PI * (3 - Math.sqrt(5));
+const SEAT_ANGLE = { top: -Math.PI / 2, right: 0, bottom: Math.PI / 2, left: Math.PI };
+
 function buildPileSlots() {
   const pile = currentLayout?.pile;
   if (pile === undefined) return [];
   const width = currentLayout.discardTileWidth;
   const height = currentLayout.discardTileHeight;
   if (width === undefined || height === undefined) return [];
-  const random = mulberry32(0x5eed);
-  const centreX = pile[2] / 2 - width / 2;
-  const centreY = pile[3] / 2 - height / 2;
-  const reachX = Math.max(1, (pile[2] - width) / 2);
-  const reachY = Math.max(1, (pile[3] - height) / 2);
+  const diagonal = Math.hypot(width, height);
+  const centreX = pile[2] / 2;
+  const centreY = pile[3] / 2;
+  // A circle, not the whole rectangle: the pile reads as one round heap.
+  const reach = Math.max(0, Math.min(pile[2], pile[3]) / 2 - diagonal / 2);
+  const candidates = 420;
   const slots = [];
-  for (let index = 0; index < pileSlotCount(); index++) {
-    // Thrown into the middle: dense at the centre, thinner at the rim, and
-    // allowed to land on the tiles already there.
-    const angle = random() * Math.PI * 2;
-    const radius = Math.pow(random(), 0.62);
-    const x = Math.min(
-      pile[2] - width,
-      Math.max(0, centreX + Math.cos(angle) * reachX * radius),
-    );
-    const y = Math.min(
-      pile[3] - height,
-      Math.max(0, centreY + Math.sin(angle) * reachY * radius),
-    );
-    slots.push({ x, y, angle: (random() * 2 - 1) * 22 });
+  for (let index = 0; index < candidates; index++) {
+    const fill = Math.sqrt((index + 0.4) / candidates);
+    const theta = index * PILE_GOLDEN;
+    const x = centreX + Math.cos(theta) * reach * fill - width / 2;
+    const y = centreY + Math.sin(theta) * reach * fill - height / 2;
+    let clear = true;
+    for (const slot of slots) {
+      const gap = Math.hypot(slot.x - x, slot.y - y);
+      if (gap < diagonal * 1.04) {
+        clear = false;
+        break;
+      }
+    }
+    if (!clear) continue;
+    slots.push({
+      x,
+      y,
+      theta,
+      radius: Math.hypot(x + width / 2 - centreX, y + height / 2 - centreY),
+      angle: (theta * 180) / Math.PI + 90,
+    });
+    if (slots.length >= pileSlotCount()) break;
   }
   return slots;
+}
+
+/** Angular distance between two angles, 0..π. */
+function angleDistance(a, b) {
+  const turn = Math.abs(((a - b + Math.PI) % (Math.PI * 2)) - Math.PI);
+  return Math.min(turn, Math.PI * 2 - turn);
+}
+
+/**
+ * The innermost free slot near the thrower's side: your own tiles land south,
+ * the right-hand player's east, the left-hand player's west, the far seat's
+ * north. The circle therefore grows out of the middle.
+ */
+function nextPileSlot(seat, taken) {
+  if (pileSlots === null) pileSlots = buildPileSlots();
+  const preferred = SEAT_ANGLE[PLACE[seat]] ?? 0;
+  // Own the wedge first; widen only when that wedge is full.
+  for (const spread of [Math.PI / 4, Math.PI / 3, Math.PI / 2]) {
+    let best = -1;
+    let bestRadius = Infinity;
+    for (let index = 0; index < pileSlots.length; index++) {
+      if (taken.has(index)) continue;
+      const slot = pileSlots[index];
+      if (angleDistance(slot.theta, preferred) > spread) continue;
+      if (slot.radius < bestRadius) {
+        bestRadius = slot.radius;
+        best = index;
+      }
+    }
+    if (best >= 0) return best;
+  }
+  return -1;
 }
 
 function renderPile() {
@@ -1012,10 +1072,15 @@ function renderPile() {
   element.style.setProperty("--discard-h", `${height}px`);
   element.replaceChildren();
   const claimWindow = payload?.view.claimWindow ?? null;
-  pileTiles.forEach((key, index) => {
-    const slot = pileSlots[index];
+  const taken = new Set();
+  pileTiles.forEach((entry, index) => {
+    if (entry.slot === null || taken.has(entry.slot)) {
+      entry.slot = nextPileSlot(entry.seat, taken);
+    }
+    const slot = entry.slot === null ? undefined : pileSlots[entry.slot];
     if (slot === undefined) return;
-    const tile = tileElement(key);
+    taken.add(entry.slot);
+    const tile = tileElement(entry.key);
     tile.classList.add("discard");
     tile.style.left = `${slot.x}px`;
     tile.style.top = `${slot.y}px`;
@@ -1023,7 +1088,7 @@ function renderPile() {
     tile.style.zIndex = String(index + 1);
     if (index === pileTiles.length - 1) {
       tile.classList.add("last");
-      if (claimWindow !== null && claimWindow.tile === key) {
+      if (claimWindow !== null && claimWindow.tile === entry.key) {
         tile.classList.add("claimable");
       }
     }

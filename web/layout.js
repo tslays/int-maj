@@ -223,7 +223,7 @@ function solveLayout({
       Math.min(
         Math.round(boardScale),
         Math.floor(
-          Math.sqrt((pile[2] * pile[3] * 0.62) / (DISCARD_CAPACITY * (4 / 3))),
+          Math.sqrt((pile[2] * pile[3] * 0.34) / (DISCARD_CAPACITY * (4 / 3))),
         ),
       ),
     );
@@ -505,7 +505,7 @@ function solveLayout({
     Math.min(
       Math.round(tileWidth),
       Math.floor(
-        Math.sqrt((pile[2] * pile[3] * 0.62) / (DISCARD_CAPACITY * (4 / 3))),
+        Math.sqrt((pile[2] * pile[3] * 0.34) / (DISCARD_CAPACITY * (4 / 3))),
       ),
     ),
   );
