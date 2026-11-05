@@ -710,7 +710,10 @@ let rhythmReady = false;
 function syncRevealed() {
   const all = [];
   for (const seat of SEATS) {
-    for (const key of seatEntry(seat)?.discards ?? []) all.push({ seat, key });
+    const discards = seatEntry(seat)?.discards ?? [];
+    discards.forEach((key, index) => {
+      all.push({ seat, key, id: `${seat}:${key}:${index}` });
+    });
   }
   if (!rhythmReady) {
     pileKeys = all.slice();
@@ -757,10 +760,12 @@ function planDiscards() {
   if (payload === null) return;
   // Queue whatever this answer threw, in the order the events name them.
   for (const item of pendingDiscards) {
-    // A tile already on the table is history, not a throw: queueing it again
-    // would play a landing for nothing.
-    if (pileKeys.some((placed) => placed.key === item.key)) continue;
-    if (discardQueue.some((queued) => queued.key === item.key)) continue;
+    // Two players may throw the same tile, so a throw is identified by seat and
+    // how many that seat has already thrown - never by the tile alone.
+    const occurrence = (revealedDiscards[item.seat] ?? 0) + discardQueue.filter((queued) => queued.seat === item.seat).length;
+    item.id = `${item.seat}:${item.key}:${occurrence}`;
+    if (discardQueue.some((queued) => queued.id === item.id)) continue;
+    if (revealedDiscards[item.seat] > 0 && pileKeys.some((placed) => placed.id === item.id)) continue;
     if (item.seat === payload.seat) {
       // Your own throw lands at once; the table answers on the beat.
       revealDiscard(item);
@@ -797,7 +802,7 @@ function scheduleDiscard() {
 function revealDiscard(item) {
   const next = item ?? discardQueue.shift();
   if (next === undefined) return;
-  if (pileKeys.some((placed) => placed.key === next.key)) return;
+  if (next.id !== undefined && pileKeys.some((placed) => placed.id === next.id)) return;
   revealedDiscards[next.seat] = (revealedDiscards[next.seat] ?? 0) + 1;
   pileKeys.push(next);
   addToPile(next);
@@ -1123,7 +1128,7 @@ function addToPile(item) {
   }
   const spot = tryPlace(item.seat, pileSpots, pileItems, pileSize.w, pileSize.h);
   if (spot !== null) {
-    pileItems.push({ key: item.key, seat: item.seat, ...spot });
+    pileItems.push({ key: item.key, seat: item.seat, id: item.id, ...spot });
     return;
   }
   rebuildPile();
@@ -1144,7 +1149,7 @@ function rebuildPile() {
         placed.length = 0;
         break;
       }
-      placed.push({ key: item.key, seat: item.seat, ...spot });
+      placed.push({ key: item.key, seat: item.seat, id: item.id, ...spot });
     }
     if (placed.length === pileKeys.length) {
       pileItems = placed;
