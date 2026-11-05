@@ -3,7 +3,9 @@
  *
  * The desktop assertions are the contract from docs/UI-SPEC.md:
  *   - no two region rects intersect;
- *   - every seat badge is gap 2 from its rack/hand and centred on it;
+ *   - the felt is bare: no wind letters, seat counts, wall dial, round meta,
+ *     centre scores or table frame;
+ *   - the hand is always visible and the action row holds one block at a time;
  *   - the tile face is at least 26px wide;
  *   - nothing leaves the board box.
  *
@@ -27,29 +29,24 @@ import {
 
 type Rect = readonly [x: number, y: number, width: number, height: number];
 
-interface Badge {
-  readonly gap: number;
-  readonly offset: number;
-}
-
 interface Measurement {
   readonly rects: Readonly<Record<string, Rect>>;
   readonly overlaps: readonly string[];
   readonly outside: readonly string[];
-  readonly badges: Readonly<Record<"top" | "left" | "right" | "self", Badge>>;
   readonly tileWidth: number;
   readonly handTiles: readonly number[];
   readonly handGaps: readonly number[];
   readonly handScrollWidth: number;
   readonly handClientWidth: number;
   readonly lastTileDrawn: boolean;
-  readonly visibleBadges: number;
   readonly riverTiles: readonly Rect[];
   readonly riverZones: Readonly<Record<"top" | "left" | "right" | "bottom", Rect | null>>;
   readonly riverSlots: Readonly<Record<"top" | "left" | "right" | "bottom", readonly Rect[]>>;
   readonly firstDiscards: Readonly<Record<"top" | "left" | "right" | "bottom", Rect | null>>;
   readonly discard: Rect | null;
   readonly handToggle: boolean;
+  readonly markers: number;
+  readonly frameBorder: string;
   readonly handCollapsed: boolean;
 }
 
@@ -162,37 +159,6 @@ const MEASURE = `(() => {
     }
   }
 
-  const gapFor = (badgeSelector, rackSelector) => {
-    const badge = R(document.querySelector(badgeSelector));
-    const rack = R(document.querySelector(rackSelector));
-    if (badge === null || rack === null) return null;
-    const gap =
-      rack[0] >= badge[0] + badge[2]
-        ? rack[0] - (badge[0] + badge[2])
-        : badge[0] - (rack[0] + rack[2]);
-    const offset = Math.abs(
-      badge[1] + badge[3] / 2 - (rack[1] + rack[3] / 2),
-    );
-    return { gap, offset };
-  };
-
-  const badges = {
-    top: gapFor("#seat-top .seat-badge", "#seat-top .rack"),
-    left: gapFor("#seat-left .seat-badge", "#seat-left .rack"),
-    right: gapFor("#seat-right .seat-badge", "#seat-right .rack"),
-    self: gapFor("#hand-badge", "#hand"),
-  };
-  const visibleBadges = [...document.querySelectorAll(".seat-badge,#hand-badge")]
-    .filter((element) => {
-      const style = getComputedStyle(element);
-      const rect = element.getBoundingClientRect();
-      return (
-        style.display !== "none" &&
-        style.visibility !== "hidden" &&
-        rect.width > 0 &&
-        rect.height > 0
-      );
-    }).length;
   const handTiles = [...document.querySelectorAll("#hand .hand-tile")].map(R);
   const handGaps = handTiles
     .slice(1)
@@ -223,7 +189,6 @@ const MEASURE = `(() => {
     rects,
     overlaps: collisions,
     outside,
-    badges,
     tileWidth: handTile === null ? 0 : handTile[2],
     handTiles: handTiles.map((tile) => tile[2]),
     handGaps,
@@ -232,8 +197,14 @@ const MEASURE = `(() => {
     lastTileDrawn: lastTile === null ? false : lastTile.classList.contains("is-drawn"),
     discard: R(document.querySelector('.action-button[data-action="discard"]')),
     handToggle: document.querySelector(".hand-toggle") !== null,
+    markers: document.querySelectorAll(
+      ".seat-badge, .hand-badge, .center-meta, .wall-dial, .center-scores, .self-label",
+    ).length,
+    frameBorder: (() => {
+      const field = document.querySelector(".playfield");
+      return field === null ? "missing" : getComputedStyle(field).borderTopWidth;
+    })(),
     handCollapsed: document.documentElement.classList.contains("hand-collapsed"),
-    visibleBadges,
   };
 })()`;
 
@@ -355,29 +326,6 @@ function assertRivers(
   }
 }
 
-function assertBadges(
-  measurement: Measurement,
-  expectedGap: number,
-  label: string,
-): void {
-  assert.equal(measurement.visibleBadges, 4, `${label}: expected four badges`);
-  for (const seat of ["top", "left", "right", "self"] as const) {
-    const badge = measurement.badges[seat];
-    assert.ok(badge !== null, `${label}: ${seat} badge missing`);
-    assert.ok(
-      Math.abs(badge.gap - expectedGap) <= 0.05,
-      `${label}: ${seat} gap is ${badge.gap}, expected ${expectedGap}`,
-    );
-    assert.ok(
-      badge.offset <= 0.05,
-      `${label}: ${seat} centre offset is ${badge.offset}, expected 0`,
-    );
-  }
-}
-
-/** The reserved row above the hand holds exactly one control block at a time:
-    the calls the table offers line up from its left edge, your own throw sits
-    at its right edge, and neither may grow out of the row. */
 function assertActionRow(measurement: Measurement, label: string): void {
   const controls = measurement.rects.controls;
   const discard = measurement.discard;
@@ -398,6 +346,14 @@ function assertActionRow(measurement: Measurement, label: string): void {
 
 /** The hand is the one thing that must never be out of sight: no control may
     collapse, hide or scroll it away. */
+/** The board carries no wind letters, seat counts, wall dial, round meta or
+    table frame: the felt is bare, and only the hand and the action row speak. */
+function assertNoMarkers(measurement: Measurement, label: string): void {
+  assert.equal(measurement.markers, 0, `${label}: seat and centre markers are back`);
+  assert.equal(measurement.frameBorder, "0px", `${label}: the table frame is back`);
+}
+
+
 function assertHandAlwaysVisible(measurement: Measurement, label: string): void {
   assert.equal(measurement.handToggle, false, `${label}: a hand toggle exists`);
   assert.equal(
@@ -421,6 +377,7 @@ function assertGeometry(
 ): void {
   assertActionRow(measurement, label);
   assertHandAlwaysVisible(measurement, label);
+  assertNoMarkers(measurement, label);
 
   if (expected.mode === "phone") {
     // Board regions only: the hand and controls are the bottom overlay zone.
@@ -459,7 +416,6 @@ function assertGeometry(
 
   assert.deepEqual(measurement.overlaps, [], `${label}: overlapping regions`);
   assert.deepEqual(measurement.outside, [], `${label}: region outside board`);
-  assertBadges(measurement, expected.gap, label);
   assert.ok(
     Math.abs(measurement.tileWidth - expected.tileWidth) <= 0.05,
     `${label}: tile width ${measurement.tileWidth}, solver says ${expected.tileWidth}`,

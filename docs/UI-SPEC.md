@@ -160,6 +160,16 @@ into the hand band. On a phone a chow offer plus its variants is wider than the
 screen: the row keeps its height and scrolls sideways instead of painting over
 the felt, so the primary `Claim` and `Dismiss` stay visible without scrolling.
 
+### Bare felt (2026-11-05)
+
+The board carries no labels for now. Removed: the wind letters and their tile
+counts at all four seats (including the `E 14` marker beside the hand), the
+round/hand meta and the wall dial in the middle, the centre score corners, and
+the thin rectangle that framed the play area. What is left is the felt, your
+hand, and the action row above it - the rivers and the face-down racks stay
+because they are the game state, not chrome. The audit fails if any of those
+markers comes back or if `.playfield` regains a border.
+
 ### The hand is never hidden
 
 The hand is the one thing that must always be on screen. There is no
