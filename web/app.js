@@ -705,6 +705,7 @@ let discardTimer = null;
 /** Discards the viewer has already seen land, per seat. */
 const revealedDiscards = { E: 0, S: 0, W: 0, N: 0 };
 let rhythmReady = false;
+let freshDeal = false;
 
 /** Keeps the seen-counts honest when the table loses tiles (undo, claim). */
 function syncRevealed() {
@@ -715,14 +716,16 @@ function syncRevealed() {
       all.push({ seat, key, id: `${seat}:${key}:${index}` });
     });
   }
-  if (!rhythmReady) {
-    pileKeys = all.slice();
+  if (!rhythmReady || freshDeal) {
+    // A fresh hand starts empty, so its first discards play on the beat.
+    pileKeys = freshDeal ? [] : all.slice();
     pileItems = [];
     pileSpots = null;
     for (const item of pileKeys) addToPile(item);
     for (const seat of SEATS) {
-      revealedDiscards[seat] = seatEntry(seat)?.discards.length ?? 0;
+      revealedDiscards[seat] = freshDeal ? 0 : (seatEntry(seat)?.discards.length ?? 0);
     }
+    freshDeal = false;
     rhythmReady = true;
     return;
   }
@@ -2211,6 +2214,7 @@ function undo() {
 
 function newGame(seed) {
   clearScenario();
+  freshDeal = true;
   handInitialized = false;
   tableInitialized = false;
   previousHand = [];
@@ -2303,11 +2307,13 @@ async function boot() {
   const stateName = params.get("state");
   if (stateName !== null && (await openScenario(stateName))) return;
 
-  const stored = sessionStorage.getItem(GAME_KEY);
-  if (stored !== null) {
+  // A page load always starts a hand from the deal, so the first round can be
+  // watched from the beginning. `?game=` is the only way to resume a game.
+  const explicit = params.get("game");
+  if (explicit !== null) {
     try {
-      const data = await api(`/api/state?game=${encodeURIComponent(stored)}`);
-      applyResponse(data, "Resumed the open game.");
+      const data = await api(`/api/state?game=${encodeURIComponent(explicit)}`);
+      applyResponse(data, "Resumed the game.");
       return;
     } catch {
       sessionStorage.removeItem(GAME_KEY);

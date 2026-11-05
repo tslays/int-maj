@@ -430,7 +430,7 @@ const MEASURE = String.raw`
   const css = (name) => parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
   const box = (selector) => {
     const element = document.querySelector(selector);
-    if (element === null) throw new Error("missing " + selector);
+    if (element === null) return null;
     return element.getBoundingClientRect();
   };
   const board = document.querySelector(".board");
@@ -440,7 +440,8 @@ const MEASURE = String.raw`
       "#river-" + zone + " .river > .river-slot",
     ).length;
   }
-  const riverSlot = box("#pile .discard");
+  // A fresh deal has no discard yet: the frame is what matters here.
+  const riverSlot = box("#pile .discard") ?? { width: 0, height: 0 };
   const handTile = box(".hand-tile .tile");
   const back = box(".seat-top .rack .tile-back");
   const centre = box(".center");
@@ -863,8 +864,7 @@ async function main(): Promise<void> {
 
     // A real finished hand so the result modal is measured, not imagined.
     const game = await finishedGame(server.url);
-    await evaluate(cdp, sessionId, `sessionStorage.setItem("mahjong-game", ${JSON.stringify(game)})`);
-    await navigate(cdp, sessionId, server.url);
+    await navigate(cdp, sessionId, `${server.url}/?game=${encodeURIComponent(game)}`);
     await waitFor(cdp, sessionId, `document.querySelector("#outcome")?.hidden === false`);
     for (const viewport of VIEWPORTS) {
       await setViewport(cdp, sessionId, viewport.width, viewport.height);
