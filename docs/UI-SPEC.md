@@ -170,40 +170,20 @@ hand, and the action row above it - the rivers and the face-down racks stay
 because they are the game state, not chrome. The audit fails if any of those
 markers comes back or if `.playfield` regains a border.
 
+### The hand is one wall (2026-11-05)
+
+The hand's tiles touch: each tile slides left over its right-hand neighbour by
+the width of the art's green 3D side, so the white fronts connect and no felt,
+shadow or bevel shows between them. Only the last tile keeps a visible side -
+exactly what a row of real tiles pushed together looks like.
+
+    HAND_OVERLAP = 0.263                       // of a tile's width
+    pitch        = hand_tile * (1 - HAND_OVERLAP)
+    hand_tile    = (14 * board_tile + 13 * gap) / (14 - 13 * HAND_OVERLAP)
+
+The row keeps the footprint it had edge to edge, so the hand does not grow, only
+its tiles do. The shadow belongs to the row (`#hand`), never to a single tile: a
+per-tile shadow paints a dark seam wherever two tiles overlap. The drawn tile is
+marked by the row's gap, never by an outline.
+
 ### Mouse and touch only (2026-11-05)
-
-There are no keyboard shortcuts, no focus ring, no cursor and no selection
-step. The whole table is pointer-driven:
-
-    tap a hand tile   -> throws that tile
-    Discard button    -> throws the tile you just drew (it shows it)
-    Claim / Dismiss   -> throw the offer or pass
-    ?overlay=1        -> the reference overlay (a URL flag, not a key)
-
-A thrown tile leaves the moment it is clicked: nothing asks for confirmation.
-The hand carries no outline and no highlight anywhere; the drawn tile is marked
-by the row's gap on wide tables only.
-
-### Opponents' hands
-
-The three opponents show their walls face down: 13 backs for a waiting hand,
-14 after the draw. Every seat gets exactly the same back, because they are the
-same kind of seat to you - one width, one height, one design:
-
-    rack_h = min(board_tile * 0.96, (side_seat_h - 12) / 13)
-    rack_w = rack_h * 0.75                        // the same 3:4 tile everywhere
-    top_seat  = 13 * rack_w + 12 x rack_h
-    side_seat = rack_w x 13 * rack_h + 12
-
-The side stack is the binding constraint: thirteen backs must fit the height
-left between the top seat and the action row, so that height sets the size and
-the top wall takes it too, centred in its band. No back may sit outside its
-seat band, and the three walls may never differ in size.
-
-### The hand is never hidden
-
-The hand is the one thing that must always be on screen. There is no
-collapse control, no arrow, nothing that hides, shrinks away or scrolls the
-hand band at any viewport - if something has to give, it gives elsewhere. The
-geometry audit fails if a `.hand-toggle` element exists, if `hand-collapsed` is
-set, or if the hand band measures zero.

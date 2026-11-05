@@ -1545,6 +1545,8 @@ h3 {
   align-items: flex-end;
 }
 
+/* Tiles are pushed together: every tile slides left over its neighbour by
+   the width of the art's green 3D side, so the white fronts connect. */
 .hand-tile {
   position: relative;
   display: flex;
@@ -1564,13 +1566,25 @@ h3 {
 .hand-tile .tile {
   width: var(--hand-w);
   height: var(--hand-h);
-  border-radius: var(--radius-xs);
-  filter: var(--hand-shadow);
+  filter: none;
   transition:
     transform var(--dur-fast) var(--ease),
     opacity var(--dur-fast) var(--ease),
     filter var(--dur-fast) var(--ease);
   transform-origin: 50% 100%;
+}
+
+/* Tiles are pushed together: each one slides left over its neighbour by the
+   width of the art's green 3D side, so the white fronts connect with nothing
+   between them. */
+.variant-d .hand-tile + .hand-tile {
+  margin-left: calc(var(--layout-hand-gap) - var(--layout-hand-overlap, 0px));
+}
+
+/* One shadow for the whole row: a shadow per tile would paint a dark seam
+   wherever two tiles overlap. */
+#hand {
+  filter: var(--hand-shadow);
 }
 
 .hand-tile:hover .tile {
@@ -2601,8 +2615,8 @@ h3 {
 /* ------------------------------------------- variant D: solved geometry */
 /* Positions and sizes below come only from computeLayout() via --layout-*. */
 .variant-d .app {
-  --hand-w: var(--layout-tile-w);
-  --hand-h: var(--layout-tile-h);
+  --hand-w: var(--layout-hand-tile-w, var(--layout-tile-w));
+  --hand-h: var(--layout-hand-tile-h, var(--layout-tile-h));
   --tile-w: var(--layout-tile-w);
   --tile-h: var(--layout-tile-h);
   --hand-gap: var(--layout-hand-gap);
@@ -2844,9 +2858,8 @@ throw: they line up from its left edge, the throw from its right. */
 
 /* Tiles share the width exactly: no leftover pixel runs out as a visible seam. */
 .variant-d.phone .hand-tile {
-  flex: 1 1 0;
+  flex: none;
   min-width: 0;
-  margin: 0;
 }
 
 .variant-d.phone .hand-tile .tile,

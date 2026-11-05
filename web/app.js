@@ -858,8 +858,21 @@ function applyLayout() {
   root.setProperty("--layout-board-h", px(window.innerHeight));
   root.setProperty("--layout-gap", px(layout.gap));
   root.setProperty("--layout-hand-gap", px(layout.handGap));
+  root.setProperty(
+    "--layout-hand-overlap",
+    px(layout.handOverlap ?? 0),
+  );
   root.setProperty("--layout-tile-w", px(layout.tileWidth));
   root.setProperty("--layout-tile-h", px(layout.tileHeight));
+  // The hand is its own scale: fourteen overlapping fronts spanning the board.
+  root.setProperty(
+    "--layout-hand-tile-w",
+    px(layout.handTileWidth ?? layout.tileWidth),
+  );
+  root.setProperty(
+    "--layout-hand-tile-h",
+    px(layout.handTileHeight ?? layout.tileHeight),
+  );
   // The seat bands are computed from these two numbers, so the rack takes its
   // size from the solver rather than from the hand scale.
   // Every opponent's wall uses one back, so the three of them look alike.

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { computeLayout, HAND_TILE_COUNT } from "../web/layout.js";
+import { computeLayout, HAND_OVERLAP, HAND_TILE_COUNT } from "../web/layout.js";
 
 type Rect = readonly [x: number, y: number, width: number, height: number];
 
@@ -46,11 +46,22 @@ describe("computeLayout", () => {
       const result = layout(width, height, mode);
       const phone = mode === "phone";
       if (phone) {
-        assert.equal(result.handTileWidth, width / HAND_TILE_COUNT);
-        assert.equal(result.handGap, 0);
-        assert.equal(result.handWidth, HAND_TILE_COUNT * result.handTileWidth);
+        // The row spans the screen with its tiles overlapping: fourteen
+        // fronts, thirteen overlaps.
         assert.ok(
-          result.handWidth <= width,
+          Math.abs(result.handWidth - width) <= 1,
+          `${width}: hand row spans the screen (${result.handWidth})`,
+        );
+        assert.equal(result.handGap, 0);
+        assert.ok(
+          Math.abs(
+            result.handTileWidth -
+              (width + (HAND_TILE_COUNT - 1) * result.handOverlap) / HAND_TILE_COUNT,
+          ) <= 1,
+          `${width}: hand tile covers its share plus the overlap`,
+        );
+        assert.ok(
+          result.handWidth <= width + 0.5,
           `${width}: hand row fits (${result.handWidth})`,
         );
         assert.equal(result.handTileCount, 14);
@@ -58,7 +69,12 @@ describe("computeLayout", () => {
       } else {
         assert.ok(result.tileWidth >= BREAKPOINTS[mode].minTileWidth);
         assert.ok(result.tileWidth <= BREAKPOINTS[mode].maxTileWidth);
-        assert.equal(result.handWidth, HAND_TILE_COUNT * result.tileWidth + 13 * result.gap);
+        assert.ok(
+          Math.abs(result.handWidth - (
+            HAND_TILE_COUNT * result.tileWidth + 13 * result.gap
+          )) <= 1,
+          `${width}: the hand keeps its edge-to-edge footprint`,
+        );
       }
 
       const capacity = result.riverColumns * result.riverRows;
@@ -158,22 +174,24 @@ describe("computeLayout", () => {
     });
   }
 
-  it("fits fourteen touching tiles across the screen on a phone", () => {
+  it("fits fourteen overlapping tiles across the screen on a phone", () => {
     const portrait = layout(390, 844, "phone");
-    assert.equal(portrait.handTileWidth, 390 / HAND_TILE_COUNT);
+    assert.ok(Math.abs(portrait.handTileWidth - 390 / (
+      HAND_TILE_COUNT - (HAND_TILE_COUNT - 1) * HAND_OVERLAP
+    )) <= 0.5);
     assert.equal(portrait.handGap, 0);
-    assert.equal(portrait.handWidth, 390);
+    assert.ok(Math.abs(portrait.handWidth - 390) <= 1);
     assert.ok(portrait.boardTileWidth! >= 26);
 
     const landscape = layout(844, 390, "phone");
-    assert.equal(landscape.handTileWidth, 844 / HAND_TILE_COUNT);
     assert.equal(landscape.handGap, 0);
-    assert.equal(landscape.handWidth, 844);
+    assert.ok(Math.abs(landscape.handWidth - 844) <= 1);
+    assert.ok(portrait.handOverlap > 0 && landscape.handOverlap > 0);
   });
 
   it("states the smallest supported phone width", () => {
     const result = layout(390, 600, "phone");
     assert.ok(result.supported);
-    assert.ok(result.handWidth <= 390);
+    assert.ok(result.handWidth <= 390 + 0.5);
   });
 });
