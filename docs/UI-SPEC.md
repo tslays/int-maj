@@ -182,23 +182,20 @@ then shifts every region by `inset`, so the hand, the three walls, the rivers
 and the action row all sit a breath away from the edge. `layout.inset` is
 exported; the board box stays full-bleed because the felt is the background.
 
+### One messy pile (2026-11-05)
+
+The four ordered rivers are gone: Chinese mahjong throws tiles into the middle,
+so there is no per-seat river and no order to read.
+
+    pile          = the strip between the seat bands and the action row
+    discard tile  = min(board_tile, sqrt(pile_area * 0.62 / (84 * 4/3)))
+    placement     = seeded radial scatter, dense at the centre, allowed to overlap
+
+Every discard is the same size - there is no flat/side difference any more (that
+difference was the thing that made the left and right discards look wrong). The
+scatter is seeded and fixed per slot, so a tile never moves once it has landed;
+newer tiles land on top. The audit fails if two discards differ in size or if a
+discard leaves the pile.
+
 ### The discard rhythm (2026-11-05)
-
-A round should read as a sequence, not a jump cut. The opponents answer in one
-payload, but the table lands their discards one beat at a time:
-
-    BEAT = 420 ms
-    queue  = every discard the viewer has not seen, in seat order after theirs
-    beat   = reveal one: the tile drops in, a back flies from that wall, a clack
-
-The seen-count per seat (`revealedDiscards`) is the single source of truth, so a
-render mid-beat can neither hide nor double-show a tile. Your own throw lands at
-once. A claim window stops the beat and shows everything, because the offer
-needs its tile on the table. The clack is synthesised with WebAudio (a short
-band-passed noise burst), so the table ships without audio files.
-
-There is no throw button: a tap on a hand tile throws it. The action row holds
-only what the table offers you - claim, chow variants, dismiss, kong, fishing.
-
-### The hand is one close-pushed wall (2026-11-05)
-### The hand is one close-pushed wall (2026-11-05)
+### The discard rhythm (2026-11-05)

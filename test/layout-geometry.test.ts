@@ -40,7 +40,9 @@ interface Measurement {
   readonly handScrollWidth: number;
   readonly handClientWidth: number;
   readonly lastTileDrawn: boolean;
-  readonly riverTiles: readonly Rect[];
+  readonly pile: Rect | null;
+  readonly discards: readonly Rect[];
+  readonly discardSizes: readonly (readonly [number, number])[];
   readonly racks: Readonly<
     Record<
       "top" | "left" | "right",
@@ -52,9 +54,6 @@ interface Measurement {
       }
     >
   >;
-  readonly riverZones: Readonly<Record<"top" | "left" | "right" | "bottom", Rect | null>>;
-  readonly riverSlots: Readonly<Record<"top" | "left" | "right" | "bottom", readonly Rect[]>>;
-  readonly firstDiscards: Readonly<Record<"top" | "left" | "right" | "bottom", Rect | null>>;
   readonly discard: Rect | null;
   readonly handToggle: boolean;
   readonly markers: number;
@@ -132,11 +131,7 @@ const MEASURE = `(() => {
   // The self seat band is the hand band: variant D has no separate bottom seat.
   const regionSelectors = {
     handBand: ".hand-band",
-    riverTop: "#river-top .river",
-    riverLeft: "#river-left .river",
-    riverRight: "#river-right .river",
-    riverBottom: "#river-bottom .river",
-    centre: ".center",
+    pile: "#pile",
     seatTop: "#seat-top",
     seatLeft: "#seat-left",
     seatRight: "#seat-right",
@@ -179,19 +174,10 @@ const MEASURE = `(() => {
   const handTile = R(document.querySelector("#hand .hand-tile"));
   const lastTile = document.querySelector("#hand .hand-tile:last-child");
 
-  const riverZones = {};
-  const riverSlots = {};
-  const firstDiscards = {};
-  for (const place of ["top", "left", "right", "bottom"]) {
-    const river = document.querySelector("#river-" + place + " .river");
-    riverZones[place] = R(river);
-    riverSlots[place] = river === null
-      ? []
-      : [...river.querySelectorAll(".river-slot")].map(R);
-    const first = river === null ? null : river.querySelector(".tile.first");
-    firstDiscards[place] = first === null ? null : R(first);
-  }
-  const riverTiles = [...document.querySelectorAll(".river .tile")].map(R);
+  const pile = R(document.querySelector("#pile"));
+  const discardTiles = [...document.querySelectorAll("#pile .discard")];
+  const discards = discardTiles.map(R);
+  const discardSizes = discardTiles.map((tile) => [tile.offsetWidth, tile.offsetHeight]);
 
   // The three opponents keep their hands face down: one back per tile, all of
   // them inside the seat's own band.
@@ -210,11 +196,10 @@ const MEASURE = `(() => {
   }
 
   return {
-    riverTiles,
+    pile,
+    discards,
+    discardSizes,
     racks,
-    riverZones,
-    riverSlots,
-    firstDiscards,
     rects,
     overlaps: collisions,
     outside,
@@ -245,27 +230,9 @@ let profile: string;
 
 /** Fill every reserved river slot so capacity is exercised, not just the
     scenario's opening discards. */
-const FILL_RIVERS = `(() => {
-  const template = document.querySelector("#hand .hand-tile .tile");
-  if (template === null) throw new Error("no hand tile to copy into the rivers");
-  for (const river of document.querySelectorAll(".river")) {
-    const slots = [...river.querySelectorAll(".river-slot")];
-    slots.forEach((slot, index) => {
-      slot.removeAttribute("aria-hidden");
-      const tile = template.cloneNode(true);
-      slot.replaceChildren(tile);
-      if (index === 0) tile.classList.add("first");
-    });
-  }
-  return [...document.querySelectorAll(".river")].map(
-    (river) => river.querySelectorAll(".river-slot").length,
-  );
-})()`;
-
 async function measure(width: number, height: number): Promise<Measurement> {
   await setViewport(cdp, sessionId, width, height);
   await navigate(cdp, sessionId, `${server.url}/?state=turn&variant=d`);
-  await evaluate(cdp, sessionId, FILL_RIVERS);
   await evaluate(
     cdp,
     sessionId,
@@ -284,73 +251,47 @@ function overlapArea(a: Rect, b: Rect): number {
   return Math.max(0, Math.min(width, height));
 }
 
-function assertRivers(
+/** The pile: every discard the same size, all of them inside the middle. */
+function assertPile(
   measurement: Measurement,
   expected: ReturnType<typeof expectedLayout>,
   label: string,
 ): void {
-  const columns = expected.riverColumns;
-  const rows = expected.riverRows;
-  const capacity = columns * rows;
-  const obstacles: Array<[string, Rect]> = [
-    ["hand band", measurement.rects.handBand!],
-    ["centre", measurement.rects.centre!],
-    ["top seat", measurement.rects.seatTop!],
-    ["left seat", measurement.rects.seatLeft!],
-    ["right seat", measurement.rects.seatRight!],
-  ].filter((entry): entry is [string, Rect] => entry[1] !== null);
-
-  assert.equal(
-    measurement.riverTiles.length,
-    4 * capacity,
-    `${label}: expected a full river of ${capacity} per seat`,
+  const pile = measurement.pile;
+  assert.ok(pile, `${label}: no pile`);
+  assert.ok(
+    Math.abs(pile[2] - expected.pile[2]) <= 1 &&
+      Math.abs(pile[0] - expected.pile[0]) <= 1,
+    `${label}: pile is ${pile}, solver says ${expected.pile}`,
   );
-  for (const tile of measurement.riverTiles) {
-    for (const [name, obstacle] of obstacles) {
-      assert.ok(
-        overlapArea(tile, obstacle) <= 0.5,
-        `${label}: discard ${tile} intersects the ${name}`,
-      );
-    }
-  }
-
-  for (const place of ["top", "left", "right", "bottom"] as const) {
-    const side = place === "left" || place === "right";
-    const zone = measurement.riverZones[place];
-    assert.ok(zone !== null, `${label}: missing ${place} river`);
-    const slots = measurement.riverSlots[place];
-    assert.equal(slots.length, capacity, `${label}: ${place} river slots`);
-    const expectedTile = side
-      ? expected.riverSideTileWidth
-      : expected.riverFlatTileWidth;
-    for (const slot of slots) {
-      const width = side ? slot[3] : slot[2];
-      const height = side ? slot[2] : slot[3];
-      assert.ok(
-        Math.abs(width - expectedTile) <= 0.5,
-        `${label}: ${place} river tile ${width}, solver says ${expectedTile}`,
-      );
-      assert.ok(
-        Math.abs(height / width - 4 / 3) <= 0.02,
-        `${label}: ${place} river tile ${width}x${height} is not 3:4`,
-      );
-      assert.ok(
-        width <= zone[2] / columns + 0.5,
-        `${label}: ${place} tile wider than regionWidth/columns`,
-      );
-      assert.ok(
-        width <= zone[3] / rows + 0.5,
-        `${label}: ${place} tile taller than regionHeight/rows`,
-      );
-    }
-    const first = measurement.firstDiscards[place];
-    assert.ok(first !== null, `${label}: ${place} first discard missing`);
+  assert.ok(
+    measurement.discards.length > 0,
+    `${label}: no discards were thrown`,
+  );
+  const sizes = new Set(
+    measurement.discardSizes.map(([w, h]) => `${w}x${h}`),
+  );
+  assert.equal(
+    sizes.size,
+    1,
+    `${label}: discards differ in size (${[...sizes].join(", ")})`,
+  );
+  const [width, height] = measurement.discardSizes[0]!;
+  assert.ok(
+    Math.abs(width - expected.discardTileWidth) <= 1 &&
+      Math.abs(height - (expected.discardTileWidth * 4) / 3) <= 1,
+    `${label}: discard is ${width}x${height}, solver says ${expected.discardTileWidth}`,
+  );
+  // A tile lies at an angle, so allow its rotated bounding box to poke out by
+  // the diagonal margin, never more.
+  const margin = Math.hypot(width, height) / 2;
+  for (const box of measurement.discards) {
     assert.ok(
-      first[0] >= zone[0] - 1 &&
-        first[1] >= zone[1] - 1 &&
-        first[0] + first[2] <= zone[0] + zone[2] + 1 &&
-        first[1] + first[3] <= zone[1] + zone[3] + 1,
-      `${label}: ${place} first discard escapes its river region`,
+      box[0] >= pile[0] - margin &&
+        box[1] >= pile[1] - margin &&
+        box[0] + box[2] <= pile[0] + pile[2] + margin &&
+        box[1] + box[3] <= pile[1] + pile[3] + margin,
+      `${label}: a discard leaves the pile: ${JSON.stringify(box)}`,
     );
   }
 }
@@ -512,7 +453,6 @@ describe("variant D computed geometry", () => {
     it(`${width}x${height} meets the computed-layout contract`, async () => {
       const expected = expectedLayout(width, height, mode);
       const measurement = await measure(width, height);
-      assertRivers(measurement, expected, `${width}x${height}`);
       assertGeometry(measurement, expected, `${width}x${height}`);
     });
   }
@@ -537,6 +477,38 @@ const MEASURE_CLAIM = `(() => {
     viewport: innerWidth,
   };
 })()`;
+
+describe("variant D pile", () => {
+  for (const [width, height, mode] of [
+    [1440, 900, "desktop"],
+    [390, 844, "phone"],
+  ] as const) {
+    it(`${width}x${height} throws every discard at one size`, async () => {
+      await setViewport(cdp, sessionId, width, height);
+      await navigate(cdp, sessionId, `${server.url}/?state=fishing&variant=d`);
+      // The pile is empty until the fixture has painted its discards.
+      await evaluate(
+        cdp,
+        sessionId,
+        `new Promise((done) => {
+          const started = performance.now();
+          const tick = () => {
+            if (document.querySelectorAll("#pile .discard").length > 0 ||
+                performance.now() - started > 4000) return done(true);
+            setTimeout(tick, 40);
+          };
+          tick();
+        })`,
+      );
+      const measurement = await evaluate<Measurement>(cdp, sessionId, MEASURE);
+      assertPile(
+        measurement,
+        expectedLayout(width, height, mode),
+        `${width}x${height}`,
+      );
+    });
+  }
+});
 
 describe("variant D action row", () => {
   it("offers the calls from the left edge of the reserved row", async () => {

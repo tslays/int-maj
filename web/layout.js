@@ -98,6 +98,7 @@ export function computeLayout(input) {
     handBand: shift(inner.handBand),
     hand: shift(inner.hand),
     centre: shift(inner.centre),
+    pile: shift(inner.pile),
     rivers: shiftAll(inner.rivers),
     seats: shiftAll(inner.seats),
     controls: shift(inner.controls),
@@ -202,6 +203,31 @@ function solveLayout({
       bottom: [0, handY, width, handTileHeight],
     };
     const centre = [centreX, centreY, centreWidth, centreHeight];
+
+    // One messy pile instead of four ordered rivers: everything thrown lands
+    // in the middle, so the discards own the strip between the seats.
+    const pileLeft = Math.max(innerLeft, seats.left[0] + seats.left[2] + boardGap);
+    const pileRight = Math.min(innerRight, seats.right[0] - boardGap);
+    const pileTop = Math.max(stackTop, seats.top[1] + seats.top[3] + boardGap);
+    const pile = [
+      pileLeft,
+      pileTop,
+      pileRight - pileLeft,
+      bottomRiverY + riverHeight - pileTop,
+    ];
+    // One tile size for every discard, sized so a full hand's throws fit the
+    // pile with room to lie at angles without hiding each other.
+    const DISCARD_CAPACITY = 84;
+    const discardTile = Math.max(
+      8,
+      Math.min(
+        Math.round(boardScale),
+        Math.floor(
+          Math.sqrt((pile[2] * pile[3] * 0.62) / (DISCARD_CAPACITY * (4 / 3))),
+        ),
+      ),
+    );
+
     const rivers = {
       top: [centreX, topRiverY, flatRiverWidth, riverHeight],
       bottom: [centreX, bottomRiverY, flatRiverWidth, riverHeight],
@@ -266,6 +292,9 @@ function solveLayout({
       hand,
       centre,
       rivers,
+      pile,
+      discardTileWidth: discardTile,
+      discardTileHeight: (discardTile * 4) / 3,
       seats,
       controls,
       badges,
@@ -453,7 +482,33 @@ function solveLayout({
     bottom: [0, handBandY, width, phone ? height : handBandHeight],
   };
 
-  const centre = [centreX, centreY, centreWidth, centreHeight];
+  const centre = [centreX, centreY, centreWidth, centreHeight];  // One messy pile instead of four ordered rivers: everything thrown lands in
+  // the middle, so the discards own the whole strip between the seats.
+  // Never under a seat: the pile starts clear of the wall it sits beside.
+  const pileLeft = Math.max(leftRiverX, seats.left[0] + seats.left[2] + gap);
+  const pileRight = Math.min(
+    rightRiverX + riverHeight,
+    seats.right[0] - gap,
+  );
+  const pileTop = Math.max(topRiverY, seats.top[1] + seats.top[3] + gap);
+  const pile = [
+    pileLeft,
+    pileTop,
+    pileRight - pileLeft,
+    bottomRiverY + riverHeight - pileTop,
+  ];
+  // One tile size for every discard, sized so a full hand's throws fit the
+  // pile with room to lie at angles without hiding each other.
+  const DISCARD_CAPACITY = 84;
+  const discardTile = Math.max(
+    8,
+    Math.min(
+      Math.round(tileWidth),
+      Math.floor(
+        Math.sqrt((pile[2] * pile[3] * 0.62) / (DISCARD_CAPACITY * (4 / 3))),
+      ),
+    ),
+  );
   const rivers = {
     top: [round((width - riverWidth) / 2), topRiverY, riverWidth, riverHeight],
     bottom: [
@@ -532,6 +587,9 @@ function solveLayout({
     hand,
     centre,
     rivers,
+    pile,
+    discardTileWidth: discardTile,
+    discardTileHeight: (discardTile * 4) / 3,
     seats,
     controls,
     badges,
