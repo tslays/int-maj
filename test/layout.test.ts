@@ -49,14 +49,15 @@ describe("computeLayout", () => {
         // The row spans the screen with its tiles overlapping: fourteen
         // fronts, thirteen overlaps.
         assert.ok(
-          Math.abs(result.handWidth - width) <= 1,
-          `${width}: hand row spans the screen (${result.handWidth})`,
+          Math.abs(result.handWidth - (width - 2 * result.inset)) <= 1,
+          `${width}: hand row spans the board inside the rim (${result.handWidth})`,
         );
         assert.equal(result.handGap, 0);
         assert.ok(
           Math.abs(
             result.handTileWidth -
-              (width + (HAND_TILE_COUNT - 1) * result.handOverlap) / HAND_TILE_COUNT,
+              (width - 2 * result.inset + (HAND_TILE_COUNT - 1) * result.handOverlap) /
+                HAND_TILE_COUNT,
           ) <= 1,
           `${width}: hand tile covers its share plus the overlap`,
         );
@@ -176,22 +177,22 @@ describe("computeLayout", () => {
 
   it("fits fourteen overlapping tiles across the screen on a phone", () => {
     const portrait = layout(390, 844, "phone");
-    assert.ok(Math.abs(portrait.handTileWidth - 390 / (
+    assert.ok(Math.abs(portrait.handTileWidth - (390 - 2 * portrait.inset) / (
       HAND_TILE_COUNT - (HAND_TILE_COUNT - 1) * HAND_OVERLAP
     )) <= 0.5);
     assert.equal(portrait.handGap, 0);
-    assert.ok(Math.abs(portrait.handWidth - 390) <= 1);
+    assert.ok(Math.abs(portrait.handWidth - (390 - 2 * portrait.inset)) <= 1);
     assert.ok(portrait.boardTileWidth! >= 26);
 
     const landscape = layout(844, 390, "phone");
     assert.equal(landscape.handGap, 0);
-    assert.ok(Math.abs(landscape.handWidth - 844) <= 1);
+    assert.ok(Math.abs(landscape.handWidth - (844 - 2 * landscape.inset)) <= 1);
     assert.ok(portrait.handOverlap > 0 && landscape.handOverlap > 0);
   });
 
   it("states the smallest supported phone width", () => {
     const result = layout(390, 600, "phone");
     assert.ok(result.supported);
-    assert.ok(result.handWidth <= 390 + 0.5);
+    assert.ok(result.handWidth <= 390 - 2 * result.inset + 0.5);
   });
 });

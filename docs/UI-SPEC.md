@@ -170,21 +170,17 @@ hand, and the action row above it - the rivers and the face-down racks stay
 because they are the game state, not chrome. The audit fails if any of those
 markers comes back or if `.playfield` regains a border.
 
+### Breathing room (2026-11-05)
+
+Nothing touches the screen edge. The felt still fills the window, but every
+region is solved inside a rim:
+
+    inset = clamp(8, 24, round(min(width, height) * 0.022))
+
+The solver lays the whole table out in `width - 2*inset x height - 2*inset` and
+then shifts every region by `inset`, so the hand, the three walls, the rivers
+and the action row all sit a breath away from the edge. `layout.inset` is
+exported; the board box stays full-bleed because the felt is the background.
+
 ### The hand is one close-pushed wall (2026-11-05)
-
-The hand's tiles sit close: each tile slides left over its right-hand neighbour
-by most of the art's green 3D side, so the white fronts almost connect and only
-a narrow seam of felt shows between them. Only the last tile keeps a visible
-side - exactly what a row of real tiles pushed together looks like, without
-reading as a single fused slab.
-
-    HAND_OVERLAP = 0.17                        // of a tile's width
-    pitch        = hand_tile * (1 - HAND_OVERLAP)
-    hand_tile    = (14 * board_tile + 13 * gap) / (14 - 13 * HAND_OVERLAP)
-
-The row keeps the footprint it had edge to edge, so the hand does not grow, only
-its tiles do. The shadow belongs to the row (`#hand`), never to a single tile: a
-per-tile shadow paints a dark seam wherever two tiles overlap. The drawn tile is
-marked by the row's gap, never by an outline.
-
-### Mouse and touch only (2026-11-05)
+### The hand is one close-pushed wall (2026-11-05)

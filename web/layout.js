@@ -68,7 +68,47 @@ function round(value) {
  * @param {number} input.minTileWidth
  * @param {number} input.maxTileWidth
  */
-export function computeLayout({
+/** Breathing room: the felt still fills the window, but no region may touch
+    the screen edge. One inset for the whole table, from the shorter side. */
+export function tableInset(width, height) {
+  const share = Math.round(Math.min(width, height) * 0.022);
+  return Math.max(8, Math.min(24, share));
+}
+
+/** Runs the whole layout, then pulls every region in by the table inset. */
+export function computeLayout(input) {
+  const { width, height } = input;
+  const inset = tableInset(width, height);
+  const inner = solveLayout({
+    ...input,
+    width: width - 2 * inset,
+    height: height - 2 * inset,
+  });
+  if (inset === 0) return inner;
+  const shift = (rect) => [rect[0] + inset, rect[1] + inset, rect[2], rect[3]];
+  const shiftAll = (group) =>
+    Object.fromEntries(
+      Object.entries(group).map(([key, rect]) => [key, shift(rect)]),
+    );
+  return {
+    ...inner,
+    board: [0, 0, width, height],
+    table: [inset, inset, width - 2 * inset, height - 2 * inset],
+    control: shift(inner.control),
+    handBand: shift(inner.handBand),
+    hand: shift(inner.hand),
+    centre: shift(inner.centre),
+    rivers: shiftAll(inner.rivers),
+    seats: shiftAll(inner.seats),
+    controls: shift(inner.controls),
+    badges: shiftAll(inner.badges),
+    // The floor is a device width, not the inset board.
+    supported: inner.supported || (input.mode === "phone" && width >= 390),
+    inset,
+  };
+}
+
+function solveLayout({
   width,
   height,
   mode,
