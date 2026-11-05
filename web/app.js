@@ -701,7 +701,6 @@ function renderSeat(entry) {
 const DISCARD_BEAT_MS = 1000;
 let discardQueue = [];
 let pendingDiscards = [];
-let claimHeld = false;
 let discardTimer = null;
 /** Discards the viewer has already seen land, per seat. */
 const revealedDiscards = { E: 0, S: 0, W: 0, N: 0 };
@@ -770,9 +769,16 @@ function planDiscards() {
     discardQueue.push(item);
   }
   pendingDiscards = [];
-  if (payload.view.claimWindow !== null && discardQueue.length > 0) {
-    // The offer waits for its tile to land, so the beat never jumps.
-    claimHeld = true;
+  if (payload.view.claimWindow !== null) {
+    // A possible claim interrupts the table at once: everything still queued
+    // lands now, the beat stops, and the offer is the only thing to answer.
+    if (discardTimer !== null) {
+      clearTimeout(discardTimer);
+      discardTimer = null;
+    }
+    for (const item of discardQueue.splice(0)) revealDiscard(item);
+    renderActions();
+    return;
   }
   if (discardQueue.length > 0 && discardTimer === null) scheduleDiscard();
 }
@@ -784,9 +790,6 @@ function scheduleDiscard() {
     revealDiscard();
     if (discardQueue.length > 0) {
       scheduleDiscard();
-    } else if (claimHeld) {
-      claimHeld = false;
-      renderActions();
     }
   }, DISCARD_BEAT_MS);
 }
@@ -1397,7 +1400,7 @@ function renderActions() {
   const element = $("#actions");
   const bar = $("#claim-bar");
 
-  if (isOwnClaimWindow() && !claimHeld) {
+  if (isOwnClaimWindow()) {
     renderClaimBar();
     element.replaceChildren();
     element.classList.remove("has-fishing-preview");
