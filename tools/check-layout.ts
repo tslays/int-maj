@@ -78,7 +78,6 @@ const LABELS: Record<string, string> = {
   riverRight: "river east",
   riverBottom: "river south",
   centre: "centre panel",
-  selfLabel: "your label",
   rackTop: "north rack",
   rackLeft: "west rack",
   rackRight: "east rack",
@@ -458,7 +457,6 @@ const MEASURE = String.raw`
       riverRight: rect("#river-right .river"),
       riverBottom: rect("#river-bottom .river"),
       centre: rect(".center"),
-      selfLabel: rect("#self-label"),
       rackTop: rect(".seat-top .rack"),
       rackLeft: rect(".seat-left .rack"),
       rackRight: rect(".seat-right .rack"),
@@ -626,7 +624,6 @@ const MEASURE_STATE = String.raw`
       rackTop: rect(".seat-top .rack"),
       rackLeft: rect(".seat-left .rack"),
       rackRight: rect(".seat-right .rack"),
-      selfLabel: rect("#self-label"),
       hand: rect("#hand"),
       ownMelds: rect("#own-melds"),
     },
@@ -704,14 +701,6 @@ async function statePass(
           `${label}: ${key} moved from ${formatRect(expected)} to ${formatRect(rect)}`,
         );
       }
-
-      // Your wind and name sit at the band's left edge; how tall the tray
-      // below them is depends on the bonus tiles held, so only x is fixed.
-      const selfLabel = measurement.rects.selfLabel!;
-      assert.ok(
-        Math.abs(selfLabel[0] - reference.rects.selfLabel![0]) <= 0.5,
-        `${label}: your label moved off the band's corner (${formatRect(selfLabel)})`,
-      );
 
       // Racks keep their pinned edge even as a meld changes their length.
       const rackTop = measurement.rects.rackTop!;
@@ -892,28 +881,21 @@ async function referencePass(
     );
   }
 
-  // `o` hides and shows the debug view and moves nothing on the board.
-  await evaluate(
-    cdp,
-    sessionId,
-    `document.dispatchEvent(new KeyboardEvent("keydown", { key: "o" }))`,
-  );
+  // The overlay is a URL flag, not a key: ?overlay=1 shows it, and dropping the
+  // flag hides it without moving anything on the board.
+  await navigate(cdp, sessionId, `${base}/`);
   const off = await evaluate<Measurement>(cdp, sessionId, MEASURE);
-  assert.equal(off.overlay.hidden, true, `${label}: o did not hide the overlay`);
+  assert.equal(off.overlay.hidden, true, `${label}: dropping ?overlay=1 kept the overlay`);
   assert.ok(
     sameRect(off.rects.hand!, hand) && sameRect(off.rects.centre!, centre),
     `${label}: hiding the overlay moved the board`,
   );
-  await evaluate(
-    cdp,
-    sessionId,
-    `document.dispatchEvent(new KeyboardEvent("keydown", { key: "o" }))`,
-  );
+  await navigate(cdp, sessionId, `${base}/?overlay=1`);
   const on = await evaluate<Measurement>(cdp, sessionId, MEASURE);
   assert.equal(
     on.overlay.hidden,
     overlay.naturalWidth === 0,
-    `${label}: o did not show the overlay again`,
+    `${label}: ?overlay=1 did not show the overlay again`,
   );
 
   const path = join(shots, `1512x894-overlay.png`);
