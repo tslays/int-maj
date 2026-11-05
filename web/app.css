@@ -420,8 +420,7 @@ kbd {
   position: absolute;
   z-index: 1;
   inset: var(--frame-top) var(--frame-x) var(--frame-bottom);
-  border: var(--stroke) solid var(--line-frame);
-  border-radius: var(--radius-xs);
+  border: 0;
   pointer-events: none;
 }
 

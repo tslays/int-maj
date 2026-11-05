@@ -787,13 +787,6 @@ function renderSeat(entry) {
   root.style.setProperty("--seat-color", seatColor(entry.seat));
   root.replaceChildren();
 
-  const badge = div("seat-badge");
-  badge.append(
-    span("seat-wind", entry.wind),
-    span("seat-count", String(entry.handCount)),
-  );
-  root.append(badge);
-
   const rack = rackLine(entry);
   const melds = meldRow(entry.melds);
   const bonuses = bonusRow(entry);
@@ -810,11 +803,6 @@ function renderSeat(entry) {
   // The side racks hug the edge; their melds sit inboard of the rack.
   root.append(rack);
   if (melds !== null) root.append(melds);
-}
-
-function renderSelf(entry) {
-  const slot = $("#self-label");
-  fillSeatLabel(slot, entry);
 }
 
 function renderRivers() {
@@ -919,97 +907,11 @@ function applyLayout() {
   setRect("controls", layout.controls);
 }
 
-function renderHandBadge() {
-  const badge = $("#hand-badge");
-  if (badge === null) return;
-  const self = payload.table.find((entry) => entry.isYou);
-  if (self === undefined) {
-    badge.textContent = "";
-    return;
-  }
-  badge.textContent = `${self.wind} ${self.handCount}`;
-  badge.classList.toggle("is-turn", seatIsTurn(self.seat));
-  badge.setAttribute(
-    "aria-label",
-    `${WIND_NAME[self.wind]} wind, ${self.handCount} tiles, you`,
-  );
-  // Sit clear of the hand's left edge, like every opponent badge sits clear of
-  // its rack, rather than at the band's edge.
-  const hand = $("#hand");
-  const parent = badge.offsetParent;
-  if (hand !== null && parent !== null) {
-    const gap =
-      Number.parseFloat(
-        getComputedStyle(document.documentElement).getPropertyValue("--layout-gap"),
-      ) || 2;
-    requestAnimationFrame(() => {
-      const settled = hand.getBoundingClientRect();
-      const hostRect = parent.getBoundingClientRect();
-      const badgeWidth = badge.getBoundingClientRect().width;
-      badge.style.left = `${Math.max(0, settled.left - hostRect.left - badgeWidth - gap)}px`;
-    });
-  }
-}
-
 function renderSeats() {
   for (const entry of payload.table) {
-    if (entry.isYou) renderSelf(entry);
-    else renderSeat(entry);
+    renderSeat(entry);
   }
-  renderHandBadge();
   renderRivers();
-}
-
-function renderCenter() {
-  const view = payload.view;
-  $("#wall-count").textContent = String(view.wallRemaining);
-  const fraction = Math.max(0, Math.min(1, view.wallRemaining / STARTING_WALL));
-  const ring = $("#wall-ring");
-  ring.style.strokeDasharray = String(RING_LENGTH);
-  ring.style.strokeDashoffset = String(RING_LENGTH * (1 - fraction));
-  const dial = $("#wall-dial");
-  dial.setAttribute("aria-label", `${view.wallRemaining} tiles left in the wall`);
-  dial.title = `${view.wallRemaining} tiles left`;
-
-  const meta = $("#center-meta");
-  meta.dataset.wall = String(view.wallRemaining);
-  meta.dataset.round = view.prevailingWind;
-  meta.dataset.current = view.turn === view.seat ? "You" : seatLabel(view.turn);
-  meta.replaceChildren();
-  const round = document.createElement("strong");
-  round.textContent = view.prevailingWind;
-  const hand = document.createElement("strong");
-  hand.textContent = String(view.handNumber);
-  meta.append(round, document.createTextNode(" round · hand "), hand);
-
-  const totals = displayTotals();
-  const cornerFor = { top: "nw", right: "ne", bottom: "se", left: "sw" };
-  const scores = $("#center-scores");
-  scores.replaceChildren();
-  for (const entry of payload.table) {
-    const points = totals[entry.seat] ?? 0;
-    const corner = cornerFor[PLACE[entry.seat]];
-    const cell = div(
-      `center-score corner-${corner}${seatIsTurn(entry.seat) ? " is-turn" : ""}`,
-    );
-    cell.dataset.seat = entry.seat;
-    cell.dataset.wall = String(view.wallRemaining);
-    cell.style.setProperty("--seat-color", seatColor(entry.seat));
-    cell.setAttribute(
-      "aria-label",
-      `${entry.isYou ? "You" : `${WIND_NAME[entry.wind]} bot`}, ` +
-        `${points === 0 ? "0" : signed(points)} points` +
-        `${entry.dealer ? ", dealer" : ""}`,
-    );
-    const wind = span("center-wind", entry.wind);
-    const value = span("center-points", points === 0 ? "0" : signed(points));
-    if (points !== 0) value.classList.add(changeClass(points));
-    const dealerMark = span("center-dealer");
-    dealerMark.title = entry.dealer ? "Dealer" : "";
-    if (!entry.dealer) dealerMark.hidden = true;
-    cell.append(wind, value, dealerMark);
-    scores.append(cell);
-  }
 }
 
 function renderHand() {
@@ -1942,9 +1844,7 @@ function render() {
   $("#board").classList.toggle("is-claiming", isOwnClaimWindow());
   renderMeta();
   renderSeats();
-  renderCenter();
   renderHand();
-  renderHandBadge();
   renderOwnMelds();
   renderOwnBonus();
   renderActions();
