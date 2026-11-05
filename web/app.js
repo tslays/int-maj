@@ -326,7 +326,6 @@ function sendDiscard(tile, index) {
   // Instant: the tile leaves the hand the moment it is thrown, no confirmation
   // and no animation hold.
   if (button instanceof HTMLElement) button.classList.add("is-leaving");
-  window.setTimeout(playTileClack, 220);
   sendAction(action);
   return true;
 }
@@ -759,9 +758,16 @@ function planDiscards() {
   if (payload === null) return;
   // Queue whatever this answer threw, in the order the events name them.
   for (const item of pendingDiscards) {
-    if (!discardQueue.some((queued) => queued.key === item.key)) {
-      discardQueue.push(item);
+    // A tile already on the table is history, not a throw: queueing it again
+    // would play a landing for nothing.
+    if (pileKeys.some((placed) => placed.key === item.key)) continue;
+    if (discardQueue.some((queued) => queued.key === item.key)) continue;
+    if (item.seat === payload.seat) {
+      // Your own throw lands at once; the table answers on the beat.
+      revealDiscard(item);
+      continue;
     }
+    discardQueue.push(item);
   }
   pendingDiscards = [];
   if (payload.view.claimWindow !== null && discardQueue.length > 0) {
@@ -788,6 +794,7 @@ function scheduleDiscard() {
 function revealDiscard(item) {
   const next = item ?? discardQueue.shift();
   if (next === undefined) return;
+  if (pileKeys.some((placed) => placed.key === next.key)) return;
   revealedDiscards[next.seat] = (revealedDiscards[next.seat] ?? 0) + 1;
   pileKeys.push(next);
   addToPile(next);
