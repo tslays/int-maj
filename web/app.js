@@ -2399,11 +2399,6 @@ function setRail(open) {
 
 function bindEvents() {
   $("#new-game").addEventListener("click", () => newGame(randomSeed()));
-  $("#hand-toggle").addEventListener("click", () => {
-    const collapsed = document.documentElement.classList.toggle("hand-collapsed");
-    $("#hand-toggle").setAttribute("aria-expanded", String(!collapsed));
-    $("#hand-toggle").setAttribute("aria-label", collapsed ? "Expand hand" : "Collapse hand");
-  });
   $("#undo").addEventListener("click", undo);
   $("#rail-hide").addEventListener("click", () => setRail(false));
   $("#rail-show").addEventListener("click", () => setRail(true));
