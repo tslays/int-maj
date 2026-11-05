@@ -6,6 +6,7 @@
  *   - the felt is bare: no wind letters, seat counts, wall dial, round meta,
  *     centre scores or table frame;
  *   - the hand is always visible and the action row holds one block at a time;
+ *   - each opponent shows 13 or 14 face-down backs inside its seat band;
  *   - the tile face is at least 26px wide;
  *   - nothing leaves the board box.
  *
@@ -40,6 +41,17 @@ interface Measurement {
   readonly handClientWidth: number;
   readonly lastTileDrawn: boolean;
   readonly riverTiles: readonly Rect[];
+  readonly racks: Readonly<
+    Record<
+      "top" | "left" | "right",
+      {
+        readonly seat: Rect | null;
+        readonly count: number;
+        readonly boxes: readonly Rect[];
+        readonly visible: string;
+      }
+    >
+  >;
   readonly riverZones: Readonly<Record<"top" | "left" | "right" | "bottom", Rect | null>>;
   readonly riverSlots: Readonly<Record<"top" | "left" | "right" | "bottom", readonly Rect[]>>;
   readonly firstDiscards: Readonly<Record<"top" | "left" | "right" | "bottom", Rect | null>>;
@@ -181,8 +193,25 @@ const MEASURE = `(() => {
   }
   const riverTiles = [...document.querySelectorAll(".river .tile")].map(R);
 
+  // The three opponents keep their hands face down: one back per tile, all of
+  // them inside the seat's own band.
+  const racks = {};
+  for (const place of ["top", "left", "right"]) {
+    const seat = document.querySelector("#seat-" + place);
+    const backs = seat === null ? [] : [...seat.querySelectorAll(".tile-back")];
+    racks[place] = {
+      seat: R(seat),
+      count: backs.length,
+      boxes: backs.map(R),
+      visible: backs.length === 0
+        ? "none"
+        : getComputedStyle(backs[0]).visibility,
+    };
+  }
+
   return {
     riverTiles,
+    racks,
     riverZones,
     riverSlots,
     firstDiscards,
@@ -348,6 +377,30 @@ function assertActionRow(measurement: Measurement, label: string): void {
     collapse, hide or scroll it away. */
 /** The board carries no wind letters, seat counts, wall dial, round meta or
     table frame: the felt is bare, and only the hand and the action row speak. */
+/** Every opponent keeps a visible wall of 13 or 14 face-down tiles, and no
+    back may sit outside its seat's band. */
+function assertOpponentHands(measurement: Measurement, label: string): void {
+  for (const place of ["top", "left", "right"] as const) {
+    const rack = measurement.racks[place];
+    assert.ok(rack.seat, `${label}: no ${place} seat`);
+    assert.ok(
+      rack.count === 13 || rack.count === 14,
+      `${label}: ${place} shows ${rack.count} backs`,
+    );
+    assert.equal(rack.visible, "visible", `${label}: ${place} rack is hidden`);
+    for (const box of rack.boxes) {
+      assert.ok(
+        box[0] >= rack.seat[0] - 1 &&
+          box[1] >= rack.seat[1] - 1 &&
+          box[0] + box[2] <= rack.seat[0] + rack.seat[2] + 1 &&
+          box[1] + box[3] <= rack.seat[1] + rack.seat[3] + 1,
+        `${label}: a ${place} back sits outside its seat: ${JSON.stringify(box)}`,
+      );
+    }
+  }
+}
+
+
 function assertNoMarkers(measurement: Measurement, label: string): void {
   assert.equal(measurement.markers, 0, `${label}: seat and centre markers are back`);
   assert.equal(measurement.frameBorder, "0px", `${label}: the table frame is back`);
@@ -378,6 +431,7 @@ function assertGeometry(
   assertActionRow(measurement, label);
   assertHandAlwaysVisible(measurement, label);
   assertNoMarkers(measurement, label);
+  assertOpponentHands(measurement, label);
 
   if (expected.mode === "phone") {
     // Board regions only: the hand and controls are the bottom overlay zone.

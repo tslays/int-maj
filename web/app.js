@@ -867,11 +867,20 @@ function applyLayout() {
   root.setProperty("--layout-hand-gap", px(layout.handGap));
   root.setProperty("--layout-tile-w", px(layout.tileWidth));
   root.setProperty("--layout-tile-h", px(layout.tileHeight));
-  root.setProperty("--layout-back-w", px(layout.tileWidth * 0.73));
+  // The seat bands are computed from these two numbers, so the rack takes its
+  // size from the solver rather than from the hand scale.
   const sideHeight = Math.min(layout.seats.left[3], layout.seats.right[3]);
+  const backHeight = layout.rackHeight ?? layout.tileWidth * 0.96;
   root.setProperty(
-    "--layout-back-h",
-    px(Math.min(layout.tileWidth * 0.96, (sideHeight - 12) / 13)),
+    "--layout-back-w",
+    px(layout.rackWidth ?? layout.tileWidth * 0.73),
+  );
+  root.setProperty("--layout-back-h", px(backHeight));
+  // The side stacks run down the screen, so their thirteen backs may have to
+  // be shorter than the top row's to stay inside the seat band.
+  root.setProperty(
+    "--layout-back-side-h",
+    px(Math.min(backHeight, (sideHeight - 12) / 13)),
   );
   root.setProperty("--river-columns", String(layout.riverColumns));
   root.setProperty("--river-rows", String(layout.riverRows));

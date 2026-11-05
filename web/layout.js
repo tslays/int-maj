@@ -211,6 +211,8 @@ export function computeLayout({
       badges,
       tileWidth: handScale,
       boardTileWidth: boardScale,
+      rackWidth,
+      rackHeight,
       handTileWidth: handScale,
       tileHeight: handTileHeight,
       gap: 2,
@@ -346,9 +348,9 @@ export function computeLayout({
   const control = phone ? [0, height, width, height] : [0, handBandY, width, handBand[3]];
   const seats = {
     top: [
-      round((width - (13 * rackWidth + 12)) / 2),
+      round((width - (13 * sideSeatWidth + 12)) / 2),
       0,
-      round(13 * rackWidth + 12),
+      13 * sideSeatWidth + 12,
       topSeatHeight,
     ],
     left: [
@@ -448,6 +450,8 @@ export function computeLayout({
     seats,
     controls,
     badges,
+    rackWidth: sideSeatWidth,
+    rackHeight,
     tileWidth,
     tileHeight,
     gap,
