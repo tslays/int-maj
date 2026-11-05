@@ -217,13 +217,19 @@ function solveLayout({
     ];
     // One tile size for every discard, sized so a full hand's throws fit the
     // pile with room to lie at angles without hiding each other.
-    const DISCARD_CAPACITY = 84;
+    const DISCARD_CAPACITY = 40;
+    // The heap is a circle inside the pile; size the tile so a full hand's
+    // throws fill it without ever touching (each needs a disc of its diagonal).
+    const heapRadius = Math.sqrt((pile[2] * pile[3]) / Math.PI);
     const discardTile = Math.max(
       8,
       Math.min(
         Math.round(boardScale),
         Math.floor(
-          Math.sqrt((pile[2] * pile[3] * 0.34) / (DISCARD_CAPACITY * (4 / 3))),
+          Math.sqrt(
+            (Math.PI * heapRadius * heapRadius * 0.55) /
+              (DISCARD_CAPACITY * 2.18),
+          ),
         ),
       ),
     );
@@ -499,13 +505,18 @@ function solveLayout({
   ];
   // One tile size for every discard, sized so a full hand's throws fit the
   // pile with room to lie at angles without hiding each other.
-  const DISCARD_CAPACITY = 84;
+  const DISCARD_CAPACITY = 40;
+  // The heap is a circle inside the pile; size the tile so a full hand's throws
+  // fill it without ever touching (each needs a disc of its own diagonal).
+  const heapRadius = Math.sqrt((pile[2] * pile[3]) / Math.PI);
   const discardTile = Math.max(
     8,
     Math.min(
       Math.round(tileWidth),
       Math.floor(
-        Math.sqrt((pile[2] * pile[3] * 0.34) / (DISCARD_CAPACITY * (4 / 3))),
+        Math.sqrt(
+          (Math.PI * heapRadius * heapRadius * 0.55) / (DISCARD_CAPACITY * 2.18),
+        ),
       ),
     ),
   );

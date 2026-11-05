@@ -43,6 +43,7 @@ interface Measurement {
   readonly pile: Rect | null;
   readonly discards: readonly Rect[];
   readonly discardSizes: readonly (readonly [number, number])[];
+  readonly discardAngles: readonly number[];
   readonly racks: Readonly<
     Record<
       "top" | "left" | "right",
@@ -178,6 +179,10 @@ const MEASURE = `(() => {
   const discardTiles = [...document.querySelectorAll("#pile .discard")];
   const discards = discardTiles.map(R);
   const discardSizes = discardTiles.map((tile) => [tile.offsetWidth, tile.offsetHeight]);
+  const discardAngles = discardTiles.map((tile) => {
+    const match = tile.style.transform.match(/-?[0-9.]+/);
+    return match === null ? 0 : Number.parseFloat(match[0]);
+  });
 
   // The three opponents keep their hands face down: one back per tile, all of
   // them inside the seat's own band.
@@ -199,6 +204,7 @@ const MEASURE = `(() => {
     pile,
     discards,
     discardSizes,
+    discardAngles,
     racks,
     rects,
     overlaps: collisions,
@@ -277,25 +283,46 @@ function assertPile(
     `${label}: discards differ in size (${[...sizes].join(", ")})`,
   );
   const [width, height] = measurement.discardSizes[0]!;
+  // The heap takes the solver's size when it fits and shrinks only to keep the
+  // no-overlap promise on a short window.
   assert.ok(
-    Math.abs(width - expected.discardTileWidth) <= 1 &&
-      Math.abs(height - (expected.discardTileWidth * 4) / 3) <= 1,
+    width <= expected.discardTileWidth + 1 && width >= expected.discardTileWidth * 0.5,
     `${label}: discard is ${width}x${height}, solver says ${expected.discardTileWidth}`,
   );
-  // No two discards may touch: their centres are at least a diagonal apart,
-  // which holds whatever angle each one lies at.
-  const diagonal = Math.hypot(width, height);
-  for (let first = 0; first < measurement.discards.length; first++) {
-    for (let second = first + 1; second < measurement.discards.length; second++) {
-      const a = measurement.discards[first]!;
-      const b = measurement.discards[second]!;
-      const gap = Math.hypot(
-        a[0] + a[2] / 2 - (b[0] + b[2] / 2),
-        a[1] + a[3] / 2 - (b[1] + b[3] / 2),
-      );
+  assert.ok(
+    Math.abs(height / width - 4 / 3) <= 0.05,
+    `${label}: discard is ${width}x${height}, not 3:4`,
+  );
+  // No two discards may overlap, whatever angle each one lies at.
+  const boxesAt = measurement.discards.map((box, index) => ({
+    cx: box[0] + box[2] / 2,
+    cy: box[1] + box[3] / 2,
+    hw: measurement.discardSizes[index]![0] / 2,
+    hh: measurement.discardSizes[index]![1] / 2,
+    angle: ((measurement.discardAngles[index] ?? 0) * Math.PI) / 180,
+  }));
+  const rotatedOverlap = (a: (typeof boxesAt)[number], b: (typeof boxesAt)[number]) => {
+    for (const axis of [a.angle, b.angle, a.angle + Math.PI / 2, b.angle + Math.PI / 2]) {
+      const cos = Math.cos(axis);
+      const sin = Math.sin(axis);
+      const project = (box: (typeof boxesAt)[number]) => {
+        const extent =
+          box.hw * Math.abs(Math.cos(box.angle - axis)) +
+          box.hh * Math.abs(Math.sin(box.angle - axis));
+        const centre = box.cx * cos + box.cy * sin;
+        return [centre - extent, centre + extent] as const;
+      };
+      const [aMin, aMax] = project(a);
+      const [bMin, bMax] = project(b);
+      if (aMax <= bMin + 0.01 || bMax <= aMin + 0.01) return false;
+    }
+    return true;
+  };
+  for (let first = 0; first < boxesAt.length; first++) {
+    for (let second = first + 1; second < boxesAt.length; second++) {
       assert.ok(
-        gap >= diagonal * 0.98,
-        `${label}: two discards overlap (centres ${gap.toFixed(1)} apart, diagonal ${diagonal.toFixed(1)})`,
+        !rotatedOverlap(boxesAt[first]!, boxesAt[second]!),
+        `${label}: discards ${first} and ${second} overlap`,
       );
     }
   }

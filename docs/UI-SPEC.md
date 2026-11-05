@@ -182,24 +182,29 @@ then shifts every region by `inset`, so the hand, the three walls, the rivers
 and the action row all sit a breath away from the edge. `layout.inset` is
 exported; the board box stays full-bleed because the felt is the background.
 
-### One round pile (2026-11-05)
+### One round heap (2026-11-05)
 
-There are no rivers: discards go into one round heap in the middle, and no two
-discards may ever touch.
+There are no rivers: discards go into one heap in the middle. It is a heap, not
+a pattern:
 
-    discard tile = min(board_tile, sqrt(pile_area * 0.34 / (84 * 4/3)))
-    slots        = Vogel sunflower inside the pile's circle, accepted greedily
-                   so every centre is at least one tile diagonal from its others
-    seat wedge   = top -90deg, right 0deg, bottom +90deg, left 180deg
+    tile      = min(board_tile, sqrt(pi * r^2 * 0.55 / (40 * 2.18)))   // r = the heap's radius
+    spots     = a jittered grid inside the pile's ellipse, ordered from the centre
+    angle     = random +-26 degrees, trying a few turns per spot
+    fit       = rotated-rectangle (SAT) test with a half-pixel gap
+    seat side = top -90deg, right 0deg, bottom +90deg, left 180deg
 
-A throw takes the innermost free slot in its own wedge (widening to a third,
-then to half the circle only when that wedge is full), so the heap grows out of
-the centre in rings while each player's tiles stay on their side: yours south,
-the right-hand player's east, the left-hand player's west, the far seat's north.
-Because the acceptance test is the diagonal, rotation can never cause an
-overlap - the audit fails if any two centres come closer than that.
+Each throw takes the innermost free spot on its own side (widening only when
+that side is full), so the heap builds from the middle and each player's tiles
+stay on their side: yours south, the right-hand player's east, the left-hand
+player's west, the far seat's north. A tile may lie at any angle; no two discs
+ever overlap, and the audit proves it with a rotated-rectangle test.
 
-Your own throw animates too: it leaves the hand, flies to its slot, and clacks.
+The heap settles on every throw: the layout is re-solved with a new seed, so the
+tiles already down shift a couple of pixels (animated), like a real pile taking
+the weight of the next tile. If a window is too short to hold a long hand at the
+solver's size, the heap shrinks its tile rather than overlap.
+
+Your own throw animates too: it leaves the hand, flies to its spot and clacks.
 
 ### The discard rhythm (2026-11-05)
 ### The discard rhythm (2026-11-05)
