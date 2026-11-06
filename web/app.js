@@ -385,6 +385,9 @@ function sendAction(action, delay = 0) {
  */
 function autoDraw() {
   if (payload === null || busy || payload.outcome !== null) return;
+  // The table is still answering: the draw is taken once its last throw has
+  // landed and settled, never while a tile is still in the air.
+  if (discardQueue.length > 0 || discardTimer !== null || claimHeld) return;
   const draw = payload.legalActions.find((action) => action.type === "Draw");
   if (draw === undefined) return;
   sendAction(draw);
@@ -936,7 +939,10 @@ function scheduleDiscard() {
     // The tile is down, but the throw is not finished: wait for the ghost to
     // land and the frame to fade before the table answers, so a drawn tile can
     // never appear while the seat to your left is still discarding.
-    setTimeout(stepTable, DISCARD_SETTLE_MS);
+    setTimeout(() => {
+      autoDraw();
+      stepTable();
+    }, DISCARD_SETTLE_MS);
   }, beat);
 }
 
