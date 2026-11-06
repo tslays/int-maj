@@ -15,7 +15,7 @@
 import type { Action } from "./actions.ts";
 import type { Event } from "./events.ts";
 import { apply, isApplyError, newGame, nextHand, type ApplyOk } from "./reduce.ts";
-import type { GameState } from "./state.ts";
+import type { GameState, Seat } from "./state.ts";
 
 export type ReplayStep = Action | { readonly type: "NextHand" };
 
@@ -107,8 +107,17 @@ function autoPass(
   return current;
 }
 
-export function replaySteps(seed: string | number, steps: readonly ReplayStep[]): ApplyOk {
-  const start = newGame(seed);
+export interface ReplayOptions {
+  /** The hand's first dealer, when the caller fixed it rather than the seed. */
+  readonly dealer?: Seat;
+}
+
+export function replaySteps(
+  seed: string | number,
+  steps: readonly ReplayStep[],
+  options: ReplayOptions = {},
+): ApplyOk {
+  const start = newGame(seed, options.dealer === undefined ? {} : { dealer: options.dealer });
   let state = start.state;
   const events: Event[] = [...start.events];
 
@@ -134,6 +143,10 @@ export function replaySteps(seed: string | number, steps: readonly ReplayStep[])
 }
 
 /** Convenience: seed + event log -> the same state and a byte-identical log. */
-export function replayEventLog(seed: string | number, log: readonly Event[]): ApplyOk {
-  return replaySteps(seed, stepsFromEvents(log));
+export function replayEventLog(
+  seed: string | number,
+  log: readonly Event[],
+  options: ReplayOptions = {},
+): ApplyOk {
+  return replaySteps(seed, stepsFromEvents(log), options);
 }
