@@ -255,3 +255,26 @@ The back art (`web/tiles/back.svg`) is a bone body with a glazed green diamond
 lattice, a bone rim and two bevel strips: at 30 px it reads as a woven tile back
 rather than a flat card, and the light/dark strips give a turned wall a top and
 a bottom.
+
+### Every call is spoken (2026-11-06)
+
+A pung, kong, chow, fishing declaration or a win is announced once, in the
+middle of the heap, as one word in capitals - PUNG, KONG, CHOW, FISHING,
+MAHJONG - for 720 ms. The pill is centred on the pile rect (so it is inside the
+board at every viewport) and takes no pointer events.
+
+The word is a beat of the table, not a toast: while it is up nothing else moves
+(`callHeld` blocks the beat, the automatic draw, the step loop and taps), and
+the announce timer resumes the table itself. The caller's meld row lights at
+the same moment and the two-knock cue plays, so the word, the meld and the
+sound are one event. History never speaks: a review state or a resumed game
+carries the whole log, and only live events announce.
+
+Timing, for one round with a claim on your throw:
+
+    your throw lands        0 ms
+    settle                 380 ms
+    claim answered         ~385 ms   word + meld light + cue
+    word clears            1105 ms
+    table answers          ~1110 ms  (the claimer's next decision)
+    next throw lands       2110 ms

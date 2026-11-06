@@ -322,6 +322,11 @@ describe("table rhythm", () => {
             t: Math.round(performance.now() - window.__tapeStart),
             tiles: document.querySelectorAll("#pile .discard").length,
             hand: document.querySelectorAll("#hand .hand-tile").length,
+            call: (() => {
+              const label = document.querySelector("#call-out");
+              if (label === null || label.hidden) return "";
+              return label.textContent.trim().toUpperCase();
+            })(),
           });
         }, 40);
         return true;
@@ -359,7 +364,9 @@ describe("table rhythm", () => {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
       await new Promise((resolve) => setTimeout(resolve, 200));
-      const tape = await evaluate<{ t: number; tiles: number; hand: number }[]>(
+      const tape = await evaluate<
+        { t: number; tiles: number; hand: number; call: string }[]
+      >(
         cdp,
         sessionId,
         `clearInterval(window.__tapeTimer); window.__tape`,
@@ -382,6 +389,23 @@ describe("table rhythm", () => {
         if (tape[index]!.tiles > tape[index - 1]!.tiles) landingAt = tape[index]!.t;
       }
       assert.ok(landingAt >= 0, "the round threw at least one tile");
+
+      // The call the round made is spoken once, in one word, before the table
+      // moves on - and the draw waits for it to clear.
+      const called = tape.find((sample) => sample.call !== "");
+      assert.ok(called !== undefined, "the round's call is announced");
+      assert.match(
+        called.call,
+        /^(PUNG|KONG|CHOW|FISHING|MAHJONG)$/,
+        `the announcement reads "${called.call}"`,
+      );
+      const cleared = tape.findIndex(
+        (sample, index) => index > tape.indexOf(called) && sample.call === "",
+      );
+      assert.ok(
+        cleared > 0 && drawAt >= tape[cleared]!.t,
+        `the tile arrived at ${drawAt} ms, before the call cleared at ${cleared > 0 ? tape[cleared]!.t : "never"} ms`,
+      );
       assert.ok(
         drawAt - landingAt >= DISCARD_SETTLE_MS - 80,
         `the tile arrived ${drawAt - landingAt} ms after the last throw landed`,

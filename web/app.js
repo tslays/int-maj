@@ -174,23 +174,61 @@ function playMeldCue(context) {
 }
 
 /** One cue per payload, never before the first gesture, silent when muted. */
-function cueMelds(lines) {
+/**
+ * One call, one word, one beat. A pung, kong, chow, fishing declaration or a
+ * win is spoken in the middle of the table for CALL_MS, and nothing else moves
+ * until it has been read: the throw that answered it, the meld and the word
+ * are then one moment in the player's head.
+ */
+const CALL_MS = 720;
+let callHeld = false;
+let callTimer = null;
+
+/** The word a call speaks, taken from the event log's own wording. */
+function callWord(line) {
+  const claim = /^\w claims (pung|kong|chow|mahjong)\b/.exec(line);
+  if (claim !== null) return claim[1].toUpperCase();
+  if (/ announces fishing\b/.test(line)) return "FISHING";
+  if (/ wins\b/.test(line) || /goes Mah Jong/.test(line)) return "MAHJONG";
+  return null;
+}
+
+function announceCalls(lines) {
   // A review state or a resumed game arrives with the whole log: those calls
   // are history, and nothing happened just now.
   if (payload === null || eventsAreHistory || !Array.isArray(lines)) return;
   for (const line of lines) {
-    const match = /^([ESWN]) claims /.exec(line);
-    if (match === null) continue;
-    const seat = match[1];
-    if (seat === payload.seat) continue;
-    lightCall(seat);
-    if (!muted && audioContext !== null && audioContext.state === "running") {
-      playMeldCue(audioContext);
+    const word = callWord(line);
+    if (word === null) continue;
+    const match = /^([ESWN]) /.exec(line);
+    const seat = match === null ? null : match[1];
+    if (seat !== null && seat !== payload.seat) {
+      lightCall(seat);
+      if (!muted && audioContext !== null && audioContext.state === "running") {
+        playMeldCue(audioContext);
+      }
     }
+    showCall(word);
     return;
   }
 }
 
+function showCall(word) {
+  const element = $("#call-out");
+  if (element === null) return;
+  const label = element.querySelector("span");
+  if (label !== null) label.textContent = word;
+  element.hidden = false;
+  callHeld = true;
+  if (callTimer !== null) clearTimeout(callTimer);
+  callTimer = window.setTimeout(() => {
+    callTimer = null;
+    element.hidden = true;
+    callHeld = false;
+    autoDraw();
+    stepTable();
+  }, CALL_MS);
+}
 /** Lights the calling seat for a beat, restarting the animation each call. */
 const CALL_FLASH_MS = 950;
 let callSeat = null;
@@ -327,7 +365,7 @@ function applyResponse(data, note, replaceLog = false) {
   if (Array.isArray(data.events)) {
     for (const line of data.events) log(line);
     pendingDiscards = discardsFromEvents(data.events);
-    cueMelds(data.events);
+    announceCalls(data.events);
   }
   render();
   // The table answers one decision at a time; ask for the next one once this
@@ -387,7 +425,7 @@ function autoDraw() {
   if (payload === null || busy || payload.outcome !== null) return;
   // The table is still answering: the draw is taken once its last throw has
   // landed and settled, never while a tile is still in the air.
-  if (discardQueue.length > 0 || discardTimer !== null || claimHeld) return;
+  if (discardQueue.length > 0 || discardTimer !== null || claimHeld || callHeld) return;
   const draw = payload.legalActions.find((action) => action.type === "Draw");
   if (draw === undefined) return;
   sendAction(draw);
@@ -958,7 +996,7 @@ async function stepTable() {
     stepStalled = false;
     return;
   }
-  if (discardQueue.length > 0 || discardTimer !== null || claimHeld) return;
+  if (discardQueue.length > 0 || discardTimer !== null || claimHeld || callHeld) return;
   if (stepStalled) return;
   const game = payload.game;
   busy = true;
@@ -2364,7 +2402,7 @@ function onHandClick(index) {
   if (payload === null) return;
   // The table is still answering: the turn has not come back to you yet, so a
   // tap now would be a discard out of turn.
-  if (discardQueue.length > 0 || discardTimer !== null || claimHeld) return;
+  if (discardQueue.length > 0 || discardTimer !== null || claimHeld || callHeld) return;
   // A click that lands while a request is in flight (the automatic draw) is
   // remembered and applied the moment the table answers, so a fast click is
   // never swallowed.
@@ -2387,7 +2425,7 @@ function drawnIndex() {
 
 function discardAt(index) {
   if (payload === null || busy) return;
-  if (discardQueue.length > 0 || discardTimer !== null || claimHeld) return;
+  if (discardQueue.length > 0 || discardTimer !== null || claimHeld || callHeld) return;
   const tile = displayHand()[index];
   if (tile === undefined) return;
   if (sendDiscard(tile, index)) return;
