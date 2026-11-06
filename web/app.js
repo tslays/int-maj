@@ -141,6 +141,76 @@ function maybePlayClaimCue() {
   playClaimCue(audioContext);
 }
 
+/**
+ * A CPU call has its own voice: two low wooden knocks over a short body note,
+ * unmistakably not the single tile landing and not the claim offer.
+ */
+function playMeldCue(context) {
+  const now = context.currentTime;
+  const gain = context.createGain();
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.07, now + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+  gain.connect(context.destination);
+
+  for (const [offset, frequency] of [
+    [0, 220],
+    [0.085, 293.66],
+  ]) {
+    const knock = context.createOscillator();
+    knock.type = "triangle";
+    knock.frequency.setValueAtTime(frequency, now + offset);
+    knock.connect(gain);
+    knock.start(now + offset);
+    knock.stop(now + offset + 0.12);
+  }
+
+  const body = context.createOscillator();
+  body.type = "sine";
+  body.frequency.setValueAtTime(146.83, now + 0.02);
+  body.connect(gain);
+  body.start(now + 0.02);
+  body.stop(now + 0.27);
+}
+
+/** One cue per payload, never before the first gesture, silent when muted. */
+function cueMelds(lines) {
+  // A review state or a resumed game arrives with the whole log: those calls
+  // are history, and nothing happened just now.
+  if (payload === null || eventsAreHistory || !Array.isArray(lines)) return;
+  for (const line of lines) {
+    const match = /^([ESWN]) claims /.exec(line);
+    if (match === null) continue;
+    const seat = match[1];
+    if (seat === payload.seat) continue;
+    lightCall(seat);
+    if (!muted && audioContext !== null && audioContext.state === "running") {
+      playMeldCue(audioContext);
+    }
+    return;
+  }
+}
+
+/** Lights the calling seat for a beat, restarting the animation each call. */
+const CALL_FLASH_MS = 950;
+let callSeat = null;
+let callUntil = 0;
+
+/**
+ * The call lights its seat for a beat. The seats are redrawn on every payload,
+ * so the light is state, not a class a later redraw would wipe.
+ */
+function lightCall(seat) {
+  callSeat = seat;
+  callUntil = performance.now() + CALL_FLASH_MS;
+  renderSeats();
+  window.setTimeout(() => {
+    if (performance.now() < callUntil) return;
+    callSeat = null;
+    renderSeats();
+  }, CALL_FLASH_MS + 20);
+}
+
 /* ------------------------------------------------------------ elements */
 
 function div(className = "") {
@@ -257,6 +327,7 @@ function applyResponse(data, note, replaceLog = false) {
   if (Array.isArray(data.events)) {
     for (const line of data.events) log(line);
     pendingDiscards = discardsFromEvents(data.events);
+    cueMelds(data.events);
   }
   render();
   // The table answers one decision at a time; ask for the next one once this
@@ -673,6 +744,10 @@ function renderSeat(entry) {
   root.dataset.wind = entry.wind;
   root.dataset.count = String(entry.handCount);
   root.style.setProperty("--seat-color", seatColor(entry.seat));
+  // A call stays lit across the redraws the payload causes.
+  if (callSeat === entry.seat && performance.now() < callUntil) {
+    root.classList.add("is-calling");
+  }
   root.replaceChildren();
 
   const rack = rackLine(entry);
@@ -1090,6 +1165,7 @@ function applyLayout() {
   setRect("seat-left", layout.seats.left);
   setRect("seat-right", layout.seats.right);
   setRect("controls", layout.controls);
+  setRect("claim", layout.claim);
 }
 
 function renderSeats() {
@@ -1417,9 +1493,9 @@ function makeChowVariant(action) {
 }
 
 /**
- * Two decisions, fixed at the bottom centre: Claim (the best legal claim,
- * Mahjong first) and Dismiss. If a chow has several runs, its variants are
- * clickable tile groups under the row; Enter always takes the first.
+ * Two decisions in one panel: Claim on top, Dismiss under it so the thumb
+ * reaches the common answer first. A chow with several runs puts its variants
+ * beside Dismiss; Enter always takes the best claim.
  */
 function renderClaimBar() {
   const bar = $("#claim-bar");
@@ -1442,39 +1518,37 @@ function renderClaimBar() {
       type: "Pass",
       seat: view.seat,
     };
+  const dismiss = makeClaimButton(pass, {
+    label: "Dismiss",
+    className: "claim-pass",
+  });
 
-  const row = div("claim-row");
-  row.append(head);
-  if (claim !== null) {
-    row.append(
-      makeClaimButton(claim, {
-        primary: true,
-        label: "Claim",
-        tiles:
-          claim.type === "Claim" && claim.kind !== "mahjong" ? claim.tiles : null,
-      }),
-    );
+  if (claim === null) {
+    // Nothing to take: one decision, in the row nearest the thumb.
+    const only = div("claim-row claim-secondary");
+    only.append(dismiss);
+    bar.append(only);
+    maybePlayClaimCue();
+    return;
   }
-  row.append(
-    makeClaimButton(pass, {
-      label: "Dismiss",
-      className: "claim-pass",
-    }),
-  );
-  bar.append(row);
 
-  if (
-    claim !== null &&
-    claim.type === "Claim" &&
-    claim.kind === "chow" &&
-    chowActions().length > 1
-  ) {
+  const primary = div("claim-row claim-primary");
+  primary.append(head, makeClaimButton(claim, {
+    primary: true,
+    label: "Claim",
+    tiles:
+      claim.type === "Claim" && claim.kind !== "mahjong" ? claim.tiles : null,
+  }));
+
+  const secondary = div("claim-row claim-secondary");
+  secondary.append(dismiss);
+  if (claim.type === "Claim" && claim.kind === "chow" && chowActions().length > 1) {
     const variants = div("claim-variants");
-    variants.append(span("claim-label", "Chow"));
     for (const action of chowActions()) variants.append(makeChowVariant(action));
-    bar.append(variants);
+    secondary.append(variants);
   }
 
+  bar.append(primary, secondary);
   maybePlayClaimCue();
 }
 

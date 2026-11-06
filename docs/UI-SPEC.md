@@ -151,14 +151,18 @@ The row directly above the hand is the only place a control may appear:
 
     controls  = full board width x control_h, sitting on top of the hand band
     throw     = last child of the row, flush right (margin-left: auto)
-    calls     = the same row, filled from the left edge
-    claim     = the same row, so a claim cannot open a second overlay
+    claim     = the row plus the one above it, so a claim cannot open a second
+                overlay; Dismiss is the lower row, nearest the thumb
+    claim box = [controls.x, controls.y - control_h - gap, controls.w, 2*control_h + gap]
 
 `control_h` is the reserved height, so a control's box must equal it rather
 than the hand-rolled button height - a 37 px button in a 34 px row leaks 1.5 px
-into the hand band. On a phone a chow offer plus its variants is wider than the
-screen: the row keeps its height and scrolls sideways instead of painting over
-the felt, so the primary `Claim` and `Dismiss` stay visible without scrolling.
+into the hand band. Two thumb-sized calls do not fit one row, so `layout.claim`
+is solved and exported: the panel takes both, Claim on top and Dismiss under
+it, and the felt stops above the panel (`stackBottom` is the panel's top, not
+the row's) so no discard can ever sit under a call. On a phone a chow offer
+with several runs scrolls sideways inside its own row rather than growing the
+panel.
 
 ### Bare felt (2026-11-05)
 
@@ -208,3 +212,25 @@ Your own throw animates too: it leaves the hand, flies to its spot and clacks.
 
 ### The discard rhythm (2026-11-05)
 ### The discard rhythm (2026-11-05)
+### The hand's reading order (2026-11-06)
+
+The tile you just drew is the rightmost tile of the hand, whatever its rank,
+until you discard; only then does it sort back into the wall. `displayHand()`
+moves `lastDraw.tile` to the end and the last tile carries `is-drawn` and the
+`just drawn` label. The audit fails if the fresh tile is not the rightmost one
+on screen.
+
+### A call is public (2026-11-06)
+
+A CPU pung, kong or chow appears in that seat's band as soon as it is made:
+the rack keeps its face-down backs and the call sits beside them in the rack's
+own tile size (`--layout-back-w/h`), stacked down the band on a side seat and
+run along it on the top seat. Thirteen tiles still fit the band - a call
+replaces as many backs as it exposes - so the call never leaves its band, and
+the audit measures that, plus that no call covers the hand or a discard.
+
+The call is also announced: the seat's meld row lights up for 950 ms (a
+brightness/scale pulse; a 2 px outline instead when the user prefers reduced
+motion) and a two-knock cue plays, distinct from the single tile clack and from
+the two-note claim offer. History is never cued: a review state or a resumed
+game arrives with the whole log, and only a live `claims` line lights a seat.

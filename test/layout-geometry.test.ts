@@ -510,99 +510,266 @@ const MEASURE_CLAIM = `(() => {
     const r = element.getBoundingClientRect();
     return [r.x, r.y, r.width, r.height];
   };
+  const buttons = [...document.querySelectorAll("#claim-bar .claim-button")];
+  const label = (button) => button.textContent.trim();
   const bar = document.querySelector("#claim-bar");
   return {
-    band: R(bar),
-    buttons: [...document.querySelectorAll("#claim-bar .claim-button")].map(R),
+    panel: R(bar),
+    claim: R(buttons.find((button) => label(button).startsWith("Claim")) ?? null),
+    dismiss: R(buttons.find((button) => label(button).includes("Dismiss")) ?? null),
     variants: [...document.querySelectorAll("#claim-bar .claim-variant")].map(R),
-    controls: R(document.querySelector("#actions")),
+    variantsOverflow: (() => {
+      const row = document.querySelector("#claim-bar .claim-variants");
+      return row === null ? "" : getComputedStyle(row).overflowX;
+    })(),
+    hand: R(document.querySelector("#hand")),
+    discards: [...document.querySelectorAll("#pile .discard")].map(R),
     scroll: bar ? [bar.scrollWidth, bar.clientWidth] : [0, 0],
     overflow: bar ? getComputedStyle(bar).overflowX : "",
     viewport: innerWidth,
   };
 })()`;
 
-describe("variant D pile", () => {
-  for (const [width, height, mode] of [
-    [1440, 900, "desktop"],
-    [390, 844, "phone"],
+interface ClaimMeasurement {
+  readonly panel: Rect;
+  readonly claim: Rect | null;
+  readonly dismiss: Rect | null;
+  readonly variants: readonly Rect[];
+  readonly variantsOverflow: string;
+  readonly hand: Rect;
+  readonly discards: readonly Rect[];
+  readonly scroll: readonly [number, number];
+  readonly overflow: string;
+  readonly viewport: number;
+}
+
+function overlaps(a: Rect, b: Rect): boolean {
+  return (
+    Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0]) > 1 &&
+    Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]) > 1
+  );
+}
+
+function inside(outer: Rect, inner: Rect): boolean {
+  return (
+    inner[0] >= outer[0] - 1 &&
+    inner[1] >= outer[1] - 1 &&
+    inner[0] + inner[2] <= outer[0] + outer[2] + 1 &&
+    inner[1] + inner[3] <= outer[1] + outer[3] + 1
+  );
+}
+
+const MEASURE_MELDS = `(() => {
+  const R = (element) => {
+    if (element === null) return null;
+    const r = element.getBoundingClientRect();
+    return [r.x, r.y, r.width, r.height];
+  };
+  const inside = (outer, inner) =>
+    inner[0] >= outer[0] - 1 &&
+    inner[1] >= outer[1] - 1 &&
+    inner[0] + inner[2] <= outer[0] + outer[2] + 1 &&
+    inner[1] + inner[3] <= outer[1] + outer[3] + 1;
+  const seats = {};
+  for (const place of ["top", "left", "right"]) {
+    const root = document.querySelector("#seat-" + place);
+    const band = R(root);
+    const melds = [...root.querySelectorAll(".meld")].map(R);
+    const row = root.querySelector(".meld-row");
+    seats[place] = {
+      band,
+      melds,
+      visible: row === null ? null : getComputedStyle(row).visibility !== "hidden",
+      inside: melds.every((box) => inside(band, box)),
+      tiles: melds.map((_, index) => {
+        const group = root.querySelectorAll(".meld")[index];
+        return [...group.querySelectorAll(".tile")].map(R);
+      }),
+    };
+  }
+  return {
+    seats,
+    hand: R(document.querySelector("#hand")),
+    discards: [...document.querySelectorAll("#pile .discard")].map(R),
+  };
+})()`;
+
+describe("variant D hand order", () => {
+  it("keeps the fresh tile as the rightmost one until it is sorted back", async () => {
+    await setViewport(cdp, sessionId, 1440, 900);
+    await navigate(cdp, sessionId, `${server.url}/`);
+    const ready = `document.querySelectorAll("#hand .hand-tile").length === 14`;
+    const deadline = Date.now() + 12000;
+    while (Date.now() < deadline) {
+      if (await evaluate<boolean>(cdp, sessionId, ready)) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    const hand = await evaluate<{
+      drawnLast: boolean;
+      drawnLabel: string;
+      rightmost: boolean;
+      tiles: number;
+    }>(
+      cdp,
+      sessionId,
+      `(() => {
+        const tiles = [...document.querySelectorAll("#hand .hand-tile")];
+        const last = tiles[tiles.length - 1];
+        const boxes = tiles.map((tile) => tile.getBoundingClientRect());
+        const right = Math.max(...boxes.map((box) => box.x + box.width));
+        return {
+          drawnLast: last.classList.contains("is-drawn"),
+          drawnLabel: last.getAttribute("aria-label") ?? "",
+          rightmost: Math.abs(boxes[boxes.length - 1].x + boxes[boxes.length - 1].width - right) <= 1,
+          tiles: tiles.length,
+        };
+      })()`,
+    );
+    assert.equal(hand.tiles, 14, "the hand holds the thirteen and the draw");
+    assert.ok(hand.drawnLast, "the fresh tile is the last tile in the hand");
+    assert.match(hand.drawnLabel, /just drawn/, "and the last tile says it is the fresh one");
+    assert.ok(hand.rightmost, "the fresh tile is the rightmost tile on screen");
+  });
+});
+
+describe("variant D seat melds", () => {
+  for (const [width, height] of [
+    [1440, 900],
+    [390, 844],
+    [844, 390],
   ] as const) {
-    it(`${width}x${height} throws every discard at one size`, async () => {
+    it(`${width}x${height} shows a CPU call inside its seat band`, async () => {
       await setViewport(cdp, sessionId, width, height);
-      await navigate(cdp, sessionId, `${server.url}/?state=fishing&variant=d`);
-      // The pile is empty until the fixture has painted its discards.
-      await evaluate(
-        cdp,
-        sessionId,
-        `new Promise((done) => {
-          const started = performance.now();
-          const tick = () => {
-            if (document.querySelectorAll("#pile .discard").length > 0 ||
-                performance.now() - started > 4000) return done(true);
-            setTimeout(tick, 40);
-          };
-          tick();
-        })`,
+      await navigate(cdp, sessionId, `${server.url}/?state=claim&variant=d`);
+      const measured = await evaluate<{
+        seats: Record<
+          "top" | "left" | "right",
+          {
+            band: Rect;
+            melds: readonly Rect[];
+            visible: boolean | null;
+            inside: boolean;
+            tiles: readonly (readonly Rect[])[];
+          }
+        >;
+        hand: Rect;
+        discards: readonly Rect[];
+      }>(cdp, sessionId, MEASURE_MELDS);
+
+      const called = (["top", "left", "right"] as const).filter(
+        (place) => measured.seats[place].melds.length > 0,
       );
-      const measurement = await evaluate<Measurement>(cdp, sessionId, MEASURE);
-      assertPile(
-        measurement,
-        expectedLayout(width, height, mode),
-        `${width}x${height}`,
-      );
+      assert.ok(called.length > 0, "the review state has a called meld on the table");
+      for (const place of called) {
+        const seat = measured.seats[place];
+        assert.equal(seat.visible, true, `the ${place} seat hides its call`);
+        assert.ok(seat.inside, `the ${place} call leaves its seat band`);
+        for (const group of seat.tiles) {
+          assert.equal(group.length, 3, `a call shows three tiles, not ${group.length}`);
+          // A side seat stacks its call down the band, the top seat runs along it.
+          if (place === "top") {
+            assert.ok(group[1]![0] > group[0]![0], `the ${place} call is not a row`);
+          } else {
+            assert.ok(group[1]![1] > group[0]![1], `the ${place} call is not a column`);
+          }
+        }
+        for (const meld of seat.melds) {
+          assert.ok(
+            !overlaps(meld, measured.hand),
+            `the ${place} call covers the hand: ${JSON.stringify(meld)}`,
+          );
+          for (const discard of measured.discards) {
+            assert.ok(
+              !overlaps(meld, discard),
+              `the ${place} call covers a discard: ${JSON.stringify(discard)}`,
+            );
+          }
+        }
+      }
     });
   }
 });
 
-describe("variant D action row", () => {
-  it("offers the calls from the left edge of the reserved row", async () => {
-    await setViewport(cdp, sessionId, 1440, 900);
-    await navigate(cdp, sessionId, `${server.url}/?state=claim&variant=d`);
-    const claim = await evaluate<{
-      band: Rect;
-      buttons: Rect[];
-      variants: Rect[];
-      controls: Rect;
-    }>(cdp, sessionId, MEASURE_CLAIM);
-    assert.ok(claim.buttons.length > 0, "a claim window offers a button");
-    assert.ok(
-      Math.abs(claim.buttons[0][0] - claim.band[0]) <= 1,
-      `the first call starts at ${claim.buttons[0][0]}, the row at ${claim.band[0]}`,
-    );
-    for (const box of [...claim.buttons, ...claim.variants]) {
-      assert.ok(
-        box[1] >= claim.band[1] - 1 &&
-          box[1] + box[3] <= claim.band[1] + claim.band[3] + 1,
-        `a call leaves the reserved row: ${JSON.stringify(box)}`,
-      );
-    }
-  });
+describe("variant D claim panel", () => {
+  for (const [width, height, mode] of [
+    [1440, 900, "desktop"],
+    [390, 844, "phone"],
+    [844, 390, "phone"],
+  ] as const) {
+    it(`${width}x${height} stacks Claim over Dismiss in its own panel`, async () => {
+      await setViewport(cdp, sessionId, width, height);
+      await navigate(cdp, sessionId, `${server.url}/?state=claim&variant=d`);
+      const claim = await evaluate<ClaimMeasurement>(cdp, sessionId, MEASURE_CLAIM);
+      const expected = expectedLayout(width, height, mode);
 
-  it("keeps an over-wide chow offer inside the phone row", async () => {
+      assert.ok(claim.claim !== null, "a claim window offers the claim");
+      assert.ok(claim.dismiss !== null, "and a way to dismiss it");
+      assert.ok(
+        Math.abs(claim.panel[0] - expected.claim[0]) <= 1 &&
+          Math.abs(claim.panel[1] - expected.claim[1]) <= 1 &&
+          Math.abs(claim.panel[2] - expected.claim[2]) <= 1 &&
+          Math.abs(claim.panel[3] - expected.claim[3]) <= 1,
+        `the panel is the solver's claim rect: ${JSON.stringify(claim.panel)} vs ${JSON.stringify(expected.claim)}`,
+      );
+
+      // Claim tops the panel, Dismiss is the row under it: the thumb reaches
+      // the common answer without moving.
+      assert.ok(
+        Math.abs(claim.claim![1] - claim.panel[1]) <= 1,
+        `Claim starts at ${claim.claim![1]}, the panel at ${claim.panel[1]}`,
+      );
+      assert.ok(
+        claim.dismiss![1] >= claim.claim![1] + claim.claim![3] - 1,
+        `Dismiss starts at ${claim.dismiss![1]}, Claim ends at ${claim.claim![1] + claim.claim![3]}`,
+      );
+      for (const box of [claim.claim!, claim.dismiss!]) {
+        assert.ok(inside(claim.panel, box), `a call leaves the panel: ${JSON.stringify(box)}`);
+      }
+
+      // A chow offer with several runs may scroll inside its row, so a variant
+      // only has to stay within the panel's height (or the row scrolls).
+      for (const box of claim.variants) {
+        assert.ok(
+          box[1] >= claim.panel[1] - 1 &&
+            box[1] + box[3] <= claim.panel[1] + claim.panel[3] + 1,
+          `a chow variant leaves the panel's height: ${JSON.stringify(box)}`,
+        );
+        assert.ok(
+          inside(claim.panel, box) || claim.variantsOverflow === "auto",
+          `a chow variant leaves the panel and nothing scrolls: ${JSON.stringify(box)}`,
+        );
+      }
+
+      // The hand is never covered, and neither is a discard.
+      assert.ok(
+        !overlaps(claim.panel, claim.hand),
+        `the panel covers the hand: ${JSON.stringify(claim.panel)} vs ${JSON.stringify(claim.hand)}`,
+      );
+      for (const discard of claim.discards) {
+        assert.ok(
+          !overlaps(claim.panel, discard),
+          `the panel covers a discard: ${JSON.stringify(discard)}`,
+        );
+      }
+    });
+  }
+
+  it("gives the phone the whole board inside the rim", async () => {
     await setViewport(cdp, sessionId, 390, 844);
     await navigate(cdp, sessionId, `${server.url}/?state=claim&variant=d`);
-    const claim = await evaluate<{
-      band: Rect;
-      scroll: [number, number];
-      overflow: string;
-      viewport: number;
-    }>(cdp, sessionId, MEASURE_CLAIM);
+    const claim = await evaluate<ClaimMeasurement>(cdp, sessionId, MEASURE_CLAIM);
     const inset = tableInset(390, 844);
+    assert.equal(Math.round(claim.panel[0]), inset, "the panel starts at the table rim");
     assert.equal(
-      Math.round(claim.band[0]),
-      inset,
-      "the row starts at the table rim, not the screen edge",
-    );
-    assert.equal(
-      Math.round(claim.band[2]),
+      Math.round(claim.panel[2]),
       claim.viewport - 2 * inset,
-      "the row spans the board inside the rim",
+      "the panel spans the board inside the rim",
     );
     if (claim.scroll[0] > claim.scroll[1]) {
       assert.equal(
         claim.overflow,
         "auto",
-        "a wider offer scrolls inside the row instead of painting over the felt",
+        "a wider offer scrolls inside the panel instead of painting over the felt",
       );
     }
   });

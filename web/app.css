@@ -2069,11 +2069,65 @@ h3 {
   display: none !important;
 }
 
-/* The three opponents keep their hands face down on the felt: the rack is
-   the one part of a seat variant D shows. */
-.variant-d .seat .meld-row,
+/* The three opponents keep their hands face down on the felt, but a call is
+   public: the meld sits in that seat's band, in the rack's own tile size, and
+   the band is measured so thirteen tiles still fit beside it. Bonuses stay
+   hidden. */
 .variant-d .seat .bonus-row {
   visibility: hidden;
+}
+
+.variant-d .seat .meld-row {
+  gap: 2px;
+  max-width: none;
+}
+
+.variant-d .seat .meld {
+  gap: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 1px;
+  /* An outline that takes no space: the call must fit the band exactly. */
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+}
+
+/* A side seat has the width of one tile, so its call stacks down the band
+   like the rack does. */
+.variant-d .seat-left .meld,
+.variant-d .seat-right .meld {
+  flex-direction: column;
+}
+
+.variant-d .seat .meld .tile {
+  width: var(--layout-back-w);
+  height: var(--layout-back-h);
+}
+
+/* A call the table makes: the new meld briefly lights up, so the eye finds
+   which seat called without reading the heap. */
+@keyframes seat-call {
+  0% {
+    filter: brightness(1.9);
+    transform: scale(1.06);
+  }
+  55% {
+    filter: brightness(1.35);
+  }
+  100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+}
+
+.variant-d .seat.is-calling .meld-row {
+  animation: seat-call 900ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .variant-d .seat.is-calling .meld-row {
+    animation: none;
+    outline: 2px solid var(--accent);
+  }
 }
 
 .variant-d .seat-name,
@@ -2198,6 +2252,9 @@ h3 {
 
 .variant-d .seat {
   position: absolute;
+  /* Rack, calls and bonuses share one band: the gap is the tile seam, not a
+     section break, so thirteen tiles plus their calls still fit. */
+  gap: 2px;
 }
 
 .variant-d .seat-top {
@@ -2256,35 +2313,36 @@ band above which it sits. */
 }
 
 
-/* The calls the table offers you use the same reserved row as your own
-throw: they line up from its left edge, the throw from its right. */
+/* The calls the table offers you take the reserved row and the one above it:
+Claim is the top target, Dismiss sits under it, nearest the thumb. Both rows
+come from the solver (--layout-claim-*), so the panel is measured, never
+eyeballed, and it never reaches into the hand. */
 
 .variant-d .claim-bar {
   position: absolute;
-  top: var(--layout-controls-y);
-  left: var(--layout-controls-x);
-  width: var(--layout-controls-w);
-  height: var(--layout-controls-h);
+  top: var(--layout-claim-y);
+  left: var(--layout-claim-x);
+  width: var(--layout-claim-w);
+  height: var(--layout-claim-h);
   margin: 0;
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--space-4);
-
-  /* A chow offer plus its variants is wider than a phone: the row keeps its
-  reserved height and scrolls sideways rather than painting over the felt. */
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: var(--layout-gap);
+  overflow: visible;
 }
 
 
-.variant-d .claim-row,
-.variant-d .claim-variants {
+.variant-d .claim-row {
+  display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-start;
+  gap: var(--space-3);
+  height: var(--layout-controls-h);
+  min-height: var(--layout-controls-h);
 }
 
 
@@ -2292,6 +2350,32 @@ throw: they line up from its left edge, the throw from its right. */
   min-height: var(--layout-controls-h);
   height: var(--layout-controls-h);
   padding-block: 0;
+}
+
+
+.variant-d .claim-primary .claim-button {
+  flex: 1 1 auto;
+}
+
+
+.variant-d .claim-secondary .claim-pass {
+  flex: 0 0 auto;
+}
+
+
+/* A chow with several runs scrolls sideways inside its own row rather than
+   growing the panel. */
+.variant-d .claim-variants {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  min-height: var(--layout-controls-h);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
 }
 
 .variant-d .seat-left,
