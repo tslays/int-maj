@@ -519,8 +519,10 @@ async function screenshot(cdp: Cdp, sessionId: string, path: string): Promise<vo
 
 /* -------------------------------------------------------------- server */
 
-export async function startServer(): Promise<{ url: string; stop: () => Promise<void> }> {
-  const store = new GameStore({ defaultSeed: "layout" });
+export async function startServer(options: {
+  seed?: string;
+} = {}): Promise<{ url: string; stop: () => Promise<void> }> {
+  const store = new GameStore({ defaultSeed: options.seed ?? "layout" });
   const server = createAppServer({ store });
   {
     const { promise, resolve } = Promise.withResolvers<void>();
