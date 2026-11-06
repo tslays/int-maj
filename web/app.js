@@ -698,13 +698,11 @@ function renderSeat(entry) {
  * the ghost of the tile leaving the wall - so the round reads as a sequence:
  * who threw, in what order, and when it comes back to you.
  */
-const DISCARD_BEAT_MS = 1000;
 /**
- * A claim is about the last discard, so the throws before it must land first.
- * They are already history by the time the answer arrives, so they catch up at
- * a quicker beat instead of arriving in one burst.
+ * The table answers one seat at a time. The beat never changes: a claim does
+ * not hurry the throws before it, it only waits for them.
  */
-const CLAIM_BEAT_MS = 320;
+const DISCARD_BEAT_MS = 1000;
 /** The claimed tile gets this long to read once it has landed. */
 const CLAIM_SHOW_MS = 260;
 let discardQueue = [];
@@ -803,9 +801,9 @@ function planDiscards() {
       return;
     }
     // A claim is about the last tile on the heap, so every throw before it has
-    // to land first - one at a time, at the catch-up beat. The bar drawn
-    // earlier in this render comes straight back down, so the offer never
-    // names a tile that is still in flight.
+    // to land first - one at a time, on the same beat as any other throw. The
+    // bar drawn earlier in this render comes straight back down, so the offer
+    // never names a tile that is still in flight.
     claimHeld = true;
     renderActions();
     if (claimTimer !== null) {
@@ -830,7 +828,6 @@ function planDiscards() {
 
 
 function scheduleDiscard() {
-  const beat = claimHeld ? CLAIM_BEAT_MS : DISCARD_BEAT_MS;
   discardTimer = setTimeout(() => {
     discardTimer = null;
     revealDiscard();
@@ -839,7 +836,7 @@ function scheduleDiscard() {
       return;
     }
     if (claimHeld) showClaim();
-  }, beat);
+  }, DISCARD_BEAT_MS);
 }
 
 /**
