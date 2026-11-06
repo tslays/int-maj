@@ -699,9 +699,22 @@ function renderSeat(entry) {
  * who threw, in what order, and when it comes back to you.
  */
 const DISCARD_BEAT_MS = 1000;
+/**
+ * A claim is about the last discard, so the throws before it must land first.
+ * They are already history by the time the answer arrives, so they catch up at
+ * a quicker beat instead of arriving in one burst.
+ */
+const CLAIM_BEAT_MS = 320;
+/** The claimed tile gets this long to read once it has landed. */
+const CLAIM_SHOW_MS = 260;
 let discardQueue = [];
 let pendingDiscards = [];
 let discardTimer = null;
+/** A claim whose discard is still in flight: the offer is not asked yet. */
+let claimHeld = false;
+let claimTimer = null;
+/** A review state arrives with the whole hand's log, not fresh throws. */
+let eventsAreHistory = false;
 /** Discards the viewer has already seen land, per seat. */
 const revealedDiscards = { E: 0, S: 0, W: 0, N: 0 };
 let rhythmReady = false;
@@ -761,6 +774,12 @@ function discardsFromEvents(lines) {
 
 function planDiscards() {
   if (payload === null) return;
+  if (eventsAreHistory) {
+    // A review state is a snapshot of a hand already played: every line in its
+    // log is already on the table, so none of them is a throw to play now.
+    eventsAreHistory = false;
+    pendingDiscards = [];
+  }
   // Queue whatever this answer threw, in the order the events name them.
   for (const item of pendingDiscards) {
     // Two players may throw the same tile, so a throw is identified by seat and
@@ -778,28 +797,63 @@ function planDiscards() {
   }
   pendingDiscards = [];
   if (payload.view.claimWindow !== null) {
-    // A possible claim interrupts the table at once: everything still queued
-    // lands now, the beat stops, and the offer is the only thing to answer.
-    if (discardTimer !== null) {
-      clearTimeout(discardTimer);
-      discardTimer = null;
+    // Nothing is in flight: the offer is about the tile already on the heap.
+    if (discardQueue.length === 0 && discardTimer === null) {
+      if (!claimHeld) renderActions();
+      return;
     }
-    for (const item of discardQueue.splice(0)) revealDiscard(item);
+    // A claim is about the last tile on the heap, so every throw before it has
+    // to land first - one at a time, at the catch-up beat. The bar drawn
+    // earlier in this render comes straight back down, so the offer never
+    // names a tile that is still in flight.
+    claimHeld = true;
     renderActions();
+    if (claimTimer !== null) {
+      clearTimeout(claimTimer);
+      claimTimer = null;
+    }
+    scheduleDiscard();
     return;
+  }
+  if (claimHeld) {
+    // The offer is gone (undone, or the table moved on): the row was drawn as
+    // "still answering", so draw it again for the state that replaced it.
+    claimHeld = false;
+    if (claimTimer !== null) {
+      clearTimeout(claimTimer);
+      claimTimer = null;
+    }
+    renderActions();
   }
   if (discardQueue.length > 0 && discardTimer === null) scheduleDiscard();
 }
 
 
 function scheduleDiscard() {
+  const beat = claimHeld ? CLAIM_BEAT_MS : DISCARD_BEAT_MS;
   discardTimer = setTimeout(() => {
     discardTimer = null;
     revealDiscard();
     if (discardQueue.length > 0) {
       scheduleDiscard();
+      return;
     }
-  }, DISCARD_BEAT_MS);
+    if (claimHeld) showClaim();
+  }, beat);
+}
+
+/**
+ * The heap is up to date: let the claimed tile sit for a moment, then ask.
+ * Until the bar appears nothing on the table can be acted on, so the answer
+ * always belongs to the tile that is actually on the heap.
+ */
+function showClaim() {
+  if (claimTimer !== null) return;
+  claimTimer = setTimeout(() => {
+    claimTimer = null;
+    claimHeld = false;
+    renderActions();
+  }, CLAIM_SHOW_MS);
 }
 
 function revealDiscard(item) {
@@ -1254,6 +1308,8 @@ function renderOwnBonus() {
 
 function isOwnClaimWindow() {
   const view = payload.view;
+  // A held claim is still arriving: the table, not the player, is answering.
+  if (claimHeld) return false;
   return view.phase === "claim" && view.turn === view.seat;
 }
 
@@ -1409,6 +1465,16 @@ function fishingPreview(action) {
 function renderActions() {
   const element = $("#actions");
   const bar = $("#claim-bar");
+
+  if (claimHeld) {
+    // The offer waits for its tile: an empty reserved row reads better than a
+    // note about a claim that has not been asked yet.
+    bar.hidden = true;
+    bar.replaceChildren();
+    element.hidden = false;
+    element.replaceChildren();
+    return;
+  }
 
   if (isOwnClaimWindow()) {
     renderClaimBar();
@@ -2130,6 +2196,7 @@ async function openScenario(name) {
     return false;
   }
   scenarioName = name;
+  eventsAreHistory = true;
   applyResponse(data, null, true);
   document.title = `Mahjong — ${name}`;
   const tag = $("#state-tag");
@@ -2155,7 +2222,7 @@ function onHandClick(index) {
   if (payload === null) return;
   // The table is still answering: the turn has not come back to you yet, so a
   // tap now would be a discard out of turn.
-  if (discardQueue.length > 0 || discardTimer !== null) return;
+  if (discardQueue.length > 0 || discardTimer !== null || claimHeld) return;
   // A click that lands while a request is in flight (the automatic draw) is
   // remembered and applied the moment the table answers, so a fast click is
   // never swallowed.
@@ -2178,7 +2245,7 @@ function drawnIndex() {
 
 function discardAt(index) {
   if (payload === null || busy) return;
-  if (discardQueue.length > 0 || discardTimer !== null) return;
+  if (discardQueue.length > 0 || discardTimer !== null || claimHeld) return;
   const tile = displayHand()[index];
   if (tile === undefined) return;
   if (sendDiscard(tile, index)) return;
@@ -2215,6 +2282,11 @@ function undo() {
 function newGame(seed) {
   clearScenario();
   freshDeal = true;
+  claimHeld = false;
+  if (claimTimer !== null) {
+    clearTimeout(claimTimer);
+    claimTimer = null;
+  }
   handInitialized = false;
   tableInitialized = false;
   previousHand = [];
