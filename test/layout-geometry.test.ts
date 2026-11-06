@@ -598,10 +598,42 @@ describe("variant D hand order", () => {
   it("keeps the fresh tile as the rightmost one until it is sorted back", async () => {
     await setViewport(cdp, sessionId, 1440, 900);
     await navigate(cdp, sessionId, `${server.url}/`);
+    // The deal is yours, so the first hand is fourteen dealt tiles with no
+    // fresh one: throw a tile and wait for the table to hand one back.
     const ready = `document.querySelectorAll("#hand .hand-tile").length === 14`;
     const deadline = Date.now() + 12000;
     while (Date.now() < deadline) {
       if (await evaluate<boolean>(cdp, sessionId, ready)) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    const point = await evaluate<{ x: number; y: number }>(
+      cdp,
+      sessionId,
+      `(() => { const tile = document.querySelectorAll("#hand .hand-tile")[0]; const box = tile.getBoundingClientRect(); return { x: box.x + box.width / 2, y: box.y + box.height / 2 }; })()`,
+    );
+    await cdp.send({
+      method: "Input.dispatchMouseEvent",
+      params: { type: "mousePressed", x: point.x, y: point.y, button: "left", clickCount: 1 },
+      sessionId,
+    });
+    await cdp.send({
+      method: "Input.dispatchMouseEvent",
+      params: { type: "mouseReleased", x: point.x, y: point.y, button: "left", clickCount: 1 },
+      sessionId,
+    });
+
+    const drawnDeadline = Date.now() + 20000;
+    let drawn = false;
+    while (Date.now() < drawnDeadline) {
+      drawn = await evaluate<boolean>(
+        cdp,
+        sessionId,
+        `(() => {
+          const tiles = [...document.querySelectorAll("#hand .hand-tile")];
+          return tiles.length === 14 && tiles.at(-1).classList.contains("is-drawn");
+        })()`,
+      );
+      if (drawn) break;
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
     const hand = await evaluate<{
@@ -625,6 +657,7 @@ describe("variant D hand order", () => {
         };
       })()`,
     );
+    assert.ok(drawn, "the table hands the fresh tile back after your discard");
     assert.equal(hand.tiles, 14, "the hand holds the thirteen and the draw");
     assert.ok(hand.drawnLast, "the fresh tile is the last tile in the hand");
     assert.match(hand.drawnLabel, /just drawn/, "and the last tile says it is the fresh one");

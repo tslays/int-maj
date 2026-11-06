@@ -41,6 +41,9 @@ import type { Wind } from "../core/tiles.ts";
 import type { Tier } from "../core/patterns/types.ts";
 import { PATTERNS } from "../core/patterns/table.ts";
 
+/** The web table always seats you at East, and deals to you. */
+const SEAT: Seat = "E";
+
 const PATTERN_NAMES: ReadonlyMap<string, string> = new Map(
   PATTERNS.map((pattern) => [pattern.id, pattern.name]),
 );
@@ -148,11 +151,12 @@ export interface StatePayload {
 }
 
 function startSession(id: string, seed: string | number): WebSession {
-  const { state, events } = newGame(seed);
+  // You are East and the deal is yours, so the first discard is yours too.
+  const { state, events } = newGame(seed, { dealer: SEAT });
   return {
     id,
     seed,
-    seat: "E",
+    seat: SEAT,
     state,
     steps: [],
     humanSteps: [],
@@ -426,7 +430,7 @@ export class GameStore {
     const last = session.humanSteps.at(-1);
     if (last === undefined) return { error: "nothing to undo" };
     const steps = session.steps.slice(0, last);
-    const replayed = replaySteps(session.seed, steps);
+    const replayed = replaySteps(session.seed, steps, { dealer: SEAT });
     const next: WebSession = {
       ...session,
       state: replayed.state,

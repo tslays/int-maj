@@ -118,18 +118,23 @@ describe("web API", () => {
     const created = await post<ApiPayload>("/api/new", { seed: "api-shape" });
     assert.equal(created.status, 200);
     assert.ok(
-      created.body.events.some((line) => line.startsWith("E is dealt 13 tiles")),
+      created.body.events.some((line) => line.startsWith("E is dealt 14 tiles")),
     );
-    const payload = await stepToHuman(created.body.game);
+    const payload = created.body;
 
     assert.equal(typeof payload.game, "string");
     assert.equal(payload.seat, "E");
     assert.equal(payload.seed, "api-shape");
     assert.equal(payload.view.seat, "E");
-    assert.equal(payload.view.player.hand.length, 13);
+    assert.equal(payload.view.dealer, "E", "the deal is yours");
+    assert.equal(payload.view.player.hand.length, 14);
     assert.equal(payload.view.opponents.length, 3);
     assert.equal(payload.wallRemaining, payload.view.wallRemaining);
-    assert.deepEqual(payload.legalActions, [{ type: "Draw", seat: "E" }]);
+    assert.ok(
+      payload.legalActions.length > 0 &&
+        payload.legalActions.every((action) => action.type === "Discard"),
+      "your first move is a discard",
+    );
     assert.equal(payload.table.length, 4);
     assert.deepEqual(
       payload.table.map((entry) => entry.seat),
@@ -144,27 +149,15 @@ describe("web API", () => {
       assert.ok(Array.isArray(entry.seasons));
     }
     assert.ok(Array.isArray(payload.ledger));
-    assert.equal(payload.checker.size, 13);
-    assert.ok(Array.isArray(payload.checker.waits));
+    assert.equal(payload.checker.size, 14);
+    assert.ok(Array.isArray(payload.checker.matches));
     assert.equal(payload.outcome, null);
   });
 
   it("never puts another seat's concealed tiles in a payload", async () => {
     const created = await post<ApiPayload>("/api/new", { seed: "api-hidden" });
     const game = created.body.game;
-    await stepToHuman(game);
-
-    const drawn = await post<ApiPayload>("/api/move", {
-      game,
-      action: { type: "Draw", seat: "E" },
-    });
-    assert.equal(drawn.status, 200);
-    assert.equal(drawn.body.view.lastDraw?.seat, "E");
-    assert.ok(
-      drawn.body.view.player.hand.includes(drawn.body.view.lastDraw?.tile ?? ""),
-      "the just-drawn tile must be one of the viewer's own tiles",
-    );
-    const discard = drawn.body.legalActions.find(
+    const discard = created.body.legalActions.find(
       (action) => action.type === "Discard",
     );
     assert.ok(discard !== undefined);
@@ -229,9 +222,7 @@ describe("web API", () => {
     const beforeState = serialize(store.state(game)!);
     const beforePayload = await getState(game);
 
-    const tile = beforePayload.view.player.hand[0];
-    assert.ok(tile !== undefined);
-    const action: Action = { type: "Discard", seat: "E", tile };
+    const action: Action = { type: "Draw", seat: "E" };
     const expected = apply(store.state(game)!, action);
     assert.ok(isApplyError(expected));
 
@@ -246,24 +237,17 @@ describe("web API", () => {
     const created = await post<ApiPayload>("/api/new", { seed: "api-legal" });
     const game = created.body.game;
     const before = store.state(game)!;
-    const ready = await stepToHuman(game);
+    assert.equal(created.body.view.dealer, "E", "the deal is yours");
+    assert.equal(created.body.view.player.hand.length, 14);
 
-    const draw = ready.legalActions.find((action) => action.type === "Draw");
-    assert.ok(draw !== undefined);
-    const drawn = await post<ApiPayload>("/api/move", { game, action: draw });
-    assert.equal(drawn.status, 200);
-    assert.equal(drawn.body.view.phase, "discard");
-    assert.equal(drawn.body.view.player.hand.length, 14);
-    assert.ok(drawn.body.view.wallRemaining < created.body.wallRemaining);
-    assert.ok(drawn.body.events.some((line) => line.startsWith("E draws")));
-
-    const discard = drawn.body.legalActions.find(
+    const discard = created.body.legalActions.find(
       (action) => action.type === "Discard",
     );
     assert.ok(discard !== undefined);
     const played = await post<ApiPayload>("/api/move", { game, action: discard });
     assert.equal(played.status, 200);
     assert.ok(played.body.events.some((line) => line.includes("discards")));
+    assert.equal(played.body.view.player.hand.length, 13);
     assert.ok(store.state(game)!.eventSeq > before.eventSeq);
     assert.deepEqual(
       played.body.legalActions,
@@ -340,11 +324,18 @@ describe("web API", () => {
   it("answers one table action per step, never a round", async () => {
     const created = await post<ApiPayload>("/api/new", { seed: "api-step" });
     const game = created.body.game;
-    assert.deepEqual(
-      created.body.legalActions,
-      [],
-      "the deal leaves the first move to the dealer, not to you",
+    assert.equal(created.body.view.dealer, "E", "the deal is yours");
+    assert.ok(
+      created.body.legalActions.every((action) => action.type === "Discard"),
+      "your first move is a discard",
     );
+
+    const first = created.body.legalActions.find(
+      (action) => action.type === "Discard",
+    );
+    assert.ok(first !== undefined);
+    const opened = await post<ApiPayload>("/api/move", { game, action: first });
+    assert.equal(opened.status, 200);
 
     let throws = 0;
     for (let step = 0; step < 200; step++) {
@@ -372,7 +363,17 @@ describe("web API", () => {
     for (let index = 0; index < 100 && payload === null; index++) {
       const created = await post<ApiPayload>("/api/new", { seed: `api-hand-${index}` });
       assert.equal(created.status, 200);
-      if (created.body.checker.size === 13) payload = created.body;
+      const discard = created.body.legalActions.find(
+        (action) => action.type === "Discard",
+      );
+      if (discard === undefined) continue;
+      const played = await post<ApiPayload>("/api/move", {
+        game: created.body.game,
+        action: discard,
+      });
+      assert.equal(played.status, 200);
+      const waiting = await getState(created.body.game);
+      if (waiting.checker.size === 13) payload = waiting;
     }
     assert.ok(payload !== null, "no seed produced a 13-tile hand");
 
