@@ -256,6 +256,28 @@ describe("table rhythm", () => {
     }
 
     await evaluate(cdp, sessionId, `(() => {
+      window.__claimShownAt = null;
+      window.__claimCueAt = null;
+      // Record exactly when the claim bar becomes visible and when its
+      // two-note cue (659.25 Hz) is actually scheduled.
+      const bar = document.querySelector("#claim-bar");
+      new MutationObserver(() => {
+        if (!bar.hidden && window.__claimShownAt === null) {
+          window.__claimShownAt = performance.now();
+        }
+      }).observe(bar, { attributes: true, attributeFilter: ["hidden"] });
+      const make = AudioContext.prototype.createOscillator;
+      AudioContext.prototype.createOscillator = function () {
+        const node = make.call(this);
+        const set = node.frequency.setValueAtTime.bind(node.frequency);
+        node.frequency.setValueAtTime = (value, time) => {
+          if (Math.abs(value - 659.25) < 0.5 && window.__claimCueAt === null) {
+            window.__claimCueAt = performance.now();
+          }
+          return set(value, time);
+        };
+        return node;
+      };
       window.__rhythm = [];
       window.__rhythmStart = performance.now();
       window.__rhythmTimer = setInterval(() => {
@@ -304,6 +326,24 @@ describe("table rhythm", () => {
     }
     // Let the sampler see the offer it was waiting for before stopping the tape.
     await new Promise((resolve) => setTimeout(resolve, 250));
+    const cue = await evaluate<{ bar: number | null; cue: number | null; shown: boolean }>(
+      cdp,
+      sessionId,
+      `(() => {
+        const bar = document.querySelector("#claim-bar");
+        return {
+          bar: window.__claimShownAt ?? null,
+          cue: window.__claimCueAt ?? null,
+          shown: bar !== null && !bar.hidden,
+        };
+      })()`,
+    );
+    assert.ok(cue.shown, "the claim bar is on screen");
+    assert.ok(cue.bar !== null && cue.cue !== null, "the cue and the bar were both observed");
+    assert.ok(
+      Math.abs(cue.cue - cue.bar) <= 120,
+      `the cue fired ${Math.round(cue.cue - cue.bar)} ms from the claim bar`,
+    );
     const samples = await evaluate<Sample[]>(
       cdp,
       sessionId,

@@ -131,6 +131,10 @@ function playClaimCue(context) {
 function maybePlayClaimCue() {
   const view = payload?.view;
   if (view === undefined || view === null || view.claimWindow === null) return;
+  // The cue belongs to the button, not to the state: if the bar is still held
+  // for a throw in flight, there is nothing to hear yet.
+  const bar = $("#claim-bar");
+  if (bar === null || bar.hidden || bar.childElementCount === 0) return;
   const claimWindow = view.claimWindow;
   const key =
     `${payload.game}|${view.handNumber}|${claimWindow.discarder}|` +
@@ -1719,7 +1723,15 @@ function renderActions() {
   const element = $("#actions");
   const bar = $("#claim-bar");
 
-  if (claimHeld) {
+  // The offer is only real once the throw it answers has finished. Until then
+  // the row stays empty and the claim cue stays silent, so the sound lands with
+  // the bar rather than with the state change.
+  // `pendingDiscards` counts too: this render runs before planDiscards has
+  // queued the throw that arrived in the very same payload.
+  const offerInFlight =
+    claimAsked() &&
+    (discardQueue.length > 0 || pendingDiscards.length > 0 || discardTimer !== null);
+  if (claimHeld || offerInFlight) {
     // The offer waits for its tile: an empty reserved row reads better than a
     // note about a claim that has not been asked yet.
     bar.hidden = true;
