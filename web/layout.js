@@ -167,16 +167,18 @@ function solveLayout({
       available - 2 * riverHeight - 2 * boardGap,
     );
 
-    // The side seat is the binding constraint: thirteen backs must fit it.
-    rackHeight = Math.min(rackHeight, (available - 12) / 13);
-    rackWidth = rackHeight * 0.75;
+    // The side seats are the binding constraint: a side wall turns its tiles
+    // a quarter, so thirteen widths (not heights) have to fit it.
+    rackWidth = Math.min(rackWidth, (available - 12) / 13);
+    rackHeight = rackWidth / 0.75;
+    const sideSeatWidth = round(rackHeight);
 
     const topRiverY = stackTop;
     const centreY = topRiverY + riverHeight + boardGap;
     const bottomRiverY = centreY + centreHeight + boardGap;
 
-    const innerLeft = sideInset + rackWidth + boardGap;
-    const innerRight = width - sideInset - rackWidth - boardGap;
+    const innerLeft = sideInset + sideSeatWidth + boardGap;
+    const innerRight = width - sideInset - sideSeatWidth - boardGap;
     const centreWidth = Math.max(
       24,
       round(width * (width > height ? 0.4 : 0.225)),
@@ -184,7 +186,7 @@ function solveLayout({
     const centreX = round((width - centreWidth) / 2);
     const sideRiverWidth = Math.max(1, centreX - boardGap - innerLeft);
     const flatRiverWidth = centreWidth;
-    const seatHeight = Math.min(13 * rackHeight + 12, available);
+    const seatHeight = Math.min(13 * rackWidth + 12, available);
 
     const seats = {
       top: [
@@ -193,11 +195,11 @@ function solveLayout({
         round(13 * rackWidth + 12),
         topSeatHeight,
       ],
-      left: [sideInset, stackTop, rackWidth, seatHeight],
+      left: [sideInset, stackTop, sideSeatWidth, seatHeight],
       right: [
-        width - sideInset - rackWidth,
+        width - sideInset - sideSeatWidth,
         stackTop,
-        rackWidth,
+        sideSeatWidth,
         seatHeight,
       ],
       bottom: [0, handY, width, handTileHeight],
@@ -424,8 +426,10 @@ function solveLayout({
   // stack allows (see below).
   let rackHeight = tileWidth * 0.96;
   let rackWidth = rackHeight * 0.75;
-  const sideSeatWidth = round(rackWidth);
-  const sideSeatHeight = 13 * rackHeight + 12;
+  // A side wall turns its tiles a quarter: its band is one tile height across
+  // and thirteen tile widths long.
+  const sideSeatWidth = round(rackHeight);
+  const sideSeatHeight = 13 * rackWidth + 12;
   const topSeatHeight = round(rackHeight);
   const badgeWidth = Math.max(34, round(tileWidth * 0.8));
   const badgeHeight = round(tileWidth * 0.36);
@@ -452,8 +456,8 @@ function solveLayout({
   const availableSideHeight = phone
     ? tableHeight - gap - (topSeatHeight + gap)
     : handBandY - gap - (topSeatHeight + gap);
-  rackHeight = Math.min(rackHeight, (availableSideHeight - 12) / 13);
-  rackWidth = rackHeight * 0.75;
+  rackWidth = Math.min(rackWidth, (availableSideHeight - 12) / 13);
+  rackHeight = rackWidth / 0.75;
   const topRiverY = topSeatHeight + gap;
   const bottomRiverY = (phone ? tableHeight - gap : handBandY - gap) - riverHeight;
   const centreY = topRiverY + riverHeight + gap;
@@ -468,9 +472,9 @@ function solveLayout({
   const control = phone ? [0, height, width, height] : [0, handBandY, width, handBand[3]];
   const seats = {
     top: [
-      round((width - (13 * sideSeatWidth + 12)) / 2),
+      round((width - (13 * rackWidth + 12)) / 2),
       0,
-      13 * sideSeatWidth + 12,
+      round(13 * rackWidth + 12),
       topSeatHeight,
     ],
     left: [
@@ -604,7 +608,8 @@ function solveLayout({
     seats,
     controls,
     badges,
-    rackWidth: sideSeatWidth,
+    // The tile's own size; a side wall turns it a quarter on screen.
+    rackWidth: round(rackWidth),
     rackHeight,
     handTileWidth: handTile,
     handTileHeight,

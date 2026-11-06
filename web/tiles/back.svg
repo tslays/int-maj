@@ -1,5 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400"><g transform="translate(0.000000,10.000000) scale(4.000000) translate(-0,-0)">
-<rect fill="#14603a" stroke="#062b19" stroke-width="1.5" x="1" y="1" width="73" height="93" rx="5"/>
-<path stroke="#1f7a4c" stroke-width="91.5" stroke-dasharray="3.42" d="m5,47.5h66"/>
-</g></svg>
+<!--
+  The back of the tile, drawn to sit beside Cangjie6's oblique faces: the same
+  300x400 canvas and the set's own bone (#CDDACD/#FFFFFF) and green (.st1
+  #005F00, .st7 #038249). The bone edge, the diamond lattice and the two bevel
+  strips are what let a wall read as tiles at 30 px, and they give the turned
+  side walls a top and a bottom. Derived work, CC BY-SA 4.0.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400">
+  <defs>
+    <pattern id="diamond" width="44" height="44" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="44" height="44" fill="#15633c"/>
+      <path d="M0 22h44" stroke="#3f9a68" stroke-width="3.4" opacity="0.75"/>
+      <path d="M22 0v44" stroke="#07412a" stroke-width="2.6" opacity="0.75"/>
+      <circle cx="0" cy="0" r="2.6" fill="#cddacd" opacity="0.35"/>
+    </pattern>
+    <linearGradient id="bone" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f6f8ee"/>
+      <stop offset="1" stop-color="#c6d4c6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- The tile body: bone, like every face in the set. -->
+  <rect x="2" y="2" width="296" height="396" rx="20" fill="url(#bone)" stroke="#08301d" stroke-width="3"/>
+
+  <!-- Its woven back, inset far enough that the bone edge reads as a rim. -->
+  <rect x="18" y="18" width="264" height="364" rx="9" fill="url(#diamond)" stroke="#0a3a22" stroke-width="2.5"/>
+
+  <!-- Thickness: light on the near edge, shadow on the far one. -->
+  <path d="M28 372h244" stroke="#041d11" stroke-width="7" opacity="0.42" stroke-linecap="round"/>
+  <path d="M272 28v352" stroke="#041d11" stroke-width="7" opacity="0.34" stroke-linecap="round"/>
+  <path d="M28 30h244" stroke="#ffffff" stroke-width="3.4" opacity="0.18" stroke-linecap="round"/>
+</svg>
