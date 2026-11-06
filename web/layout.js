@@ -102,7 +102,6 @@ export function computeLayout(input) {
     rivers: shiftAll(inner.rivers),
     seats: shiftAll(inner.seats),
     controls: shift(inner.controls),
-    claim: shift(inner.claim),
     badges: shiftAll(inner.badges),
     // The floor is a device width, not the inset board.
     supported: inner.supported || (input.mode === "phone" && width >= 390),
@@ -153,9 +152,7 @@ function solveLayout({
     const controlsY = handBandY - handGap - controlHeight;
 
     const stackTop = topSeatHeight + boardGap;
-    // The felt stops above the claim panel, not above your own throw: the
-    // calls take the row and the one above it, and no discard may sit there.
-    const stackBottom = controlsY - controlHeight - minGap - boardGap;
+    const stackBottom = controlsY - boardGap;
     const available = Math.max(1, stackBottom - stackTop);
     const desiredRiver =
       riverRows * boardTileHeight + (riverRows - 1) * boardGap;
@@ -251,14 +248,6 @@ function solveLayout({
     const handBand = [0, handBandY, width, handTileHeight + 2 * handGap];
     const hand = [0, handY, handWidth, handTileHeight];
     const controls = [0, controlsY, width, controlHeight];
-    // A claim offers two thumb-sized calls, so it takes the reserved row and
-    // one more above it; Dismiss sits nearest the thumb.
-    const claim = [
-      0,
-      controlsY - controlHeight - minGap,
-      width,
-      2 * controlHeight + minGap,
-    ];
     const badges = {
       top: [
         seats.top[0] - boardGap - badgeWidth,
@@ -314,7 +303,6 @@ function solveLayout({
       discardTileHeight: (discardTile * 4) / 3,
       seats,
       controls,
-      claim,
       badges,
       tileWidth: handScale,
       boardTileWidth: boardScale,
@@ -551,12 +539,6 @@ function solveLayout({
     controlsWidth,
     controlHeight,
   ];
-  const claim = [
-    controls[0],
-    controls[1] - controlHeight - gap,
-    controls[2],
-    2 * controlHeight + gap,
-  ];
 
   const centreOf = (rect) => rect[1] + rect[3] / 2;
   const badges = {
@@ -621,7 +603,6 @@ function solveLayout({
     discardTileHeight: (discardTile * 4) / 3,
     seats,
     controls,
-    claim,
     badges,
     rackWidth: sideSeatWidth,
     rackHeight,

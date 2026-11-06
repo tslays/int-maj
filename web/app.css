@@ -2313,24 +2313,27 @@ band above which it sits. */
 }
 
 
-/* The calls the table offers you take the reserved row and the one above it:
-Claim is the top target, Dismiss sits under it, nearest the thumb. Both rows
-come from the solver (--layout-claim-*), so the panel is measured, never
-eyeballed, and it never reaches into the hand. */
+/* The calls the table offers you fill the reserved row: Dismiss at the left
+end, the claim mirrored into the throw's own slot at the right end, and never
+a button across the whole board. */
 
 .variant-d .claim-bar {
   position: absolute;
-  top: var(--layout-claim-y);
-  left: var(--layout-claim-x);
-  width: var(--layout-claim-w);
-  height: var(--layout-claim-h);
+  top: var(--layout-controls-y);
+  /* From the table's left rim to the throw's own right edge: the claim lands
+     in exactly the slot your throw occupies. */
+  left: var(--layout-table-x);
+  width: calc(
+    var(--layout-controls-x) + var(--layout-controls-w) - var(--layout-table-x)
+  );
+  height: var(--layout-controls-h);
   margin: 0;
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-end;
-  gap: var(--layout-gap);
-  overflow: visible;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  overflow: hidden;
 }
 
 
@@ -2338,11 +2341,11 @@ eyeballed, and it never reaches into the hand. */
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
-  align-items: stretch;
-  justify-content: flex-start;
+  align-items: center;
   gap: var(--space-3);
   height: var(--layout-controls-h);
   min-height: var(--layout-controls-h);
+  min-width: 0;
 }
 
 
@@ -2353,8 +2356,26 @@ eyeballed, and it never reaches into the hand. */
 }
 
 
+/* The claim mirrors the throw: the same button, at the row's other end, not
+   a slab across the board. */
 .variant-d .claim-primary .claim-button {
+  flex: 0 0 auto;
+}
+
+.variant-d .claim-primary {
+  flex: 0 0 auto;
+}
+
+.variant-d .claim-secondary {
   flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.variant-d .claim-button {
+  min-width: 0;
 }
 
 

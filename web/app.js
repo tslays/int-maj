@@ -1165,7 +1165,6 @@ function applyLayout() {
   setRect("seat-left", layout.seats.left);
   setRect("seat-right", layout.seats.right);
   setRect("controls", layout.controls);
-  setRect("claim", layout.claim);
 }
 
 function renderSeats() {
@@ -1493,9 +1492,9 @@ function makeChowVariant(action) {
 }
 
 /**
- * Two decisions in one panel: Claim on top, Dismiss under it so the thumb
- * reaches the common answer first. A chow with several runs puts its variants
- * beside Dismiss; Enter always takes the best claim.
+ * Two decisions in the reserved row: Dismiss at its left end, the claim in the
+ * throw's own slot at the right, both compact - never a button across the
+ * whole board. A chow with several runs puts its variants beside Dismiss.
  */
 function renderClaimBar() {
   const bar = $("#claim-bar");
@@ -1523,32 +1522,26 @@ function renderClaimBar() {
     className: "claim-pass",
   });
 
-  if (claim === null) {
-    // Nothing to take: one decision, in the row nearest the thumb.
-    const only = div("claim-row claim-secondary");
-    only.append(dismiss);
-    bar.append(only);
-    maybePlayClaimCue();
-    return;
-  }
-
-  const primary = div("claim-row claim-primary");
-  primary.append(head, makeClaimButton(claim, {
-    primary: true,
-    label: "Claim",
-    tiles:
-      claim.type === "Claim" && claim.kind !== "mahjong" ? claim.tiles : null,
-  }));
-
   const secondary = div("claim-row claim-secondary");
-  secondary.append(dismiss);
+  secondary.append(head, dismiss);
   if (claim.type === "Claim" && claim.kind === "chow" && chowActions().length > 1) {
     const variants = div("claim-variants");
     for (const action of chowActions()) variants.append(makeChowVariant(action));
     secondary.append(variants);
   }
+  bar.append(secondary);
 
-  bar.append(primary, secondary);
+  if (claim !== null) {
+    const primary = div("claim-row claim-primary");
+    primary.append(makeClaimButton(claim, {
+      primary: true,
+      label: "Claim",
+      tiles:
+        claim.type === "Claim" && claim.kind !== "mahjong" ? claim.tiles : null,
+    }));
+    bar.append(primary);
+  }
+
   maybePlayClaimCue();
 }
 
