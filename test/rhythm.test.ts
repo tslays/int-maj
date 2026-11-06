@@ -118,10 +118,14 @@ function firstDiscardClaim(): Rhythm {
   }
   throw new Error("no seed produced a claim on the first discard");
 }/**
- * A seed whose first discard (you deal) is answered by a full round with no
- * claim and no meld, so the table comes back to you for a draw.
+ * A seed whose first discard (you deal) is answered by the bots and comes back
+ * to you for a draw - a bot may claim your tile on the way, which is the hard
+ * case: the round must still hand you nothing until the last throw has landed.
  */
-function cleanRoundSeed(): string {
+function returnRoundSeed(): string {
+  // Prefer a round where a bot claims your throw: that is the path where the
+  // draw used to arrive while the claim's throw was still in the air.
+  let fallback: string | null = null;
   for (let attempt = 0; attempt < 400; attempt++) {
     const seed = `round-${attempt}`;
     const store = new GameStore({ defaultSeed: seed });
@@ -144,9 +148,12 @@ function cleanRoundSeed(): string {
       if (stepped.events.some((event) => event.type === "Claimed")) claimed = true;
     }
     const after = viewFor(session.state, session.seat);
-    if (claimed || after.claimWindow !== null) continue;
-    if (after.legalActions.some((action) => action.type === "Draw")) return seed;
+    if (after.claimWindow !== null) continue;
+    if (!after.legalActions.some((action) => action.type === "Draw")) continue;
+    if (claimed) return seed;
+    fallback ??= seed;
   }
+  if (fallback !== null) return fallback;
   throw new Error("no seed produced a clean round back to the human");
 }
 
@@ -292,7 +299,7 @@ describe("table rhythm", () => {
     );
   });
   it("never hands you a tile before the last throw has landed", async () => {
-    const seed = cleanRoundSeed();
+    const seed = returnRoundSeed();
     const clean = await startServer({ seed });
     try {
       await navigate(cdp, sessionId, `${clean.url}/`);
@@ -341,7 +348,12 @@ describe("table rhythm", () => {
         drawn = await evaluate<boolean>(
           cdp,
           sessionId,
-          `document.querySelectorAll("#hand .hand-tile").length === 14 && document.querySelectorAll("#pile .discard").length > 1`,
+          `(() => {
+            const tape = window.__tape;
+            const dropped = tape.some((sample) => sample.hand === 13);
+            const now = tape[tape.length - 1];
+            return dropped && now.hand === 14 && now.tiles >= 1;
+          })()`,
         );
         if (drawn) break;
         await new Promise((resolve) => setTimeout(resolve, 100));
@@ -352,7 +364,10 @@ describe("table rhythm", () => {
         sessionId,
         `clearInterval(window.__tapeTimer); window.__tape`,
       );
-      assert.ok(drawn, "the table comes back to you with a drawn tile");
+      assert.ok(
+        drawn,
+        `the table comes back to you with a drawn tile: ${JSON.stringify(tape.slice(-4))}`,
+      );
 
       // The last throw before the draw, and the moment the tile appeared.
       const emptyHand = tape.findIndex((sample) => sample.hand === 13);
