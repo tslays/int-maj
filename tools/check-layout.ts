@@ -521,8 +521,9 @@ async function screenshot(cdp: Cdp, sessionId: string, path: string): Promise<vo
 
 export async function startServer(options: {
   seed?: string;
+  store?: GameStore;
 } = {}): Promise<{ url: string; stop: () => Promise<void> }> {
-  const store = new GameStore({ defaultSeed: options.seed ?? "layout" });
+  const store = options.store ?? new GameStore({ defaultSeed: options.seed ?? "layout" });
   const server = createAppServer({ store });
   {
     const { promise, resolve } = Promise.withResolvers<void>();

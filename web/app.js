@@ -884,10 +884,26 @@ function syncRevealed() {
     rhythmReady = true;
     return;
   }
-  // A claim takes the offered tile off the table; drop it from the heap.
-  const before = pileKeys.length;
-  pileKeys = pileKeys.filter((item) => all.some((other) => other.key === item.key));
-  if (pileKeys.length !== before) rebuildPile();
+  // A claim lifts its discard, but every other tile stays exactly where it
+  // landed. Keep a per-seat/per-key multiset; when duplicates exist the newest
+  // matching occurrence is the one a claim can have taken.
+  const remaining = new Map();
+  for (const item of all) {
+    const key = `${item.seat}:${item.key}`;
+    remaining.set(key, (remaining.get(key) ?? 0) + 1);
+  }
+  const keep = new Set();
+  for (const item of pileKeys) {
+    const key = `${item.seat}:${item.key}`;
+    const count = remaining.get(key) ?? 0;
+    if (count <= 0) continue;
+    keep.add(item.id);
+    remaining.set(key, count - 1);
+  }
+  if (keep.size !== pileKeys.length) {
+    pileKeys = pileKeys.filter((item) => keep.has(item.id));
+    pileItems = pileItems.filter((item) => keep.has(item.id));
+  }
   for (const seat of SEATS) {
     const count = seatEntry(seat)?.discards.length ?? 0;
     revealedDiscards[seat] = Math.min(revealedDiscards[seat], count);
@@ -1275,11 +1291,11 @@ function mulberry32(seed) {
   };
 }
 
-const PILE_CAPACITY = 84;
 let pileItems = [];
 let pileKeys = [];
 let pileSize = { w: 0, h: 0 };
 let pileRandom = mulberry32(0x5eed);
+let pileCandidatePhase = 0;
 
 function angleDistance(a, b) {
   const turn = Math.abs(((a - b + Math.PI) % (Math.PI * 2)) - Math.PI);
@@ -1313,19 +1329,22 @@ function placementFits(list, candidate) {
 }
 
 /** A dense, jittered grid of spots inside the heap, ordered from the centre. */
-function pileCandidates(w, h) {
+function pileCandidates(w, h, phase = 0) {
+  pileRandom = mulberry32((0x5eed + Math.imul(phase, 0x9e3779b9)) >>> 0);
   const pile = currentLayout.pile;
   const centreX = pile[2] / 2;
   const centreY = pile[3] / 2;
   const reachX = Math.max(1, pile[2] / 2 - w / 2);
   const reachY = Math.max(1, pile[3] / 2 - h / 2);
-  const stepX = w * 1.04;
-  const stepY = h * 1.03;
+  // Dense candidates let the heap use the real gaps between rotated tiles;
+  // SAT still enforces a half-pixel clear space, so closer never means overlap.
+  const stepX = w * 0.78;
+  const stepY = h * 0.78;
   const list = [];
   for (let gy = -reachY; gy <= reachY; gy += stepY) {
     for (let gx = -reachX; gx <= reachX; gx += stepX) {
-      const jx = gx + (pileRandom() - 0.5) * stepX * 0.14;
-      const jy = gy + (pileRandom() - 0.5) * stepY * 0.14;
+      const jx = gx + (pileRandom() - 0.5) * stepX * 0.24;
+      const jy = gy + (pileRandom() - 0.5) * stepY * 0.24;
       if ((jx / reachX) ** 2 + (jy / reachY) ** 2 > 1) continue;
       list.push({
         x: centreX + jx - w / 2,
@@ -1363,52 +1382,38 @@ function tryPlace(seat, list, placed, w, h) {
 let pileSpots = null;
 
 function spotsFor(w, h) {
-  pileRandom = mulberry32(0x5eed);
-  pileSpots = pileCandidates(w, h);
+  pileCandidatePhase = 0;
+  pileSpots = pileCandidates(w, h, pileCandidatePhase);
   pileSize = { w, h };
   return pileSpots;
 }
 
 /**
  * Adds one tile to the heap and never moves the tiles already down: the spot is
- * chosen once, from what is still free. Only a heap that is genuinely full is
- * rebuilt smaller.
+ * chosen once from a dense set of free candidate centres. If the first lattice
+ * is full, add more centres at the same size before declaring the heap full.
  */
 function addToPile(item) {
   if (currentLayout === null) return;
   if (pileSpots === null) {
     spotsFor(currentLayout.discardTileWidth, currentLayout.discardTileHeight);
   }
-  const spot = tryPlace(item.seat, pileSpots, pileItems, pileSize.w, pileSize.h);
+  let spot = tryPlace(item.seat, pileSpots, pileItems, pileSize.w, pileSize.h);
+  // If a lattice phase ran out, add more candidate centres at the same tile
+  // size. Never resize or re-place tiles that have already landed.
+  for (let phase = 0; spot === null && phase < 5; phase++) {
+    pileCandidatePhase += 1;
+    pileSpots.push(...pileCandidates(pileSize.w, pileSize.h, pileCandidatePhase));
+    spot = tryPlace(item.seat, pileSpots, pileItems, pileSize.w, pileSize.h);
+  }
   if (spot !== null) {
     pileItems.push({ key: item.key, seat: item.seat, id: item.id, ...spot });
     return;
   }
-  rebuildPile();
-}
-
-/** Last resort: the window cannot hold the hand at this size. */
-function rebuildPile() {
-  const baseW = currentLayout.discardTileWidth;
-  const baseH = currentLayout.discardTileHeight;
-  for (let step = 1; step < 12; step++) {
-    const w = baseW * Math.pow(0.93, step);
-    const h = baseH * Math.pow(0.93, step);
-    const list = spotsFor(w, h);
-    const placed = [];
-    for (const item of pileKeys) {
-      const spot = tryPlace(item.seat, list, placed, w, h);
-      if (spot === null) {
-        placed.length = 0;
-        break;
-      }
-      placed.push({ key: item.key, seat: item.seat, id: item.id, ...spot });
-    }
-    if (placed.length === pileKeys.length) {
-      pileItems = placed;
-      return;
-    }
-  }
+  // With the dense fixed-size lattices exhausted, keep every earlier landing
+  // where it is rather than repacking the heap. This is a capacity case the
+  // geometry audit keeps far beyond a hand's discards, not a normal path.
+  console.error("Discard heap has no non-overlapping spot; kept landed tiles fixed.");
 }
 
 function renderPile() {
