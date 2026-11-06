@@ -17,7 +17,7 @@
 import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
 
-import { GameStore } from "../src/server/session.ts";
+import { GameStore, type WebSession } from "../src/server/session.ts";
 import { viewFor } from "../src/core/game/view.ts";
 import {
   connectChrome,
@@ -160,6 +160,57 @@ function returnRoundSeed(): string {
   }
   if (fallback !== null) return fallback;
   throw new Error("no seed produced a clean round back to the human");
+}
+
+/**
+ * A pre-claim snapshot with several visible discards: a bot's claim must lift
+ * only its tile, not repack the other tiles in the heap.
+ */
+function botClaimSnapshot(): {
+  seed: string;
+  snapshot: Omit<WebSession, "id">;
+  discards: number;
+} {
+  for (let attempt = 0; attempt < 500; attempt++) {
+    const seed = `fixed-pile-${attempt}`;
+    const store = new GameStore({ defaultSeed: seed });
+    let { session } = store.create(seed);
+    const id = session.id;
+
+    for (let guard = 0; guard < 1800; guard++) {
+      const view = viewFor(session.state, session.seat);
+      if (view.phase === "finished") break;
+      if (view.legalActions.length > 0) {
+        const action =
+          view.legalActions.find((candidate) => candidate.type === "Pass") ??
+          view.legalActions.find((candidate) => candidate.type === "Draw") ??
+          view.legalActions.find(
+            (candidate) => candidate.type === "Discard" && candidate.tile === displayHand(view)[0],
+          ) ??
+          view.legalActions[0];
+        if (action === undefined) break;
+        const moved = store.move(id, action);
+        if (!("session" in moved)) break;
+        session = moved.session;
+        continue;
+      }
+
+      const before = store.get(id);
+      if (before === undefined) break;
+      const discards = before.state.players.reduce((sum, player) => sum + player.discards.length, 0);
+      const stepped = store.step(id);
+      if (!("session" in stepped)) break;
+      const claim = stepped.events.find(
+        (event) => event.type === "Claimed" && event.seat !== session.seat,
+      );
+      if (claim !== undefined && discards >= 6 && discards <= 20) {
+        const { id: _id, ...snapshot } = before;
+        return { seed, snapshot, discards };
+      }
+      session = stepped.session;
+    }
+  }
+  throw new Error("no bot claim found after enough discards for the fixed-pile audit");
 }
 
 describe("table rhythm", () => {
@@ -423,6 +474,88 @@ describe("table rhythm", () => {
       );
     } finally {
       await clean.stop();
+    }
+  });
+  it("keeps every landed discard at its original spot when a bot claims one", async () => {
+    const fixture = botClaimSnapshot();
+    const pileStore = new GameStore({ defaultSeed: fixture.seed });
+    const game = pileStore.adopt(fixture.snapshot);
+    const claimServer = await startServer({ seed: fixture.seed, store: pileStore });
+    const gate = await cdp.send<{ identifier: string }>({
+      method: "Page.addScriptToEvaluateOnNewDocument",
+      params: {
+        source: `(() => {
+          const realFetch = window.fetch.bind(window);
+          let release;
+          const gate = new Promise((resolve) => { release = resolve; });
+          window.__releasePileStep = release;
+          window.fetch = (input, init) => {
+            const url = typeof input === "string" ? input : input.url;
+            if (url.startsWith("/api/step")) return gate.then(() => realFetch(input, init));
+            return realFetch(input, init);
+          };
+        })();`,
+      },
+      sessionId,
+    });
+
+    try {
+      await navigate(cdp, sessionId, `${claimServer.url}/?game=${encodeURIComponent(game.id)}`);
+      const readyBy = Date.now() + 12000;
+      while (Date.now() < readyBy) {
+        const ready = await evaluate<boolean>(
+          cdp,
+          sessionId,
+          `document.querySelectorAll("#pile .discard").length === ${fixture.discards}`,
+        );
+        if (ready) break;
+        await new Promise((resolve) => setTimeout(resolve, 60));
+      }
+      const positions = `(() => [...document.querySelectorAll("#pile .discard")].map((tile) =>
+        [tile.dataset.key, tile.style.left, tile.style.top, tile.style.transform].join("|")) )()`;
+      const before = await evaluate<string[]>(cdp, sessionId, positions);
+      assert.equal(before.length, fixture.discards, "the prepared heap is visible before the call");
+
+      await evaluate(cdp, sessionId, `window.__releasePileStep()`);
+      const calledBy = Date.now() + 8000;
+      let announced = false;
+      while (Date.now() < calledBy) {
+        announced = await evaluate<boolean>(
+          cdp,
+          sessionId,
+          `!document.querySelector("#call-out").hidden`,
+        );
+        if (announced) break;
+        await new Promise((resolve) => setTimeout(resolve, 40));
+      }
+      assert.ok(announced, "the bot claim is announced");
+      const after = await evaluate<string[]>(cdp, sessionId, positions);
+      assert.equal(after.length, before.length - 1, "the claimed discard alone leaves the heap");
+      const beforeSet = new Set(before);
+      assert.ok(
+        after.every((position) => beforeSet.has(position)),
+        "every surviving discard keeps its original position, angle and size",
+      );
+      const afterSet = new Set(after);
+      assert.equal(
+        before.filter((position) => !afterSet.has(position)).length,
+        1,
+        "exactly the claimed tile's position is removed",
+      );
+    } finally {
+      // Never leave the page's step fetch parked: the harness must be able to
+      // shut down even when an assertion fails before the gate is released.
+      await evaluate<boolean>(
+        cdp,
+        sessionId,
+        `(() => { if (typeof window.__releasePileStep === "function") window.__releasePileStep(); return true; })()`,
+      ).catch(() => false);
+      await cdp.send({
+        method: "Page.removeScriptToEvaluateOnNewDocument",
+        params: { identifier: gate.identifier },
+        sessionId,
+      });
+      await claimServer.stop();
     }
   });
 
