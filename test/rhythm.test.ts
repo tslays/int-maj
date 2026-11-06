@@ -31,7 +31,7 @@ import {
 
 const DISCARD_BEAT_MS = 1000;
 /** The pause the table takes after a throw lands before it plays on. */
-const DISCARD_SETTLE_MS = 380;
+const DISCARD_SETTLE_MS = 520;
 /** The heap must never gain two tiles inside one sample. */
 const TOLERANCE_MS = 100;
 
@@ -139,19 +139,24 @@ function returnRoundSeed(): string {
     session = applied.session;
 
     let claimed = false;
+    let firstStepClaimed = false;
     for (let guard = 0; guard < 40; guard++) {
       const view = viewFor(session.state, session.seat);
       if (view.phase === "finished" || view.legalActions.length > 0) break;
       const stepped = store.step(id);
       if (!("session" in stepped)) break;
       session = stepped.session;
-      if (stepped.events.some((event) => event.type === "Claimed")) claimed = true;
+      const botClaim = stepped.events.some(
+        (event) => event.type === "Claimed" && event.seat !== session.seat,
+      );
+      if (botClaim) claimed = true;
+      if (guard === 0 && botClaim) firstStepClaimed = true;
     }
     const after = viewFor(session.state, session.seat);
     if (after.claimWindow !== null) continue;
     if (!after.legalActions.some((action) => action.type === "Draw")) continue;
-    if (claimed) return seed;
-    fallback ??= seed;
+    if (firstStepClaimed) return seed;
+    if (claimed) fallback ??= seed;
   }
   if (fallback !== null) return fallback;
   throw new Error("no seed produced a clean round back to the human");
@@ -398,6 +403,12 @@ describe("table rhythm", () => {
         called.call,
         /^(PUNG|KONG|CHOW|FISHING|MAHJONG)$/,
         `the announcement reads "${called.call}"`,
+      );
+      const firstLanding = tape.find((sample) => sample.tiles > 0);
+      assert.ok(firstLanding !== undefined, "your discarded tile lands first");
+      assert.ok(
+        called.t - firstLanding.t >= DISCARD_SETTLE_MS - 80,
+        `the call appeared ${called.t - firstLanding.t} ms after your discard landed`,
       );
       const cleared = tape.findIndex(
         (sample, index) => index > tape.indexOf(called) && sample.call === "",

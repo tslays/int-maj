@@ -275,11 +275,11 @@ carries the whole log, and only live events announce.
 Timing, for one round with a claim on your throw:
 
     your throw lands        0 ms
-    settle                 380 ms
-    claim answered         ~385 ms   word + meld light + cue
-    word clears            1105 ms
-    table answers          ~1110 ms  (the claimer's next decision)
-    next throw lands       2110 ms
+    settle                 520 ms
+    claim answered         ~525 ms   word + meld light + cue
+    word clears            ~1245 ms
+    table answers          ~1250 ms  (the claimer's next decision)
+    next throw lands       >=1430 ms (the call pause is explicit; the next beat has a 180 ms floor) 
 
 ### Wall tiles are as big as the table allows (2026-11-06)
 

@@ -364,15 +364,26 @@ function applyResponse(data, note, replaceLog = false) {
   settleScores();
   if (replaceLog || data.replaceLog === true) logLines.length = 0;
   if (note) log(note);
+  const justDiscarded =
+    !eventsAreHistory &&
+    !replaceLog &&
+    data.replaceLog !== true &&
+    Array.isArray(data.events) &&
+    data.events.some((line) => line.startsWith(`${data.seat} discards `));
   if (Array.isArray(data.events)) {
     for (const line of data.events) log(line);
     pendingDiscards = discardsFromEvents(data.events);
     announceCalls(data.events);
   }
   render();
-  // The table answers one decision at a time; ask for the next one once this
-  // payload has been laid out (the beat schedules the throw in between).
-  setTimeout(stepTable, 0);
+  // Your own throw lands immediately. Give it the same settle as an opponent's
+  // throw before asking the table to answer it, so a claim never appears on
+  // the click's frame.
+  const nextStepDelay = justDiscarded ? DISCARD_SETTLE_MS : 0;
+  setTimeout(() => {
+    autoDraw();
+    stepTable();
+  }, nextStepDelay);
   if (pendingClick !== null) {
     const index = pendingClick;
     pendingClick = null;
@@ -831,7 +842,7 @@ const DISCARD_BEAT_MS = 1000;
  * your left has finished. The next landing still comes a beat after the last
  * one - this pause is taken out of that beat, not added to it.
  */
-const DISCARD_SETTLE_MS = 380;
+const DISCARD_SETTLE_MS = 520;
 /** However late the step is, a new throw still gets this much air. */
 const MIN_BEAT_MS = 180;
 /** The claimed tile gets this long to read once it has landed. */
