@@ -379,8 +379,11 @@ function assertOpponentHands(measurement: Measurement, label: string): void {
     }
     const first = rack.boxes[0];
     if (first !== undefined) {
-      // The three opponents are the same kind of seat: one back size for all.
-      sizes.add(`${first[2].toFixed(1)}x${first[3].toFixed(1)}`);
+      // The three opponents hold the same tile; a side wall turns it a
+      // quarter, so only the footprint's long and short sides must agree.
+      sizes.add(
+        `${Math.min(first[2], first[3]).toFixed(1)}x${Math.max(first[2], first[3]).toFixed(1)}`,
+      );
     }
   }
   assert.equal(

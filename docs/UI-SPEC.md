@@ -233,3 +233,25 @@ brightness/scale pulse; a 2 px outline instead when the user prefers reduced
 motion) and a two-knock cue plays, distinct from the single tile clack and from
 the two-note claim offer. History is never cued: a review state or a resumed
 game arrives with the whole log, and only a live `claims` line lights a seat.
+
+### The walls are turned (2026-11-06)
+
+A wall shows its tiles from that player's side of the table, so each seat has
+an angle:
+
+    seat-top   180deg   (its tiles face away from you)
+    seat-left  270deg   (its tiles lie on their side)
+    seat-right  90deg
+    hand         0deg   (yours)
+
+A turned tile takes its own box: on a side seat a back is one tile height
+across and one tile width down, so the solver sizes the side bands that way
+(`sideSeatWidth = rackHeight`, `sideSeatHeight = 13 * rackWidth + 12`) and the
+top band stays thirteen tile widths long. The faces in a side wall's melds turn
+with its backs. `--tile-turn` carries the angle and every seat image rotates by
+it.
+
+The back art (`web/tiles/back.svg`) is a bone body with a glazed green diamond
+lattice, a bone rim and two bevel strips: at 30 px it reads as a woven tile back
+rather than a flat card, and the light/dark strips give a turned wall a top and
+a bottom.

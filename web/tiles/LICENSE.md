@@ -1,8 +1,8 @@
 # Tile art licence
 
-Every SVG in this directory — the 34 play tiles, the eight bonus marks and
-the tile back — is vendored from **Cangjie6's Chinese mahjong tile set** on
-Wikimedia Commons:
+The 34 play tiles and the eight bonus marks are vendored from **Cangjie6's
+Chinese mahjong tile set** on Wikimedia Commons; `back.svg` is a derived work
+in the same style and under the same licence (see below):
 
 - Author: [Cangjie6](https://commons.wikimedia.org/wiki/User:Cangjie6)
 - Source: <https://commons.wikimedia.org/wiki/Category:SVG_Oblique_illustrations_of_Mahjong_tiles>
@@ -14,6 +14,13 @@ Wikimedia Commons:
 copies remain under that licence; redistributing them (or modified versions)
 requires the same licence and the attribution below. This notice satisfies
 the attribution requirement.
+
+## The back
+
+`back.svg` is not vendored: it is drawn here, on the same 300x400 canvas, with
+the set's own palette and its oblique body, so a wall reads as tiles at 30 px.
+It carries the same CC BY-SA 4.0 licence and attribution as the faces it sits
+beside; changing it keeps the rest of the set under that licence.
 
 ## File mapping
 

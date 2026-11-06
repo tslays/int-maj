@@ -2077,6 +2077,7 @@ h3 {
   visibility: hidden;
 }
 
+
 .variant-d .seat .meld-row {
   gap: 2px;
   max-width: none;
@@ -2101,6 +2102,51 @@ h3 {
 .variant-d .seat .meld .tile {
   width: var(--layout-back-w);
   height: var(--layout-back-h);
+}
+
+
+/* Each wall shows its tiles from that player's side of the table: the far
+   seat's tiles are upside down, the side seats' tiles lie on their side, so a
+   wall reads as tiles and not as a row of cards. */
+.variant-d .seat-top {
+  --tile-turn: 180deg;
+}
+
+.variant-d .seat-left {
+  --tile-turn: 270deg;
+}
+
+.variant-d .seat-right {
+  --tile-turn: 90deg;
+}
+
+.variant-d .seat-top .rack .tile-back img,
+.variant-d .seat-top .meld .tile img {
+  transform: rotate(var(--tile-turn));
+}
+
+/* A turned tile takes its own box: one tile height across, one tile width
+   down, with the artwork centred and turned inside it. */
+.variant-d .seat-left .rack .tile-back,
+.variant-d .seat-right .rack .tile-back,
+.variant-d .seat-left .meld .tile,
+.variant-d .seat-right .meld .tile {
+  position: relative;
+  width: var(--layout-back-h);
+  height: var(--layout-back-w);
+  overflow: hidden;
+}
+
+.variant-d .seat-left .rack .tile-back img,
+.variant-d .seat-right .rack .tile-back img,
+.variant-d .seat-left .meld .tile img,
+.variant-d .seat-right .meld .tile img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--layout-back-w);
+  height: var(--layout-back-h);
+  transform: translate(-50%, -50%) rotate(var(--tile-turn));
 }
 
 /* A call the table makes: the new meld briefly lights up, so the eye finds
