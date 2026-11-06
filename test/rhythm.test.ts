@@ -30,6 +30,8 @@ import {
 } from "../tools/check-layout.ts";
 
 const DISCARD_BEAT_MS = 1000;
+/** The pause the table takes after a throw lands before it plays on. */
+const DISCARD_SETTLE_MS = 380;
 /** The heap must never gain two tiles inside one sample. */
 const TOLERANCE_MS = 100;
 
@@ -115,7 +117,40 @@ function firstDiscardClaim(): Rhythm {
     return { seed, discards: throws, claimSeat: after.claimWindow.discarder };
   }
   throw new Error("no seed produced a claim on the first discard");
-}describe("table rhythm", () => {
+}/**
+ * A seed whose first discard (you deal) is answered by a full round with no
+ * claim and no meld, so the table comes back to you for a draw.
+ */
+function cleanRoundSeed(): string {
+  for (let attempt = 0; attempt < 400; attempt++) {
+    const seed = `round-${attempt}`;
+    const store = new GameStore({ defaultSeed: seed });
+    let { session } = store.create(seed);
+    const id = session.id;
+    const opening = viewFor(session.state, session.seat);
+    const discard = opening.legalActions.find((action) => action.type === "Discard");
+    if (discard === undefined) continue;
+    const applied = store.move(id, discard);
+    if ("error" in applied) continue;
+    session = applied.session;
+
+    let claimed = false;
+    for (let guard = 0; guard < 40; guard++) {
+      const view = viewFor(session.state, session.seat);
+      if (view.phase === "finished" || view.legalActions.length > 0) break;
+      const stepped = store.step(id);
+      if (!("session" in stepped)) break;
+      session = stepped.session;
+      if (stepped.events.some((event) => event.type === "Claimed")) claimed = true;
+    }
+    const after = viewFor(session.state, session.seat);
+    if (claimed || after.claimWindow !== null) continue;
+    if (after.legalActions.some((action) => action.type === "Draw")) return seed;
+  }
+  throw new Error("no seed produced a clean round back to the human");
+}
+
+describe("table rhythm", () => {
   let cdp: Cdp;
   let sessionId: string;
   let rhythm: Rhythm;
@@ -236,6 +271,11 @@ function firstDiscardClaim(): Rhythm {
         gap >= DISCARD_BEAT_MS - TOLERANCE_MS,
         `throw ${index + 1} lands ${gap} ms after the one before it; the beat is ${DISCARD_BEAT_MS} ms`,
       );
+      // The settle is taken out of the beat, never added to it.
+      assert.ok(
+        gap <= DISCARD_BEAT_MS + 250,
+        `throw ${index + 1} lands ${gap} ms after the one before it; the settle slowed the table`,
+      );
     }
 
     const firstBar = samples.find((sample) => sample.bar);
@@ -251,4 +291,89 @@ function firstDiscardClaim(): Rhythm {
       `the offer names ${firstBar.barTile}; the last tile on the heap is ${lastLanding.lastKey}`,
     );
   });
+  it("never hands you a tile before the last throw has landed", async () => {
+    const seed = cleanRoundSeed();
+    const clean = await startServer({ seed });
+    try {
+      await navigate(cdp, sessionId, `${clean.url}/`);
+      const ready = Date.now() + 12000;
+      while (Date.now() < ready) {
+        const dealt = await evaluate<boolean>(
+          cdp,
+          sessionId,
+          `document.querySelectorAll("#hand .hand-tile").length === 14`,
+        );
+        if (dealt) break;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
+      await evaluate(cdp, sessionId, `(() => {
+        window.__tape = [];
+        window.__tapeStart = performance.now();
+        window.__tapeTimer = setInterval(() => {
+          window.__tape.push({
+            t: Math.round(performance.now() - window.__tapeStart),
+            tiles: document.querySelectorAll("#pile .discard").length,
+            hand: document.querySelectorAll("#hand .hand-tile").length,
+          });
+        }, 40);
+        return true;
+      })()`);
+
+      const point = await evaluate<{ x: number; y: number }>(
+        cdp,
+        sessionId,
+        `(() => { const tile = document.querySelectorAll("#hand .hand-tile")[0]; const box = tile.getBoundingClientRect(); return { x: box.x + box.width / 2, y: box.y + box.height / 2 }; })()`,
+      );
+      for (const type of ["mousePressed", "mouseReleased"]) {
+        await cdp.send({
+          method: "Input.dispatchMouseEvent",
+          params: { type, x: point.x, y: point.y, button: "left", clickCount: 1 },
+          sessionId,
+        });
+      }
+
+      // The round comes back to you: hand 14 again, with the table's throws
+      // already on the heap.
+      const deadline = Date.now() + 20000;
+      let drawn = false;
+      while (Date.now() < deadline) {
+        drawn = await evaluate<boolean>(
+          cdp,
+          sessionId,
+          `document.querySelectorAll("#hand .hand-tile").length === 14 && document.querySelectorAll("#pile .discard").length > 1`,
+        );
+        if (drawn) break;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      const tape = await evaluate<{ t: number; tiles: number; hand: number }[]>(
+        cdp,
+        sessionId,
+        `clearInterval(window.__tapeTimer); window.__tape`,
+      );
+      assert.ok(drawn, "the table comes back to you with a drawn tile");
+
+      // The last throw before the draw, and the moment the tile appeared.
+      const emptyHand = tape.findIndex((sample) => sample.hand === 13);
+      assert.ok(emptyHand >= 0, "the hand goes down to thirteen after your throw");
+      const drew = tape.findIndex(
+        (sample, index) => index > emptyHand && sample.hand === 14,
+      );
+      assert.ok(drew > emptyHand, "and comes back to fourteen with the draw");
+      const drawAt = tape[drew]!.t;
+      let landingAt = -1;
+      for (let index = 1; index <= drew; index++) {
+        if (tape[index]!.tiles > tape[index - 1]!.tiles) landingAt = tape[index]!.t;
+      }
+      assert.ok(landingAt >= 0, "the round threw at least one tile");
+      assert.ok(
+        drawAt - landingAt >= DISCARD_SETTLE_MS - 80,
+        `the tile arrived ${drawAt - landingAt} ms after the last throw landed`,
+      );
+    } finally {
+      await clean.stop();
+    }
+  });
+
 });

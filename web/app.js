@@ -781,11 +781,23 @@ function renderSeat(entry) {
  * not hurry the throws before it, it only waits for them.
  */
 const DISCARD_BEAT_MS = 1000;
+/**
+ * A throw is not over the instant it lands: the ghost is still flying and the
+ * frame is still glowing. The table waits this long before it plays its next
+ * decision, so the tile you draw is never in your hand before the throw to
+ * your left has finished. The next landing still comes a beat after the last
+ * one - this pause is taken out of that beat, not added to it.
+ */
+const DISCARD_SETTLE_MS = 380;
+/** However late the step is, a new throw still gets this much air. */
+const MIN_BEAT_MS = 180;
 /** The claimed tile gets this long to read once it has landed. */
 const CLAIM_SHOW_MS = 260;
 let discardQueue = [];
 let pendingDiscards = [];
 let discardTimer = null;
+/** When the last throw finished landing, for the landing-to-landing beat. */
+let lastLandingAt = 0;
 /** A claim whose discard is still in flight: the offer is not asked yet. */
 let claimHeld = false;
 let claimTimer = null;
@@ -906,6 +918,10 @@ function planDiscards() {
 
 
 function scheduleDiscard() {
+  // Keep throws a beat apart: whatever the settle already spent comes out of
+  // this wait rather than slowing the table down.
+  const spent = lastLandingAt === 0 ? 0 : performance.now() - lastLandingAt;
+  const beat = Math.max(MIN_BEAT_MS, DISCARD_BEAT_MS - spent);
   discardTimer = setTimeout(() => {
     discardTimer = null;
     revealDiscard();
@@ -917,10 +933,11 @@ function scheduleDiscard() {
       showClaim();
       return;
     }
-    // The tile is down: the table may answer with its next decision, one
-    // action at a time, so the next throw is a beat after this one.
-    setTimeout(stepTable, 0);
-  }, DISCARD_BEAT_MS);
+    // The tile is down, but the throw is not finished: wait for the ghost to
+    // land and the frame to fade before the table answers, so a drawn tile can
+    // never appear while the seat to your left is still discarding.
+    setTimeout(stepTable, DISCARD_SETTLE_MS);
+  }, beat);
 }
 
 /**
@@ -980,6 +997,7 @@ function showClaim() {
 function revealDiscard(item) {
   const next = item ?? discardQueue.shift();
   if (next === undefined) return;
+  lastLandingAt = performance.now();
   if (next.id !== undefined && pileKeys.some((placed) => placed.id === next.id)) return;
   revealedDiscards[next.seat] = (revealedDiscards[next.seat] ?? 0) + 1;
   pileKeys.push(next);
