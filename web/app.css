@@ -2497,15 +2497,37 @@ a button across the whole board. */
    moves, so the word and the meld arrive together and the next throw waits. */
 .call-out {
   position: absolute;
-  left: var(--layout-pile-x);
-  top: var(--layout-pile-y);
-  width: var(--layout-pile-w);
-  height: var(--layout-pile-h);
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  z-index: 6;
+  z-index: 12;
+}
+
+/* The call stands in front of the wall that made it, so the eye lands on the
+   seat that acted. Every anchor is a solver rect, never a guess. */
+.call-out[data-seat="top"] {
+  left: calc(var(--layout-seat-top-x) + var(--layout-seat-top-w) / 2);
+  top: calc(var(--layout-seat-top-y) + var(--layout-seat-top-h) + 6px);
+  transform: translateX(-50%);
+}
+
+.call-out[data-seat="left"] {
+  left: calc(var(--layout-seat-left-x) + var(--layout-seat-left-w) + 8px);
+  top: calc(var(--layout-seat-left-y) + var(--layout-seat-left-h) / 2);
+  transform: translateY(-50%);
+}
+
+.call-out[data-seat="right"] {
+  left: calc(var(--layout-seat-right-x) - 8px);
+  top: calc(var(--layout-seat-right-y) + var(--layout-seat-right-h) / 2);
+  transform: translate(-100%, -50%);
+}
+
+.call-out[data-seat="bottom"] {
+  left: calc(var(--layout-hand-x) + var(--layout-hand-w) / 2);
+  top: calc(var(--layout-hand-y) - 6px);
+  transform: translate(-50%, -100%);
 }
 
 .call-out[hidden] {
@@ -2516,9 +2538,9 @@ a button across the whole board. */
   padding: 0.3em 0.85em;
   border: var(--stroke) solid var(--accent-line);
   border-radius: 999px;
-  background: rgba(6, 26, 18, 0.88);
+  background: rgba(6, 26, 18, 0.94);
   color: var(--on-felt);
-  font-size: clamp(15px, calc(var(--layout-pile-h) * 0.09), 44px);
+  font-size: clamp(13px, calc(var(--layout-back-h) * 0.62), 34px);
   font-weight: var(--fw-black);
   letter-spacing: var(--tracking-label);
   line-height: 1.1;

@@ -258,10 +258,12 @@ a bottom.
 
 ### Every call is spoken (2026-11-06)
 
-A pung, kong, chow, fishing declaration or a win is announced once, in the
-middle of the heap, as one word in capitals - PUNG, KONG, CHOW, FISHING,
-MAHJONG - for 720 ms. The pill is centred on the pile rect (so it is inside the
-board at every viewport) and takes no pointer events.
+A pung, kong, chow, fishing declaration or a win is announced once, as one
+word in capitals - PUNG, KONG, CHOW, FISHING, MAHJONG - for 720 ms, in front of
+the wall of the seat that called it: under the top wall, beside the side walls,
+above your hand. Every anchor is a solver rect (`--layout-seat-*`,
+`--layout-hand-*`) and the word never takes pointer events. It is sized from
+the wall's own tile (`0.62 * --layout-back-h`), so it is legible on a phone.
 
 The word is a beat of the table, not a toast: while it is up nothing else moves
 (`callHeld` blocks the beat, the automatic draw, the step loop and taps), and
@@ -278,3 +280,21 @@ Timing, for one round with a claim on your throw:
     word clears            1105 ms
     table answers          ~1110 ms  (the claimer's next decision)
     next throw lands       2110 ms
+
+### Wall tiles are as big as the table allows (2026-11-06)
+
+The back was sized from the hand's tile, which left an 18 px back on a phone.
+It is now derived from three limits, whichever binds first:
+
+    wall_tile_w = floor(min(
+      (board_w - 12) / 13,     // thirteen fit across the top wall
+      hand_tile_w * 0.85,      // never bigger than your own tiles
+      board_h * 0.06,          // a wall never dominates the table
+    ))
+    wall_tile_h = round(wall_tile_w / 0.75)
+
+then clamped so thirteen of them still stack down a side seat, and floored to a
+whole pixel so the bands and the artwork agree (`seats` and `--layout-back-*`
+are built from the same rounded numbers). Desktop 45x60 (was 33x44), phone
+portrait 26x35 (was 18.7x25); a phone in landscape is still capped by thirteen
+tiles in about 200 px of height.

@@ -208,16 +208,18 @@ function announceCalls(lines) {
         playMeldCue(audioContext);
       }
     }
-    showCall(word);
+    showCall(word, seat);
     return;
   }
 }
 
-function showCall(word) {
+function showCall(word, seat) {
   const element = $("#call-out");
   if (element === null) return;
   const label = element.querySelector("span");
   if (label !== null) label.textContent = word;
+  // The word stands in front of the wall that made the call.
+  element.dataset.seat = seat === null || seat === undefined ? "bottom" : PLACE[seat];
   element.hidden = false;
   callHeld = true;
   if (callTimer !== null) clearTimeout(callTimer);
