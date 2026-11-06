@@ -135,11 +135,23 @@ function solveLayout({
     const boardGap = Math.max(2, round(boardScale * 0.25));
     const boardTileHeight = (boardScale * 4) / 3;
     const handTileHeight = (handScale * 4) / 3;
-    const topSeatHeight = round(boardScale * 0.96);
-    // One back for all three opponents: a 3:4 tile whose height still lets
-    // thirteen of them stack down a side seat.
-    let rackHeight = boardScale * 0.96;
-    let rackWidth = rackHeight * 0.75;
+    // A wall's tile is as big as the table allows: thirteen must fit across
+    // the board (the top wall) and down the side bands, and it never outgrows
+    // your own hand's tiles.
+    const wallWidth = Math.max(
+      10,
+      Math.floor(
+        Math.min(
+          (width - 2 * boardGap - 12) / 13,
+          handScale * 0.85,
+          height * 0.06,
+        ),
+      ),
+    );
+    let rackWidth = wallWidth;
+    let rackHeight = rackWidth / 0.75;
+    // The top band is exactly one tile tall: the wall's own height.
+    const topSeatHeight = round(rackHeight);
     const badgeWidth = Math.max(34, round(boardScale * 0.8));
     const badgeHeight = round(boardScale * 0.36);
     const sideInset = 0;
@@ -170,8 +182,11 @@ function solveLayout({
     // The side seats are the binding constraint: a side wall turns its tiles
     // a quarter, so thirteen widths (not heights) have to fit it.
     rackWidth = Math.min(rackWidth, (available - 12) / 13);
-    rackHeight = rackWidth / 0.75;
-    const sideSeatWidth = round(rackHeight);
+    // One pixel-grid tile: the bands and the artwork must agree, so every
+    // length below is built from these two rounded numbers.
+    const wallTileWidth = Math.max(8, Math.floor(rackWidth));
+    const wallTileHeight = Math.round(wallTileWidth / 0.75);
+    const sideSeatWidth = wallTileHeight;
 
     const topRiverY = stackTop;
     const centreY = topRiverY + riverHeight + boardGap;
@@ -186,13 +201,13 @@ function solveLayout({
     const centreX = round((width - centreWidth) / 2);
     const sideRiverWidth = Math.max(1, centreX - boardGap - innerLeft);
     const flatRiverWidth = centreWidth;
-    const seatHeight = Math.min(13 * rackWidth + 12, available);
+    const seatHeight = Math.min(13 * wallTileWidth + 12, available);
 
     const seats = {
       top: [
-        round((width - (13 * rackWidth + 12)) / 2),
+        round((width - (13 * wallTileWidth + 12)) / 2),
         0,
-        round(13 * rackWidth + 12),
+        13 * wallTileWidth + 12,
         topSeatHeight,
       ],
       left: [sideInset, stackTop, sideSeatWidth, seatHeight],
@@ -308,8 +323,8 @@ function solveLayout({
       badges,
       tileWidth: handScale,
       boardTileWidth: boardScale,
-      rackWidth,
-      rackHeight,
+      rackWidth: wallTileWidth,
+      rackHeight: wallTileHeight,
       handTileWidth: handScale,
       handTileHeight,
       handOverlap: handScale * HAND_OVERLAP,
@@ -424,13 +439,17 @@ function solveLayout({
   const tileHeight = tileHeightOf(tileWidth);
   // One back for all three opponents: a 3:4 tile, never taller than the side
   // stack allows (see below).
-  let rackHeight = tileWidth * 0.96;
-  let rackWidth = rackHeight * 0.75;
-  // A side wall turns its tiles a quarter: its band is one tile height across
-  // and thirteen tile widths long.
-  const sideSeatWidth = round(rackHeight);
-  const sideSeatHeight = 13 * rackWidth + 12;
-  const topSeatHeight = round(rackHeight);
+  // The wall's tile, sized by the same three limits as on a phone.
+  const wallWidth = Math.max(
+    12,
+    Math.floor(
+      Math.min((width - 2 * gap - 12) / 13, handTile * 0.85, height * 0.06),
+    ),
+  );
+  let rackWidth = wallWidth;
+  let rackHeight = rackWidth / 0.75;
+  // Provisional, for the room the side walls get below.
+  let topSeatHeight = round(rackHeight);
   const badgeWidth = Math.max(34, round(tileWidth * 0.8));
   const badgeHeight = round(tileWidth * 0.36);
   const sideInset = badgeWidth + gap;
@@ -457,7 +476,15 @@ function solveLayout({
     ? tableHeight - gap - (topSeatHeight + gap)
     : handBandY - gap - (topSeatHeight + gap);
   rackWidth = Math.min(rackWidth, (availableSideHeight - 12) / 13);
-  rackHeight = rackWidth / 0.75;
+  // One pixel-grid tile: the bands and the artwork must agree, so every
+  // length below is built from these two rounded numbers.
+  const wallTileWidth = Math.max(8, Math.floor(rackWidth));
+  const wallTileHeight = Math.round(wallTileWidth / 0.75);
+  // A side wall turns its tiles a quarter: its band is one tile height across
+  // and thirteen tile widths long; the top band is one tile tall.
+  topSeatHeight = wallTileHeight;
+  const sideSeatWidth = wallTileHeight;
+  const sideSeatHeight = 13 * wallTileWidth + 12;
   const topRiverY = topSeatHeight + gap;
   const bottomRiverY = (phone ? tableHeight - gap : handBandY - gap) - riverHeight;
   const centreY = topRiverY + riverHeight + gap;
@@ -472,9 +499,9 @@ function solveLayout({
   const control = phone ? [0, height, width, height] : [0, handBandY, width, handBand[3]];
   const seats = {
     top: [
-      round((width - (13 * rackWidth + 12)) / 2),
+      round((width - (13 * wallTileWidth + 12)) / 2),
       0,
-      round(13 * rackWidth + 12),
+      13 * wallTileWidth + 12,
       topSeatHeight,
     ],
     left: [
@@ -609,8 +636,8 @@ function solveLayout({
     controls,
     badges,
     // The tile's own size; a side wall turns it a quarter on screen.
-    rackWidth: round(rackWidth),
-    rackHeight,
+    rackWidth: wallTileWidth,
+    rackHeight: wallTileHeight,
     handTileWidth: handTile,
     handTileHeight,
     handOverlap: handTile * HAND_OVERLAP,
