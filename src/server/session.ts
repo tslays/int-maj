@@ -41,8 +41,6 @@ import type { Wind } from "../core/tiles.ts";
 import type { Tier } from "../core/patterns/types.ts";
 import { PATTERNS } from "../core/patterns/table.ts";
 
-const MAX_BOT_STEPS = 5000;
-
 const PATTERN_NAMES: ReadonlyMap<string, string> = new Map(
   PATTERNS.map((pattern) => [pattern.id, pattern.name]),
 );
@@ -163,34 +161,43 @@ function startSession(id: string, seed: string | number): WebSession {
 }
 
 /**
- * Let the three bots answer until the human has a decision (or the hand ends).
+ * Exactly one bot decision, or null when the table is waiting on the human (or
+ * the hand is over). The browser asks for these one at a time, from the beat
+ * itself, so a payload never carries more than one throw: the table advances
+ * at the pace it is shown, not a round ahead of it.
+ *
  * Bots see only their own `viewFor` projection, so this cannot reveal a hand
  * to the client either: only their public events are appended.
  */
-function advanceBots(session: WebSession): WebSession {
-  let current = session;
-  let guard = 0;
-  while (
-    current.state.phase !== "finished" &&
-    viewFor(current.state, current.seat).legalActions.length === 0
-  ) {
-    if (guard++ >= MAX_BOT_STEPS) throw new Error("the bots did not terminate");
-    const actor = current.state.turn;
-    const actorView = viewFor(current.state, actor);
-    const action = chooseAction(actorView, actor);
-    if (action === null) break;
-    const result = apply(current.state, action);
-    if (isApplyError(result)) {
-      throw new Error(`bot ${actor} produced an illegal action: ${result.error}`);
-    }
-    current = {
-      ...current,
-      state: result.state,
-      steps: [...current.steps, action],
-      events: [...current.events, ...result.events],
-    };
+function botStep(session: WebSession): SessionUpdate | null {
+  if (session.state.phase === "finished") return null;
+  if (viewFor(session.state, session.seat).legalActions.length > 0) return null;
+  const actor = session.state.turn;
+  const action = chooseAction(viewFor(session.state, actor), actor);
+  if (action === null) return null;
+  const result = apply(session.state, action);
+  if (isApplyError(result)) {
+    throw new Error(`bot ${actor} produced an illegal action: ${result.error}`);
   }
-  return current;
+  return {
+    session: {
+      ...session,
+      state: result.state,
+      steps: [...session.steps, action],
+      events: [...session.events, ...result.events],
+    },
+    events: result.events,
+  };
+}
+
+/** A step either moves the table, says it is the human's move, or fails. */
+export type StepUpdate =
+  | SessionUpdate
+  | { readonly done: true }
+  | { readonly error: string };
+
+export function isDone(update: StepUpdate): update is { readonly done: true } {
+  return "done" in update;
 }
 
 /**
@@ -354,8 +361,7 @@ export class GameStore {
 
   create(seed: string | number = this.defaultSeed): SessionUpdate {
     const id = `g${++this.nextId}`;
-    const started = startSession(id, seed);
-    const session = advanceBots(started);
+    const session = startSession(id, seed);
     this.sessions.set(id, session);
     return { session, events: [...session.events] };
   }
@@ -389,16 +395,29 @@ export class GameStore {
     const before = session.events.length;
     const result = apply(session.state, action);
     if (isApplyError(result)) return { error: result.error };
-    let next: WebSession = {
+    const next: WebSession = {
       ...session,
       state: result.state,
       steps: [...session.steps, action],
       humanSteps: [...session.humanSteps, session.steps.length],
       events: [...session.events, ...result.events],
     };
-    next = advanceBots(next);
     this.sessions.set(id, next);
     return { session: next, events: next.events.slice(before) };
+  }
+
+  /**
+   * The table's next decision. The browser calls this whenever the human has
+   * nothing to do, so every throw arrives as its own payload and the beat the
+   * player watches is the beat the game actually runs at.
+   */
+  step(id: string): StepUpdate {
+    const session = this.sessions.get(id);
+    if (session === undefined) return { error: `unknown game: ${id}` };
+    const stepped = botStep(session);
+    if (stepped === null) return { done: true };
+    this.sessions.set(id, stepped.session);
+    return stepped;
   }
 
   undo(id: string): SessionUpdate | { readonly error: string } {
@@ -408,14 +427,13 @@ export class GameStore {
     if (last === undefined) return { error: "nothing to undo" };
     const steps = session.steps.slice(0, last);
     const replayed = replaySteps(session.seed, steps);
-    let next: WebSession = {
+    const next: WebSession = {
       ...session,
       state: replayed.state,
       steps,
       humanSteps: session.humanSteps.slice(0, -1),
       events: replayed.events,
     };
-    next = advanceBots(next);
     this.sessions.set(id, next);
     return { session: next, events: [] };
   }
@@ -428,13 +446,12 @@ export class GameStore {
     }
     const before = session.events.length;
     const dealt = nextHand(session.state);
-    let next: WebSession = {
+    const next: WebSession = {
       ...session,
       state: dealt.state,
       steps: [...session.steps, { type: "NextHand" }],
       events: [...session.events, ...dealt.events],
     };
-    next = advanceBots(next);
     this.sessions.set(id, next);
     return { session: next, events: next.events.slice(before) };
   }

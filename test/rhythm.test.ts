@@ -70,7 +70,27 @@ function firstDiscardClaim(): Rhythm {
     const store = new GameStore({ defaultSeed: seed });
     let { session } = store.create(seed);
     const id = session.id;
+    let throws = 0;
 
+    /** One table decision, exactly as the browser asks for it. */
+    const step = (): boolean => {
+      const stepped = store.step(id);
+      if (!("session" in stepped)) return false;
+      session = stepped.session;
+      throws += stepped.events.filter((event) => event.type === "Discarded").length;
+      return true;
+    };
+    /** Answer until it is the human's move (or the hand ends). */
+    const settle = (): boolean => {
+      for (let guard = 0; guard < 80; guard++) {
+        const view = viewFor(session.state, session.seat);
+        if (view.phase === "finished" || view.legalActions.length > 0) return true;
+        if (!step()) return false;
+      }
+      return false;
+    };
+
+    if (!settle()) continue;
     let view = viewFor(session.state, session.seat);
     const draw = DRAW(view.legalActions);
     if (draw !== undefined) {
@@ -86,18 +106,16 @@ function firstDiscardClaim(): Rhythm {
     if (discard === undefined) continue;
     const applied = store.move(id, discard);
     if ("error" in applied) continue;
+    session = applied.session;
+    throws = 0;
+    if (!settle()) continue;
 
-    const after = viewFor(applied.session.state, applied.session.seat);
-    const thrown = applied.events.filter(
-      (event) => event.type === "Discarded" && event.seat !== applied.session.seat,
-    );
-    if (after.claimWindow === null || thrown.length < 2) continue;
-    return { seed, discards: thrown.length, claimSeat: after.claimWindow.discarder };
+    const after = viewFor(session.state, session.seat);
+    if (after.claimWindow === null || throws < 2) continue;
+    return { seed, discards: throws, claimSeat: after.claimWindow.discarder };
   }
   throw new Error("no seed produced a claim on the first discard");
-}
-
-describe("table rhythm", () => {
+}describe("table rhythm", () => {
   let cdp: Cdp;
   let sessionId: string;
   let rhythm: Rhythm;

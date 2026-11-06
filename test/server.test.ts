@@ -23,6 +23,7 @@ import { checkHand } from "../src/core/check.ts";
 import { tileKey } from "../src/core/tiles.ts";
 import { createAppServer } from "../src/server/server.ts";
 import { GameStore, type StatePayload } from "../src/server/session.ts";
+import { viewFor } from "../src/core/game/view.ts";
 
 interface ApiPayload extends StatePayload {
   readonly events: readonly string[];
@@ -71,6 +72,17 @@ async function getState(game: string): Promise<ApiPayload> {
   return (await response.json()) as ApiPayload;
 }
 
+/** The table answers one decision at a time: ask until it is the human's move. */
+async function stepToHuman(game: string): Promise<ApiPayload> {
+  for (let step = 0; step < 400; step++) {
+    const payload = await getState(game);
+    if (payload.view.phase === "finished" || payload.legalActions.length > 0) return payload;
+    const response = await post<ApiPayload | { done: boolean }>("/api/step", { game });
+    assert.equal(response.status, 200);
+  }
+  throw new Error("the table did not reach the human's move");
+}
+
 describe("web API", () => {
   it("serves the page, modules and stylesheet", async () => {
     const page = await fetch(`${baseUrl}/`);
@@ -105,7 +117,10 @@ describe("web API", () => {
   it("returns the seat view, legal actions, table, ledger and wait panel", async () => {
     const created = await post<ApiPayload>("/api/new", { seed: "api-shape" });
     assert.equal(created.status, 200);
-    const payload = created.body;
+    assert.ok(
+      created.body.events.some((line) => line.startsWith("E is dealt 13 tiles")),
+    );
+    const payload = await stepToHuman(created.body.game);
 
     assert.equal(typeof payload.game, "string");
     assert.equal(payload.seat, "E");
@@ -132,12 +147,12 @@ describe("web API", () => {
     assert.equal(payload.checker.size, 13);
     assert.ok(Array.isArray(payload.checker.waits));
     assert.equal(payload.outcome, null);
-    assert.ok(payload.events.some((line) => line.startsWith("E is dealt 13 tiles")));
   });
 
   it("never puts another seat's concealed tiles in a payload", async () => {
     const created = await post<ApiPayload>("/api/new", { seed: "api-hidden" });
     const game = created.body.game;
+    await stepToHuman(game);
 
     const drawn = await post<ApiPayload>("/api/move", {
       game,
@@ -231,8 +246,9 @@ describe("web API", () => {
     const created = await post<ApiPayload>("/api/new", { seed: "api-legal" });
     const game = created.body.game;
     const before = store.state(game)!;
+    const ready = await stepToHuman(game);
 
-    const draw = created.body.legalActions.find((action) => action.type === "Draw");
+    const draw = ready.legalActions.find((action) => action.type === "Draw");
     assert.ok(draw !== undefined);
     const drawn = await post<ApiPayload>("/api/move", { game, action: draw });
     assert.equal(drawn.status, 200);
@@ -249,9 +265,105 @@ describe("web API", () => {
     assert.equal(played.status, 200);
     assert.ok(played.body.events.some((line) => line.includes("discards")));
     assert.ok(store.state(game)!.eventSeq > before.eventSeq);
+    assert.deepEqual(
+      played.body.legalActions,
+      [],
+      "after your discard the table answers; nothing is yours to do yet",
+    );
+    assert.notEqual(played.body.view.turn, "E");
+  });
+
+  it("plays a whole hand one decision at a time", () => {
+    const store = new GameStore({ defaultSeed: "api-whole-hand" });
+    let { session } = store.create("api-whole-hand");
+    const id = session.id;
+    let decisions = 0;
+    let steps = 0;
+
+    for (let guard = 0; guard < 4000 && session.state.phase !== "finished"; guard++) {
+      const view = viewFor(session.state, session.seat);
+      if (view.legalActions.length > 0) {
+        const applied = store.move(id, view.legalActions[0]);
+        assert.ok(!("error" in applied));
+        assert.ok("session" in applied);
+        session = applied.session;
+        decisions++;
+        continue;
+      }
+      const before = session.steps.length;
+      const stepped = store.step(id);
+      assert.ok("session" in stepped, "the table always has an answer here");
+      session = stepped.session;
+      assert.equal(session.steps.length, before + 1, "a step applies exactly one action");
+      steps++;
+    }
+
+    assert.equal(session.state.phase, "finished", "the hand plays to a result");
+    assert.ok(decisions > 10, `the human made ${decisions} decisions`);
+    assert.ok(steps > 30, `the table took ${steps} steps`);
+  });
+
+  it("undoes to the state before the decision it drops, bots included", () => {
+    const store = new GameStore({ defaultSeed: "api-undo" });
+    let { session } = store.create("api-undo");
+    const id = session.id;
+    const human = () => viewFor(session.state, session.seat).legalActions;
+    const waitForHuman = () => {
+      for (let guard = 0; guard < 200 && human().length === 0; guard++) {
+        if (session.state.phase === "finished") return;
+        const stepped = store.step(id);
+        assert.ok("session" in stepped);
+        session = stepped.session;
+      }
+    };
+    const play = () => {
+      const action = human()[0];
+      assert.ok(action !== undefined);
+      const applied = store.move(id, action);
+      assert.ok("session" in applied);
+      session = applied.session;
+    };
+
+    waitForHuman();
+    play();
+    waitForHuman();
+    const before = serialize(session.state);
+    play();
+    waitForHuman();
+    assert.notEqual(serialize(session.state), before);
+
+    const undone = store.undo(id);
+    assert.ok("session" in undone);
+    assert.equal(serialize(undone.session.state), before);
+  });
+
+  it("answers one table action per step, never a round", async () => {
+    const created = await post<ApiPayload>("/api/new", { seed: "api-step" });
+    const game = created.body.game;
+    assert.deepEqual(
+      created.body.legalActions,
+      [],
+      "the deal leaves the first move to the dealer, not to you",
+    );
+
+    let throws = 0;
+    for (let step = 0; step < 200; step++) {
+      const response = await post<ApiPayload | { done: boolean }>("/api/step", { game });
+      assert.equal(response.status, 200);
+      if ("done" in response.body) break;
+      const thrown = response.body.events.filter((line) => line.includes(" discards "));
+      assert.ok(
+        thrown.length <= 1,
+        `one step threw ${thrown.length} discards: ${thrown.join(", ")}`,
+      );
+      throws += thrown.length;
+    }
+
+    assert.ok(throws >= 1, "the bots play their turns");
+    const human = await getState(game);
     assert.ok(
-      played.body.view.phase === "finished" || played.body.view.turn === "E",
-      `expected a human decision or a finished hand, got ${played.body.view.phase}/${played.body.view.turn}`,
+      human.legalActions.length > 0 || human.view.phase === "finished",
+      "the steps stop at the human's move",
     );
   });
 

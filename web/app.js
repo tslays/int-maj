@@ -259,6 +259,9 @@ function applyResponse(data, note, replaceLog = false) {
     pendingDiscards = discardsFromEvents(data.events);
   }
   render();
+  // The table answers one decision at a time; ask for the next one once this
+  // payload has been laid out (the beat schedules the throw in between).
+  setTimeout(stepTable, 0);
   if (pendingClick !== null) {
     const index = pendingClick;
     pendingClick = null;
@@ -794,7 +797,7 @@ function planDiscards() {
     discardQueue.push(item);
   }
   pendingDiscards = [];
-  if (payload.view.claimWindow !== null) {
+  if (claimAsked()) {
     // Nothing is in flight: the offer is about the tile already on the heap.
     if (discardQueue.length === 0 && discardTimer === null) {
       if (!claimHeld) renderActions();
@@ -835,8 +838,54 @@ function scheduleDiscard() {
       scheduleDiscard();
       return;
     }
-    if (claimHeld) showClaim();
+    if (claimHeld) {
+      showClaim();
+      return;
+    }
+    // The tile is down: the table may answer with its next decision, one
+    // action at a time, so the next throw is a beat after this one.
+    setTimeout(stepTable, 0);
   }, DISCARD_BEAT_MS);
+}
+
+/**
+ * Ask the table for one decision. The bots are not run ahead of the screen:
+ * the browser steps them only when the viewer has nothing to do and no tile is
+ * still in flight, so a payload never carries a round the player has not seen.
+ */
+let stepStalled = false;
+async function stepTable() {
+  if (payload === null || busy || payload.outcome !== null) return;
+  if (payload.legalActions.length > 0) {
+    stepStalled = false;
+    return;
+  }
+  if (discardQueue.length > 0 || discardTimer !== null || claimHeld) return;
+  if (stepStalled) return;
+  const game = payload.game;
+  busy = true;
+  try {
+    const data = await api("/api/step", { game });
+    if (data !== null && data.view) {
+      stepStalled = false;
+      applyResponse(data, null);
+      return;
+    }
+    // "done" means the table is waiting on a decision we did not know we had:
+    // take a fresh state before deciding anything else.
+    const fresh = await api(`/api/state?game=${encodeURIComponent(game)}`);
+    if (fresh === null || fresh.view === undefined) {
+      stepStalled = true;
+      return;
+    }
+    stepStalled = fresh.legalActions.length === 0;
+    applyResponse(fresh, null);
+  } catch (error) {
+    stepStalled = true;
+    log(`Error: ${error.message}`);
+  } finally {
+    busy = false;
+  }
 }
 
 /**
@@ -1303,11 +1352,16 @@ function renderOwnBonus() {
   slot.append(row);
 }
 
+/** The table is asking you to answer a claim on the last discard. */
+function claimAsked() {
+  const view = payload?.view;
+  return view !== undefined && view.phase === "claim" && view.turn === view.seat;
+}
+
 function isOwnClaimWindow() {
-  const view = payload.view;
   // A held claim is still arriving: the table, not the player, is answering.
   if (claimHeld) return false;
-  return view.phase === "claim" && view.turn === view.seat;
+  return claimAsked();
 }
 
 function chowActions() {

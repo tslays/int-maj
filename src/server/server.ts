@@ -23,7 +23,12 @@ import { fileURLToPath } from "node:url";
 
 import { describeEvent } from "../core/game/console.ts";
 import type { Action } from "../core/game/actions.ts";
-import { GameStore, statePayload, type SessionUpdate } from "./session.ts";
+import {
+  GameStore,
+  isDone,
+  statePayload,
+  type SessionUpdate,
+} from "./session.ts";
 import {
   isScenarioName,
   SCENARIOS,
@@ -264,6 +269,21 @@ async function handle(
     const update = store.move(game, action);
     if ("error" in update) {
       sendJson(res, 400, { error: update.error });
+      return;
+    }
+    sendJson(res, 200, responsePayload(update));
+    return;
+  }
+
+  if (url.pathname === "/api/step") {
+    const game = requireString(body, "game");
+    const update = store.step(game);
+    if ("error" in update) {
+      sendJson(res, 400, { error: update.error });
+      return;
+    }
+    if (isDone(update)) {
+      sendJson(res, 200, { done: true });
       return;
     }
     sendJson(res, 200, responsePayload(update));
