@@ -724,6 +724,59 @@ describe("variant D seat melds", () => {
       }
     });
   }
+
+  it("keeps multiple top-seat calls on one scrollable row", async () => {
+    await setViewport(cdp, sessionId, 390, 844);
+    await navigate(cdp, sessionId, `${server.url}/?state=claim&variant=d`);
+    const measured = await evaluate<{
+      groups: number;
+      wrap: string;
+      overflowX: string;
+      row: Rect;
+      band: Rect;
+      groupTops: number[];
+      scrollWidth: number;
+      clientWidth: number;
+    }>(
+      cdp,
+      sessionId,
+      `(() => {
+        const top = document.querySelector("#seat-top");
+        let row = top.querySelector(".meld-row");
+        if (row === null) {
+          row = document.createElement("div");
+          row.className = "meld-row";
+          top.prepend(row);
+        }
+        const source = document.querySelector("#seat-left .meld") || document.querySelector("#seat-right .meld");
+        // Four pungs leave one concealed back in a 13-tile effective hand.
+        const rack = top.querySelector(".rack");
+        const back = rack.querySelector(".tile-back");
+        rack.replaceChildren(back.cloneNode(true));
+        for (let i = 0; i < 4; i++) row.append(source.cloneNode(true));
+        const box = (el) => { const r = el.getBoundingClientRect(); return [r.x,r.y,r.width,r.height]; };
+        return {
+          groups: row.querySelectorAll(".meld").length,
+          wrap: getComputedStyle(row).flexWrap,
+          overflowX: getComputedStyle(row).overflowX,
+          row: box(row),
+          band: box(top),
+          groupTops: [...row.querySelectorAll(".meld")].map((el) => el.getBoundingClientRect().y),
+          scrollWidth: row.scrollWidth,
+          clientWidth: row.clientWidth,
+        };
+      })()`,
+    );
+    assert.equal(measured.groups, 4, "all exposed groups remain in the DOM");
+    assert.equal(measured.wrap, "nowrap", "claims never form a second row");
+    assert.equal(measured.overflowX, "auto", "an unusually long row scrolls instead of wrapping");
+    assert.ok(
+      Math.max(...measured.groupTops) - Math.min(...measured.groupTops) <= 1,
+      "every call shares the same row baseline",
+    );
+    assert.ok(measured.row[3] <= measured.band[3] + 1, "the row stays within the top seat's height");
+    assert.ok(measured.scrollWidth >= measured.clientWidth);
+  });
 });
 
 describe("variant D claim row", () => {

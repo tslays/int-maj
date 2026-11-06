@@ -2083,6 +2083,27 @@ h3 {
   max-width: none;
 }
 
+/* The far seat lays every exposed call on one row, beside its concealed rack.
+   If an unusual kong-heavy hand is wider than the band, it scrolls rather than
+   wrapping a second row where the fixed-height seat would hide it. */
+.variant-d .seat-top .meld-row {
+  flex-wrap: nowrap;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.variant-d .seat-top .meld {
+  flex: 0 0 auto;
+}
+
+.variant-d .seat-top .rack {
+  flex: 0 0 auto;
+}
+
 .variant-d .seat .meld {
   gap: 0;
   padding: 0;
