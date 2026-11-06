@@ -810,6 +810,38 @@ describe("variant D seat melds", () => {
   });
 });
 
+describe("variant D whole hand on the heap", () => {
+  for (const state of ["win", "drawn", "result"] as const) {
+    it(`${state} shows every discard of the finished hand`, async () => {
+      const scenario = await (await fetch(`${server.url}/api/scenario?state=${state}`)).json();
+      const total = scenario.table.reduce(
+        (sum: number, seat: { discards: string[] }) => sum + seat.discards.length,
+        0,
+      );
+      assert.ok(total > 0, "the review hand has discards");
+      for (const [width, height] of [
+        [1440, 900],
+        [390, 844],
+        [844, 390],
+      ] as const) {
+        await setViewport(cdp, sessionId, width, height);
+        await navigate(cdp, sessionId, `${server.url}/?state=${state}&variant=d`);
+        const pile = await evaluate<{ tiles: number; unique: number }>(
+          cdp,
+          sessionId,
+          `(() => {
+            const tiles = [...document.querySelectorAll("#pile .discard")];
+            const spots = new Set(tiles.map((tile) => tile.style.left + "," + tile.style.top));
+            return { tiles: tiles.length, unique: spots.size };
+          })()`,
+        );
+        assert.equal(pile.tiles, total, `${state} ${width}x${height}: ${total - pile.tiles} discards are missing`);
+        assert.equal(pile.unique, total, `${state} ${width}x${height}: discards share a spot`);
+      }
+    });
+  }
+});
+
 describe("variant D claim row", () => {
   for (const [width, height, mode] of [
     [1440, 900, "desktop"],
