@@ -326,6 +326,37 @@ function assertPile(
       );
     }
   }
+  // The heap grows from the middle and hugs itself: no island with a visible
+  // gap, and at least one tile near the centre once anything has been thrown.
+  const centres = measurement.discards.map((box) => [
+    box[0] + box[2] / 2,
+    box[1] + box[3] / 2,
+  ]);
+  const centreX = pile[0] + pile[2] / 2;
+  const centreY = pile[1] + pile[3] / 2;
+  const nearest = centres.map(([cx, cy], index) => {
+    let best = Infinity;
+    centres.forEach(([ox, oy], other) => {
+      if (other === index) return;
+      const dx = Math.max(0, Math.abs(cx - ox) - width);
+      const dy = Math.max(0, Math.abs(cy - oy) - height);
+      best = Math.min(best, Math.hypot(dx, dy));
+    });
+    return best;
+  });
+  const widest = Math.max(...nearest);
+  assert.ok(
+    widest <= Math.max(8, width * 0.45),
+    `${label}: the heap leaves a ${widest.toFixed(0)} px island gap`,
+  );
+  const fromCentre = Math.min(
+    ...centres.map(([cx, cy]) => Math.hypot(cx - centreX, cy - centreY)),
+  );
+  assert.ok(
+    fromCentre <= Math.hypot(width, height),
+    `${label}: the heap has no tile near its centre (${fromCentre.toFixed(0)} px)`,
+  );
+
   // A tile lies at an angle, so allow its rotated bounding box to poke out by
   // the diagonal margin, never more.
   const margin = Math.hypot(width, height) / 2;
