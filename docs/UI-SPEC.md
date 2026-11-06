@@ -306,3 +306,18 @@ has faded and the settle (`DISCARD_SETTLE_MS`, 520 ms) has passed. The claim
 bar is therefore drawn at `CLAIM_SHOW_MS = DISCARD_SETTLE_MS + 80` after the
 claimed tile lands, never at the landing itself, and never on the frame of the
 throw it answers.
+
+### A whole hand fits the heap (2026-11-06)
+
+The heap must hold every throw of the game: a hand can reach 84 discards, and a
+tile that lands must stay (no repacking, no shrinking). The solver therefore
+sizes for `DISCARD_CAPACITY = 96` (headroom past the longest hand), the
+candidate lattice covers the whole pile rectangle instead of its inscribed
+ellipse, up to fourteen jittered lattice phases are tried before giving up, and
+placed tiles are bucketed in a spatial grid so overlap checks stay local. A
+throw's identity (`seat:key:seq`) is monotonic, so a claimed tile never lets a
+later throw collide with a stale id.
+
+The audit loads the finished review hands (`win` 69, `drawn` 84, `result` 63)
+at three viewports and asserts the heap shows exactly that many discards, each
+at its own spot.

@@ -866,7 +866,13 @@ let claimTimer = null;
 /** A review state arrives with the whole hand's log, not fresh throws. */
 let eventsAreHistory = false;
 /** Discards the viewer has already seen land, per seat. */
-const revealedDiscards = { E: 0, S: 0, W: 0, N: 0 };
+/** A throw's identity never repeats: a claimed tile stays claimed. */
+let discardSeq = 0;
+
+function nextDiscardId(seat, key) {
+  discardSeq += 1;
+  return `${seat}:${key}:${discardSeq}`;
+}
 let rhythmReady = false;
 let freshDeal = false;
 
@@ -876,7 +882,7 @@ function syncRevealed() {
   for (const seat of SEATS) {
     const discards = seatEntry(seat)?.discards ?? [];
     discards.forEach((key, index) => {
-      all.push({ seat, key, id: `${seat}:${key}:${index}` });
+      all.push({ seat, key, id: nextDiscardId(seat, key) });
     });
   }
   if (!rhythmReady || freshDeal) {
@@ -885,9 +891,6 @@ function syncRevealed() {
     pileItems = [];
     pileSpots = null;
     for (const item of pileKeys) addToPile(item);
-    for (const seat of SEATS) {
-      revealedDiscards[seat] = freshDeal ? 0 : (seatEntry(seat)?.discards.length ?? 0);
-    }
     freshDeal = false;
     rhythmReady = true;
     return;
@@ -911,10 +914,6 @@ function syncRevealed() {
   if (keep.size !== pileKeys.length) {
     pileKeys = pileKeys.filter((item) => keep.has(item.id));
     pileItems = pileItems.filter((item) => keep.has(item.id));
-  }
-  for (const seat of SEATS) {
-    const count = seatEntry(seat)?.discards.length ?? 0;
-    revealedDiscards[seat] = Math.min(revealedDiscards[seat], count);
   }
 }
 
@@ -950,10 +949,8 @@ function planDiscards() {
   for (const item of pendingDiscards) {
     // Two players may throw the same tile, so a throw is identified by seat and
     // how many that seat has already thrown - never by the tile alone.
-    const occurrence = (revealedDiscards[item.seat] ?? 0) + discardQueue.filter((queued) => queued.seat === item.seat).length;
-    item.id = `${item.seat}:${item.key}:${occurrence}`;
+    item.id = nextDiscardId(item.seat, item.key);
     if (discardQueue.some((queued) => queued.id === item.id)) continue;
-    if (revealedDiscards[item.seat] > 0 && pileKeys.some((placed) => placed.id === item.id)) continue;
     if (item.seat === payload.seat) {
       // Your own throw lands at once; the table answers on the beat.
       revealDiscard(item);
@@ -1080,7 +1077,6 @@ function revealDiscard(item) {
   if (next === undefined) return;
   lastLandingAt = performance.now();
   if (next.id !== undefined && pileKeys.some((placed) => placed.id === next.id)) return;
-  revealedDiscards[next.seat] = (revealedDiscards[next.seat] ?? 0) + 1;
   pileKeys.push(next);
   addToPile(next);
   renderPile();
@@ -1329,9 +1325,41 @@ function boxesOverlap(a, b, gap = 0) {
   return true;
 }
 
-function placementFits(list, candidate) {
-  for (const item of list) {
-    if (boxesOverlap(item, candidate, 0.5)) return false;
+/**
+ * Placed tiles bucketed by position, so a candidate only has to look at its
+ * own neighbourhood. Nobody moves once down, so the buckets are updated on
+ * placement and cleared with the heap.
+ */
+let pileGrid = new Map();
+let pileCell = 0;
+
+function resetPileGrid(w, h) {
+  pileGrid = new Map();
+  pileCell = Math.max(w, h) * 1.6;
+}
+
+function gridSlot(x, y) {
+  return `${Math.floor(x / pileCell)},${Math.floor(y / pileCell)}`;
+}
+
+function gridAdd(item) {
+  const key = gridSlot(item.x + item.w / 2, item.y + item.h / 2);
+  const bucket = pileGrid.get(key);
+  if (bucket === undefined) pileGrid.set(key, [item]);
+  else bucket.push(item);
+}
+
+function placementFits(candidate) {
+  const gx = Math.floor((candidate.x + candidate.w / 2) / pileCell);
+  const gy = Math.floor((candidate.y + candidate.h / 2) / pileCell);
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      const bucket = pileGrid.get(`${gx + dx},${gy + dy}`);
+      if (bucket === undefined) continue;
+      for (const item of bucket) {
+        if (boxesOverlap(item, candidate, 0.5)) return false;
+      }
+    }
   }
   return true;
 }
@@ -1364,7 +1392,9 @@ function pileCandidates(w, h, phase = 0) {
     for (let gx = -reachX; gx <= reachX; gx += stepX) {
       const jx = gx + (pileRandom() - 0.5) * stepX * 0.12;
       const jy = gy + (pileRandom() - 0.5) * stepY * 0.12;
-      if ((jx / reachX) ** 2 + (jy / reachY) ** 2 > 1) continue;
+      // The whole pile rectangle is fair game, not just its inscribed
+      // ellipse: the corners are what let a full hand fit.
+      if (Math.abs(jx) > reachX || Math.abs(jy) > reachY) continue;
       list.push({
         x: centreX + jx - w / 2,
         y: centreY + jy - h / 2,
@@ -1386,7 +1416,7 @@ function pileCandidates(w, h, phase = 0) {
  * Ranking by centrality alone left islands with visible gaps, and a coarse
  * lattice offered no spot close enough to the others.
  */
-function tryPlace(seat, list, placed, w, h) {
+function tryPlace(seat, list, w, h) {
   const preferred = SEAT_ANGLE[PLACE[seat]] ?? 0;
   const reach = Math.max(1, ...list.map((candidate) => candidate.radius));
   const turns = [0, 0.18, -0.18, 0.34, -0.34];
@@ -1398,7 +1428,7 @@ function tryPlace(seat, list, placed, w, h) {
     if (candidate.radius > innermost + w * 0.6) break;
     for (const turn of turns) {
       const tilted = { ...candidate, angle: candidate.angle + turn };
-      if (!placementFits(placed, tilted)) continue;
+      if (!placementFits(tilted)) continue;
       fits.push({
         ...tilted,
         radius: candidate.radius,
@@ -1414,7 +1444,7 @@ function tryPlace(seat, list, placed, w, h) {
   let bestRadius = Infinity;
   for (const candidate of fits) {
     if (candidate.radius > innermost + w * 0.6) continue;
-    const gap = placed.length === 0 ? 0 : nearestEdgeGap(candidate, placed);
+    const gap = pileItems.length === 0 ? 0 : nearestEdgeGap(candidate, pileItems);
     const side = candidate.side * (candidate.radius / reach);
     const penalty = gap + side * w * 0.5;
     if (penalty < bestGap || (penalty === bestGap && candidate.radius < bestRadius)) {
@@ -1444,6 +1474,7 @@ function spotsFor(w, h) {
   pileCandidatePhase = 0;
   pileSpots = pileCandidates(w, h, pileCandidatePhase);
   pileSize = { w, h };
+  resetPileGrid(w, h);
   return pileSpots;
 }
 
@@ -1457,16 +1488,18 @@ function addToPile(item) {
   if (pileSpots === null) {
     spotsFor(currentLayout.discardTileWidth, currentLayout.discardTileHeight);
   }
-  let spot = tryPlace(item.seat, pileSpots, pileItems, pileSize.w, pileSize.h);
+  let spot = tryPlace(item.seat, pileSpots, pileSize.w, pileSize.h);
   // If a lattice phase ran out, add more candidate centres at the same tile
   // size. Never resize or re-place tiles that have already landed.
-  for (let phase = 0; spot === null && phase < 5; phase++) {
+  for (let phase = 0; spot === null && phase < 14; phase++) {
     pileCandidatePhase += 1;
     pileSpots.push(...pileCandidates(pileSize.w, pileSize.h, pileCandidatePhase));
-    spot = tryPlace(item.seat, pileSpots, pileItems, pileSize.w, pileSize.h);
+    spot = tryPlace(item.seat, pileSpots, pileSize.w, pileSize.h);
   }
   if (spot !== null) {
-    pileItems.push({ key: item.key, seat: item.seat, id: item.id, ...spot });
+    const placed = { key: item.key, seat: item.seat, id: item.id, ...spot };
+    pileItems.push(placed);
+    gridAdd(placed);
     return;
   }
   // With the dense fixed-size lattices exhausted, keep every earlier landing
