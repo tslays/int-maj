@@ -845,8 +845,12 @@ const DISCARD_BEAT_MS = 1000;
 const DISCARD_SETTLE_MS = 520;
 /** However late the step is, a new throw still gets this much air. */
 const MIN_BEAT_MS = 180;
-/** The claimed tile gets this long to read once it has landed. */
-const CLAIM_SHOW_MS = 260;
+/**
+ * A claim is only offered once the throw it answers has *finished*: the ghost
+ * has landed, the frame has faded and the table's settle has passed. The extra
+ * beat after that is the read time before the bar appears.
+ */
+const CLAIM_SHOW_MS = DISCARD_SETTLE_MS + 80;
 let discardQueue = [];
 let pendingDiscards = [];
 let discardTimer = null;

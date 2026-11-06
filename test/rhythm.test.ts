@@ -348,6 +348,12 @@ describe("table rhythm", () => {
       firstBar.t > lastLanding.at,
       `the offer appears at ${firstBar.t} ms, before the last tile landed at ${lastLanding.at} ms`,
     );
+    // The throw has to be *finished* - ghost landed, frame faded, settle spent -
+    // before the table asks you to answer it.
+    assert.ok(
+      firstBar.t - lastLanding.at >= DISCARD_SETTLE_MS - 80,
+      `the offer appears ${firstBar.t - lastLanding.at} ms after the claimed tile landed; the throw needs ${DISCARD_SETTLE_MS} ms to finish`,
+    );
     assert.equal(
       firstBar.barTile,
       lastLanding.lastKey,

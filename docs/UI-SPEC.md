@@ -298,3 +298,11 @@ whole pixel so the bands and the artwork agree (`seats` and `--layout-back-*`
 are built from the same rounded numbers). Desktop 45x60 (was 33x44), phone
 portrait 26x35 (was 18.7x25); a phone in landscape is still capped by thirteen
 tiles in about 200 px of height.
+
+### A claim waits for its throw to finish (2026-11-06)
+
+Landing is not finishing. A throw finishes when its ghost has landed, its frame
+has faded and the settle (`DISCARD_SETTLE_MS`, 520 ms) has passed. The claim
+bar is therefore drawn at `CLAIM_SHOW_MS = DISCARD_SETTLE_MS + 80` after the
+claimed tile lands, never at the landing itself, and never on the frame of the
+throw it answers.
