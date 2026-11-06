@@ -1342,13 +1342,24 @@ function pileCandidates(w, h, phase = 0) {
   const reachY = Math.max(1, pile[3] / 2 - h / 2);
   // Dense candidates let the heap use the real gaps between rotated tiles;
   // SAT still enforces a half-pixel clear space, so closer never means overlap.
-  const stepX = w * 0.78;
-  const stepY = h * 0.78;
-  const list = [];
+  // Fine lattice: a coarse one offered no centre close enough to the tiles
+  // already down, which is what left visible holes.
+  const stepX = w * 0.55;
+  const stepY = h * 0.55;
+  // The exact centre is always a candidate: the first throw lands dead centre.
+  const list = [{
+    x: centreX - w / 2,
+    y: centreY - h / 2,
+    w,
+    h,
+    radius: 0,
+    theta: 0,
+    angle: (pileRandom() - 0.5) * 0.9,
+  }];
   for (let gy = -reachY; gy <= reachY; gy += stepY) {
     for (let gx = -reachX; gx <= reachX; gx += stepX) {
-      const jx = gx + (pileRandom() - 0.5) * stepX * 0.24;
-      const jy = gy + (pileRandom() - 0.5) * stepY * 0.24;
+      const jx = gx + (pileRandom() - 0.5) * stepX * 0.12;
+      const jy = gy + (pileRandom() - 0.5) * stepY * 0.12;
       if ((jx / reachX) ** 2 + (jy / reachY) ** 2 > 1) continue;
       list.push({
         x: centreX + jx - w / 2,
@@ -1365,21 +1376,61 @@ function pileCandidates(w, h, phase = 0) {
   return list;
 }
 
-/** The innermost free spot on the thrower's side, or null when the heap is full. */
+/**
+ * The best free spot for a throw. The heap always fills its innermost free ring
+ * first; inside that thin ring the spot that touches what is already down wins.
+ * Ranking by centrality alone left islands with visible gaps, and a coarse
+ * lattice offered no spot close enough to the others.
+ */
 function tryPlace(seat, list, placed, w, h) {
   const preferred = SEAT_ANGLE[PLACE[seat]] ?? 0;
-  for (const spread of [Math.PI / 4, Math.PI / 3, Math.PI / 2, Math.PI]) {
-    for (const candidate of list) {
-      if (angleDistance(candidate.theta, preferred) > spread) continue;
-      // A tile may lie at any careless angle; try a few before giving up on
-      // the spot, so the heap packs as tightly as the geometry allows.
-      for (const turn of [0, 0.18, -0.18, 0.34, -0.34]) {
-        const tilted = { ...candidate, angle: candidate.angle + turn };
-        if (placementFits(placed, tilted)) return tilted;
-      }
+  const reach = Math.max(1, ...list.map((candidate) => candidate.radius));
+  const turns = [0, 0.18, -0.18, 0.34, -0.34];
+  const fits = [];
+  let innermost = Infinity;
+  for (const candidate of list) {
+    // The list is radius-sorted: once past the innermost ring there is no
+    // candidate that can win, so stop scanning.
+    if (candidate.radius > innermost + w * 0.6) break;
+    for (const turn of turns) {
+      const tilted = { ...candidate, angle: candidate.angle + turn };
+      if (!placementFits(placed, tilted)) continue;
+      fits.push({
+        ...tilted,
+        radius: candidate.radius,
+        side: angleDistance(candidate.theta, preferred),
+      });
+      innermost = Math.min(innermost, candidate.radius);
+      break;
     }
   }
-  return null;
+  if (fits.length === 0) return null;
+  let best = null;
+  let bestGap = Infinity;
+  let bestRadius = Infinity;
+  for (const candidate of fits) {
+    if (candidate.radius > innermost + w * 0.6) continue;
+    const gap = placed.length === 0 ? 0 : nearestEdgeGap(candidate, placed);
+    const side = candidate.side * (candidate.radius / reach);
+    const penalty = gap + side * w * 0.5;
+    if (penalty < bestGap || (penalty === bestGap && candidate.radius < bestRadius)) {
+      bestGap = penalty;
+      bestRadius = candidate.radius;
+      best = candidate;
+    }
+  }
+  return best;
+}
+
+/** Roughly how far this candidate's edge is from the nearest landed tile. */
+function nearestEdgeGap(candidate, placed) {
+  let gap = Infinity;
+  for (const item of placed) {
+    const distance = Math.hypot(candidate.x - item.x, candidate.y - item.y);
+    const reach = (Math.hypot(candidate.w, candidate.h) + Math.hypot(item.w, item.h)) / 2;
+    gap = Math.min(gap, distance - reach);
+  }
+  return Math.max(0, gap);
 }
 
 /** The tile size the heap is using, and its candidate spots (built once). */
