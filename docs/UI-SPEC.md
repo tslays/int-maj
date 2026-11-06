@@ -151,18 +151,17 @@ The row directly above the hand is the only place a control may appear:
 
     controls  = full board width x control_h, sitting on top of the hand band
     throw     = last child of the row, flush right (margin-left: auto)
-    claim     = the row plus the one above it, so a claim cannot open a second
-                overlay; Dismiss is the lower row, nearest the thumb
-    claim box = [controls.x, controls.y - control_h - gap, controls.w, 2*control_h + gap]
+    claim     = the row's other end: mirrors the throw, same footprint, never a
+                slab across the board
+    claim row = [table.x, controls.y, controls.x + controls.w - table.x, control_h]
 
 `control_h` is the reserved height, so a control's box must equal it rather
 than the hand-rolled button height - a 37 px button in a 34 px row leaks 1.5 px
-into the hand band. Two thumb-sized calls do not fit one row, so `layout.claim`
-is solved and exported: the panel takes both, Claim on top and Dismiss under
-it, and the felt stops above the panel (`stackBottom` is the panel's top, not
-the row's) so no discard can ever sit under a call. On a phone a chow offer
-with several runs scrolls sideways inside its own row rather than growing the
-panel.
+into the hand band. A claim fills that one row from the table's left rim to the
+throw's own right edge: Dismiss at the left end, the claim in the throw's slot
+at the right, each the size of a normal button (measured: the claim is never
+wider than the row minus 20 px). A chow offer with several runs scrolls
+sideways inside the left half rather than pushing the claim out of its slot.
 
 ### Bare felt (2026-11-05)
 

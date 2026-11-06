@@ -690,13 +690,13 @@ describe("variant D seat melds", () => {
   }
 });
 
-describe("variant D claim panel", () => {
+describe("variant D claim row", () => {
   for (const [width, height, mode] of [
     [1440, 900, "desktop"],
     [390, 844, "phone"],
     [844, 390, "phone"],
   ] as const) {
-    it(`${width}x${height} stacks Claim over Dismiss in its own panel`, async () => {
+    it(`${width}x${height} mirrors the claim into the throw's slot`, async () => {
       await setViewport(cdp, sessionId, width, height);
       await navigate(cdp, sessionId, `${server.url}/?state=claim&variant=d`);
       const claim = await evaluate<ClaimMeasurement>(cdp, sessionId, MEASURE_CLAIM);
@@ -704,51 +704,65 @@ describe("variant D claim panel", () => {
 
       assert.ok(claim.claim !== null, "a claim window offers the claim");
       assert.ok(claim.dismiss !== null, "and a way to dismiss it");
+      const row = [
+        expected.table[0],
+        expected.controls[1],
+        expected.controls[0] + expected.controls[2] - expected.table[0],
+        expected.controls[3],
+      ];
       assert.ok(
-        Math.abs(claim.panel[0] - expected.claim[0]) <= 1 &&
-          Math.abs(claim.panel[1] - expected.claim[1]) <= 1 &&
-          Math.abs(claim.panel[2] - expected.claim[2]) <= 1 &&
-          Math.abs(claim.panel[3] - expected.claim[3]) <= 1,
-        `the panel is the solver's claim rect: ${JSON.stringify(claim.panel)} vs ${JSON.stringify(expected.claim)}`,
+        Math.abs(claim.panel[0] - row[0]) <= 1 &&
+          Math.abs(claim.panel[1] - row[1]) <= 1 &&
+          Math.abs(claim.panel[2] - row[2]) <= 1 &&
+          Math.abs(claim.panel[3] - row[3]) <= 1,
+        `the row runs from the table rim to the throw's edge: ${JSON.stringify(claim.panel)} vs ${JSON.stringify(row)}`,
       );
 
-      // Claim tops the panel, Dismiss is the row under it: the thumb reaches
-      // the common answer without moving.
+      // Dismiss holds the left end, the claim the throw's own slot at the
+      // right; neither may span the board.
       assert.ok(
-        Math.abs(claim.claim![1] - claim.panel[1]) <= 1,
-        `Claim starts at ${claim.claim![1]}, the panel at ${claim.panel[1]}`,
+        Math.abs(claim.dismiss![0] - claim.panel[0]) <= 1,
+        `Dismiss starts at ${claim.dismiss![0]}, the row at ${claim.panel[0]}`,
       );
       assert.ok(
-        claim.dismiss![1] >= claim.claim![1] + claim.claim![3] - 1,
-        `Dismiss starts at ${claim.dismiss![1]}, Claim ends at ${claim.claim![1] + claim.claim![3]}`,
+        Math.abs(claim.claim![0] + claim.claim![2] - (claim.panel[0] + claim.panel[2])) <= 1,
+        `Claim ends at ${claim.claim![0] + claim.claim![2]}, the row at ${claim.panel[0] + claim.panel[2]}`,
       );
+      assert.ok(
+        claim.claim![2] < claim.panel[2] - 20,
+        `Claim takes ${claim.claim![2]} px of a ${claim.panel[2]} px row`,
+      );
+      assert.ok(
+        claim.dismiss![2] < claim.panel[2] - 20,
+        `Dismiss takes ${claim.dismiss![2]} px of a ${claim.panel[2]} px row`,
+      );
+
       for (const box of [claim.claim!, claim.dismiss!]) {
-        assert.ok(inside(claim.panel, box), `a call leaves the panel: ${JSON.stringify(box)}`);
+        assert.ok(inside(claim.panel, box), `a call leaves the row: ${JSON.stringify(box)}`);
       }
-
-      // A chow offer with several runs may scroll inside its row, so a variant
-      // only has to stay within the panel's height (or the row scrolls).
+      // A chow offer with several runs may scroll inside its own row, so a
+      // variant only has to stay within the row's height (or the row scrolls).
       for (const box of claim.variants) {
         assert.ok(
           box[1] >= claim.panel[1] - 1 &&
             box[1] + box[3] <= claim.panel[1] + claim.panel[3] + 1,
-          `a chow variant leaves the panel's height: ${JSON.stringify(box)}`,
+          `a chow variant leaves the row's height: ${JSON.stringify(box)}`,
         );
         assert.ok(
           inside(claim.panel, box) || claim.variantsOverflow === "auto",
-          `a chow variant leaves the panel and nothing scrolls: ${JSON.stringify(box)}`,
+          `a chow variant leaves the row and nothing scrolls: ${JSON.stringify(box)}`,
         );
       }
 
       // The hand is never covered, and neither is a discard.
       assert.ok(
         !overlaps(claim.panel, claim.hand),
-        `the panel covers the hand: ${JSON.stringify(claim.panel)} vs ${JSON.stringify(claim.hand)}`,
+        `the row covers the hand: ${JSON.stringify(claim.panel)} vs ${JSON.stringify(claim.hand)}`,
       );
       for (const discard of claim.discards) {
         assert.ok(
           !overlaps(claim.panel, discard),
-          `the panel covers a discard: ${JSON.stringify(discard)}`,
+          `the row covers a discard: ${JSON.stringify(discard)}`,
         );
       }
     });
@@ -759,17 +773,17 @@ describe("variant D claim panel", () => {
     await navigate(cdp, sessionId, `${server.url}/?state=claim&variant=d`);
     const claim = await evaluate<ClaimMeasurement>(cdp, sessionId, MEASURE_CLAIM);
     const inset = tableInset(390, 844);
-    assert.equal(Math.round(claim.panel[0]), inset, "the panel starts at the table rim");
+    assert.equal(Math.round(claim.panel[0]), inset, "the row starts at the table rim");
     assert.equal(
       Math.round(claim.panel[2]),
       claim.viewport - 2 * inset,
-      "the panel spans the board inside the rim",
+      "the row spans the board inside the rim",
     );
     if (claim.scroll[0] > claim.scroll[1]) {
       assert.equal(
         claim.overflow,
         "auto",
-        "a wider offer scrolls inside the panel instead of painting over the felt",
+        "a wider offer scrolls inside the row instead of painting over the felt",
       );
     }
   });
