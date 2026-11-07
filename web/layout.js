@@ -18,6 +18,31 @@ export const HAND_TILE_COUNT = 14;
  */
 export const HAND_OVERLAP = 0.17;
 
+/**
+ * The heap's packing budget: how many 3:4 tiles it is drawn to hold.
+ *
+ * A normal hand throws about TARGET tiles, so discards are drawn large enough
+ * to read. A long hand that outgrows that makes the heap rebuild once, at
+ * CAPACITY, rather than let two tiles touch. CAPACITY is the headroom past the
+ * longest hand there is (84 throws).
+ */
+export const DISCARD_TARGET = 48;
+export const DISCARD_CAPACITY = 96;
+
+/**
+ * The discard tile's width for a pile, sized so `capacity` 3:4 tiles fit
+ * inside it without touching. The constant is measured against the real
+ * placement in `test/layout-geometry.test.ts`: a heap sized this way lands
+ * within a few tiles of full and never draws tiles it cannot place.
+ */
+export function discardTileSize(pile, capacity, cap) {
+  const heapRadius = Math.sqrt((pile[2] * pile[3]) / Math.PI);
+  const fitted = Math.floor(
+    Math.sqrt((Math.PI * heapRadius * heapRadius * 0.55) / (capacity * 2.18)),
+  );
+  return Math.max(8, Math.min(Math.round(cap), fitted));
+}
+
 /** Width of a hand row: one tile plus the thirteen that follow it. */
 export function handRowWidth(tile, gap, overlap = HAND_OVERLAP) {
   return tile + (HAND_TILE_COUNT - 1) * (tile * (1 - overlap) + gap);
@@ -102,7 +127,6 @@ export function computeLayout(input) {
     rivers: shiftAll(inner.rivers),
     seats: shiftAll(inner.seats),
     controls: shift(inner.controls),
-    badges: shiftAll(inner.badges),
     // The floor is a device width, not the inset board.
     supported: inner.supported || (input.mode === "phone" && width >= 390),
     inset,
@@ -152,8 +176,6 @@ function solveLayout({
     let rackHeight = rackWidth / 0.75;
     // The top band is exactly one tile tall: the wall's own height.
     const topSeatHeight = round(rackHeight);
-    const badgeWidth = Math.max(34, round(boardScale * 0.8));
-    const badgeHeight = round(boardScale * 0.36);
     const sideInset = 0;
 
     // The bottom of the stack is fixed by the hand and its controls; the
@@ -232,24 +254,10 @@ function solveLayout({
       pileRight - pileLeft,
       bottomRiverY + riverHeight - pileTop,
     ];
-    // One tile size for every discard, sized so a full hand's throws fit the
-    // pile with room to lie at angles without hiding each other.
-    const DISCARD_CAPACITY = 96; // headroom past the longest hand (84 throws)
-    // The heap is a circle inside the pile; size the tile so a full hand's
-    // throws fill it without ever touching (each needs a disc of its diagonal).
-    const heapRadius = Math.sqrt((pile[2] * pile[3]) / Math.PI);
-    const discardTile = Math.max(
-      8,
-      Math.min(
-        Math.round(boardScale),
-        Math.floor(
-          Math.sqrt(
-            (Math.PI * heapRadius * heapRadius * 0.55) /
-              (DISCARD_CAPACITY * 2.18),
-          ),
-        ),
-      ),
-    );
+    // One tile size for every discard: the heap is sized for a normal hand's
+    // throws so the faces stay readable, and a long hand rebuilds it once at
+    // DISCARD_CAPACITY rather than let two tiles touch.
+    const discardTile = discardTileSize(pile, DISCARD_TARGET, handScale);
 
     const rivers = {
       top: [centreX, topRiverY, flatRiverWidth, riverHeight],
@@ -265,33 +273,6 @@ function solveLayout({
     const handBand = [0, handBandY, width, handTileHeight + 2 * handGap];
     const hand = [0, handY, handWidth, handTileHeight];
     const controls = [0, controlsY, width, controlHeight];
-    const badges = {
-      top: [
-        seats.top[0] - boardGap - badgeWidth,
-        round(seats.top[1] + seats.top[3] / 2 - badgeHeight / 2),
-        badgeWidth,
-        badgeHeight,
-      ],
-      left: [
-        boardGap,
-        round(seats.left[1] + seats.left[3] / 2 - badgeHeight / 2),
-        badgeWidth,
-        badgeHeight,
-      ],
-      right: [
-        width - boardGap - badgeWidth,
-        round(seats.right[1] + seats.right[3] / 2 - badgeHeight / 2),
-        badgeWidth,
-        badgeHeight,
-      ],
-      self: [
-        round((width - badgeWidth) / 2),
-        round(handY - handGap - badgeHeight),
-        badgeWidth,
-        badgeHeight,
-      ],
-    };
-
     const flatTileWidth = fitRiverTile(
       rivers.top,
       riverColumns,
@@ -320,7 +301,6 @@ function solveLayout({
       discardTileHeight: (discardTile * 4) / 3,
       seats,
       controls,
-      badges,
       tileWidth: handScale,
       boardTileWidth: boardScale,
       rackWidth: wallTileWidth,
@@ -406,29 +386,6 @@ function solveLayout({
     (HAND_TILE_COUNT * tileWidth + (HAND_TILE_COUNT - 1) * gap) /
     (HAND_TILE_COUNT - (HAND_TILE_COUNT - 1) * HAND_OVERLAP);
 
-  // No badge slot is needed beside the hand on a phone: the self badge sits
-  // above it. On the single-screen layouts the badge reserves the left slot.
-  if (!phone) {
-    while (tileWidth > 1) {
-      const idealGap = Math.max(1, round(tileWidth * 0.25));
-      const badgeWidth = Math.max(34, round(tileWidth * 0.8));
-      let candidateGap = idealGap;
-      while (
-        candidateGap > 1 &&
-        handRowWidth(tileWidth, candidateGap) + 2 * (badgeWidth + candidateGap) > width
-      ) {
-        candidateGap -= 1;
-      }
-      const handWidth = handRowWidth(tileWidth, 0);
-      if (handWidth + 2 * (badgeWidth + candidateGap) <= width) {
-        gap = candidateGap;
-        break;
-      }
-      tileWidth -= 1;
-    }
-  }
-
-  // Shrink the gap before letting a phone tile fall below the 26px floor.
   // The row overlaps, so its tiles carry no gap of their own, and it spans
   // the board: fourteen fronts, thirteen overlaps.
   const handGapPx = 0;
@@ -450,9 +407,8 @@ function solveLayout({
   let rackHeight = rackWidth / 0.75;
   // Provisional, for the room the side walls get below.
   let topSeatHeight = round(rackHeight);
-  const badgeWidth = Math.max(34, round(tileWidth * 0.8));
-  const badgeHeight = round(tileWidth * 0.36);
-  const sideInset = badgeWidth + gap;
+  // The seat badges are gone from the felt, so the walls sit one gap in.
+  const sideInset = gap;
   const riverWidth = riverColumns * tileWidth + (riverColumns - 1) * gap;
   const riverHeight = REGION_ROWS * tileHeight + (REGION_ROWS - 1) * gap;
 
@@ -534,23 +490,11 @@ function solveLayout({
     pileRight - pileLeft,
     bottomRiverY + riverHeight - pileTop,
   ];
-  // One tile size for every discard, sized so a full hand's throws fit the
-  // pile with room to lie at angles without hiding each other.
-  const DISCARD_CAPACITY = 96; // headroom past the longest hand (84 throws)
-  // The heap is a circle inside the pile; size the tile so a full hand's throws
-  // fill it without ever touching (each needs a disc of its own diagonal).
-  const heapRadius = Math.sqrt((pile[2] * pile[3]) / Math.PI);
-  const discardTile = Math.max(
-    8,
-    Math.min(
-      Math.round(tileWidth),
-      Math.floor(
-        Math.sqrt(
-          (Math.PI * heapRadius * heapRadius * 0.55) / (DISCARD_CAPACITY * 2.18),
-        ),
-      ),
-    ),
-  );
+  // One tile size for every discard: the heap is sized for a normal hand's
+  // throws so the faces stay readable, and a long hand rebuilds it once at
+  // DISCARD_CAPACITY rather than let two tiles touch. The discard may be as
+  // large as the hand's own tile: it is the thing the table is read from.
+  const discardTile = discardTileSize(pile, DISCARD_TARGET, handTile);
   const rivers = {
     top: [round((width - riverWidth) / 2), topRiverY, riverWidth, riverHeight],
     bottom: [
@@ -570,41 +514,6 @@ function solveLayout({
     controlsWidth,
     controlHeight,
   ];
-
-  const centreOf = (rect) => rect[1] + rect[3] / 2;
-  const badges = {
-    top: [
-      seats.top[0] - gap - badgeWidth,
-      round(centreOf(seats.top) - badgeHeight / 2),
-      badgeWidth,
-      badgeHeight,
-    ],
-    left: [
-      0,
-      round(centreOf(seats.left) - badgeHeight / 2),
-      badgeWidth,
-      badgeHeight,
-    ],
-    right: [
-      width - badgeWidth,
-      round(centreOf(seats.right) - badgeHeight / 2),
-      badgeWidth,
-      badgeHeight,
-    ],
-    self: phone
-      ? [
-          round((width - badgeWidth) / 2),
-          round(handY - gap - badgeHeight),
-          badgeWidth,
-          badgeHeight,
-        ]
-      : [
-          round(width / 2 - handWidth / 2 - gap - badgeWidth),
-          round(handY + tileHeight / 2 - badgeHeight / 2),
-          badgeWidth,
-          badgeHeight,
-        ],
-  };
 
   const flatTileWidth = fitRiverTile(
     rivers.top,
@@ -634,7 +543,6 @@ function solveLayout({
     discardTileHeight: (discardTile * 4) / 3,
     seats,
     controls,
-    badges,
     // The tile's own size; a side wall turns it a quarter on screen.
     rackWidth: wallTileWidth,
     rackHeight: wallTileHeight,

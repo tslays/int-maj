@@ -190,7 +190,7 @@ exported; the board box stays full-bleed because the felt is the background.
 There are no rivers: discards go into one heap in the middle. It is a heap, not
 a pattern:
 
-    tile      = min(board_tile, sqrt(pi * r^2 * 0.55 / (40 * 2.18)))   // r = the heap's radius
+    tile      = min(hand_tile, sqrt(pi * r^2 * 0.55 / (48 * 2.18)))    // r = the heap's radius
     spots     = a jittered grid inside the pile's ellipse, ordered from the centre
     angle     = random +-26 degrees, trying a few turns per spot
     fit       = rotated-rectangle (SAT) test with a half-pixel gap
@@ -202,10 +202,21 @@ stay on their side: yours south, the right-hand player's east, the left-hand
 player's west, the far seat's north. A tile may lie at any angle; no two discs
 ever overlap, and the audit proves it with a rotated-rectangle test.
 
+A discard is drawn for a normal hand, not for the worst one. `DISCARD_TARGET`
+(48 throws) sets the tile: every face the table is read from stays legible, and
+a discard may grow to the hand's own tile, never past it (2026-11-07). The
+packing constant is measured against the real placement, so a heap drawn this
+way fills within a few tiles of its size and never over.
+
 A tile never moves once it has landed: each throw takes the innermost free spot
-from the spots still open, and the heap is left exactly as it was. If a window
-is too short to hold the whole hand at the solver's size, the heap is rebuilt
-once, smaller, rather than let two tiles touch or drop a throw.
+from the spots still open, and the heap is left exactly as it was. The one
+exception is a hand that outgrows its heap: when the last free spot is taken,
+every landed tile is dealt again at once at `DISCARD_CAPACITY` (96, the headroom
+past the longest hand's 84 throws), so nothing overlaps and nothing is dropped.
+The CSS transition walks each tile to its new spot, so the heap gathers rather
+than jumps. A resize re-deals at the new size the same way; a window too short
+for the whole hand even then keeps the earlier landings fixed rather than
+repack twice.
 
 Your own throw animates too: it leaves the hand, flies to its spot and clacks.
 
@@ -309,9 +320,9 @@ throw it answers.
 
 ### A whole hand fits the heap (2026-11-06)
 
-The heap must hold every throw of the game: a hand can reach 84 discards, and a
-tile that lands must stay (no repacking, no shrinking). The solver therefore
-sizes for `DISCARD_CAPACITY = 96` (headroom past the longest hand), the
+The heap must hold every throw of the game: a hand can reach 84 discards. It is
+drawn for a normal hand (`DISCARD_TARGET = 48`) and rebuilt once, smaller, at
+`DISCARD_CAPACITY = 96` when it fills (see "One round heap"). The
 candidate lattice covers the whole pile rectangle instead of its inscribed
 ellipse, up to fourteen jittered lattice phases are tried before giving up, and
 placed tiles are bucketed in a spatial grid so overlap checks stay local. A

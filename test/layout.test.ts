@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { computeLayout, HAND_OVERLAP, HAND_TILE_COUNT } from "../web/layout.js";
+import {
+  computeLayout,
+  DISCARD_CAPACITY,
+  DISCARD_TARGET,
+  discardTileSize,
+  HAND_OVERLAP,
+  HAND_TILE_COUNT,
+} from "../web/layout.js";
 
 type Rect = readonly [x: number, y: number, width: number, height: number];
 
@@ -17,8 +24,8 @@ const SIZES = [
 
 const BREAKPOINTS = {
   desktop: { riverColumns: 6, handBandFraction: 0.12, minTileWidth: 26, maxTileWidth: 46 },
-  landscape: { riverColumns: 4, handBandFraction: 0.24, minTileWidth: 18, maxTileWidth: 46 },
-  portrait: { riverColumns: 3, handBandFraction: 0.18, minTileWidth: 18, maxTileWidth: 46 },
+  landscape: { riverColumns: 4, handBandFraction: 0.15, minTileWidth: 18, maxTileWidth: 46 },
+  portrait: { riverColumns: 3, handBandFraction: 0.14, minTileWidth: 18, maxTileWidth: 46 },
   phone: { riverColumns: 3, handBandFraction: 0.5, minTileWidth: 26, maxTileWidth: 46 },
 } as const;
 
@@ -150,30 +157,33 @@ describe("computeLayout", () => {
         }
       }
 
-      // Badge gap and centring are the same formula for all four seats.
-      if (!phone) {
-      const seatRects = [
-        result.seats.top,
-        result.seats.left,
-        result.seats.right,
-        result.hand,
-      ];
-      for (const [index, seat] of seatRects.entries()) {
-        const key = ["top", "left", "right", "self"][index] as keyof typeof result.badges;
-        const badge = result.badges[key];
-        const gap =
-          seat[0] >= badge[0] + badge[2]
-            ? seat[0] - (badge[0] + badge[2])
-            : badge[0] - (seat[0] + seat[2]);
-        const offset = Math.abs(
-          badge[1] + badge[3] / 2 - (seat[1] + seat[3] / 2),
-        );
-        assert.ok(Math.abs(gap - result.gap) <= 0.51, `${key} gap`);
-        assert.ok(offset <= 0.51, `${key} centre`);
-      }
-      }
     });
   }
+
+  it("draws discards large, dropping to the whole-hand size only when it must", () => {
+    for (const [width, height, mode] of SIZES) {
+      const result = layout(width, height, mode);
+      const cap = result.handTileWidth ?? result.tileWidth;
+      const normal = discardTileSize(result.pile, DISCARD_TARGET, cap);
+      const wholeHand = discardTileSize(result.pile, DISCARD_CAPACITY, cap);
+      const label = `${width}x${height}`;
+      assert.equal(result.discardTileWidth, normal, `${label}: discard size`);
+      assert.ok(
+        normal <= cap + 0.5,
+        `${label}: a discard is larger than the hand tile (${normal} > ${cap})`,
+      );
+      // A normal hand reads big; only a hand that outgrows the heap is drawn
+      // at the whole-hand size, and that one still has to fit all 84 throws.
+      assert.ok(
+        normal >= wholeHand * 1.2,
+        `${label}: the drawn discard (${normal}) barely beats the fallback (${wholeHand})`,
+      );
+      assert.ok(
+        discardTileSize(result.pile, DISCARD_CAPACITY, 999) === wholeHand,
+        `${label}: the cap is the hand tile`,
+      );
+    }
+  });
 
   it("fits fourteen overlapping tiles across the screen on a phone", () => {
     const portrait = layout(390, 844, "phone");
