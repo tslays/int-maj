@@ -832,23 +832,14 @@ function rackLine(entry) {
 }
 
 /**
- * A fishing player has announced their wait, so the wait itself is the marker:
- * the tiles they are waiting on, face-up, beside their exposed calls. No word,
- * no icon, no motion - it is a state, not an announcement.
+ * Fishing is a state of a whole hand, not a badge on it: the seat that has
+ * declared it breathes, slowly, into a warmer tone (2026-11-07). The wait
+ * itself is still announced in words - for screen readers, on the seat.
  */
-function fishingMark(entry) {
+function fishingState(entry) {
   const fishing = payload?.view.fishing.find((row) => row.seat === entry.seat);
   if (fishing === undefined) return null;
-  const mark = div("fishing-mark");
-  const tiles = span("fishing-waits");
-  for (const key of fishing.wait) tiles.append(tileElement(key));
-  mark.append(tiles);
-  mark.setAttribute(
-    "aria-label",
-    `${entry.seat === payload.seat ? "You are" : `${seatLabel(entry.seat)} is`} fishing on ${fishing.wait.map(tileName).join(", ")}`,
-  );
-  mark.title = `Fishing on ${fishing.wait.map(tileName).join(", ")}`;
-  return mark;
+  return `Fishing on ${fishing.wait.map(tileName).join(", ")}, ${tierName(fishing.tier) ?? fishing.tier}`;
 }
 
 function meldRow(melds) {
@@ -904,13 +895,12 @@ function renderSeat(entry) {
 
   const rack = rackLine(entry);
   const melds = meldRow(entry.melds);
-  const fishing = fishingMark(entry);
+  const fishing = fishingState(entry);
   if (fishing !== null) {
-    // A phone's side band is one tile wide, so the marker sits on the band's
-    // inner end rather than beside the calls: it is the one place that always
-    // has room, whatever the viewport.
+    // The seat breathes instead of wearing a badge; the words stay for
+    // screen readers.
     root.classList.add("is-fishing");
-    root.append(fishing);
+    root.setAttribute("aria-label", fishing);
   }
   const bonuses = bonusRow(entry);
 
@@ -1589,11 +1579,13 @@ function renderOwnMelds() {
   const melds = meldRow(payload.view.player.melds);
   if (melds === null) slot.replaceChildren();
   else slot.replaceChildren(melds);
-  // Your own declaration sits above your hand, where nothing else lives.
-  const layer = $("#own-fishing");
-  layer.replaceChildren();
-  const mine = fishingMark({ seat: payload.view.player.seat });
-  if (mine !== null) layer.append(mine);
+  // Your own declaration breathes round the hand band; your tiles keep their
+  // own colour.
+  const band = document.querySelector(".hand-band");
+  const mine = fishingState({ seat: payload.view.player.seat });
+  band.classList.toggle("is-fishing", mine !== null);
+  if (mine === null) band.removeAttribute("aria-label");
+  else band.setAttribute("aria-label", mine);
 }
 
 function renderOwnBonus() {

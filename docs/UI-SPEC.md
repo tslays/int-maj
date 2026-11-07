@@ -185,20 +185,23 @@ then shifts every region by `inset`, so the hand, the three walls, the rivers
 and the action row all sit a breath away from the edge. `layout.inset` is
 exported; the board box stays full-bleed because the felt is the background.
 
-### A fishing seat is marked, not announced (2026-11-07)
+### A fishing hand breathes (2026-11-07, owner's rule)
 
-Declaring fishing makes the state public `[I p. 21, R-067]`, so the **wait
-itself is the marker**: the tiles that seat is waiting on, face-up, in the
-seat's own band - no word, no icon, no motion. A phone's side band is one tile
-wide, so the mark sits on the band's inner end (waits stacked down a side band,
-in a row on the far seat) and is capped to the band's height; the band's rack
-and meld row also take an amber outline so the eye finds the seat before it
-reads the tiles. Your own declaration sits at the top-right of your hand band,
-above the hand.
+The owner rejected a badge on the seat: fishing is a state of a whole hand, so
+the hand shows it. The fishing seat's backs **breathe** into a warmer tone -
+`fishing-breathe`, a 4.8 s ease-in-out cycle of sepia/hue/brightness, "like a
+relaxed heart rate" - with a static amber outline on the rack so the seat is
+found before the pulse is noticed. Your own declaration breathes round the hand
+band (`hand-breathe`), never over your tiles, which keep their own colour.
+
+The words survive for screen readers only: the seat (or the hand band) carries
+`Fishing on 4 bamboo, 7 bamboo, limit`. Under `prefers-reduced-motion` the
+pulse is replaced by a static tint, never by nothing.
 
 The audit loads `?state=result` (an opponent fishing) and `?state=fishing`
-(you are), and fails if a mark leaves its band or does not show the declared
-waits.
+(you are), and fails unless the seat's backs run `fishing-breathe` at 4.8 s
+with a fishing label, the hand band runs `hand-breathe`, and no `fishing-mark`
+badge exists anywhere.
 
 ### The wall is a frame around the pile (2026-11-07, owner request)
 
