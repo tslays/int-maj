@@ -368,18 +368,30 @@ describe("table rhythm", () => {
       1 + rhythm.discards,
       `the first discard and the table's ${rhythm.discards} throws land on the heap`,
     );
+    const gaps: number[] = [];
     for (let index = 1; index < landings.length; index++) {
       const gap = landings[index]!.at - landings[index - 1]!.at;
+      gaps.push(gap);
+      // Timers never fire early, so the floor holds on any machine.
       assert.ok(
         gap >= DISCARD_BEAT_MS - TOLERANCE_MS,
         `throw ${index + 1} lands ${gap} ms after the one before it; the beat is ${DISCARD_BEAT_MS} ms`,
       );
-      // The settle is taken out of the beat, never added to it.
+      // A busy machine (a shared CI runner) can stall one frame by most of a
+      // beat; that is a hiccup, not a slower table.
       assert.ok(
-        gap <= DISCARD_BEAT_MS + 250,
-        `throw ${index + 1} lands ${gap} ms after the one before it; the settle slowed the table`,
+        gap <= 2 * DISCARD_BEAT_MS,
+        `throw ${index + 1} lands ${gap} ms after the one before it; the table stalled`,
       );
     }
+    // The settle is taken out of the beat, never added to it: a settle added to
+    // every throw shows in the typical gap, which one slow frame cannot move.
+    const sorted = [...gaps].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)]!;
+    assert.ok(
+      median <= DISCARD_BEAT_MS + 250,
+      `the typical throw lands ${median} ms after the one before it (${gaps.join(", ")}); the settle slowed the table`,
+    );
 
     const firstBar = samples.find((sample) => sample.bar);
     assert.ok(firstBar !== undefined, "the page records the offer");

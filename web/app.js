@@ -65,6 +65,8 @@ let focusedOutcomeKey = null;
  * dev server answers it over HTTP. `<html data-transport="local">` picks.
  */
 let localApi = null;
+/** The page's own title: "Mahjong table" on the dev server, the app's name offline. */
+const BASE_TITLE = document.title;
 
 let callsEnabled = true;
 let autoPassKey = null;
@@ -2450,7 +2452,7 @@ async function openScenario(name) {
 /** Leaving review mode — a new deal — restores the table's own title. */
 function clearScenario() {
   scenarioName = null;
-  document.title = "Mahjong table";
+  document.title = BASE_TITLE;
   const tag = $("#state-tag");
   if (tag !== null) tag.hidden = true;
 }

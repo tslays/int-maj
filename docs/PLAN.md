@@ -9,7 +9,7 @@ test closer? Visual polish waits until a tester asks for something specific.
 Agreed with the owner, 2026-11-07: solo against bots first; any device, iPhone
 as the reference; no house rules; offline only, no accounts or multiplayer.
 
-## Alpha 1 — Plays offline on any phone (done 2026-11-07, deploy pending)
+## Alpha 1 — Plays offline on any phone (done 2026-11-07)
 
 - The engine, bots and API routes run in the browser: `npm run build` emits a
   static `dist/` (`tools/build-web.ts`), the routes are one pure function
@@ -21,8 +21,9 @@ as the reference; no house rules; offline only, no accounts or multiplayer.
 - Running scores come from the engine (`scoresBefore`), not the browser.
 - Found on the way: the Wind of the Round advanced on every pass of the deal,
   ending a game after about four hands; corrected to R-032 (AUDIT A28).
-- *Remaining:* create the Cloudflare Pages project (README, "Deploying") and
-  install it on an iPhone.
+- Live at https://int-maj.int-maj.workers.dev, deployed with `npm run deploy`
+  (README, "Deploying"). *Remaining:* install it on a real iPhone and play a
+  hand in airplane mode.
 
 ## Alpha 2 — The table explains itself
 
@@ -53,6 +54,10 @@ as the reference; no house rules; offline only, no accounts or multiplayer.
   for up to a second; worth profiling before the alpha.
 - The book starts each player with counters worth 16,000 points (p. 23); the
   scorecard starts at zero.
+- The browser-driven tests (`rhythm`, `layout-geometry`) measure wall-clock
+  time and fail now and then on a busy machine (GitHub's runner, or locally
+  while other test files run in parallel). The rhythm gap check now tolerates
+  one slow frame; the layout contract failed once in four full local runs.
 
 ## History
 

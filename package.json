@@ -17,6 +17,7 @@
     "play": "node bin/play.ts",
     "serve": "node --watch bin/serve.ts",
     "build": "node --disable-warning=ExperimentalWarning tools/build-web.ts",
-    "preview": "node bin/preview.ts"
+    "preview": "node bin/preview.ts",
+    "deploy": "npm test && npm run build && npx --yes wrangler@4.158.0 deploy"
   }
 }

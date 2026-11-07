@@ -14,3 +14,6 @@ web/reference3.png
 
 # The offline build: `npm run build` regenerates it.
 dist/
+
+# Wrangler's local cache from `npm run deploy`.
+.wrangler/
