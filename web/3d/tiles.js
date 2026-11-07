@@ -8,27 +8,13 @@
 
 import * as THREE from "three";
 
-export const W = 1;
-export const H = 1.36;
-export const D = 0.78;
+import { D, H, TABLE, W } from "./layout.js";
+
+export { D, H, TABLE, W };
 const FRONT = 0.5;
 const RADIUS = 0.12;
 const BEVEL = 0.04;
 
-/** Table geometry shared by the stage and the board. */
-export const TABLE = Object.freeze({
-  WALL_STACKS: 18,
-  WALL_R: 10.6, // at least WALL_STACKS / 2 + H / 2, so pinwheel walls never touch
-  HAND_Z: 12.5,
-  CENTER_HALF: 2.0,
-  DISCARD_Z: 2.3,
-  // Discards are drawn larger than the wall, as the big mahjong apps do: they
-  // carry the information, the wall only its count.
-  DISCARD_SCALE: 1.3,
-  TABLE_HALF: 14.6,
-});
-
-// A warm off-white, not pure white: lit, it reads white without clipping.
 const ivory = new THREE.MeshPhysicalMaterial({
   color: 0xf1efe9,
   roughness: 0.36,
