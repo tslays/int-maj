@@ -14,6 +14,7 @@
 
 import * as THREE from "three";
 import { D, H, W, TABLE, makeTile, poseFaceUp, poseFaceDown, tileOrder, jitter } from "./tiles.js";
+import { discardSlot } from "./layout.js";
 import {
   animate,
   easeInOutCubic,
@@ -34,16 +35,6 @@ const { WALL_STACKS, WALL_R, HAND_Z, DISCARD_Z, DISCARD_SCALE } = TABLE;
 const GAP = 0.02;
 const OWN_SCALE = 0.72;
 const HAND_TILT = -0.16;
-
-/** Where discard `index` lies in its seat's frame: rows of six. */
-function discardSlot(index) {
-  const column = index % 6;
-  const row = Math.floor(index / 6);
-  return {
-    x: (column - 2.5) * (W + 0.03) * DISCARD_SCALE,
-    z: DISCARD_Z + (H / 2) * DISCARD_SCALE + row * (H + 0.03) * DISCARD_SCALE,
-  };
-}
 
 function meldKey(melds) {
   return JSON.stringify(melds.map((meld) => [meld.kind, meld.tiles, meld.exposed]));
