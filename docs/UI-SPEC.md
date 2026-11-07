@@ -214,6 +214,30 @@ resize), which is the one time the cells themselves change.
 
 Your own throw animates too: it leaves the hand, flies to its spot and clacks.
 
+### The win screen celebrates the combination (2026-11-07, owner request)
+
+The result is not a receipt. It answers one question - which hand did the
+winner work for - and celebrates it:
+
+    kicker      who won, self-drawn or whose discard, hand number
+    hero        the combination's name, in gold, with a slow sweep of light
+    meta        its printed tier (half limit / limit / middle limit / double
+                limit, or "calculated hand") and the Illustrated page
+    requirement the book's own words for the hand, quoted from the pattern
+                table's `description`
+    tiles       the fourteen that won, winning tile outlined (public now: the
+                hand is over, so `outcome.hand` carries the winner's tiles
+                whoever held them)
+    score       ground, doubles x2, the limit and what is paid
+    payments    every seat that moved, net for this hand, winner highlighted;
+                the ledger reasons follow in small print
+    Next hand   sticky, so it is reachable when the card scrolls
+
+Only a win celebrates: sparks, the sweep and the glow are off for a drawn hand
+(and all animation is off under `prefers-reduced-motion`). The payload carries
+`patternDescription` and `patternPages` beside the name, so the screen explains
+the hand from the same table the matcher uses rather than paraphrasing it.
+
 ### Calls can be turned off (2026-11-07, owner request)
 
 The bare table keeps one permanent control: a chip at the right end of the

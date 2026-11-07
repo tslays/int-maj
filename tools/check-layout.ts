@@ -788,7 +788,15 @@ async function finishedGame(base: string): Promise<string> {
       return game;
     }
     const action = chooseAction(payload.view as unknown as GameView, "E");
-    if (action === null) throw new Error(`no legal action at step ${step}`);
+    if (action === null) {
+      // The table is answering: one step per request, exactly as the browser
+      // does it, until it is the human's turn again.
+      const stepped = await post("/api/step", { game });
+      if ("done" in stepped) continue;
+      payload = stepped;
+      if (payload.error !== undefined) throw new Error(payload.error);
+      continue;
+    }
     payload = await post("/api/move", { game, action });
     if (payload.error !== undefined) throw new Error(payload.error);
   }

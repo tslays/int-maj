@@ -47,6 +47,9 @@ const SEAT: Seat = "E";
 const PATTERN_NAMES: ReadonlyMap<string, string> = new Map(
   PATTERNS.map((pattern) => [pattern.id, pattern.name]),
 );
+const PATTERN_BY_ID: ReadonlyMap<string, (typeof PATTERNS)[number]> = new Map(
+  PATTERNS.map((pattern) => [pattern.id, pattern]),
+);
 
 export interface WebSession {
   readonly id: string;
@@ -118,6 +121,13 @@ export interface OutcomePayload {
   /** Public concealed-hand count of the winner. */
   readonly handCount: number;
   readonly matches: readonly OutcomePattern[];
+  /**
+   * The printed requirement of the winning combination, in the book's words,
+   * so the result screen can explain the hand instead of only naming it.
+   */
+  readonly patternDescription: string | null;
+  /** The book pages the combination is printed on. */
+  readonly patternPages: readonly number[];
   readonly ledger: readonly LedgerEntry[];
   /** Ledger entries whose reason names a fishing settlement. */
   readonly fishing: readonly LedgerEntry[];
@@ -289,8 +299,12 @@ function outcomeFor(session: WebSession, view: GameView): OutcomePayload | null 
   let melds: readonly MeldState[] | null = null;
   let handCount = 0;
   if (result.winner !== null) {
+    // The hand is over, so the winning tiles are public: the result screen
+    // shows the combination that won, whoever held it.
+    const winnerIndex = state.players.findIndex((entry) => entry.seat === result.winner);
+    const winner = state.players[winnerIndex];
+    hand = winner === undefined ? null : [...winner.hand];
     if (isWinner) {
-      hand = [...view.player.hand];
       melds = view.player.melds;
       handCount = view.player.hand.length;
     } else {
@@ -322,6 +336,8 @@ function outcomeFor(session: WebSession, view: GameView): OutcomePayload | null 
       scored?.type === "HandScored"
         ? scored.matches.map((id) => ({ id, name: PATTERN_NAMES.get(id) ?? id }))
         : [],
+    patternDescription: PATTERN_BY_ID.get(result.patternId ?? "")?.description ?? null,
+    patternPages: [...(PATTERN_BY_ID.get(result.patternId ?? "")?.pages ?? [])],
     ledger: state.ledger,
     fishing: state.ledger.filter((entry) => entry.reason.startsWith("fishing")),
     totals: totals.totals,
