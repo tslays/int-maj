@@ -254,7 +254,12 @@ function showChoices() {
 
   if (legal.some((action) => action.type === "GoulashExchange")) {
     goulashPicks = [];
-    prompt("Goulash: choose three tiles to pass on");
+    const goulash = view.goulash;
+    prompt(
+      goulash === null
+        ? "Goulash: choose three tiles to pass on"
+        : `Goulash ${goulash.stage + 1} of 3: choose three tiles to pass to ${seatName(goulash.partner)}`,
+    );
     const confirm = button("Pass 3 tiles", "claim", () => {
       const keys = goulashPicks.map((entry) => entry.key).sort();
       const action = legal.find(

@@ -15,7 +15,7 @@
  *   POST /api/next            deal the next hand after a finished one
  */
 
-import { describeEvent } from "../core/game/describe.ts";
+import { describeEventFor } from "../core/game/describe.ts";
 import type { Action } from "../core/game/actions.ts";
 import {
   GameStore,
@@ -101,7 +101,7 @@ function responsePayload(update: SessionUpdate, extraEvents: readonly string[] =
   return {
     ...statePayload(update.session),
     events: [
-      ...update.events.flatMap((event) => describeEvent(event).split("\n")),
+      ...update.events.flatMap((event) => describeEventFor(event, update.session.seat).split("\n")),
       ...extraEvents,
     ],
   };
@@ -120,7 +120,7 @@ function routeGet(context: ApiContext, request: ApiRequest): ApiResponse | null 
       ...statePayload(session),
       state: name,
       title: SCENARIOS[name].title,
-      events: session.events.flatMap((event) => describeEvent(event).split("\n")),
+      events: session.events.flatMap((event) => describeEventFor(event, session.seat).split("\n")),
     });
   }
 
@@ -171,7 +171,7 @@ function routePost(context: ApiContext, request: ApiRequest): ApiResponse | null
     return ok({
       ...statePayload(update.session),
       events: [
-        ...update.session.events.flatMap((event) => describeEvent(event).split("\n")),
+        ...update.session.events.flatMap((event) => describeEventFor(event, update.session.seat).split("\n")),
         "Undid the previous decision.",
       ],
       replaceLog: true,

@@ -359,3 +359,86 @@ describe("table API", () => {
     }
   });
 });
+
+describe("hidden information in the event log", () => {
+  /** Ask the table for decisions until the human must act, collecting every log line. */
+  async function runToHuman(game: string, lines: string[]): Promise<ApiPayload> {
+    for (let step = 0; step < 400; step++) {
+      const payload = await getState(game);
+      if (payload.view.phase === "finished" || payload.legalActions.length > 0) return payload;
+      const answer = await post<ApiPayload | { done: boolean }>("/api/step", { game });
+      assert.equal(answer.status, 200);
+      if ("events" in answer.body) lines.push(...answer.body.events);
+    }
+    throw new Error("the table did not reach the human's move");
+  }
+
+  it("never names another seat's drawn or replacement tile", async () => {
+    const created = await post<ApiPayload>("/api/new", { seed: "api-log-draws" });
+    const game = created.body.game;
+    const lines: string[] = [];
+    let payload = created.body;
+    for (let turn = 0; turn < 12 && payload.outcome === null; turn++) {
+      const discard = payload.legalActions.find((action) => action.type === "Discard");
+      if (discard === undefined) {
+        const pass = payload.legalActions.find((action) => action.type === "Pass") ?? payload.legalActions[0]!;
+        const moved = await post<ApiPayload>("/api/move", { game, action: pass });
+        lines.push(...moved.body.events);
+      } else {
+        const moved = await post<ApiPayload>("/api/move", { game, action: discard });
+        lines.push(...moved.body.events);
+      }
+      payload = await runToHuman(game, lines);
+      if (payload.view.lastDraw !== null) {
+        assert.equal(payload.view.lastDraw.seat, "E", "only your own draw is in the view");
+      }
+    }
+    const opponentDraws = lines.filter((line) => /^[SWN] draws /.test(line));
+    assert.ok(opponentDraws.length > 0, "the bots drew");
+    for (const line of opponentDraws) {
+      assert.match(line, /^[SWN] draws a tile( from the loose tiles)?$/, line);
+    }
+    for (const line of lines.filter((text) => /^[SWN] sets aside /.test(text))) {
+      assert.match(line, /and draws a replacement$/, line);
+    }
+  });
+
+  it("plays a Goulash through all three exchanges, showing only your own tiles", async () => {
+    const drawn = call<ApiPayload>("GET", "/api/scenario?state=drawn").body;
+    assert.equal(drawn.outcome?.kind, "drawn");
+    const game = drawn.game;
+    const dealt = await post<ApiPayload>("/api/next", { game });
+    assert.equal(dealt.status, 200);
+    assert.equal(dealt.body.view.phase, "exchange", "a drawn Western hand is followed by a Goulash");
+
+    const lines: string[] = [];
+    let payload = dealt.body;
+    let exchanges = 0;
+    for (let guard = 0; guard < 20 && payload.view.phase === "exchange"; guard++) {
+      payload = await runToHuman(game, lines);
+      if (payload.view.phase !== "exchange") break;
+      const pick = payload.legalActions.find((action) => action.type === "GoulashExchange");
+      assert.ok(pick !== undefined, "you are offered three tiles to pass");
+      // R-100: opposite first, then the right, then the left.
+      assert.deepEqual(payload.view.goulash, { stage: exchanges, partner: ["W", "S", "N"][exchanges] });
+      const moved = await post<ApiPayload>("/api/move", { game, action: pick });
+      assert.equal(moved.status, 200, JSON.stringify(moved.body));
+      lines.push(...moved.body.events);
+      exchanges += 1;
+      payload = moved.body;
+    }
+    payload = await runToHuman(game, lines);
+    assert.equal(exchanges, 3, "you pass tiles three times");
+    assert.notEqual(payload.view.phase, "exchange", "play starts after the third exchange");
+
+    const goulash = lines.filter((line) => line.startsWith("Goulash"));
+    assert.equal(goulash.length, 6, "two pairings in each of three exchanges");
+    for (const line of goulash) {
+      assert.match(
+        line,
+        /^Goulash [123]: (you give \S+ \S+ \S+ to [SWN] and receive \S+ \S+ \S+|[ESWN] and [ESWN] exchange three tiles)$/,
+        line,
+      );
+    }
+  });
+});

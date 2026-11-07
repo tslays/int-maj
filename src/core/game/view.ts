@@ -22,6 +22,7 @@ import type {
 import type { Action } from "./actions.ts";
 import { seatIndex, wallRemaining } from "./state.ts";
 import { legalActions } from "./legal.ts";
+import { goulashPartner } from "./reduce.ts";
 
 export interface PlayerView {
   readonly seat: Seat;
@@ -70,6 +71,8 @@ export interface GameView {
   readonly result: HandResult | null;
   readonly legalActions: readonly Action[];
   readonly fishingTier: Tier | null;
+  /** During a Goulash: which of the three exchanges, and your partner in it. */
+  readonly goulash: { readonly stage: 0 | 1 | 2; readonly partner: Seat } | null;
 }
 
 function copyMelds(melds: readonly MeldState[]): MeldState[] {
@@ -114,8 +117,9 @@ export function viewFor(state: GameState, seat: Seat): GameView {
     opponents,
     wallRemaining: wallRemaining(state),
     lastDiscard: state.lastDiscard === null ? null : { ...state.lastDiscard },
+    // Only your own draw: another seat's drawn tile is concealed.
     lastDraw:
-      state.lastDraw === null ? null : { ...state.lastDraw },
+      state.lastDraw === null || state.lastDraw.seat !== seat ? null : { ...state.lastDraw },
     claimWindow:
       state.claimWindow === null
         ? null
@@ -133,5 +137,9 @@ export function viewFor(state: GameState, seat: Seat): GameView {
     result: state.result === null ? null : { ...state.result },
     legalActions: legalActions(state, seat),
     fishingTier: state.fishing.find((entry) => entry.seat === seat)?.tier ?? null,
+    goulash:
+      state.phase === "exchange"
+        ? { stage: state.goulashStage ?? 0, partner: goulashPartner(state.goulashStage ?? 0, seat) }
+        : null,
   };
 }
