@@ -9,12 +9,10 @@
  */
 
 import assert from "node:assert/strict";
-import type { Server } from "node:http";
-import type { AddressInfo } from "node:net";
 import { describe, it } from "node:test";
 
 import { viewFor } from "../src/core/game/view.ts";
-import { createAppServer } from "../src/server/server.ts";
+import { createApiContext, routeApi } from "../src/server/api.ts";
 import {
   GameStore,
   statePayload,
@@ -144,39 +142,27 @@ describe("review states", () => {
     assert.ok((botWin.totals[botWin.winner!] ?? 0) > 0, "the winner is paid");
   });
 
-  it("serves each state by name and keeps its board until it moves", async () => {
-    const store = new GameStore({ defaultSeed: "scenario-test" });
-    const server: Server = createAppServer({ store });
-    const { promise, resolve, reject } = Promise.withResolvers<void>();
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", resolve);
-    await promise;
-    const address = server.address() as AddressInfo;
-    const base = `http://127.0.0.1:${address.port}`;
+  it("serves each state by name and keeps its board until it moves", () => {
+    const context = createApiContext(new GameStore({ defaultSeed: "scenario-test" }));
+    const get = (path: string) => {
+      const url = new URL(path, "http://local.invalid");
+      const answer = routeApi(context, { method: "GET", path: url.pathname, query: url.searchParams });
+      assert.ok(answer !== null);
+      return { status: answer.status, body: JSON.parse(JSON.stringify(answer.body)) as ScenarioPayload };
+    };
 
-    try {
-      const first = await fetch(`${base}/api/scenario?state=claim`);
-      assert.equal(first.status, 200);
-      const one = (await first.json()) as ScenarioPayload;
-      assert.equal(one.state, "claim");
-      assert.equal(one.title, SCENARIOS.claim.title);
-      assert.ok(one.events.length > 0, "the log replays the hand");
+    const first = get("/api/scenario?state=claim");
+    assert.equal(first.status, 200);
+    const one = first.body;
+    assert.equal(one.state, "claim");
+    assert.equal(one.title, SCENARIOS.claim.title);
+    assert.ok(one.events.length > 0, "the log replays the hand");
 
-      const second = await fetch(`${base}/api/scenario?state=claim`);
-      const two = (await second.json()) as ScenarioPayload;
-      assert.equal(two.game, one.game, "a second load reuses the fixed board");
-      assert.deepEqual(two.table, one.table);
+    const two = get("/api/scenario?state=claim").body;
+    assert.equal(two.game, one.game, "a second load reuses the fixed board");
+    assert.deepEqual(two.table, one.table);
 
-      const unknown = await fetch(`${base}/api/scenario?state=nope`);
-      assert.equal(unknown.status, 400);
-
-      const missing = await fetch(`${base}/api/scenario`);
-      assert.equal(missing.status, 400);
-    } finally {
-      server.closeAllConnections();
-      const closed = Promise.withResolvers<void>();
-      server.close(() => closed.resolve());
-      await closed.promise;
-    }
+    assert.equal(get("/api/scenario?state=nope").status, 400);
+    assert.equal(get("/api/scenario").status, 400);
   });
 });

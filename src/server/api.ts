@@ -2,10 +2,9 @@
  * The table's API routes as one pure function.
  *
  * `routeApi` takes a parsed request (method, path, query, JSON body) and
- * returns `{ status, body }`. It has no I/O: the Node server (`server.ts`)
- * feeds it HTTP requests, and the offline build (`src/web/local.ts`) calls it
- * in the browser. Both therefore run exactly the same game, the same bots and
- * the same projections.
+ * returns `{ status, body }`. It has no I/O: the 3D table calls it in the
+ * browser through `src/web/local.ts`, and the tests call it directly, so both
+ * exercise exactly the same game, bots and projections.
  *
  *   GET  /api/state?game=     one seat's view, legal actions and wait panel
  *   GET  /api/scenario?state= a fixed review board (turn, claim, win, ...)
