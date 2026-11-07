@@ -25,6 +25,23 @@ as the reference; no house rules; offline only, no accounts or multiplayer.
   (README, "Deploying"). *Remaining:* install it on a real iPhone and play a
   hand in airplane mode.
 
+## The display: a 3D table (decided 2026-11-07)
+
+The owner's bar is Riichi City's table. The 2D client (`web/app.js`, kept at
+`/` for now) is not polished further; the new table is `web/table3d.html`
+with `web/3d/` (Three.js 0.170, vendored under `web/vendor/three/`, MIT):
+
+- `tiles.js` models a tile (ivory front, sky-blue back, face from `faces/`
+  with a corner index); `stage.js` holds the renderer, the table, the solved
+  camera and promise-based tweens with a timer fallback; `board.js`
+  reconciles each answer with the table and animates only the difference;
+  `main.js` is the loop, the decisions, the call-outs and the result card.
+- Done: real games against the bots, draws and throws, claims (chow variants
+  behind one button), kongs, fishing, Goulash picks, result and next hand,
+  save/resume, review states (`?state=`), landscape only.
+- Next: check it on a real iPhone; make it the start page; then Alpha 2-4
+  below are built into this table, not the 2D one.
+
 ## Alpha 2 — The table explains itself
 
 - Scores, whose turn it is, and who threw each discard, visible on a phone.

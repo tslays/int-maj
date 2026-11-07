@@ -32,7 +32,14 @@ const WEB = join(ROOT, "web");
 const ENTRY = join(SRC, "web", "local.ts");
 
 /** Client files copied as they are; design references stay local. */
-const WEB_FILES = ["app.js", "layout.js", "tiles.js", "app.css"] as const;
+const WEB_FILES = ["app.js", "layout.js", "tiles.js", "app.css", "table3d.html"] as const;
+
+/** Whole folders copied as they are: the 3D table, its library and tile faces. */
+const WEB_DIRS = [
+  { dir: "3d", pattern: /\.js$/ },
+  { dir: "vendor/three", pattern: /\.(js|md)$|^LICENSE$/ },
+  { dir: "faces", pattern: /\.(svg|md)$/ },
+] as const;
 
 const APP_NAME = "International Mahjong";
 const SHORT_NAME = "Mahjong";
@@ -99,6 +106,14 @@ async function copyClient(outDir: string): Promise<string[]> {
     written.push(`tiles/${name}`);
   }
   await cp(join(WEB, "tiles", "LICENSE.md"), join(outDir, "tiles", "LICENSE.md"));
+  for (const { dir, pattern } of WEB_DIRS) {
+    await mkdir(join(outDir, dir), { recursive: true });
+    for (const name of await readdir(join(WEB, dir))) {
+      if (!pattern.test(name)) continue;
+      await cp(join(WEB, dir, name), join(outDir, dir, name));
+      if (!name.endsWith(".md") && name !== "LICENSE") written.push(`${dir}/${name}`);
+    }
+  }
   await mkdir(join(outDir, "icons"), { recursive: true });
   for (const name of await readdir(join(WEB, "icons"))) {
     if (!/\.(png|svg)$/.test(name)) continue;
@@ -167,8 +182,10 @@ async function writeManifest(outDir: string): Promise<void> {
   await writeFile(join(outDir, "manifest.webmanifest"), `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
-async function hashFiles(outDir: string, files: readonly string[]): Promise<string> {
+async function hashFiles(outDir: string, files: readonly string[], extra: string): Promise<string> {
   const hash = createHash("sha256");
+  // The worker's own code counts too: changing how it caches is a new version.
+  hash.update(extra);
   for (const file of [...files].sort()) {
     hash.update(file);
     hash.update(await readFile(join(outDir, file)));
@@ -183,7 +200,11 @@ const FILES = ${JSON.stringify(["./", ...files], null, 2)};
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(FILES)).then(() => self.skipWaiting()),
+    caches
+      .open(CACHE)
+      // Bypass the HTTP cache: a new version must never store an old file.
+      .then((cache) => cache.addAll(FILES.map((file) => new Request(file, { cache: "reload" }))))
+      .then(() => self.skipWaiting()),
   );
 });
 
@@ -217,7 +238,7 @@ export async function build(outDir: string): Promise<BuildResult> {
   await writePage(outDir);
   await writeManifest(outDir);
   files.push("index.html", "manifest.webmanifest");
-  const version = await hashFiles(outDir, files);
+  const version = await hashFiles(outDir, files, serviceWorker("", files));
   await writeFile(join(outDir, "version.txt"), `${version}\n`);
   await writeFile(join(outDir, "sw.js"), serviceWorker(version, files));
   return { outDir, files, version };
