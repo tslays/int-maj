@@ -28,16 +28,17 @@ export const TABLE = Object.freeze({
   TABLE_HALF: 14.6,
 });
 
+// A warm off-white, not pure white: lit, it reads white without clipping.
 const ivory = new THREE.MeshPhysicalMaterial({
-  color: 0xf8f6f0,
-  roughness: 0.3,
-  clearcoat: 0.55,
-  clearcoatRoughness: 0.28,
+  color: 0xf1efe9,
+  roughness: 0.36,
+  clearcoat: 0.3,
+  clearcoatRoughness: 0.3,
 });
 const lacquer = new THREE.MeshPhysicalMaterial({
-  color: 0x8ccbea,
-  roughness: 0.28,
-  clearcoat: 0.9,
+  color: 0x7fc2e4,
+  roughness: 0.3,
+  clearcoat: 0.8,
   clearcoatRoughness: 0.18,
 });
 
@@ -158,9 +159,9 @@ function faceMaterial(key) {
     map: texture,
     transparent: true,
     depthWrite: false,
-    roughness: 0.3,
-    clearcoat: 0.55,
-    clearcoatRoughness: 0.28,
+    roughness: 0.36,
+    clearcoat: 0.3,
+    clearcoatRoughness: 0.3,
     polygonOffset: true,
     polygonOffsetFactor: -1,
   });
