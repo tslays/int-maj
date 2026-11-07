@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import {
   computeLayout,
   DISCARD_CAPACITY,
-  DISCARD_TARGET,
+  discardGap,
   discardTileSize,
   HAND_OVERLAP,
   HAND_TILE_COUNT,
@@ -160,27 +160,39 @@ describe("computeLayout", () => {
     });
   }
 
-  it("draws discards large, dropping to the whole-hand size only when it must", () => {
+  it("draws discards as a grid that holds the whole hand", () => {
     for (const [width, height, mode] of SIZES) {
       const result = layout(width, height, mode);
       const cap = result.handTileWidth ?? result.tileWidth;
-      const normal = discardTileSize(result.pile, DISCARD_TARGET, cap);
-      const wholeHand = discardTileSize(result.pile, DISCARD_CAPACITY, cap);
+      const tile = result.discardTileWidth;
       const label = `${width}x${height}`;
-      assert.equal(result.discardTileWidth, normal, `${label}: discard size`);
-      assert.ok(
-        normal <= cap + 0.5,
-        `${label}: a discard is larger than the hand tile (${normal} > ${cap})`,
-      );
-      // A normal hand reads big; only a hand that outgrows the heap is drawn
-      // at the whole-hand size, and that one still has to fit all 84 throws.
-      assert.ok(
-        normal >= wholeHand * 1.2,
-        `${label}: the drawn discard (${normal}) barely beats the fallback (${wholeHand})`,
+      assert.equal(
+        tile,
+        discardTileSize(result.pile, DISCARD_CAPACITY, cap),
+        `${label}: discard size`,
       );
       assert.ok(
-        discardTileSize(result.pile, DISCARD_CAPACITY, 999) === wholeHand,
-        `${label}: the cap is the hand tile`,
+        tile <= cap + 0.5,
+        `${label}: a discard is larger than the hand tile (${tile} > ${cap})`,
+      );
+      assert.ok(tile >= 18, `${label}: discard below the 18px floor (${tile})`);
+      // The grid is exact: a whole hand's throws each own a cell, the block
+      // sits inside the pile, and the cells never touch.
+      const gap = discardGap(tile);
+      const rowHeight = Math.round((tile * 4) / 3);
+      const columns = Math.floor((result.pile[2] + gap) / (tile + gap));
+      const rows = Math.floor((result.pile[3] + gap) / (rowHeight + gap));
+      assert.ok(
+        columns * rows >= DISCARD_CAPACITY,
+        `${label}: the grid holds ${columns * rows} of 84 throws`,
+      );
+      assert.ok(
+        columns * tile + (columns - 1) * gap <= result.pile[2] + 0.5,
+        `${label}: the grid is wider than the pile`,
+      );
+      assert.ok(
+        rows * rowHeight + (rows - 1) * gap <= result.pile[3] + 0.5,
+        `${label}: the grid is taller than the pile`,
       );
     }
   });

@@ -16,9 +16,7 @@ import {
 } from "./tiles.js";
 import {
   computeLayout,
-  DISCARD_CAPACITY,
-  DISCARD_TARGET,
-  discardTileSize,
+  discardGap,
 } from "./layout.js";
 
 const SEATS = ["E", "S", "W", "N"];
@@ -894,7 +892,8 @@ function syncRevealed() {
     // A fresh hand starts empty, so its first discards play on the beat.
     pileKeys = freshDeal ? [] : all.slice();
     pileItems = [];
-    pileSpots = null;
+    pileCells = [];
+    pileNextCell = 0;
     for (const item of pileKeys) addToPile(item);
     freshDeal = false;
     rhythmReady = true;
@@ -1267,8 +1266,8 @@ function applyLayout() {
   setRect("controls", layout.controls);
   // A resize changes the heap's tile size: deal the landed discards again at
   // the size the new board gives them, so nothing is left at a stale spot.
-  if (pileSpots === null || pileSize.w !== layout.discardTileWidth) {
-    dealPile(DISCARD_TARGET);
+  if (pileCells.length === 0 || pileSize.w !== layout.discardTileWidth) {
+    dealPile();
   }
 }
 
@@ -1282,303 +1281,84 @@ function renderSeats() {
 /* ------------------------------------------------------------- the pile */
 
 /**
- * Discards are thrown into one heap in the middle: it grows out of the centre,
- * each throw lands on its own side, tiles lie at every angle, and no two ever
- * overlap. A landing tile nudges its neighbours a couple of pixels, so the heap
- * settles like real tiles would.
+ * Discards go into one grid in the middle: fixed cells, no rotation, no jitter,
+ * filled from the centre outward. A grid is exact, so nothing overlaps, nothing
+ * has to move once it has landed, and a full hand is a tidy block that stays
+ * readable (2026-11-07, the owner's rule: a nicely formatted grid, not a
+ * scatter).
  */
-const PILE_GOLDEN = Math.PI * (3 - Math.sqrt(5));
-const SEAT_ANGLE = {
-  top: -Math.PI / 2,
-  right: 0,
-  bottom: Math.PI / 2,
-  left: Math.PI,
-};
-function mulberry32(seed) {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 let pileItems = [];
 let pileKeys = [];
 let pileSize = { w: 0, h: 0 };
-let pileRandom = mulberry32(0x5eed);
-let pileCandidatePhase = 0;
+let pileCells = [];
+let pileNextCell = 0;
 
-function angleDistance(a, b) {
-  const turn = Math.abs(((a - b + Math.PI) % (Math.PI * 2)) - Math.PI);
-  return Math.min(turn, Math.PI * 2 - turn);
-}
-
-/** Separating-axis test for two rotated rectangles. */
-function boxesOverlap(a, b, gap = 0) {
-  const axes = [a.angle, b.angle];
-  for (const angle of axes) {
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
-    const project = (box) => {
-      const ex = (box.w / 2) * Math.abs(Math.cos(box.angle) * cos + Math.sin(box.angle) * sin);
-      const ey = (box.h / 2) * Math.abs(-Math.sin(box.angle) * cos + Math.cos(box.angle) * sin);
-      const centre = (box.x + box.w / 2) * cos + (box.y + box.h / 2) * sin;
-      return [centre - (ex + ey), centre + (ex + ey)];
-    };
-    const [aMin, aMax] = project(a);
-    const [bMin, bMax] = project(b);
-    if (aMax + gap <= bMin || bMax + gap <= aMin) return false;
-  }
-  return true;
-}
-
-/**
- * Placed tiles bucketed by position, so a candidate only has to look at its
- * own neighbourhood. Nobody moves once down, so the buckets are updated on
- * placement and cleared with the heap.
- */
-let pileGrid = new Map();
-let pileCell = 0;
-
-function resetPileGrid(w, h) {
-  pileGrid = new Map();
-  pileCell = Math.max(w, h) * 1.6;
-}
-
-function gridSlot(x, y) {
-  return `${Math.floor(x / pileCell)},${Math.floor(y / pileCell)}`;
-}
-
-function gridAdd(item) {
-  const key = gridSlot(item.x + item.w / 2, item.y + item.h / 2);
-  const bucket = pileGrid.get(key);
-  if (bucket === undefined) pileGrid.set(key, [item]);
-  else bucket.push(item);
-}
-
-function placementFits(candidate) {
-  const gx = Math.floor((candidate.x + candidate.w / 2) / pileCell);
-  const gy = Math.floor((candidate.y + candidate.h / 2) / pileCell);
-  for (let dx = -1; dx <= 1; dx++) {
-    for (let dy = -1; dy <= 1; dy++) {
-      const bucket = pileGrid.get(`${gx + dx},${gy + dy}`);
-      if (bucket === undefined) continue;
-      for (const item of bucket) {
-        if (boxesOverlap(item, candidate, 0.5)) return false;
-      }
-    }
-  }
-  return true;
-}
-
-/** A dense, jittered grid of spots inside the heap, ordered from the centre. */
-function pileCandidates(w, h, phase = 0) {
-  pileRandom = mulberry32((0x5eed + Math.imul(phase, 0x9e3779b9)) >>> 0);
+/** The grid's cells, in the order they fill: rings outward from the middle. */
+function pileGridCells(width, height) {
   const pile = currentLayout.pile;
-  const centreX = pile[2] / 2;
-  const centreY = pile[3] / 2;
-  const reachX = Math.max(1, pile[2] / 2 - w / 2);
-  const reachY = Math.max(1, pile[3] / 2 - h / 2);
-  // Dense candidates let the heap use the real gaps between rotated tiles;
-  // SAT still enforces a half-pixel clear space, so closer never means overlap.
-  // Fine lattice: a coarse one offered no centre close enough to the tiles
-  // already down, which is what left visible holes.
-  const stepX = w * 0.55;
-  const stepY = h * 0.55;
-  // The exact centre is always a candidate: the first throw lands dead centre.
-  const list = [{
-    x: centreX - w / 2,
-    y: centreY - h / 2,
-    w,
-    h,
-    radius: 0,
-    theta: 0,
-    angle: (pileRandom() - 0.5) * 0.9,
-  }];
-  for (let gy = -reachY; gy <= reachY; gy += stepY) {
-    for (let gx = -reachX; gx <= reachX; gx += stepX) {
-      const jx = gx + (pileRandom() - 0.5) * stepX * 0.12;
-      const jy = gy + (pileRandom() - 0.5) * stepY * 0.12;
-      // The whole pile rectangle is fair game, not just its inscribed
-      // ellipse: the corners are what let a full hand fit.
-      if (Math.abs(jx) > reachX || Math.abs(jy) > reachY) continue;
-      list.push({
-        x: centreX + jx - w / 2,
-        y: centreY + jy - h / 2,
-        w,
-        h,
-        radius: Math.hypot(jx, jy),
-        theta: Math.atan2(jy, jx),
-        angle: (pileRandom() - 0.5) * 0.9,
+  const gap = discardGap(width);
+  const columns = Math.max(1, Math.floor((pile[2] + gap) / (width + gap)));
+  const rows = Math.max(1, Math.floor((pile[3] + gap) / (height + gap)));
+  const blockWidth = columns * width + (columns - 1) * gap;
+  const blockHeight = rows * height + (rows - 1) * gap;
+  const originX = (pile[2] - blockWidth) / 2;
+  const originY = (pile[3] - blockHeight) / 2;
+  const middleX = (columns - 1) / 2;
+  const middleY = (rows - 1) / 2;
+  const cells = [];
+  for (let row = 0; row < rows; row++) {
+    for (let column = 0; column < columns; column++) {
+      const dx = column - middleX;
+      const dy = row - middleY;
+      cells.push({
+        x: originX + column * (width + gap),
+        y: originY + row * (height + gap),
+        ring: Math.max(Math.abs(dx), Math.abs(dy)),
+        turn: Math.atan2(dy, dx),
       });
     }
   }
-  list.sort((a, b) => a.radius - b.radius || a.theta - b.theta);
-  return list;
+  cells.sort((first, second) => first.ring - second.ring || first.turn - second.turn);
+  return cells;
 }
 
-/**
- * The best free spot for a throw. The heap always fills its innermost free ring
- * first; inside that thin ring the spot that touches what is already down wins.
- * Ranking by centrality alone left islands with visible gaps, and a coarse
- * lattice offered no spot close enough to the others.
- */
-function tryPlace(seat, list, w, h) {
-  const preferred = SEAT_ANGLE[PLACE[seat]] ?? 0;
-  const reach = Math.max(1, ...list.map((candidate) => candidate.radius));
-  const turns = [0, 0.18, -0.18, 0.34, -0.34];
-  const fits = [];
-  let innermost = Infinity;
-  for (const candidate of list) {
-    // The list is radius-sorted: once past the innermost ring there is no
-    // candidate that can win, so stop scanning.
-    if (candidate.radius > innermost + w * 0.6) break;
-    for (const turn of turns) {
-      const tilted = { ...candidate, angle: candidate.angle + turn };
-      if (!placementFits(tilted)) continue;
-      fits.push({
-        ...tilted,
-        radius: candidate.radius,
-        side: angleDistance(candidate.theta, preferred),
-      });
-      innermost = Math.min(innermost, candidate.radius);
-      break;
-    }
-  }
-  if (fits.length === 0) return null;
-  let best = null;
-  let bestGap = Infinity;
-  let bestRadius = Infinity;
-  for (const candidate of fits) {
-    if (candidate.radius > innermost + w * 0.6) continue;
-    const gap = pileItems.length === 0 ? 0 : nearestEdgeGap(candidate, pileItems);
-    const side = candidate.side * (candidate.radius / reach);
-    const penalty = gap + side * w * 0.5;
-    if (penalty < bestGap || (penalty === bestGap && candidate.radius < bestRadius)) {
-      bestGap = penalty;
-      bestRadius = candidate.radius;
-      best = candidate;
-    }
-  }
-  return best;
+/** Build the grid for a tile size: its cells and the size they are drawn at. */
+function spotsFor(width, height) {
+  pileSize = { w: width, h: height };
+  pileCells = pileGridCells(width, height);
+  pileNextCell = 0;
 }
 
-/** Roughly how far this candidate's edge is from the nearest landed tile. */
-function nearestEdgeGap(candidate, placed) {
-  let gap = Infinity;
-  for (const item of placed) {
-    const distance = Math.hypot(candidate.x - item.x, candidate.y - item.y);
-    const reach = (Math.hypot(candidate.w, candidate.h) + Math.hypot(item.w, item.h)) / 2;
-    gap = Math.min(gap, distance - reach);
-  }
-  return Math.max(0, gap);
-}
-
-/** The tile size the heap is using, the capacity it was sized for, and its
-    candidate spots (built once per size). */
-let pileSpots = null;
-let pileCapacity = DISCARD_TARGET;
-
-function spotsFor(w, h) {
-  pileCandidatePhase = 0;
-  pileSpots = pileCandidates(w, h, pileCandidatePhase);
-  pileSize = { w, h };
-  resetPileGrid(w, h);
-  return pileSpots;
-}
-
-/**
- * The tile size the heap is drawn at for a capacity: as large as a normal
- * hand's throws allow, never larger than the hand's own tile.
- */
-function pileTileFor(capacity) {
-  const layout = currentLayout;
-  const cap = layout.handTileWidth ?? layout.tileWidth;
-  return discardTileSize(layout.pile, capacity, cap);
-}
-
-/** One throw: the best free spot at the heap's current size, or null. */
-function findSpot(item) {
-  let spot = tryPlace(item.seat, pileSpots, pileSize.w, pileSize.h);
-  // If a lattice phase ran out, add more candidate centres at the same tile
-  // size. Never resize or re-place tiles that have already landed.
-  for (let phase = 0; spot === null && phase < 14; phase++) {
-    pileCandidatePhase += 1;
-    pileSpots.push(...pileCandidates(pileSize.w, pileSize.h, pileCandidatePhase));
-    spot = tryPlace(item.seat, pileSpots, pileSize.w, pileSize.h);
-  }
-  return spot;
-}
-
-/**
- * Deal every landed discard again at a capacity's tile size. If that size
- * cannot hold what is on the heap (a resize, or a hand longer than the size it
- * was drawn for), the budget grows until it does; a failed attempt never
- * leaves a half-dealt heap behind.
- */
-function dealPile(capacity) {
-  const items = pileItems.map(({ key, seat, id }) => ({ key, seat, id }));
-  let budget = capacity;
-  while (budget <= DISCARD_CAPACITY * 2) {
-    pileCapacity = budget;
-    const width = pileTileFor(budget);
-    spotsFor(width, Math.round((width * 4) / 3));
-    pileItems = [];
-    let placedAll = true;
-    for (const item of items) {
-      const spot = findSpot(item);
-      if (spot === null) {
-        placedAll = false;
-        break;
-      }
-      const placed = { ...item, ...spot };
-      pileItems.push(placed);
-      gridAdd(placed);
-    }
-    if (placedAll) return true;
-    budget = Math.max(budget + 8, Math.round(budget * 1.4));
-  }
-  pileItems = [];
-  return false;
-}
-
-/**
- * A long hand outgrew the heap: draw it once, smaller, for the longest hand
- * there is. Every landed tile is dealt again in the order it was thrown, so it
- * keeps its seat and its place in the heap; the CSS transition walks each tile
- * to its new spot. This happens at most once per hand.
- */
-function rebuildPile() {
-  if (pileCapacity >= DISCARD_CAPACITY) return false;
-  return dealPile(DISCARD_CAPACITY);
-}
-
-/**
- * Adds one tile to the heap. The spot is chosen once from a dense set of free
- * candidate centres and a landed tile never moves, except in the one rebuild
- * above, when a hand turns out longer than a normal one.
- */
+/** One throw takes the next free cell. A claim lifts its tile, leaving a hole. */
 function addToPile(item) {
   if (currentLayout === null) return;
-  if (pileSpots === null) {
-    pileCapacity = DISCARD_TARGET;
+  if (pileCells.length === 0) {
     spotsFor(currentLayout.discardTileWidth, currentLayout.discardTileHeight);
   }
-  let spot = findSpot(item);
-  if (spot === null && rebuildPile()) spot = findSpot(item);
-  if (spot !== null) {
-    const placed = { key: item.key, seat: item.seat, id: item.id, ...spot };
-    pileItems.push(placed);
-    gridAdd(placed);
+  const cell = pileCells[pileNextCell];
+  if (cell === undefined) {
+    console.error("Discard grid is full; the throw has no cell.");
     return;
   }
-  // With the dense fixed-size lattices exhausted, keep every earlier landing
-  // where it is rather than repacking the heap. This is a capacity case the
-  // geometry audit keeps far beyond a hand's discards, not a normal path.
-  console.error("Discard heap has no non-overlapping spot; kept landed tiles fixed.");
+  pileNextCell += 1;
+  pileItems.push({
+    key: item.key,
+    seat: item.seat,
+    id: item.id,
+    x: cell.x,
+    y: cell.y,
+    w: pileSize.w,
+    h: pileSize.h,
+  });
+}
+
+/** Deal every landed discard again into the grid, in the order thrown. */
+function dealPile() {
+  const items = pileItems.map(({ key, seat, id }) => ({ key, seat, id }));
+  pileItems = [];
+  pileCells = [];
+  pileNextCell = 0;
+  for (const item of items) addToPile(item);
 }
 
 function renderPile() {
@@ -1593,7 +1373,6 @@ function renderPile() {
     tile.classList.add("discard");
     tile.style.left = `${item.x}px`;
     tile.style.top = `${item.y}px`;
-    tile.style.transform = `rotate(${(item.angle * 180) / Math.PI}deg)`;
     tile.style.zIndex = String(index + 1);
     if (index === pileItems.length - 1) {
       tile.classList.add("last");
