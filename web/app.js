@@ -14,10 +14,7 @@ import {
   BONUS_TILE_KEYS,
   PLAY_TILE_KEYS,
 } from "./tiles.js";
-import {
-  computeLayout,
-  discardGap,
-} from "./layout.js";
+import { computeLayout, discardCells, nextFreeCell } from "./layout.js";
 
 const SEATS = ["E", "S", "W", "N"];
 const WIND_NAME = { E: "East", S: "South", W: "West", N: "North" };
@@ -893,7 +890,7 @@ function syncRevealed() {
     pileKeys = freshDeal ? [] : all.slice();
     pileItems = [];
     pileCells = [];
-    pileNextCell = 0;
+    pileOccupied = new Set();
     for (const item of pileKeys) addToPile(item);
     freshDeal = false;
     rhythmReady = true;
@@ -918,6 +915,8 @@ function syncRevealed() {
   if (keep.size !== pileKeys.length) {
     pileKeys = pileKeys.filter((item) => keep.has(item.id));
     pileItems = pileItems.filter((item) => keep.has(item.id));
+    // The claimed tile leaves its cell free; the next throw fills it.
+    pileOccupied = new Set(pileItems.map((item) => item.cell));
   }
 }
 
@@ -1291,62 +1290,36 @@ let pileItems = [];
 let pileKeys = [];
 let pileSize = { w: 0, h: 0 };
 let pileCells = [];
-let pileNextCell = 0;
-
-/** The grid's cells, in the order they fill: rings outward from the middle. */
-function pileGridCells(width, height) {
-  const pile = currentLayout.pile;
-  const gap = discardGap(width);
-  const columns = Math.max(1, Math.floor((pile[2] + gap) / (width + gap)));
-  const rows = Math.max(1, Math.floor((pile[3] + gap) / (height + gap)));
-  const blockWidth = columns * width + (columns - 1) * gap;
-  const blockHeight = rows * height + (rows - 1) * gap;
-  const originX = (pile[2] - blockWidth) / 2;
-  const originY = (pile[3] - blockHeight) / 2;
-  const middleX = (columns - 1) / 2;
-  const middleY = (rows - 1) / 2;
-  const cells = [];
-  for (let row = 0; row < rows; row++) {
-    for (let column = 0; column < columns; column++) {
-      const dx = column - middleX;
-      const dy = row - middleY;
-      cells.push({
-        x: originX + column * (width + gap),
-        y: originY + row * (height + gap),
-        ring: Math.max(Math.abs(dx), Math.abs(dy)),
-        turn: Math.atan2(dy, dx),
-      });
-    }
-  }
-  cells.sort((first, second) => first.ring - second.ring || first.turn - second.turn);
-  return cells;
-}
+/** Cell indexes in use. A claim frees its cell, and the next throw takes it. */
+let pileOccupied = new Set();
 
 /** Build the grid for a tile size: its cells and the size they are drawn at. */
 function spotsFor(width, height) {
   pileSize = { w: width, h: height };
-  pileCells = pileGridCells(width, height);
-  pileNextCell = 0;
+  pileCells = discardCells(currentLayout.pile, width);
+  pileOccupied = new Set();
 }
 
-/** One throw takes the next free cell. A claim lifts its tile, leaving a hole. */
+/** One throw takes the first free cell, so the grid fills its gaps first. */
 function addToPile(item) {
   if (currentLayout === null) return;
   if (pileCells.length === 0) {
     spotsFor(currentLayout.discardTileWidth, currentLayout.discardTileHeight);
   }
-  const cell = pileCells[pileNextCell];
-  if (cell === undefined) {
+  const cell = nextFreeCell(pileOccupied, pileCells.length);
+  const spot = pileCells[cell];
+  if (spot === undefined) {
     console.error("Discard grid is full; the throw has no cell.");
     return;
   }
-  pileNextCell += 1;
+  pileOccupied.add(cell);
   pileItems.push({
     key: item.key,
     seat: item.seat,
     id: item.id,
-    x: cell.x,
-    y: cell.y,
+    cell,
+    x: spot.x,
+    y: spot.y,
     w: pileSize.w,
     h: pileSize.h,
   });
@@ -1357,7 +1330,7 @@ function dealPile() {
   const items = pileItems.map(({ key, seat, id }) => ({ key, seat, id }));
   pileItems = [];
   pileCells = [];
-  pileNextCell = 0;
+  pileOccupied = new Set();
   for (const item of items) addToPile(item);
 }
 

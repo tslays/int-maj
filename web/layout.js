@@ -32,6 +32,50 @@ export function discardGap(tile) {
 }
 
 /**
+ * The heap's cells, in the order they fill: rings outward from the middle,
+ * clockwise inside a ring. Cell 0 is the first throw; a cell freed by a claim
+ * is the first one the next throw takes (2026-11-07: the grid fills its gaps
+ * before it grows).
+ */
+/**
+ * The first cell with no tile on it. A cell freed by a claim comes before any
+ * cell the grid has not reached yet, so the heap closes its own gap instead of
+ * growing around a hole (2026-11-07, owner's rule).
+ */
+export function nextFreeCell(occupied, cellCount) {
+  let index = 0;
+  while (index < cellCount && occupied.has(index)) index += 1;
+  return index;
+}
+
+export function discardCells(pile, tile, gap = discardGap(tile)) {
+  const height = Math.round((tile * 4) / 3);
+  const columns = Math.max(1, Math.floor((pile[2] + gap) / (tile + gap)));
+  const rows = Math.max(1, Math.floor((pile[3] + gap) / (height + gap)));
+  const blockWidth = columns * tile + (columns - 1) * gap;
+  const blockHeight = rows * height + (rows - 1) * gap;
+  const originX = (pile[2] - blockWidth) / 2;
+  const originY = (pile[3] - blockHeight) / 2;
+  const middleX = (columns - 1) / 2;
+  const middleY = (rows - 1) / 2;
+  const cells = [];
+  for (let row = 0; row < rows; row++) {
+    for (let column = 0; column < columns; column++) {
+      const dx = column - middleX;
+      const dy = row - middleY;
+      cells.push({
+        x: originX + column * (tile + gap),
+        y: originY + row * (height + gap),
+        ring: Math.max(Math.abs(dx), Math.abs(dy)),
+        turn: Math.atan2(dy, dx),
+      });
+    }
+  }
+  cells.sort((first, second) => first.ring - second.ring || first.turn - second.turn);
+  return cells;
+}
+
+/**
  * The discard tile's width for a pile: the largest 3:4 tile whose axis-aligned
  * grid holds `capacity` of them, never wider than `cap` (the hand's own tile).
  * A grid is exact — columns x rows cells at a fixed gap — so this is the whole
