@@ -3,7 +3,7 @@
  * Play one seat against three bots at the console.
  *
  * This file is the only I/O in the feature: it reads terminal lines, prints
- * the pure rendering from console.ts and calls the pure bot. The reducer
+ * the pure rendering from src/cli/console.ts and calls the pure bot. The reducer
  * remains the authority on legality; an action is only ever taken through
  * `recordAction`, so a bad input cannot change the state.
  *
@@ -18,8 +18,6 @@ import { stdin, stdout } from "node:process";
 import { chooseAction } from "../src/core/game/bot.ts";
 import {
   commandPrompt,
-  describeEvent,
-  formatAction,
   parseCommand,
   parsePlayArgs,
   PLAY_USAGE,
@@ -28,7 +26,8 @@ import {
   startSession,
   undoLastDecision,
   type PlaySession,
-} from "../src/core/game/console.ts";
+} from "../src/cli/console.ts";
+import { describeEvent, formatAction } from "../src/core/game/describe.ts";
 import { viewFor } from "../src/core/game/view.ts";
 import type { Event } from "../src/core/game/events.ts";
 

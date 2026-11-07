@@ -1,0 +1,168 @@
+/**
+ * Review states (`?state=turn|claim|...`) are the answer to "show me that
+ * screen alone", so the contract is narrow and worth pinning:
+ *   - every named state really is its state, replayed through the reducer
+ *   - rebuilding one gives the same board, byte for byte
+ *   - the payload carries the content the page promises (a chow variant, a
+ *     live wait, a win with its pattern, ...)
+ *   - the route serves it by name and reuses the board until it is played
+ */
+
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import { viewFor } from "../../src/core/game/view.ts";
+import { createApiContext, routeApi } from "../../src/table/api.ts";
+import {
+  GameStore,
+  statePayload,
+  type StatePayload,
+} from "../../src/table/session.ts";
+import {
+  buildScenario,
+  SCENARIO_NAMES,
+  SCENARIOS,
+  type ScenarioName,
+} from "../../src/table/scenarios.ts";
+
+interface ScenarioPayload extends StatePayload {
+  readonly state: ScenarioName;
+  readonly title: string;
+  readonly events: readonly string[];
+}
+
+function payloadFor(name: ScenarioName): StatePayload {
+  return statePayload({ ...buildScenario(name), id: name });
+}
+
+describe("review states", () => {
+  it("replays every scenario to exactly its own board", () => {
+    for (const name of SCENARIO_NAMES) {
+      const session = buildScenario(name);
+      const view = viewFor(session.state, session.seat);
+      assert.ok(
+        SCENARIOS[name].at(view, session.state),
+        `${name} stopped somewhere else`,
+      );
+      assert.equal(session.seed, SCENARIOS[name].seed, `${name} seed`);
+      assert.equal(session.seat, "E", `${name} seats the viewer at East`);
+    }
+  });
+
+  it("builds the same board every time", () => {
+    for (const name of SCENARIO_NAMES) {
+      const first = payloadFor(name);
+      const second = payloadFor(name);
+      assert.deepEqual(
+        { ...second, game: "" },
+        { ...first, game: "" },
+        `${name} is not deterministic`,
+      );
+    }
+  });
+
+  it("shows what its name promises", () => {
+    const turn = payloadFor("turn");
+    assert.equal(turn.view.phase, "discard");
+    assert.equal(turn.view.player.hand.length, 14);
+    assert.ok(turn.legalActions.some((action) => action.type === "Discard"));
+
+    const claim = payloadFor("claim");
+    const chows = claim.legalActions.filter(
+      (action) => action.type === "Claim" && action.kind === "chow",
+    );
+    assert.equal(claim.view.phase, "claim");
+    assert.notEqual(claim.view.claimWindow, null);
+    assert.ok(chows.length >= 2, "a chow window needs two runs to choose between");
+
+    const wait = payloadFor("wait");
+    assert.ok(wait.checker.size === 13 && wait.checker.waits.length > 0);
+    assert.equal(wait.view.fishing.length, 0, "the wait page shows a plain wait");
+
+    const fishing = payloadFor("fishing");
+    assert.equal(fishing.view.player.hand.length, 13);
+    assert.ok(fishing.view.fishing.some((entry) => entry.seat === "E"));
+
+    const win = payloadFor("win");
+    assert.equal(win.outcome?.kind, "win");
+    assert.equal(win.outcome?.winner, "E");
+    assert.ok(typeof win.outcome?.patternName === "string");
+    assert.ok(typeof win.outcome?.points === "number");
+
+    const drawn = payloadFor("drawn");
+    assert.equal(drawn.outcome?.kind, "drawn");
+    assert.equal(drawn.outcome?.winner, null);
+
+    const result = payloadFor("result");
+    assert.equal(result.outcome?.kind, "win");
+    assert.ok(
+      result.view.fishing.length >= 1,
+      "the result page shows a fishing declaration",
+    );
+    assert.equal(result.outcome?.unknown, 0, "no calculate entry goes unpaid");
+    assert.equal(typeof result.outcome?.limit, "number");
+    assert.equal(typeof result.outcome?.ground, "number");
+    assert.equal(typeof result.outcome?.doubles, "number");
+    assert.equal(typeof result.outcome?.raw, "number");
+    assert.equal(
+      result.outcome?.points,
+      Math.min(result.outcome?.raw ?? Infinity, result.outcome?.limit ?? Infinity),
+    );
+  });
+
+  it("explains the winning combination in the book's own words", () => {
+    const win = buildScenario("win");
+    const payload = statePayload({ ...win, id: "win" });
+    const outcome = payload.outcome;
+    assert.ok(outcome !== null && outcome.kind === "win");
+    assert.equal(outcome.patternDescription?.startsWith("Four pungs/kongs"), true);
+    assert.deepEqual([...outcome.patternPages], [42]);
+    // The hand is over, so the winning tiles are public - the screen shows the
+    // combination, not a count of hidden tiles. Concealed tiles plus public
+    // melds make the fourteen that won.
+    const held =
+      (outcome.hand?.length ?? 0) +
+      (outcome.melds ?? []).reduce((sum, meld) => sum + meld.tiles.length, 0);
+    assert.equal(held, 14);
+    assert.ok((outcome.hand?.length ?? 0) > 0);
+
+    // A bot's win explains itself the same way, and pays the same way.
+    const result = buildScenario("result");
+    const resultPayload = statePayload({ ...result, id: "result" });
+    const botWin = resultPayload.outcome;
+    assert.ok(botWin !== null && botWin.kind === "win");
+    assert.notEqual(botWin.winner, "E");
+    assert.ok(
+      (botWin.hand?.length ?? 0) > 0,
+      "the winner's hand is public at hand end",
+    );
+    assert.ok((botWin.patternDescription ?? "").length > 20);
+    const paid = Object.values(botWin.totals).reduce((sum, value) => sum + value, 0);
+    assert.equal(paid, 0, "the hand's payments balance");
+    assert.ok((botWin.totals[botWin.winner!] ?? 0) > 0, "the winner is paid");
+  });
+
+  it("serves each state by name and keeps its board until it moves", () => {
+    const context = createApiContext(new GameStore({ defaultSeed: "scenario-test" }));
+    const get = (path: string) => {
+      const url = new URL(path, "http://local.invalid");
+      const answer = routeApi(context, { method: "GET", path: url.pathname, query: url.searchParams });
+      assert.ok(answer !== null);
+      return { status: answer.status, body: JSON.parse(JSON.stringify(answer.body)) as ScenarioPayload };
+    };
+
+    const first = get("/api/scenario?state=claim");
+    assert.equal(first.status, 200);
+    const one = first.body;
+    assert.equal(one.state, "claim");
+    assert.equal(one.title, SCENARIOS.claim.title);
+    assert.ok(one.events.length > 0, "the log replays the hand");
+
+    const two = get("/api/scenario?state=claim").body;
+    assert.equal(two.game, one.game, "a second load reuses the fixed board");
+    assert.deepEqual(two.table, one.table);
+
+    assert.equal(get("/api/scenario?state=nope").status, 400);
+    assert.equal(get("/api/scenario").status, 400);
+  });
+});

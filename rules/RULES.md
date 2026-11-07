@@ -1182,5 +1182,5 @@ These Companion statements conflict with Part I or Part II and are recorded in
   Part I is that text, renumbered, unchanged).
 - `rules/AUDIT.md` — conflicts with `rules/archive/PLAY.md`, `rules/archive/ASSUMPTIONS.md` and
   the engine; Milestone C work list.
-- `docs/SOURCE-AUDIT.md` — the audit plan, spread map and evidence rules.
+- `rules/archive/SOURCE-AUDIT.md` — the audit plan, spread map and evidence rules (completed).
 - `rules/SOURCE.md` — source precedence and how to read a page.

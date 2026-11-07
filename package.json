@@ -8,15 +8,15 @@
     "node": ">=24"
   },
   "scripts": {
-    "test": "node --test test/*.test.ts",
-    "soak": "SOAK_SEEDS=300 node --test test/soak.test.ts",
-    "test:watch": "node --test --watch test/*.test.ts",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "soak": "SOAK_SEEDS=300 node --test test/core/soak.test.ts",
+    "test:watch": "node --test --watch \"test/**/*.test.ts\"",
     "check": "node bin/check.ts",
     "replay": "node bin/replay.ts",
     "play": "node bin/play.ts",
-    "build": "node --disable-warning=ExperimentalWarning tools/build-web.ts",
-    "preview": "node bin/preview.ts",
+    "build": "node --disable-warning=ExperimentalWarning scripts/build.ts",
+    "preview": "node scripts/preview.ts",
     "deploy": "npm test && npm run build && npx --yes wrangler@4.158.0 deploy",
-    "dev": "npm run build && node bin/preview.ts"
+    "dev": "npm run build && npm run preview"
   }
 }

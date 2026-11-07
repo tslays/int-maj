@@ -5,7 +5,7 @@
       "name": "offline",
       "runtimeExecutable": "node",
       "runtimeArgs": [
-        "bin/preview.ts",
+        "scripts/preview.ts",
         "--port",
         "8091"
       ],
