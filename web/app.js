@@ -438,6 +438,7 @@ function drewBack(data) {
 }
 
 function applyResponse(data, note, replaceLog = false) {
+  const wallBefore = payload?.wall?.remaining;
   payload = data;
   if (typeof data.game === "string" && scenarioName === null) {
     sessionStorage.setItem(GAME_KEY, data.game);
@@ -461,6 +462,13 @@ function applyResponse(data, note, replaceLog = false) {
   // just drawn, and that draw gets its own beat.
   const drew = drewBack(data);
   render();
+  if (
+    wallBefore !== undefined &&
+    data.wall !== undefined &&
+    data.wall.remaining < wallBefore
+  ) {
+    nudgeWallHead();
+  }
   if (drew !== null) wallGhost(drew);
   // Your own throw lands immediately. Give it the same settle as an opponent's
   // throw before asking the table to answer it, so a claim never appears on
@@ -960,6 +968,8 @@ const DRAW_BEAT_MS = 340;
  * beat after that is the read time before the bar appears.
  */
 const CLAIM_SHOW_MS = DISCARD_SETTLE_MS + 80;
+/** Ghosts and give are decoration; reduced motion gets state changes only. */
+const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)");
 let discardQueue = [];
 let pendingDiscards = [];
 let discardTimer = null;
@@ -1200,6 +1210,7 @@ function revealDiscard(item) {
 
 /** A drawn tile is one motion: it leaves the wall's head and lands in the rack. */
 function wallGhost(seat) {
+  if (REDUCED_MOTION.matches) return;
   const head = document.querySelector("#wall .wall-back.is-head");
   const rack = document.querySelector(`#seat-${PLACE[seat]} .rack`);
   if (head === null || rack === null) return;
@@ -1223,6 +1234,7 @@ function wallGhost(seat) {
 
 /** The tile leaves the wall: a back flies from the seat's rack to the river. *//** The tile leaves the wall: a back flies from the seat's rack to the river. */
 function throwGhost(seat, tile) {
+  if (REDUCED_MOTION.matches) return;
   // Your own throw leaves the hand; an opponent's leaves that seat's wall.
   const source =
     seat === payload?.seat
@@ -1508,6 +1520,28 @@ function renderWall() {
     "aria-label",
     `${wall.remaining} tiles in the wall, ${wall.loose} loose`,
   );
+}
+
+/**
+ * A tile just left the ring: the new head gives one pixel outward and comes
+ * back. Every render rebuilds the wall, so the class is set here, once, after
+ * the last render — never from inside renderWall.
+ */
+function nudgeWallHead() {
+  if (REDUCED_MOTION.matches || currentLayout === null) return;
+  const head = document.querySelector("#wall .wall-back.is-head");
+  if (head === null) return;
+  const x = Number.parseFloat(head.style.left);
+  const y = Number.parseFloat(head.style.top);
+  const edge =
+    y <= 0.5
+      ? "give-up"
+      : y >= currentLayout.wall[3] - currentLayout.wallBackHeight - 0.5
+        ? "give-down"
+        : x <= 0.5
+          ? "give-left"
+          : "give-right";
+  head.classList.add(edge);
 }
 
 function renderPile() {
