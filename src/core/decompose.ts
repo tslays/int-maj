@@ -6,7 +6,7 @@
  * with kongs has 14 + kongCount tiles.
  */
 
-import { PLAY_TILE_KEYS, type Suit } from "./tiles.ts";
+import { PLAY_TILE_KEYS, tileKey, type Suit } from "./tiles.ts";
 import type { HandShape } from "./shape.ts";
 
 export type StandardSet =
@@ -108,9 +108,29 @@ export function decomposeStandard(
   shape: HandShape,
   options: DecomposeOptions = {},
 ): StandardDecomposition[] {
-  const setCount = options.setCount ?? 4;
   const allowKongs = options.allowKongs ?? true;
+  // Declared melds are fixed sets: a claimed set is exposed as that set
+  // (R-060, R-061) and only ever grows into a kong (R-063, R-065), so its
+  // tiles may never be regrouped to complete the rest of the hand.
+  const fixed: StandardSet[] = [];
   const base = PLAY_TILE_KEYS.map((key) => shape.counts[key] ?? 0);
+  for (const meld of shape.melds) {
+    for (const tile of meld.tiles) {
+      const index = PLAY_TILE_KEYS.indexOf(tileKey(tile));
+      if (index < 0 || base[index]! < 1) return [];
+      base[index]! -= 1;
+    }
+    const first = meld.tiles[0]!;
+    if (meld.kind === "chow") {
+      if (first.kind !== "suited") return [];
+      const start = Math.min(...meld.tiles.map((tile) => (tile.kind === "suited" ? tile.rank : 99)));
+      fixed.push({ kind: "chow", suit: first.suit, start });
+    } else {
+      fixed.push({ kind: meld.kind, tile: tileKey(first) });
+    }
+  }
+  const setCount = (options.setCount ?? 4) - fixed.length;
+  if (setCount < 0) return [];
   const results: StandardDecomposition[] = [];
   for (let index = 0; index < base.length; index++) {
     if (base[index]! < 2) continue;
@@ -118,7 +138,7 @@ export function decomposeStandard(
     counts[index]! -= 2;
     walk(counts, [], PLAY_TILE_KEYS[index]!, results, setCount, allowKongs);
   }
-  return results;
+  return results.map((result) => ({ sets: [...fixed, ...result.sets], pair: result.pair }));
 }
 
 /** True when every set in the decomposition is a chow. */
