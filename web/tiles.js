@@ -1,12 +1,11 @@
 /**
  * Canonical tile keys and the SVG art for each face.
  *
- * The 34 play tiles, the eight bonus marks and the tile back are vendored
- * from Cangjie6's Chinese mahjong set (CC BY-SA 4.0; see
- * web/tiles/LICENSE.md). Each SVG is a complete tile — face, frame and
- * bevel — on a 3:4 canvas, so `.tile` in app.css only sizes it and the table
- * needs no drawing code of its own. A key either has an SVG file or the UI
- * shows the missing-art placeholder.
+ * The 34 play tiles, the eight bonus marks and the tile back are original
+ * flat sprites drawn for this project (see web/tiles/LICENSE.md). Each SVG is
+ * a complete tile — face, frame and bevel — on a 3:4 canvas, so `.tile` in
+ * app.css only sizes it and the table needs no drawing code of its own. A key
+ * either has an SVG file or the UI shows the missing-art placeholder.
  */
 
 export const PLAY_TILE_KEYS = Object.freeze([

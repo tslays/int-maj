@@ -6,10 +6,14 @@
   color-scheme: dark;
 
   /* ------------------------------------------------------------ colour */
-  --felt: #123a29;
-  --felt-high: #1a4a33;
-  --felt-low: #0a2116;
-  --felt-vignette: inset 0 0 130px rgba(0, 0, 0, 0.42);
+  --felt: #1a4335;
+  --felt-high: #2b5745;
+  --felt-low: #0a2119;
+  --felt-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E");
+  --felt-vignette: inset 0 0 170px rgba(0, 0, 0, 0.36), inset 0 0 46px rgba(0, 0, 0, 0.14);
+  --rim-band: 9px;
+  --rim-outline: rgba(24, 14, 5, 0.92);
+  --rim-inner: rgba(255, 234, 196, 0.34);
   --paper-surface: #f1eee4;
   --paper-ink: #1b1a17;
   --paper-muted: #6b685e;
@@ -23,25 +27,30 @@
   --on-felt-muted: #b7c9ba;
   --ink: #101a14;
 
-  --accent: #e7c65b;
-  --accent-strong: #f2dc96;
-  --accent-hover: #f0d878;
-  --accent-soft: rgba(231, 198, 91, 0.42);
-  --accent-line: rgba(231, 198, 91, 0.28);
-  --accent-fill: rgba(231, 198, 91, 0.1);
-  --accent-ring: rgba(231, 198, 91, 0.5);
+  /* Interactive accent: bone, so gold can stay a celebration colour. */
+  --accent: #f2e7cb;
+  --accent-strong: #fff8e8;
+  --accent-hover: #fbf0d6;
+  --accent-soft: rgba(242, 231, 203, 0.42);
+  --accent-line: rgba(242, 231, 203, 0.28);
+  --accent-fill: rgba(242, 231, 203, 0.1);
+  --accent-ring: rgba(242, 231, 203, 0.5);
   --accent-ink: rgba(16, 26, 20, 0.08);
+
+  /* One gold: the celebration and the calls chip, nowhere else. */
+  --gold: #e8c169;
+  --gold-soft: color-mix(in srgb, var(--gold) 42%, transparent);
 
   --positive: #a9d6a2;
   --negative: #ef9a8c;
-  --positive-felt: #f4d98a;
-  --negative-felt: #f0a090;
   --danger: #e06c5a;
 
-  --seat-e: #e7c65b;
-  --seat-s: #6fc7b4;
-  --seat-w: #b89ce0;
-  --seat-n: #7faee8;
+  /* Seat coding: four hues at one OKLCH lightness (.85) and chroma (.12),
+     so the dots differ by hue alone and all clear the felt at 4.5:1. */
+  --seat-e: #ffb198;
+  --seat-s: #93e4a4;
+  --seat-w: #dabcff;
+  --seat-n: #64e0ff;
 
   --fg: #f2f5ee;
   --muted: #a9bcae;
@@ -75,7 +84,7 @@
   --tile-fallback-shadow: 0 1px 0 #a89b7b;
 
   --tile-shadow: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
-  --hand-shadow: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45));
+  --hand-shadow: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
   --hand-shadow-lift: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.5));
   --card-shadow: 0 24px 60px rgba(0, 0, 0, 0.48);
   --preview-shadow: 0 8px 20px rgba(0, 0, 0, 0.32);
@@ -83,6 +92,9 @@
 
   /* -------------------------------------------------------------- type */
   --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-label: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino,
+    "Times New Roman", serif;
   --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --fs-label: 13px;
   --fs-body: 15px;
@@ -97,7 +109,8 @@
   --lh-body: 1.45;
   --lh-log: 1.5;
   --lh-loose: 1.6;
-  --tracking-label: 0.06em;
+  /* Labels are tight, never tracked open; body text is never letter-spaced. */
+  --tracking-label: -0.01em;
   --tracking-tight: 0.01em;
 
   /* ------------------------------------------------------------- space */
@@ -183,8 +196,12 @@
   /* ------------------------------------------------------------ motion */
   --dur-fast: 140ms;
   --dur-enter: 220ms;
-  --ease: ease-out;
-  --ease-in: ease-in;
+  /* One easing set for the table: flights leave fast and arrive slow, a
+     landing presses in and settles with a little mass, and small state moves
+     follow the same weighted curve. */
+  --ease-fly: cubic-bezier(0.45, 0.05, 0.2, 1);
+  --ease-land: cubic-bezier(0.22, 1.32, 0.36, 1);
+  --ease-settle: cubic-bezier(0.2, 0.9, 0.25, 1);
   --lift-hover: 6px;
   --lift-select: 10px;
   --lift-enter: 14px;
@@ -201,7 +218,7 @@
     --fg: #101a14;
     --muted: #4c5f53;
     --border: rgba(16, 26, 20, 0.2);
-    --indicator-bg: #8a6a00;
+    --indicator-bg: #3c3a32;
     --indicator-fg: #ffffff;
     --positive: #2f6b3a;
     --negative: #a33b2c;
@@ -244,6 +261,7 @@ h1 {
 h2,
 .label {
   color: var(--muted);
+  font-family: var(--font-label);
   font-size: var(--fs-label);
   font-weight: var(--fw-strong);
   letter-spacing: var(--tracking-label);
@@ -356,8 +374,12 @@ h3 {
   grid-column: 1;
   grid-row: 1;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse at 50% 38%, var(--felt-high) 0%, var(--felt) 52%, var(--felt-low) 100%);
+  background-color: var(--felt-low);
+  background-image:
+    var(--felt-noise),
+    radial-gradient(ellipse at 50% 42%, var(--felt-high) 0%, var(--felt) 55%, var(--felt-low) 100%);
+  background-repeat: repeat, no-repeat;
+  background-size: 180px 180px, 100% 100%;
   color: var(--on-felt);
 }
 
@@ -446,7 +468,7 @@ h3 {
 }
 
 .state-tag-name {
-  color: var(--accent);
+  color: var(--fg);
   font-family: var(--font-mono);
   font-size: var(--fs-label);
   letter-spacing: var(--tracking-label);
@@ -566,6 +588,7 @@ h3 {
 }
 
 .score-points {
+  font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
   font-weight: var(--fw-bold);
 }
@@ -609,7 +632,7 @@ h3 {
   width: calc((100% - 3 * var(--space-1)) / 4);
   border-radius: var(--radius-pill);
   background: var(--indicator-bg);
-  transition: transform var(--dur-fast) var(--ease);
+  transition: transform var(--dur-fast) var(--ease-settle);
 }
 
 .turn-track li {
@@ -1002,6 +1025,7 @@ h3 {
   height: 100%;
   object-fit: contain;
   user-select: none;
+  filter: drop-shadow(0 0 0.75px rgba(4, 14, 9, 0.85));
 }
 
 .zone-top {
@@ -1044,6 +1068,57 @@ h3 {
   pointer-events: none;
 }
 
+/* The rim: one bevelled wooden band round the wall's frame, outside the backs
+   and inside the felt. It reads the solved wall rect, so it can never move the
+   ring; the band is the element's padding and the wall's own rectangle is
+   masked out, which keeps every back untouchable. */
+.variant-d .wall::before {
+  position: absolute;
+  inset: calc(var(--rim-band) * -1);
+  padding: calc(var(--rim-band) - 1px);
+  border: 1px solid var(--rim-outline);
+  border-radius: 5px;
+  content: "";
+  background:
+    repeating-linear-gradient(
+      92deg,
+      rgba(255, 226, 176, 0.08) 0 1px,
+      rgba(52, 30, 10, 0.16) 1px 2px,
+      transparent 2px 6px
+    ),
+    linear-gradient(180deg, #9a7040 0%, #7c552e 34%, #66431f 68%, #4d3016 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 231, 190, 0.28),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.42);
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#000, #000) content-box,
+    linear-gradient(#000, #000);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000, #000) content-box,
+    linear-gradient(#000, #000);
+  mask-composite: exclude;
+}
+
+/* The lit inner edge of the rim, two pixels outside the nearest backs. */
+.variant-d .wall::after {
+  position: absolute;
+  inset: -2px;
+  border: 2px solid var(--rim-inner);
+  border-radius: 2px;
+  content: "";
+  pointer-events: none;
+}
+
+/* The band is a masked ring: without mask support it would cover the whole
+   ring, so drop it rather than paint over the wall. */
+@supports not ((mask-composite: exclude) or (-webkit-mask-composite: xor)) {
+  .variant-d .wall::before {
+    display: none;
+  }
+}
+
 .variant-d .wall .wall-back {
   position: absolute;
   width: var(--wall-back-w);
@@ -1056,6 +1131,65 @@ h3 {
   height: 100%;
   object-fit: contain;
   user-select: none;
+  filter: drop-shadow(0 0 0.75px rgba(4, 14, 9, 0.85));
+}
+
+/* When a tile leaves the ring, the next head gives one pixel outward and
+   comes back: a wall easing under a hand. Only that one back is animated. */
+.variant-d .wall .wall-back.give-up {
+  animation: wall-give-up 180ms var(--ease-settle);
+}
+
+.variant-d .wall .wall-back.give-right {
+  animation: wall-give-right 180ms var(--ease-settle);
+}
+
+.variant-d .wall .wall-back.give-down {
+  animation: wall-give-down 180ms var(--ease-settle);
+}
+
+.variant-d .wall .wall-back.give-left {
+  animation: wall-give-left 180ms var(--ease-settle);
+}
+
+@keyframes wall-give-up {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  35% {
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes wall-give-right {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  35% {
+    transform: translateX(1px);
+  }
+}
+
+@keyframes wall-give-down {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  35% {
+    transform: translateY(1px);
+  }
+}
+
+@keyframes wall-give-left {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  35% {
+    transform: translateX(-1px);
+  }
 }
 
 /* The loose pair and the dead wall are tiles of the same wall: they are marked
@@ -1066,11 +1200,10 @@ h3 {
   width: var(--discard-w, 24px);
   height: var(--discard-h, 32px);
   transform-origin: 50% 50%;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
   transition:
-    left 220ms var(--ease),
-    top 220ms var(--ease),
-    transform 220ms var(--ease);
+    left 220ms var(--ease-settle),
+    top 220ms var(--ease-settle),
+    transform 220ms var(--ease-settle);
 }
 
 .variant-d .pile .discard .tile {
@@ -1079,7 +1212,7 @@ h3 {
 }
 
 .variant-d .pile .discard.is-new {
-  animation: pile-in 240ms var(--ease);
+  animation: discard-land 240ms var(--ease-land);
 }
 
 .variant-d .pile .discard.claimable .tile {
@@ -1087,10 +1220,24 @@ h3 {
   outline-offset: 1px;
 }
 
-@keyframes pile-in {
-  from {
-    opacity: 0;
-    transform: scale(1.25) rotate(0deg);
+/* The landing: a 5% press for a beat, a shadow that blooms under the tile,
+   then both recover. Nothing outside the tile's own box moves. */
+@keyframes discard-land {
+  0% {
+    filter: drop-shadow(0 0 0 rgba(0, 0, 0, 0));
+    transform: scaleY(1);
+  }
+  14% {
+    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.4));
+    transform: scaleY(0.95);
+  }
+  50% {
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.26));
+    transform: scaleY(0.95);
+  }
+  100% {
+    filter: drop-shadow(0 0 0 rgba(0, 0, 0, 0));
+    transform: scaleY(1);
   }
 }
 
@@ -1103,8 +1250,8 @@ h3 {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   pointer-events: none;
   transition:
-    transform 260ms var(--ease),
-    opacity 260ms var(--ease);
+    transform 280ms var(--ease-fly),
+    opacity 120ms var(--ease-fly) 160ms;
 }
 
 .throw-ghost {
@@ -1114,9 +1261,20 @@ h3 {
   background: linear-gradient(160deg, #e9efe6, #cddacd 60%, #9fb79f);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
   pointer-events: none;
+  animation: throw-darken 300ms var(--ease-fly) forwards;
   transition:
-    transform 260ms var(--ease-in),
-    opacity 260ms var(--ease-in);
+    transform 300ms var(--ease-fly),
+    opacity 120ms var(--ease-fly) 180ms;
+}
+
+/* The throw loses its light as it comes down; the real tile replaces it. */
+@keyframes throw-darken {
+  from {
+    filter: brightness(1);
+  }
+  to {
+    filter: brightness(0.76);
+  }
 }
 
 
@@ -1411,6 +1569,8 @@ h3 {
   color: inherit;
   font: inherit;
   cursor: pointer;
+  transform: translateY(-2px);
+  transition: transform var(--dur-fast) var(--ease-settle);
 }
 
 .hand-tile .tile {
@@ -1418,9 +1578,9 @@ h3 {
   height: var(--hand-h);
   filter: none;
   transition:
-    transform var(--dur-fast) var(--ease),
-    opacity var(--dur-fast) var(--ease),
-    filter var(--dur-fast) var(--ease);
+    transform var(--dur-fast) var(--ease-settle),
+    opacity var(--dur-fast) var(--ease-settle),
+    filter var(--dur-fast) var(--ease-settle);
   transform-origin: 50% 100%;
 }
 
@@ -1441,16 +1601,27 @@ h3 {
   filter: var(--hand-shadow-lift) brightness(1.03);
 }
 
+/* The fresh draw sits one step above the rest of the row: 4px, with its own
+   slightly longer shadow. It is the row's last tile, so no neighbour can
+   catch the shadow as a seam. */
+.hand-tile.is-drawn {
+  transform: translateY(-4px);
+}
+
+.hand-tile.is-drawn .tile {
+  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.3));
+}
+
 .hand-tile .tile img {
   border-radius: var(--radius-xs);
 }
 
 .hand-tile.is-new {
-  animation: hand-in var(--dur-enter) var(--ease);
+  animation: hand-in var(--dur-enter) var(--ease-land);
 }
 
 .hand-tile.is-leaving .tile {
-  animation: hand-out var(--dur-fast) var(--ease-in) forwards;
+  animation: hand-out var(--dur-fast) var(--ease-fly) forwards;
   pointer-events: none;
 }
 
@@ -1635,8 +1806,9 @@ h3 {
   border: var(--stroke) solid var(--accent-ring);
   border-radius: var(--radius-pill);
   color: var(--accent);
+  font-family: var(--font-display);
   font-size: var(--fs-label);
-  font-weight: var(--fw-strong);
+  font-weight: var(--fw-bold);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1919,10 +2091,19 @@ h3 {
   *,
   *::before,
   *::after {
+    animation-delay: 0ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
+    transition-delay: 0ms !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* Flights are skipped in script as well; this keeps them off the surface
+     even if one is ever created. */
+  .wall-ghost,
+  .throw-ghost {
+    display: none !important;
   }
 }
 
@@ -2011,7 +2192,7 @@ h3 {
 }
 
 .variant-d .tile-back.is-drawn {
-  animation: back-in 220ms var(--ease) both;
+  animation: back-in 220ms var(--ease-fly) both;
 }
 
 .variant-d .seat-top .tile-back.is-drawn {
@@ -2045,7 +2226,7 @@ h3 {
   color: var(--accent);
   font-size: 10px;
   font-weight: var(--fw-black);
-  letter-spacing: 0.12em;
+  letter-spacing: var(--tracking-label);
   line-height: 1.5;
   text-transform: uppercase;
   white-space: nowrap;
@@ -2154,7 +2335,7 @@ h3 {
 }
 
 .variant-d .seat.is-calling .meld-row {
-  animation: seat-call 900ms ease-out;
+  animation: seat-call 900ms var(--ease-settle);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2203,13 +2384,15 @@ h3 {
   padding: var(--space-6);
   background:
     radial-gradient(ellipse at 50% 42%, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.78)),
-    radial-gradient(ellipse at 50% 30%, rgba(232, 193, 105, 0.10), transparent 62%);
+    radial-gradient(
+      ellipse at 50% 30%,
+      color-mix(in srgb, var(--gold) 10%, transparent),
+      transparent 62%
+    );
   pointer-events: auto;
 }
 
 .variant-d .result-card {
-  --gold: #e8c169;
-  --gold-soft: rgba(232, 193, 105, 0.42);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -2221,7 +2404,11 @@ h3 {
   border: var(--stroke) solid var(--gold-soft);
   border-radius: var(--radius-lg);
   background:
-    radial-gradient(ellipse at 50% -10%, rgba(232, 193, 105, 0.16), transparent 55%),
+    radial-gradient(
+      ellipse at 50% -10%,
+      color-mix(in srgb, var(--gold) 16%, transparent),
+      transparent 55%
+    ),
     linear-gradient(180deg, rgba(44, 37, 26, 0.98), rgba(20, 17, 13, 0.99));
   box-shadow:
     0 28px 70px rgba(0, 0, 0, 0.6),
@@ -2237,47 +2424,49 @@ h3 {
   border-color: var(--gold);
   box-shadow:
     0 28px 70px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(232, 193, 105, 0.18),
-    0 0 48px rgba(232, 193, 105, 0.16),
+    0 0 0 1px color-mix(in srgb, var(--gold) 18%, transparent),
+    0 0 48px color-mix(in srgb, var(--gold) 16%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.10);
 }
 
 .variant-d .result-card[data-tier="double"] {
   box-shadow:
     0 28px 70px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(232, 193, 105, 0.26),
-    0 0 72px rgba(232, 193, 105, 0.24),
+    0 0 0 1px color-mix(in srgb, var(--gold) 26%, transparent),
+    0 0 72px color-mix(in srgb, var(--gold) 24%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .variant-d .result-kicker {
   margin: 0;
   color: rgba(244, 237, 222, 0.72);
+  font-family: var(--font-label);
   font-size: var(--fs-small);
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
 }
 
 /* The name of the hand is the hero: a sweep of light crosses it, slowly. */
 .variant-d .result-hero {
   margin: 0;
+  font-family: var(--font-display);
   font-size: clamp(26px, 4.6vw, 46px);
   font-weight: var(--fw-black);
   line-height: 1.04;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
   background: linear-gradient(
     100deg,
-    #f4e6bb 0%,
+    color-mix(in srgb, var(--gold) 40%, #fffaf0) 0%,
     #fffaf0 32%,
     var(--gold) 52%,
     #fffaf0 68%,
-    #f4e6bb 100%
+    color-mix(in srgb, var(--gold) 40%, #fffaf0) 100%
   );
   background-size: 240% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: hero-sweep 6s ease-in-out infinite;
+  animation: hero-sweep 6s var(--ease-settle) infinite;
 }
 
 .variant-d .outcome[data-kind="drawn"] .result-hero {
@@ -2309,14 +2498,15 @@ h3 {
   border: var(--stroke) solid var(--gold-soft);
   border-radius: 999px;
   color: var(--gold);
+  font-family: var(--font-display);
   font-size: var(--fs-small);
   font-weight: var(--fw-black);
-  letter-spacing: 0.1em;
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
 }
 
 .variant-d .result-meta .tier-badge[data-tier="double"] {
-  background: rgba(232, 193, 105, 0.16);
+  background: color-mix(in srgb, var(--gold) 16%, transparent);
 }
 
 .variant-d .result-page {
@@ -2343,7 +2533,7 @@ h3 {
   color: var(--gold);
   font-size: 10px;
   font-weight: var(--fw-black);
-  letter-spacing: 0.14em;
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
 }
 
@@ -2379,6 +2569,8 @@ h3 {
 
 .variant-d .score-value {
   color: var(--gold);
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
   font-variant-numeric: tabular-nums;
 }
 
@@ -2418,11 +2610,12 @@ h3 {
 }
 
 .variant-d .result-pay li.is-winner {
-  background: rgba(232, 193, 105, 0.12);
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
 }
 
 .variant-d .result-pay .pay-amount {
-  font-weight: var(--fw-black);
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
 }
 
 .variant-d .result-pay .pay-amount.is-gain {
@@ -2448,6 +2641,7 @@ h3 {
 
 .variant-d .reason-amount {
   color: rgba(244, 237, 222, 0.78);
+  font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
 }
 
@@ -2470,7 +2664,7 @@ h3 {
 }
 
 .variant-d .result-next:hover {
-  background: rgba(232, 193, 105, 0.22);
+  background: color-mix(in srgb, var(--gold) 22%, transparent);
 }
 
 .variant-d .result-next:focus-visible {
@@ -2493,9 +2687,9 @@ h3 {
   height: 3px;
   border-radius: 50%;
   background: #fff3cf;
-  box-shadow: 0 0 8px 2px rgba(232, 193, 105, 0.7);
+  box-shadow: 0 0 8px 2px color-mix(in srgb, var(--gold) 70%, transparent);
   opacity: 0;
-  animation: spark 4.2s ease-in-out infinite;
+  animation: spark 4.2s var(--ease-settle) infinite;
 }
 
 .variant-d .spark:nth-child(1) {
@@ -2713,10 +2907,10 @@ table offers you lines up from the left edge of the same row. */
   opacity: 0.45;
   font: inherit;
   font-size: 11px;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   cursor: pointer;
-  transition: opacity 160ms var(--ease), border-color 160ms var(--ease);
+  transition: opacity 160ms var(--ease-settle), border-color 160ms var(--ease-settle);
 }
 
 .variant-d .calls-toggle:hover,
@@ -2726,8 +2920,8 @@ table offers you lines up from the left edge of the same row. */
 
 .variant-d .calls-toggle[aria-pressed="false"] {
   opacity: 1;
-  border-color: var(--accent-strong);
-  color: var(--accent);
+  border-color: var(--gold);
+  color: var(--gold);
 }
 
 .variant-d .calls-toggle[aria-pressed="false"]::before {
@@ -2736,7 +2930,7 @@ table offers you lines up from the left edge of the same row. */
   height: 6px;
   margin-right: 6px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--gold);
   vertical-align: middle;
 }
 
@@ -2943,7 +3137,7 @@ a button across the whole board. */
   line-height: 1.1;
   text-transform: uppercase;
   white-space: nowrap;
-  animation: call-in 160ms ease-out;
+  animation: call-in 160ms var(--ease-land);
 }
 
 @keyframes call-in {

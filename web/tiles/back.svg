@@ -1,33 +1,60 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  The back of the tile, drawn to sit beside Cangjie6's oblique faces: the same
-  300x400 canvas and the set's own bone (#CDDACD/#FFFFFF) and green (.st1
-  #005F00, .st7 #038249). The bone edge, the diamond lattice and the two bevel
-  strips are what let a wall read as tiles at 30 px, and they give the turned
-  side walls a top and a bottom. Derived work, CC BY-SA 4.0.
--->
 <svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400">
+
   <defs>
-    <pattern id="diamond" width="44" height="44" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-      <rect width="44" height="44" fill="#15633c"/>
-      <path d="M0 22h44" stroke="#3f9a68" stroke-width="3.4" opacity="0.75"/>
-      <path d="M22 0v44" stroke="#07412a" stroke-width="2.6" opacity="0.75"/>
-      <circle cx="0" cy="0" r="2.6" fill="#cddacd" opacity="0.35"/>
-    </pattern>
-    <linearGradient id="bone" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#f6f8ee"/>
-      <stop offset="1" stop-color="#c6d4c6"/>
+    <linearGradient id="bevel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fbf3dd"/>
+      <stop offset="0.5" stop-color="#e6d5b2"/>
+      <stop offset="1" stop-color="#b09769"/>
     </linearGradient>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fffdf4"/>
+      <stop offset="0.55" stop-color="#f9f0d9"/>
+      <stop offset="1" stop-color="#e8d7b3"/>
+    </linearGradient>
+    <linearGradient id="soft" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#7a5a26" stop-opacity="0.14"/>
+      <stop offset="0.3" stop-color="#7a5a26" stop-opacity="0"/>
+      <stop offset="0.72" stop-color="#7a5a26" stop-opacity="0"/>
+      <stop offset="1" stop-color="#7a5a26" stop-opacity="0.1"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffdf2" stop-opacity="0.75"/>
+      <stop offset="0.35" stop-color="#fffdf2" stop-opacity="0"/>
+      <stop offset="0.7" stop-color="#6b5330" stop-opacity="0"/>
+      <stop offset="1" stop-color="#5c451f" stop-opacity="0.55"/>
+    </linearGradient>
+    <linearGradient id="lacquer" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#1e7149"/>
+      <stop offset="0.45" stop-color="#12573b"/>
+      <stop offset="1" stop-color="#0a3a28"/>
+    </linearGradient>
+    <pattern id="lattice" width="32" height="32" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <path d="M0 0V32M0 0H32" stroke="#8ccfa4" stroke-width="4" opacity="0.58"/>
+      <path d="M0 0V32M0 0H32" stroke="#02180e" stroke-width="2" opacity="0.5" transform="translate(2.2 2.2)"/>
+    </pattern>
+    <radialGradient id="gloss" cx="0.32" cy="0.2" r="0.8">
+      <stop offset="0" stop-color="#eafff0" stop-opacity="0.16"/>
+      <stop offset="0.55" stop-color="#eafff0" stop-opacity="0.03"/>
+      <stop offset="1" stop-color="#eafff0" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="panel"><rect x="34" y="34" width="232" height="332" rx="12"/></clipPath>
   </defs>
-
-  <!-- The tile body: bone, like every face in the set. -->
-  <rect x="2" y="2" width="296" height="396" rx="20" fill="url(#bone)" stroke="#08301d" stroke-width="3"/>
-
-  <!-- Its woven back, inset far enough that the bone edge reads as a rim. -->
-  <rect x="18" y="18" width="264" height="364" rx="9" fill="url(#diamond)" stroke="#0a3a22" stroke-width="2.5"/>
-
-  <!-- Thickness: light on the near edge, shadow on the far one. -->
-  <path d="M28 372h244" stroke="#041d11" stroke-width="7" opacity="0.42" stroke-linecap="round"/>
-  <path d="M272 28v352" stroke="#041d11" stroke-width="7" opacity="0.34" stroke-linecap="round"/>
-  <path d="M28 30h244" stroke="#ffffff" stroke-width="3.4" opacity="0.18" stroke-linecap="round"/>
+  <rect x="3" y="3" width="294" height="394" rx="25" fill="#55411f"/>
+  <rect x="7" y="7" width="286" height="386" rx="21" fill="url(#bevel)"/>
+  <rect x="23" y="23" width="254" height="354" rx="14" fill="url(#face)"/>
+  <rect x="23" y="23" width="254" height="354" rx="14" fill="url(#soft)"/>
+  <rect x="23.75" y="23.75" width="252.5" height="352.5" rx="13.5" fill="none" stroke="#c8b18a" stroke-width="1.5" opacity="0.7"/>
+  <rect x="28" y="28" width="244" height="344" rx="10" fill="none" stroke="url(#edge)" stroke-width="8"/>
+  <g>
+    <rect x="34" y="34" width="232" height="332" rx="12" fill="url(#lacquer)"/>
+    <rect x="34" y="34" width="232" height="332" rx="12" fill="url(#lattice)"/>
+    <rect x="34" y="34" width="232" height="332" rx="12" fill="url(#gloss)"/>
+    <g clip-path="url(#panel)">
+      <path d="M40 34 H138 L40 300 Z" fill="#d8f4e2" opacity="0.06"/>
+      <path d="M232 34 L262 70 V366 H196 Z" fill="#00150c" opacity="0.14"/>
+    </g>
+    <rect x="34" y="34" width="232" height="332" rx="12" fill="none" stroke="#083122" stroke-width="3"/>
+    <rect x="40" y="40" width="220" height="320" rx="8" fill="none" stroke="url(#edge)" stroke-width="6"/>
+  </g>
 </svg>
