@@ -6,6 +6,7 @@ import {
   DISCARD_CAPACITY,
   discardGap,
   discardTileSize,
+  nextFreeCell,
   HAND_OVERLAP,
   HAND_TILE_COUNT,
 } from "../web/layout.js";
@@ -195,6 +196,18 @@ describe("computeLayout", () => {
         `${label}: the grid is taller than the pile`,
       );
     }
+  });
+
+  it("fills a claimed cell before the grid grows", () => {
+    assert.equal(nextFreeCell(new Set(), 96), 0, "an empty heap starts at its middle");
+    assert.equal(nextFreeCell(new Set([0, 1, 2]), 96), 3, "a full run grows outward");
+    assert.equal(
+      nextFreeCell(new Set([0, 1, 3, 4, 5]), 96),
+      2,
+      "the claimed cell in the middle is taken before any new one",
+    );
+    assert.equal(nextFreeCell(new Set([0, 2]), 96), 1, "the innermost gap wins");
+    assert.equal(nextFreeCell(new Set([0, 1]), 2), 2, "a full grid offers no cell");
   });
 
   it("fits fourteen overlapping tiles across the screen on a phone", () => {

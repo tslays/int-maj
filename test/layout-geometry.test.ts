@@ -17,7 +17,12 @@
 import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
 
-import { computeLayout, tableInset } from "../web/layout.js";
+import {
+  computeLayout,
+  discardCells,
+  discardGap,
+  tableInset,
+} from "../web/layout.js";
 import {
   connectChrome,
   evaluate,
@@ -825,6 +830,63 @@ describe("variant D seat melds", () => {
     assert.ok(measured.row[3] <= measured.band[3] + 1, "the row stays within the top seat's height");
     assert.ok(measured.scrollWidth >= measured.clientWidth);
   });
+});
+
+describe("variant D heap gaps", () => {
+  for (const [width, height, mode] of [
+    [770, 400, "phone"],
+    [1024, 768, "desktop"],
+  ] as const) {
+    it(`${width}x${height} fills a claimed cell before it grows`, async () => {
+      const expected = expectedLayout(width, height, mode);
+      await setViewport(cdp, sessionId, width, height);
+      await navigate(cdp, sessionId, `${server.url}/?state=win&variant=d`);
+      const deadline = Date.now() + 8000;
+      while (Date.now() < deadline) {
+        const ready = await evaluate<boolean>(
+          cdp,
+          sessionId,
+          `document.querySelectorAll("#pile .discard").length > 0`,
+        );
+        if (ready) break;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      const heap = await evaluate<{ spots: [number, number][] }>(
+        cdp,
+        sessionId,
+        `(() => ({
+          spots: [...document.querySelectorAll("#pile .discard")].map((tile) => [
+            Number.parseFloat(tile.style.left),
+            Number.parseFloat(tile.style.top),
+          ]),
+        }))()`,
+      );
+      const cells = discardCells(
+        expected.pile,
+        expected.discardTileWidth,
+        discardGap(expected.discardTileWidth),
+      );
+      const used = new Set<number>();
+      for (const [x, y] of heap.spots) {
+        const index = cells.findIndex(
+          (cell) => Math.abs(cell.x - x) <= 1 && Math.abs(cell.y - y) <= 1,
+        );
+        assert.notEqual(index, -1, `a discard sits off the grid at ${x},${y}`);
+        used.add(index);
+      }
+      // The grid fills its gaps before it grows: with a claimed cell free, the
+      // occupied cells are still the first N, never N scattered ones.
+      assert.deepEqual(
+        [...used].sort((first, second) => first - second),
+        heap.spots.map((_, index) => index),
+        `${width}x${height}: the heap left a gap inside its own frontier`,
+      );
+      assert.ok(
+        heap.spots.length > 0,
+        `${width}x${height}: the heap is empty`,
+      );
+    });
+  }
 });
 
 describe("variant D far-seat calls", () => {

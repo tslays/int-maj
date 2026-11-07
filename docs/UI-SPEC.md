@@ -205,10 +205,12 @@ the whole hand at one size — no mid-hand shrink, no re-deal — and the discar
 may be as large as the hand's own tile. Measured: 30x40 at 770x400 (was 19x25
 as a scatter), 54x72 at 1024x768, 67x89 at 1440x900.
 
-A tile never moves once it has landed, and a claimed tile simply leaves its cell
-empty. `dealPile()` re-deals every landed discard into the grid, in the order
-thrown, only when the board changes size (a resize), which is the one time the
-cells themselves change.
+A tile never moves once it has landed. A claimed tile frees its cell, and the
+next throw takes the **first free cell**, so the grid closes its own gap before
+it grows (`nextFreeCell`, 2026-11-07, owner's rule: "if there are claims, the
+grid should first fill the gaps"). `dealPile()` re-deals every landed discard
+into the grid, in the order thrown, only when the board changes size (a
+resize), which is the one time the cells themselves change.
 
 Your own throw animates too: it leaves the hand, flies to its spot and clacks.
 
