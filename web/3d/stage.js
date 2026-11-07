@@ -18,8 +18,10 @@ const RAIL = 1.1;
 export const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+// Khronos PBR Neutral keeps the inks their own colour; ACES bleached the red
+// characters pink once the ivory reached the top of its range.
+renderer.toneMapping = THREE.NeutralToneMapping;
+renderer.toneMappingExposure = 0.95;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.autoClear = false;
@@ -29,11 +31,11 @@ const environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnviron
 export const tableScene = new THREE.Scene();
 tableScene.background = new THREE.Color(0x11191c);
 tableScene.environment = environment;
-tableScene.environmentIntensity = 0.55;
+tableScene.environmentIntensity = 0.3;
 
 export const handScene = new THREE.Scene();
 handScene.environment = environment;
-handScene.environmentIntensity = 0.6;
+handScene.environmentIntensity = 0.32;
 
 export const tableCamera = new THREE.PerspectiveCamera(17, 1, 0.5, 400);
 // A long lens: the hand strip is about eight times wider than tall, and a wide
@@ -51,16 +53,16 @@ function feltTexture() {
   canvas.height = size;
   const context = canvas.getContext("2d");
   const gradient = context.createRadialGradient(size / 2, size / 2, size * 0.05, size / 2, size / 2, size * 0.72);
-  gradient.addColorStop(0, "#2f8a86");
-  gradient.addColorStop(0.6, "#26716f");
-  gradient.addColorStop(1, "#174c4b");
+  gradient.addColorStop(0, "#1f716d");
+  gradient.addColorStop(0.62, "#185a59");
+  gradient.addColorStop(1, "#0b3334");
   context.fillStyle = gradient;
   context.fillRect(0, 0, size, size);
   // Engraved guides: the play square inside the walls, and its diagonals.
   const unit = size / (TABLE_HALF * 2);
   const inner = (WALL_R - H / 2 - 0.35) * unit;
   const centre = size / 2;
-  context.strokeStyle = "rgba(10, 40, 40, 0.38)";
+  context.strokeStyle = "rgba(4, 26, 26, 0.45)";
   context.lineWidth = 3;
   context.strokeRect(centre - inner, centre - inner, inner * 2, inner * 2);
   context.beginPath();
@@ -116,8 +118,8 @@ function buildTable() {
 }
 
 function buildLights() {
-  tableScene.add(new THREE.HemisphereLight(0xf4fbff, 0x1a3836, 0.6));
-  const key = new THREE.DirectionalLight(0xfff1dc, 2.4);
+  tableScene.add(new THREE.HemisphereLight(0xf4fbff, 0x10292a, 0.28));
+  const key = new THREE.DirectionalLight(0xfff1dc, 2.3);
   key.position.set(-7, 22, 9);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
@@ -134,8 +136,8 @@ function buildLights() {
   key.shadow.radius = 4;
   tableScene.add(key);
 
-  handScene.add(new THREE.HemisphereLight(0xfff3df, 0x203528, 0.7));
-  const handKey = new THREE.DirectionalLight(0xfff1dc, 2.0);
+  handScene.add(new THREE.HemisphereLight(0xfff3df, 0x18302a, 0.32));
+  const handKey = new THREE.DirectionalLight(0xfff1dc, 1.9);
   handKey.position.set(-4, 7, 9);
   handScene.add(handKey);
 }
