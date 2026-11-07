@@ -831,6 +831,26 @@ function rackLine(entry) {
   return line;
 }
 
+/**
+ * A fishing player has announced their wait, so the wait itself is the marker:
+ * the tiles they are waiting on, face-up, beside their exposed calls. No word,
+ * no icon, no motion - it is a state, not an announcement.
+ */
+function fishingMark(entry) {
+  const fishing = payload?.view.fishing.find((row) => row.seat === entry.seat);
+  if (fishing === undefined) return null;
+  const mark = div("fishing-mark");
+  const tiles = span("fishing-waits");
+  for (const key of fishing.wait) tiles.append(tileElement(key));
+  mark.append(tiles);
+  mark.setAttribute(
+    "aria-label",
+    `${entry.seat === payload.seat ? "You are" : `${seatLabel(entry.seat)} is`} fishing on ${fishing.wait.map(tileName).join(", ")}`,
+  );
+  mark.title = `Fishing on ${fishing.wait.map(tileName).join(", ")}`;
+  return mark;
+}
+
 function meldRow(melds) {
   if (melds.length === 0) return null;
   const row = div("meld-row");
@@ -884,6 +904,14 @@ function renderSeat(entry) {
 
   const rack = rackLine(entry);
   const melds = meldRow(entry.melds);
+  const fishing = fishingMark(entry);
+  if (fishing !== null) {
+    // A phone's side band is one tile wide, so the marker sits on the band's
+    // inner end rather than beside the calls: it is the one place that always
+    // has room, whatever the viewport.
+    root.classList.add("is-fishing");
+    root.append(fishing);
+  }
   const bonuses = bonusRow(entry);
 
   if (place === "top") {
@@ -1561,6 +1589,11 @@ function renderOwnMelds() {
   const melds = meldRow(payload.view.player.melds);
   if (melds === null) slot.replaceChildren();
   else slot.replaceChildren(melds);
+  // Your own declaration sits above your hand, where nothing else lives.
+  const layer = $("#own-fishing");
+  layer.replaceChildren();
+  const mine = fishingMark({ seat: payload.view.player.seat });
+  if (mine !== null) layer.append(mine);
 }
 
 function renderOwnBonus() {

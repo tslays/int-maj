@@ -185,6 +185,21 @@ then shifts every region by `inset`, so the hand, the three walls, the rivers
 and the action row all sit a breath away from the edge. `layout.inset` is
 exported; the board box stays full-bleed because the felt is the background.
 
+### A fishing seat is marked, not announced (2026-11-07)
+
+Declaring fishing makes the state public `[I p. 21, R-067]`, so the **wait
+itself is the marker**: the tiles that seat is waiting on, face-up, in the
+seat's own band - no word, no icon, no motion. A phone's side band is one tile
+wide, so the mark sits on the band's inner end (waits stacked down a side band,
+in a row on the far seat) and is capped to the band's height; the band's rack
+and meld row also take an amber outline so the eye finds the seat before it
+reads the tiles. Your own declaration sits at the top-right of your hand band,
+above the hand.
+
+The audit loads `?state=result` (an opponent fishing) and `?state=fishing`
+(you are), and fails if a mark leaves its band or does not show the declared
+waits.
+
 ### The wall is a frame around the pile (2026-11-07, owner request)
 
 The wall is drawn where a real one sits: the rectangle between the hands and

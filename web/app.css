@@ -2041,6 +2041,82 @@ h3 {
   }
 }
 
+/* Fishing is a state, not an announcement: the seat's band takes an amber
+   edge and its declared wait sits beside its calls, face-up, still. */
+.variant-d .seat.is-fishing .rack,
+.variant-d .seat.is-fishing .meld-row {
+  outline: var(--stroke) solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.variant-d .fishing-mark {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  padding: 0;
+  max-height: 100%;
+  overflow: hidden;
+  border: var(--stroke) solid var(--accent);
+  border-radius: 3px;
+  background: rgba(6, 26, 18, 0.92);
+  pointer-events: none;
+}
+
+/* On the seat's inner end, the one spot that has room on every viewport: a
+   side band is one tile wide, so its waits stack down the band. */
+.variant-d .seat-top .fishing-mark {
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.variant-d .seat-left .fishing-mark {
+  left: 50%;
+  bottom: 0;
+  flex-direction: column-reverse;
+  transform: translateX(-50%);
+}
+
+.variant-d .seat-right .fishing-mark {
+  right: 50%;
+  bottom: 0;
+  flex-direction: column-reverse;
+  transform: translateX(50%);
+}
+
+.variant-d .own-fishing .fishing-mark {
+  right: 0;
+  top: 0;
+}
+
+.variant-d .fishing-word {
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: var(--fw-black);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  writing-mode: horizontal-tb;
+}
+
+.variant-d .fishing-waits {
+  display: flex;
+  gap: 1px;
+}
+
+.variant-d .fishing-waits .tile {
+  width: calc(var(--layout-back-w) - 2px);
+  height: calc(var(--layout-back-h) - 2px);
+}
+
+.variant-d .own-fishing {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 .variant-d .seat .meld .tile {
   width: var(--layout-back-w);
   height: var(--layout-back-h);
