@@ -1106,7 +1106,7 @@ describe("variant D fishing", () => {
     [770, 400],
     [1024, 768],
   ] as const) {
-    it(`${width}x${height} breathes the seat that is fishing`, async () => {
+    it(`${width}x${height} says fishing next to the hand that declared it`, async () => {
       await setViewport(cdp, sessionId, width, height);
       await navigate(cdp, sessionId, `${server.url}/?state=result&variant=d`);
       const deadline = Date.now() + 10000;
@@ -1114,51 +1114,76 @@ describe("variant D fishing", () => {
         const ready = await evaluate<boolean>(
           cdp,
           sessionId,
-          `document.querySelector(".seat.is-fishing .rack .tile-back") !== null`,
+          `document.querySelector(".seat.is-fishing .fishing-chip") !== null`,
         );
         if (ready) break;
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      const marked = await evaluate<
-        Array<{ seat: string; animation: string; duration: string; label: string | null; badges: number }>
+      const chips = await evaluate<
+        Array<{
+          seat: string;
+          text: string;
+          rect: [number, number, number, number];
+          band: [number, number, number, number];
+          board: [number, number, number, number];
+          animation: string;
+          gap: number;
+        }>
       >(
         cdp,
         sessionId,
         `(() => {
+          const box = (el) => {
+            const r = el.getBoundingClientRect();
+            return [r.x, r.y, r.width, r.height];
+          };
+          const board = box(document.querySelector("#board"));
           const out = [];
           for (const seat of document.querySelectorAll(".seat.is-fishing")) {
-            const back = seat.querySelector(".rack .tile-back");
-            const style = back === null ? null : getComputedStyle(back);
+            const chip = seat.querySelector(".fishing-chip");
+            if (chip === null) continue;
+            const band = box(seat);
+            const rect = box(chip);
+            // How far the chip sits from its own band, whichever side it is on.
+            const dx = Math.max(band[0] - (rect[0] + rect[2]), rect[0] - (band[0] + band[2]), 0);
+            const dy = Math.max(band[1] - (rect[1] + rect[3]), rect[1] - (band[1] + band[3]), 0);
             out.push({
               seat: seat.id,
-              animation: style === null ? "none" : style.animationName,
-              duration: style === null ? "0s" : style.animationDuration,
-              label: seat.getAttribute("aria-label"),
-              badges: seat.querySelectorAll(".fishing-mark").length,
+              text: chip.textContent.trim(),
+              rect,
+              band,
+              board,
+              animation: getComputedStyle(chip).animationName,
+              gap: Math.round(Math.max(dx, dy)),
             });
           }
           return out;
         })()`,
       );
-      assert.ok(marked.length > 0, `${width}x${height}: nobody is marked as fishing`);
-      for (const entry of marked) {
-        assert.equal(
-          entry.animation,
-          "fishing-breathe",
-          `${entry.seat} is not breathing (${entry.animation})`,
+      assert.ok(chips.length > 0, `${width}x${height}: nobody is marked as fishing`);
+      for (const chip of chips) {
+        assert.equal(chip.text, "Fishing", `${chip.seat}: the chip does not say fishing`);
+        assert.equal(chip.animation, "none", `${chip.seat}: the chip moves`);
+        assert.ok(
+          chip.rect[2] > 20 && chip.rect[3] > 8,
+          `${chip.seat}: the chip is not visible (${chip.rect[2]}x${chip.rect[3]})`,
         );
-        assert.match(entry.duration, /4\.8s/, `${entry.seat} breathes at ${entry.duration}`);
-        assert.match(
-          entry.label ?? "",
-          /Fishing on /,
-          `${entry.seat} carries no fishing label`,
+        assert.ok(
+          chip.rect[0] >= chip.board[0] - 1 &&
+            chip.rect[1] >= chip.board[1] - 1 &&
+            chip.rect[0] + chip.rect[2] <= chip.board[0] + chip.board[2] + 1 &&
+            chip.rect[1] + chip.rect[3] <= chip.board[1] + chip.board[3] + 1,
+          `${chip.seat}: the fishing chip leaves the board`,
         );
-        assert.equal(entry.badges, 0, `${entry.seat} still wears a fishing badge`);
+        assert.ok(
+          chip.gap <= 16,
+          `${chip.seat}: the chip is ${chip.gap}px away from its hand`,
+        );
       }
     });
   }
 
-  it("breathes your own hand band when you are fishing", async () => {
+  it("puts your own fishing next to your hand", async () => {
     await setViewport(cdp, sessionId, 1024, 768);
     await navigate(cdp, sessionId, `${server.url}/?state=fishing&variant=d`);
     const deadline = Date.now() + 12000;
@@ -1166,24 +1191,32 @@ describe("variant D fishing", () => {
       const ready = await evaluate<boolean>(
         cdp,
         sessionId,
-        `document.querySelector(".hand-band.is-fishing") !== null`,
+        `document.querySelector(".hand-band .fishing-chip") !== null`,
       );
       if (ready) break;
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    const own = await evaluate<{ animation: string; label: string | null }>(
+    const own = await evaluate<{
+      text: string | null;
+      label: string | null;
+      above: boolean;
+    }>(
       cdp,
       sessionId,
       `(() => {
-        const band = document.querySelector(".hand-band");
+        const chip = document.querySelector(".hand-band .fishing-chip");
+        const band = document.querySelector(".hand-band").getBoundingClientRect();
+        const rect = chip === null ? null : chip.getBoundingClientRect();
         return {
-          animation: getComputedStyle(band).animationName,
-          label: band.getAttribute("aria-label"),
+          text: chip === null ? null : chip.textContent.trim(),
+          label: document.querySelector(".hand-band").getAttribute("aria-label"),
+          above: rect === null ? false : rect.y + rect.height <= band.y + 1,
         };
       })()`,
     );
-    assert.equal(own.animation, "hand-breathe", "your hand band is not breathing");
-    assert.match(own.label ?? "", /Fishing on /, "your fishing is not labelled");
+    assert.equal(own.text, "Fishing", "your own fishing is not marked");
+    assert.match(own.label ?? "", /Fishing on /, "your fishing wait is not labelled");
+    assert.ok(own.above, "your fishing chip sits over your hand");
   });
 });
 
