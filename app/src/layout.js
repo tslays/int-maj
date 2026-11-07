@@ -10,6 +10,10 @@
  * at the corners and never overlap. Rows one to three hold six tiles; the
  * fourth row takes every later tile and runs on to the seat's right, into the
  * corner that no other seat uses.
+ *
+ * The rest of that corner is the seat's meld zone: exposed melds and bonus
+ * tiles lie there face up, in front of the walls and hands, so nothing on the
+ * table hides them (they used to lie beside the hand at the table's edge).
  */
 
 export const W = 1;
@@ -73,3 +77,78 @@ export function discardRect(rel, index) {
 
 /** The inner edge of the walls: discards must stay inside this square. */
 export const WALL_INNER = WALL_R - H / 2;
+
+/**
+ * The seat's meld zone, in its own frame: to its right of the discard rows,
+ * nearer the centre than the corner row, inside the walls.
+ */
+export const MELD_ZONE = Object.freeze({
+  x0: ROW_HALF + 0.25,
+  x1: WALL_INNER - 0.25,
+  z0: TABLE.DISCARD_Z + 0.05,
+  z1: TABLE.DISCARD_Z + FULL_ROWS * STEP_Z - 0.1,
+});
+
+/**
+ * Lay a seat's exposed groups (melds, then its bonus tiles as one more group)
+ * into its meld zone. Groups never split across rows. The rows are anchored
+ * in the zone's outer corner - by the walls, at the seat's right - and fill
+ * inwards, so a normal hand keeps a band of felt between its melds and the
+ * discards. The tiles shrink only when a hand is unusually full.
+ * Returns the scale and each tile's centre as { group, index, x, z }.
+ */
+export function meldPlacement(groupSizes) {
+  const width = MELD_ZONE.x1 - MELD_ZONE.x0;
+  const depth = MELD_ZONE.z1 - MELD_ZONE.z0;
+  for (let scale = 0.9; scale > 0.3; scale -= 0.05) {
+    const tileStep = (W + GAP) * scale;
+    const groupGap = 0.3 * scale;
+    const rowStep = (H + 0.08) * scale;
+    // Pack left to right into rows, as offsets from each row's start.
+    const rows = [[]];
+    let x = 0;
+    let fits = true;
+    groupSizes.forEach((size, group) => {
+      const groupWidth = size * tileStep - GAP * scale;
+      if (groupWidth > width) fits = false;
+      if (x > 0 && x + groupWidth > width) {
+        rows.push([]);
+        x = 0;
+      }
+      for (let index = 0; index < size; index++) {
+        rows.at(-1).push({ group, index, offset: x + index * tileStep });
+      }
+      x += groupWidth + groupGap;
+    });
+    const used = groupSizes.length === 0 ? 0 : rows.length * rowStep - 0.08 * scale;
+    if (!fits || used > depth) continue;
+    const tiles = [];
+    rows.forEach((row, rowIndex) => {
+      if (row.length === 0) return;
+      const rowWidth = row.at(-1).offset + W * scale;
+      for (const tile of row) {
+        tiles.push({
+          group: tile.group,
+          index: tile.index,
+          // Right-aligned to the zone's outer edge, first row by the walls.
+          x: MELD_ZONE.x1 - rowWidth + tile.offset + (W * scale) / 2,
+          z: MELD_ZONE.z1 - rowIndex * rowStep - (H * scale) / 2,
+        });
+      }
+    });
+    return { scale, tiles };
+  }
+  throw new Error(`meld zone cannot hold groups of ${groupSizes.join(", ")}`);
+}
+
+/** Table-space rectangles of a seat's meld tiles. */
+export function meldRects(rel, groupSizes) {
+  const { scale, tiles } = meldPlacement(groupSizes);
+  const across = (W * scale) / 2;
+  const along = (H * scale) / 2;
+  const [halfX, halfZ] = rel % 2 === 0 ? [across, along] : [along, across];
+  return tiles.map((tile) => {
+    const centre = toTable(rel, tile.x, tile.z);
+    return { minX: centre.x - halfX, maxX: centre.x + halfX, minZ: centre.z - halfZ, maxZ: centre.z + halfZ };
+  });
+}

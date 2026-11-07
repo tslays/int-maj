@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 // @ts-expect-error - a plain browser module without type declarations
-import { discardRect, discardSlot, TABLE, WALL_INNER, W, H } from "../../app/src/layout.js";
+import { discardRect, discardSlot, meldPlacement, meldRects, TABLE, WALL_INNER, W, H } from "../../app/src/layout.js";
 
 interface Rect {
   readonly minX: number;
@@ -19,6 +19,8 @@ interface Rect {
 }
 
 const EPSILON = 1e-6;
+/** Half a tile's thickness: a standing hand reaches this far from its line. */
+const D_HALF = 0.39;
 // A whole hand rarely gives a seat more than about 23 discards; the corner
 // row has room for 29 before it would reach the wall.
 const MOST = 29;
@@ -83,6 +85,38 @@ describe("3D table discard layout", () => {
     assert.ok(TABLE.HAND_Z + 0.2 + (H / 2) < TABLE.TABLE_HALF, "a meld hangs over the rail");
     assert.ok(W > 0);
   });
-});
 
-const D_HALF = 0.39;
+  it("lays every seat's melds and bonus tiles in its own corner, clear of everything", () => {
+    // From a single pung up to four kongs and all eight bonus tiles.
+    const hands = [[3], [3, 3], [3, 3, 3, 3], [4, 3, 4, 3, 2], [4, 4, 4, 4, 8]];
+    for (const groups of hands) {
+      const melds: { rel: number; rect: Rect }[] = [];
+      for (let rel = 0; rel < 4; rel++) {
+        for (const rect of meldRects(rel, groups)) melds.push({ rel, rect });
+      }
+      for (const meld of melds) {
+        const label = `seat ${meld.rel} melds ${groups.join("+")}`;
+        assert.ok(Math.max(Math.abs(meld.rect.minX), Math.abs(meld.rect.maxX)) <= WALL_INNER, `${label} reach the wall`);
+        assert.ok(Math.max(Math.abs(meld.rect.minZ), Math.abs(meld.rect.maxZ)) <= WALL_INNER, `${label} reach the wall`);
+        for (const discard of all) {
+          assert.equal(
+            overlaps(meld.rect, discard.rect),
+            false,
+            `${label} cover seat ${discard.rel} discard ${discard.index + 1}`,
+          );
+        }
+      }
+      for (let i = 0; i < melds.length; i++) {
+        for (let j = i + 1; j < melds.length; j++) {
+          if (melds[i]!.rel === melds[j]!.rel) continue;
+          assert.equal(overlaps(melds[i]!.rect, melds[j]!.rect), false, `seats ${melds[i]!.rel} and ${melds[j]!.rel} melds touch`);
+        }
+      }
+    }
+  });
+
+  it("keeps an ordinary hand's melds at a readable size", () => {
+    assert.ok(meldPlacement([3, 3, 3, 3]).scale >= 0.85, "four pungs stay large");
+    assert.ok(meldPlacement([4, 4, 4, 4, 8]).scale >= 0.6, "even the fullest hand stays legible");
+  });
+});

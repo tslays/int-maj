@@ -14,7 +14,7 @@
 
 import * as THREE from "three";
 import { D, H, W, TABLE, makeTile, poseFaceUp, poseFaceDown, tileOrder, jitter } from "./tiles.js";
-import { discardSlot } from "./layout.js";
+import { discardSlot, meldPlacement } from "./layout.js";
 import {
   animate,
   easeInOutCubic,
@@ -245,8 +245,11 @@ export class Board {
   /** A claimed discard flies from the heap towards the claimer and goes into the meld. */
   flyToClaimer(tile, claimer) {
     tableScene.attach(tile);
-    const target = new THREE.Vector3(this.rel(claimer) === 0 ? 3.5 : 4, 1.2, HAND_Z - 0.2);
-    this.frameOf(claimer).localToWorld(target);
+    // Your melds join your hand row; an opponent's lie in its meld zone.
+    const target =
+      this.rel(claimer) === 0
+        ? this.frameOf(claimer).localToWorld(new THREE.Vector3(3.5, 1.2, HAND_Z - 0.2))
+        : this.meldTarget(claimer);
     const from = tile.position.clone();
     return animate(360, (t) => {
       const k = easeInOutCubic(t);
@@ -258,7 +261,11 @@ export class Board {
 
   /* ------------------------------------------------------- opponents */
 
-  /** An opponent's row: bonus tiles, the hand standing (backs), then melds. */
+  /**
+   * An opponent: the hand stands at the table's edge (backs towards you), and
+   * the melds and bonus tiles lie face up in the seat's meld zone, where no
+   * wall or hand hides them.
+   */
   reconcileRow(entry, animated) {
     const state = this.seats[entry.seat];
     const bonus = [...entry.flowers, ...entry.seasons];
@@ -274,50 +281,43 @@ export class Board {
     const row = state.row;
     row.clear();
     const work = [];
-    const lying = (key, scale = 1) => ({ key, faceUp: true, scale });
-    const pieces = [];
-    for (const key of bonus) pieces.push({ ...lying(key, 0.85), gapAfter: GAP });
-    if (bonus.length > 0) pieces[pieces.length - 1].gapAfter = 0.4;
+    const drop = (tile, height, duration, ease) => {
+      const y = tile.position.y;
+      tile.position.y = y + height;
+      work.push(tween(tile.position, { y }, duration, ease));
+    };
+
+    // The concealed hand, standing and centred on the seat.
+    const start = -((entry.handCount - 1) / 2) * (W + GAP);
     for (let index = 0; index < entry.handCount; index++) {
-      pieces.push({ key: null, standing: true, scale: 1, gapAfter: GAP, last: index === entry.handCount - 1 });
-    }
-    if (entry.melds.length > 0 && pieces.length > 0) pieces[pieces.length - 1].gapAfter = 0.5;
-    entry.melds.forEach((meld, meldIndex) => {
-      const tiles = meldTiles(meld, 0.95);
-      tiles.forEach((tile, index) =>
-        pieces.push({
-          ...tile,
-          gapAfter: index === tiles.length - 1 ? 0.3 : GAP,
-          fresh: newMeld && meldIndex === entry.melds.length - 1,
-        }),
-      );
-    });
-    const width = pieces.reduce((total, piece) => total + W * piece.scale + piece.gapAfter, 0);
-    let x = -width / 2;
-    pieces.forEach((piece, index) => {
-      const size = W * piece.scale;
-      const centre = x + size / 2;
-      x += size + piece.gapAfter;
-      const tile = makeTile(piece.key);
-      if (piece.standing) {
-        tile.position.set(centre, H / 2, HAND_Z);
-      } else if (piece.faceUp) {
-        poseFaceUp(tile, centre, HAND_Z + 0.2, index, piece.scale);
-      } else {
-        poseFaceDown(tile, centre, (D / 2) * piece.scale, HAND_Z + 0.2, piece.scale);
-      }
+      const tile = makeTile(null);
+      tile.position.set(start + index * (W + GAP), H / 2, HAND_Z);
       row.add(tile);
-      if (piece.fresh) {
-        const y = tile.position.y;
-        tile.position.y = y + 1.6;
-        work.push(tween(tile.position, { y }, 300, easeOutBack));
-      } else if (animated && piece.standing && piece.last && grewBy === 1) {
-        const y = tile.position.y;
-        tile.position.y = y + 0.9;
-        work.push(tween(tile.position, { y }, 220, easeOutCubic));
-      }
-    });
+      if (animated && grewBy === 1 && index === entry.handCount - 1) drop(tile, 0.9, 220, easeOutCubic);
+    }
+
+    // Melds, then the bonus tiles as one more group, in the meld zone.
+    const groups = entry.melds.map((meld) => meldTiles(meld, 1));
+    if (bonus.length > 0) groups.push(bonus.map((key) => ({ key, faceUp: true })));
+    if (groups.length === 0) return work;
+    const { scale, tiles } = meldPlacement(groups.map((group) => group.length));
+    for (const place of tiles) {
+      const piece = groups[place.group][place.index];
+      const tile = makeTile(piece.key);
+      if (piece.faceUp) poseFaceUp(tile, place.x, place.z, place.group * 5 + place.index, scale);
+      else poseFaceDown(tile, place.x, (D / 2) * scale, place.z, scale);
+      row.add(tile);
+      if (newMeld && place.group === entry.melds.length - 1) drop(tile, 1.6, 300, easeOutBack);
+    }
     return work;
+  }
+
+  /** Where a seat's newest meld lands, in table space: the end of its meld zone. */
+  meldTarget(seat) {
+    const entry = this.seats[seat];
+    const groups = JSON.parse(entry?.meldKey ?? "[]").length;
+    const place = meldPlacement(new Array(Math.max(groups, 1)).fill(3)).tiles.at(-1);
+    return this.frameOf(seat).localToWorld(new THREE.Vector3(place.x, 1.2, place.z));
   }
 
   /* ------------------------------------------------------- your hand */
