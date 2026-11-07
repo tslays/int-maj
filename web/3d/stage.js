@@ -294,8 +294,10 @@ function frameHand() {
 }
 
 export function frame() {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
+  // The canvas fills its container: the window, or the `?phone` frame.
+  const host = renderer.domElement.parentElement ?? document.body;
+  const width = Math.max(1, host.clientWidth || window.innerWidth);
+  const height = Math.max(1, host.clientHeight || window.innerHeight);
   renderer.setSize(width, height, false);
   const portrait = height > width;
   viewport.width = width;
