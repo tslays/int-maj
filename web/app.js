@@ -60,9 +60,11 @@ let previousDiscards = { E: 0, S: 0, W: 0, N: 0 };
 let previousConcealed = { E: 0, S: 0, W: 0, N: 0 };
 let announced = "";
 let focusedOutcomeKey = null;
-let scoresKey = null;
-let sessionScores = { E: 0, S: 0, W: 0, N: 0 };
-let appliedOutcome = null;
+/**
+ * The offline build answers the API inside the page (`src/web/local.ts`); the
+ * dev server answers it over HTTP. `<html data-transport="local">` picks.
+ */
+let localApi = null;
 
 let callsEnabled = true;
 let autoPassKey = null;
@@ -394,6 +396,7 @@ function displayHand() {
 /* ------------------------------------------------------------ transport */
 
 async function api(path, body) {
+  if (localApi !== null) return localApi.request(path, body);
   const options =
     body === undefined
       ? {}
@@ -443,8 +446,6 @@ function applyResponse(data, note, replaceLog = false) {
   if (typeof data.game === "string" && scenarioName === null) {
     sessionStorage.setItem(GAME_KEY, data.game);
   }
-  loadScores(data.game, data.seed);
-  settleScores();
   if (replaceLog || data.replaceLog === true) logLines.length = 0;
   if (note) log(note);
   const justDiscarded =
@@ -608,81 +609,14 @@ function zeroScores() {
   return { E: 0, S: 0, W: 0, N: 0 };
 }
 
-function loadScores(game, seed) {
-  const key = `mahjong-scores:${game}:${seed}`;
-  if (key === scoresKey) return;
-  scoresKey = key;
-  sessionScores = zeroScores();
-  appliedOutcome = null;
-  try {
-    const raw = sessionStorage.getItem(key);
-    if (raw === null) return;
-    const stored = JSON.parse(raw);
-    if (stored && typeof stored === "object" && stored.scores) {
-      for (const seat of SEATS) {
-        const value = Number(stored.scores[seat]);
-        if (Number.isFinite(value)) sessionScores[seat] = value;
-      }
-    }
-    if (stored && stored.applied && typeof stored.applied === "object") {
-      appliedOutcome = stored.applied;
-    }
-  } catch {
-    // A corrupt or unavailable store starts the scorecard at zero.
-  }
-}
-
-function persistScores() {
-  if (scoresKey === null) return;
-  try {
-    sessionStorage.setItem(
-      scoresKey,
-      JSON.stringify({ scores: sessionScores, applied: appliedOutcome }),
-    );
-  } catch {
-    // Storage can be unavailable; the scorecard still works for this render.
-  }
-}
-
-function settleScores() {
-  const outcome = payload.outcome;
-  if (outcome === null) return;
-  const handKey = `${payload.game}:${payload.view.handNumber}`;
-  if (appliedOutcome !== null && appliedOutcome.key === handKey) return;
-
-  const before = { ...sessionScores };
-  for (const seat of SEATS) {
-    sessionScores[seat] += outcome.totals[seat] ?? 0;
-  }
-  appliedOutcome = {
-    key: handKey,
-    game: payload.game,
-    handNumber: payload.view.handNumber,
-    before,
-    totals: { ...outcome.totals },
-    after: { ...sessionScores },
-  };
-  persistScores();
-}
-
+/** Finished hands (from the engine) plus the current hand's ledger. */
 function displayTotals() {
-  const totals = { ...sessionScores };
-  if (payload.view.phase !== "finished") {
-    const current = ledgerTotals(payload.view.ledger);
-    for (const seat of SEATS) totals[seat] += current[seat];
+  const totals = { E: 0, S: 0, W: 0, N: 0 };
+  const current = ledgerTotals(payload.view.ledger);
+  for (const seat of SEATS) {
+    totals[seat] = (payload.scoresBefore?.[seat] ?? 0) + current[seat];
   }
   return totals;
-}
-
-function revertScores() {
-  if (payload === null || appliedOutcome === null) return;
-  if (appliedOutcome.game !== payload.game) return;
-  if (appliedOutcome.handNumber !== payload.view.handNumber) return;
-  for (const seat of SEATS) {
-    sessionScores[seat] -= appliedOutcome.totals[seat] ?? 0;
-  }
-  appliedOutcome = null;
-  persistScores();
 }
 
 function seatEntry(seat) {
@@ -2348,10 +2282,13 @@ function renderOutcome() {
   next.type = "button";
   next.id = "result-next";
   next.className = "result-next";
-  next.textContent = "Next hand";
+  // The hand that finishes the North round finishes the game (R-032).
+  const over = outcome.gameOver === true;
+  next.textContent = over ? "New game" : "Next hand";
   next.addEventListener("click", () => {
     focusedOutcomeKey = null;
-    void request("/api/next", { game: payload.game });
+    if (over) newGame(randomSeed());
+    else void request("/api/next", { game: payload.game });
   });
   card.append(next);
 
@@ -2382,8 +2319,6 @@ async function watchBuild() {
   }
 }
 
-setInterval(watchBuild, 1500);
-watchBuild();
 
 function render() {
   if (payload === null) return;
@@ -2579,7 +2514,6 @@ function claimBest() {
 
 function undo() {
   if (payload === null) return;
-  revertScores();
   void request("/api/undo", { game: payload.game }, null, true);
 }
 
@@ -2664,7 +2598,22 @@ function initialRail() {
   return window.innerWidth >= 1024;
 }
 
+function browserStorage() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
 async function boot() {
+  if (document.documentElement.dataset.transport === "local") {
+    const { createLocalApi } = await import("./engine/web/local.js");
+    localApi = createLocalApi(browserStorage());
+  } else {
+    setInterval(watchBuild, 1500);
+    watchBuild();
+  }
   muted = readMuted();
   callsEnabled = readCalls();
   bindEvents();
@@ -2684,8 +2633,18 @@ async function boot() {
   const stateName = params.get("state");
   if (stateName !== null && (await openScenario(stateName))) return;
 
-  // A page load always starts a hand from the deal, so the first round can be
-  // watched from the beginning. `?game=` is the only way to resume a game.
+  // Offline, the game lives on this device: pick it up where it was left.
+  if (localApi !== null) {
+    const resumed = localApi.resume();
+    if (resumed !== null) {
+      eventsAreHistory = true;
+      applyResponse(resumed, "Resumed your game.", true);
+      return;
+    }
+  }
+
+  // With the dev server, a page load always starts a hand from the deal, so
+  // the first round can be watched from the beginning; `?game=` resumes.
   const explicit = params.get("game");
   if (explicit !== null) {
     try {

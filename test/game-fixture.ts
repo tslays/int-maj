@@ -42,6 +42,7 @@ export interface FixtureOptions {
   readonly result?: GameState["result"];
   readonly prevailingWind?: GameState["prevailingWind"];
   readonly gameOver?: boolean;
+  readonly roundDealer?: Seat;
   readonly drawRepeatUsed?: boolean;
   readonly variant?: "western" | "chinese";
   readonly kitty?: number;
@@ -75,6 +76,7 @@ export function fixture(options: FixtureOptions = {}): GameState {
   state.result = options.result ?? null;
   state.prevailingWind = options.prevailingWind ?? state.prevailingWind;
   state.gameOver = options.gameOver ?? false;
+  state.roundDealer = options.roundDealer ?? options.dealer ?? "E";
   state.drawRepeatUsed = options.drawRepeatUsed ?? false;
   state.variant = options.variant ?? "western";
   state.kitty = options.kitty ?? 0;

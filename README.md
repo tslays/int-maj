@@ -24,7 +24,9 @@ is historical audit material, not authority.
 - Console table: `npm run play` seats you against three bots.
 - Web table: `npm run serve` serves a plain HTML/ES-module table from a
   zero-dependency `node:http` server; responses are `viewFor` projections.
-- Not started: persistence.
+- Offline app: `npm run build` emits a static `dist/` that plays the whole
+  game in the browser, saves after every move and installs on a phone's home
+  screen. See [Offline app](#offline-app).
 
 ## Source material
 
@@ -292,7 +294,12 @@ open "http://127.0.0.1:8080/?state=claim"
 | `POST /api/new` | `{ "seed": "..." }` | a new game and its first state |
 | `POST /api/move` | `{ "game": "...", "action": {...} }` | the new state plus `events` as text lines |
 | `POST /api/undo` | `{ "game": "..." }` | the state before the previous human decision; the log is replaced |
+| `POST /api/step` | `{ "game": "..." }` | the next single bot decision, or `{ "done": true }` |
 | `POST /api/next` | `{ "game": "..." }` | the next hand after a finished one |
+
+The routes are one pure function, `routeApi` in `src/server/api.ts`; the Node
+server only adds HTTP and static files, and the offline app calls the same
+function in the page.
 
 An illegal move returns HTTP 400 with `{ "error": "..." }` using the
 reducer's own wording, and the game is unchanged. `POST /api/move` accepts
@@ -312,6 +319,49 @@ only under a public path, and that no opponent object has a `hand` field.
 The payload is a `StatePayload`: `viewFor` for the viewer, legal actions,
 wall count, per-seat table, ledger and checker. `POST /api/new` now returns a
 discard-phase board with East holding 14 tiles; the other seats hold 13.
+
+## Offline app
+
+The app the group plays is the offline build: no server, no account, three
+bots on the device.
+
+```sh
+npm run build      # writes dist/ (about 80 files, no dependencies)
+npm run preview    # serves dist/ on http://127.0.0.1:8091/ like a web host
+npm run preview -- --lan   # also reachable from a phone on the same Wi-Fi
+```
+
+`tools/build-web.ts` follows the imports of `src/web/local.ts` and turns each
+TypeScript file into plain JavaScript with Node's own type stripper, so the
+browser runs the same engine, bots and API routes as the tests. The page is
+marked `data-transport="local"`, and `web/app.js` then answers its API in-page
+instead of over HTTP.
+
+- **Saving.** After every move the game is written to `localStorage` as its
+  seed, its decisions and a checkpoint at the start of the current hand. A
+  reload, a closed tab or iOS evicting the page resumes the same hand;
+  resuming replays only the current hand.
+- **Offline.** A generated service worker pre-caches every file under a cache
+  named after the build's content hash. Once opened, the app starts in
+  airplane mode; a new deploy replaces the cache and reloads the page once,
+  which resumes the saved hand.
+- **Install.** Safari > Share > Add to Home Screen gives a full-screen app
+  with its own icon (`web/icons/`). Service workers need https, so install
+  from the deployed site, not from a `--lan` address.
+
+### Deploying (Cloudflare Pages)
+
+Create a Pages project from the GitHub repository with:
+
+| Setting | Value |
+| --- | --- |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| Environment variable | `NODE_VERSION` = `24` |
+
+Every push to `main` then deploys, and installed copies update themselves on
+their next launch. Only `dist/` is published; the rule transcriptions in
+`rules/` stay in the private repository.
 
 ## Test
 

@@ -9,11 +9,13 @@
  *   POST /api/new          deal a game from `{ seed }`
  *   POST /api/move         apply `{ game, action }`, return events as text
  *   POST /api/undo         replay to before the previous human decision
+ *   POST /api/step         the next single bot decision
  *   POST /api/next         deal the next hand after a finished one
  *
- * Nothing here constructs game state: the store owns the sessions and
- * `statePayload` builds every response from `viewFor` plus `check.ts`. The
- * server binds nothing itself; `bin/serve.ts` listens on 127.0.0.1 only.
+ * The API routes live in `api.ts` as one pure function, shared with the
+ * offline browser build; this file only adds HTTP, static files and the build
+ * stamp. The server binds nothing itself; `bin/serve.ts` listens on
+ * 127.0.0.1 only.
  */
 
 import { readFile, readdir, stat } from "node:fs/promises";
@@ -21,20 +23,8 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { describeEvent } from "../core/game/console.ts";
-import type { Action } from "../core/game/actions.ts";
-import {
-  GameStore,
-  isDone,
-  statePayload,
-  type SessionUpdate,
-} from "./session.ts";
-import {
-  isScenarioName,
-  SCENARIOS,
-  scenarioSession,
-  type ScenarioName,
-} from "./scenarios.ts";
+import { createApiContext, routeApi, type ApiContext } from "./api.ts";
+import { GameStore } from "./session.ts";
 
 const WEB_ROOT = fileURLToPath(new URL("../../web/", import.meta.url));
 const MAX_BODY_BYTES = 1_000_000;
@@ -137,199 +127,64 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
   }
 }
 
-function asRecord(value: unknown): Record<string, unknown> {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new HttpError(400, "request body must be a JSON object");
-  }
-  return value as Record<string, unknown>;
-}
-
-function requireString(record: Record<string, unknown>, key: string): string {
-  const value = record[key];
-  if (typeof value !== "string" || value.length === 0) {
-    throw new HttpError(400, `${key} is required`);
-  }
-  return value;
-}
-
-function requireAction(record: Record<string, unknown>): Action {
-  const value = record.action;
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new HttpError(400, "action is required");
-  }
-  const candidate = value as Record<string, unknown>;
-  if (typeof candidate.type !== "string") {
-    throw new HttpError(400, "action.type is required");
-  }
-  if (typeof candidate.seat !== "string") {
-    throw new HttpError(400, "action.seat is required");
-  }
-  return value as Action;
-}
-
-/** The public event log as text lines the client can append to its log. */
-function responsePayload(update: SessionUpdate, extraEvents: readonly string[] = []) {
-  return {
-    ...statePayload(update.session),
-    events: [
-      ...update.events.flatMap((event) => describeEvent(event).split("\n")),
-      ...extraEvents,
-    ],
-  };
-}
-
 async function handle(
   req: IncomingMessage,
   res: ServerResponse,
-  store: GameStore,
+  context: ApiContext,
   webRoot: string,
-  scenarios: Map<ScenarioName, string>,
 ): Promise<void> {
   const url = new URL(req.url ?? "/", "http://127.0.0.1");
+  const method = req.method ?? "GET";
 
-  if (req.method === "GET" || req.method === "HEAD") {
-    if (url.pathname === "/api/scenario") {
-      const name = url.searchParams.get("state") ?? "";
-      if (!isScenarioName(name)) {
-        sendJson(res, 400, { error: `unknown state: ${name}` });
-        return;
-      }
-      const session = scenarioSession(store, scenarios, name);
-      sendJson(res, 200, {
-        ...statePayload(session),
-        state: name,
-        title: SCENARIOS[name].title,
-        events: session.events.flatMap((event) => describeEvent(event).split("\n")),
-      });
-      return;
-    }
-
-    if (url.pathname === "/api/state") {
-      const id = url.searchParams.get("game");
-      if (id === null || id.length === 0) {
-        sendJson(res, 400, { error: "game is required" });
-        return;
-      }
-      const session = store.get(id);
-      if (session === undefined) {
-        sendJson(res, 404, { error: `unknown game: ${id}` });
-        return;
-      }
-      sendJson(res, 200, statePayload(session), url.searchParams.has("pretty"));
-      return;
-    }
-
-    // A build stamp so an open page can notice that web/ changed and reload.
-    if (url.pathname === "/api/build") {
-      const stamp = await webStamp(webRoot);
-      sendJson(res, 200, { stamp });
-      return;
-    }
-
-    const file = STATIC_FILES[url.pathname];
-    if (file !== undefined) {
-      await serveStatic(res, webRoot, file);
-      return;
-    }
-
-    const art = TILE_ART_PATH.exec(url.pathname);
-    if (art !== null) {
-      await serveStatic(
-        res,
-        join(webRoot, "tiles"),
-        art[1]!,
-        "image/svg+xml; charset=utf-8",
-      );
-      return;
-    }
-    sendJson(res, 404, { error: "not found" });
-    return;
-  }
-
-  if (req.method !== "POST") {
+  if (method !== "GET" && method !== "HEAD" && method !== "POST") {
     sendJson(res, 405, { error: "method not allowed" });
     return;
   }
 
-  const body = asRecord(await readJson(req));
-
-  if (url.pathname === "/api/new") {
-    const seed = body.seed;
-    if (seed !== undefined && typeof seed !== "string" && typeof seed !== "number") {
-      throw new HttpError(400, "seed must be a string or number");
-    }
-    const update = store.create(seed);
-    sendJson(res, 200, { ...responsePayload(update), replaceLog: true });
+  const body = method === "POST" ? await readJson(req) : undefined;
+  const answer = routeApi(context, {
+    method,
+    path: url.pathname,
+    query: url.searchParams,
+    body,
+  });
+  if (answer !== null) {
+    sendJson(res, answer.status, answer.body, answer.pretty === true);
     return;
   }
 
-  if (url.pathname === "/api/move") {
-    const game = requireString(body, "game");
-    const action = requireAction(body);
-    const update = store.move(game, action);
-    if ("error" in update) {
-      sendJson(res, 400, { error: update.error });
-      return;
-    }
-    sendJson(res, 200, responsePayload(update));
+  // A build stamp so an open page can notice that web/ changed and reload.
+  if (url.pathname === "/api/build") {
+    const stamp = await webStamp(webRoot);
+    sendJson(res, 200, { stamp });
     return;
   }
 
-  if (url.pathname === "/api/step") {
-    const game = requireString(body, "game");
-    const update = store.step(game);
-    if ("error" in update) {
-      sendJson(res, 400, { error: update.error });
-      return;
-    }
-    if (isDone(update)) {
-      sendJson(res, 200, { done: true });
-      return;
-    }
-    sendJson(res, 200, responsePayload(update));
+  const file = STATIC_FILES[url.pathname];
+  if (file !== undefined) {
+    await serveStatic(res, webRoot, file);
     return;
   }
 
-  if (url.pathname === "/api/undo") {
-    const game = requireString(body, "game");
-    const update = store.undo(game);
-    if ("error" in update) {
-      sendJson(res, 400, { error: update.error });
-      return;
-    }
-    sendJson(res, 200, {
-      ...statePayload(update.session),
-      events: [
-        ...update.session.events.flatMap((event) => describeEvent(event).split("\n")),
-        "Undid the previous decision.",
-      ],
-      replaceLog: true,
-    });
+  const art = TILE_ART_PATH.exec(url.pathname);
+  if (art !== null) {
+    await serveStatic(
+      res,
+      join(webRoot, "tiles"),
+      art[1]!,
+      "image/svg+xml; charset=utf-8",
+    );
     return;
   }
-
-  if (url.pathname === "/api/next") {
-    const game = requireString(body, "game");
-    const update = store.next(game);
-    if ("error" in update) {
-      sendJson(res, 400, { error: update.error });
-      return;
-    }
-    sendJson(res, 200, responsePayload(update));
-    return;
-  }
-
   sendJson(res, 404, { error: "not found" });
 }
 
 /** Build the server without listening; the caller owns the socket. */
 export function createAppServer(options: AppServerOptions = {}): Server {
-  const store = options.store ?? new GameStore();
+  const context = createApiContext(options.store ?? new GameStore());
   const webRoot = options.webRoot ?? WEB_ROOT;
-  // Scenario id per name: reloading a state reuses its board until it moves.
-  const scenarios = new Map<ScenarioName, string>();
   return createServer((req, res) => {
-    void handle(req, res, store, webRoot, scenarios).catch((error: unknown) => {
+    void handle(req, res, context, webRoot).catch((error: unknown) => {
       if (error instanceof HttpError) {
         sendJson(res, error.status, { error: error.message });
         return;

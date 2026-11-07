@@ -51,7 +51,7 @@ for (const key of BONUS_TILE_KEYS) ART[key] = `${key}.svg`;
 export const TILE_ART = Object.freeze(ART);
 
 export const BACK_ART = "back.svg";
-export const BACK_ART_URL = `/tiles/${BACK_ART}`;
+export const BACK_ART_URL = `tiles/${BACK_ART}`;
 
 /** The art file for a canonical key, or null when the key is not a tile. */
 export function artFile(key) {
@@ -61,5 +61,5 @@ export function artFile(key) {
 /** The URL the table loads for a canonical key, or null for an unknown key. */
 export function artUrl(key) {
   const file = artFile(key);
-  return file === null ? null : `/tiles/${file}`;
+  return file === null ? null : `tiles/${file}`;
 }

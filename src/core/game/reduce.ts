@@ -1603,6 +1603,7 @@ export function newGame(seed: string | number, options: NewGameOptions = {}): Ap
     handNumber: 1,
     dealer,
     prevailingWind: "E" as Wind,
+    roundDealer: dealer,
     gameOver: false,
     limit: options.tournament === true ? 1000 : (options.limit ?? DEFAULT_LIMIT),
     settlement: options.settlement ?? "intermediate",
@@ -1643,16 +1644,12 @@ export function nextHand(state: GameState): ApplyOk {
   if (state.phase !== "finished" || state.result === null) {
     throw new Error("nextHand requires a finished hand");
   }
-  if (state.gameOver === true) throw new Error("the game is over");
+  if (endsGame(state)) throw new Error("the game is over");
   const dealer = state.result.nextDealer;
   const draft = draftOf(state);
-  if (dealer !== state.dealer) {
-    const index = WINDS.indexOf(state.prevailingWind);
-    if (index >= WINDS.length - 1) {
-      draft.gameOver = true;
-      throw new Error("the game is over");
-    }
-    draft.prevailingWind = WINDS[index + 1]!;
+  if (endsRound(state)) {
+    draft.prevailingWind = WINDS[WINDS.indexOf(state.prevailingWind) + 1]!;
+    draft.roundDealer = dealer;
   }
   draft.drawRepeatUsed = state.result.kind === "drawn" && dealer === state.dealer;
   draft.goulash = state.result.goulash === true;
@@ -1666,6 +1663,27 @@ export function nextHand(state: GameState): ApplyOk {
   dealHand(draft, state.seed, state.rngSteps, dealer, state.handNumber + 1, events, emit);
   draft.eventSeq = seq;
   return { state: draft as GameState, events };
+}
+
+/**
+ * R-032: a round is finished when each player has completed a turn as East
+ * Wind. The deal passes one seat at a time (R-030), so the round ends with the
+ * finished hand whose next dealer is the seat that opened the round.
+ */
+export function endsRound(state: GameState): boolean {
+  if (state.phase !== "finished" || state.result === null) return false;
+  const next = state.result.nextDealer;
+  return next !== state.dealer && next === (state.roundDealer ?? "E");
+}
+
+/**
+ * R-032: "A game ends ... when East, South, West and North have all been the
+ * Wind of the Round" - the hand that finishes the North round finishes the
+ * game, and no further hand is dealt.
+ */
+export function endsGame(state: GameState): boolean {
+  if (state.gameOver === true) return true;
+  return endsRound(state) && state.prevailingWind === WINDS[WINDS.length - 1];
 }
 
 /** Per-seat totals of the numeric ledger; null (Calculate) entries are counted. */

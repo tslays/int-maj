@@ -65,7 +65,7 @@ describe("web tile art", () => {
     for (const key of allKeys) {
       const file = artFile(key);
       assert.equal(file, `${key}.svg`, `${key} has no art file`);
-      assert.equal(artUrl(key), `/tiles/${key}.svg`, `${key} art URL`);
+      assert.equal(artUrl(key), `tiles/${key}.svg`, `${key} art URL`);
       assert.ok(statSync(`${TILE_DIR}${file}`).isFile(), `${file} is missing`);
       assert.ok(statSync(`${TILE_DIR}${file}`).size > 0, `${file} is empty`);
     }

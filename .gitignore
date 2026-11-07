@@ -11,3 +11,6 @@ reference/
 web/reference.png
 web/reference2.png
 web/reference3.png
+
+# The offline build: `npm run build` regenerates it.
+dist/

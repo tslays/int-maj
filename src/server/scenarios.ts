@@ -22,7 +22,7 @@ import { apply, isApplyError, newGame } from "../core/game/reduce.ts";
 import type { ReplayStep } from "../core/game/replay.ts";
 import type { GameState, Seat } from "../core/game/state.ts";
 import { viewFor, type GameView } from "../core/game/view.ts";
-import { GameStore, handCheck, type WebSession } from "./session.ts";
+import { GameStore, handCheck, ZERO_SCORES, type WebSession } from "./session.ts";
 
 /** The web table always seats you at East. */
 const SEAT: Seat = "E";
@@ -153,7 +153,20 @@ export function buildScenario(name: ScenarioName): Omit<WebSession, "id"> {
   for (let step = 0; step <= MAX_STEPS; step++) {
     const view = viewFor(state, SEAT);
     if (scenario.at(view, state)) {
-      return { seed: scenario.seed, seat: SEAT, state, steps, humanSteps, events };
+      return {
+        seed: scenario.seed,
+        seat: SEAT,
+        state,
+        steps,
+        humanSteps,
+        events,
+        handStart: {
+          step: 0,
+          eventIndex: started.events.length,
+          state: started.state,
+          scoresBefore: ZERO_SCORES,
+        },
+      };
     }
     if (state.phase === "finished") break;
 
