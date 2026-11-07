@@ -21,12 +21,9 @@ is historical audit material, not authority.
 - Turn engine with claims, robbing the kong, fishing as an announced state,
   round-wind progression, drawn-hand/Goulash marking, Western and Chinese
   variant profiles, and event-log replay.
+- The app: a 3D table in the browser against three bots, offline, saved
+  after every move, installable on a phone. See [The 3D table](#the-3d-table).
 - Console table: `npm run play` seats you against three bots.
-- Web table: `npm run serve` serves a plain HTML/ES-module table from a
-  zero-dependency `node:http` server; responses are `viewFor` projections.
-- Offline app: `npm run build` emits a static `dist/` that plays the whole
-  game in the browser, saves after every move and installs on a phone's home
-  screen. See [Offline app](#offline-app).
 
 ## Source material
 
@@ -202,128 +199,69 @@ triplets and same-suit neighbours are kept, isolated tiles go first. A kong
 is preferred to a pung when both are offered, because its replacement tile is
 free. The bot never chows and never sees another seat's hand.
 
-## Web table
+## The 3D table
 
-`npm run serve` starts a zero-dependency `node:http` server bound to
-127.0.0.1. It seats you at East against the same three bots as the console:
-every move still goes through `apply`, and the browser receives only
-`viewFor` plus the table-side checker.
+`web/index.html` with `web/3d/` is the app: a Three.js table (version 0.170,
+vendored under `web/vendor/three/`, MIT) that plays against three bots.
 
 ```sh
-npm run serve                       # http://127.0.0.1:8080, seed "web"
-npm run serve -- --port 8081 --seed table-7
+npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
 ```
 
-The table fills the viewport. The three bots sit on the top, left and right
-edges with a compact wind/name/points chip, a rack of concealed backs, their
-public melds and a six-wide discard river; the wall count and round/dealer
-sit in the quiet centre; your hand is one large bottom row of 84x112 tiles,
-with your river in the board's own bottom row and melds and the bonus tray to the right of the hand.
-A collapsible 260px rail holds the scorecard, a moving turn highlight, the
-wait panel and the event log. The game actions are a fixed cluster low on the
-right; claims appear as a bottom-centre bar, with chow variants on a second
-row. Nothing is recomputed in the browser: the table-side checker is the
-`npm run check` checker built in, listing every completing tile, the copies
-left (or `dead`), and the catalogue hands each wait would make.
+- `web/3d/layout.js` is the table geometry as plain numbers (walls, hands,
+  the discard pinwheel); `test/table-layout.test.ts` proves no two discards
+  ever overlap.
+- `web/3d/tiles.js` models a tile: a rounded off-white front, a sky-blue
+  lacquered back, and the face printed on it with a small corner index. The
+  faces are the public-domain riichi set in `web/faces/` (see its
+  `LICENSE.md`).
+- `web/3d/stage.js` holds the renderer, the felt, the centre console, the
+  table camera (solved for any screen shape) and your hand's own long-lens
+  pass, plus promise-based tweens with a timer fallback, so a hidden page
+  never stalls the game.
+- `web/3d/board.js` compares each game answer with the table and animates
+  only the difference: throws, claims flying to the claimer, melds, draws and
+  the shrinking wall.
+- `web/3d/main.js` runs the turn loop (bots one decision per beat, automatic
+  draws and passes), the decision buttons, call-outs and the result card.
 
-Click a tile to select it, then click it again or press `Enter` to discard;
-arrow keys move the hand cursor and `1`-`9` jump to a tile. `d` draws, `Enter`
-claims the best offered claim (Mahjong, then pung, kong or chow), `Space`
-dismisses a claim or picks `Pass`, `m` mutes the claim cue, `f` declares
-fishing, `u` undoes the previous decision by replaying from the seed, `n`
-deals a new game and `?` lists the keys. The whole hand is playable
-keyboard-only. A claim bar has two decisions, Claim and Dismiss; multiple chow
-runs are clickable tile groups under the row. The cue is synthesised with the
-Web Audio API, plays once per claim window after the first gesture, and stays
-muted across reloads when `m` turned it off. After a hand the result
-panel overlays the felt with the winning pattern and tier, the composed
-tiles, every settlement, each seat's before/delta/now score and a Next hand
-button; the rail stays where it was. Another seat's concealed tiles stay
-hidden at the result: only public melds and the winning tile are shown.
+Tap a tile to lift it and tap it again to discard. Claims, kongs, fishing,
+Mah Jong, reshuffle and the Goulash exchange appear as buttons when the engine
+offers them. The table is landscape only.
 
-The table is quiet by default: a soft felt vignette, warm ivory SVG tiles and
-seat tints used only as two-pixel edge marks. Motion is 140ms for lifts and
-slides and 220ms for the hand entering; `prefers-reduced-motion` removes all
-of it. Light and dark colour schemes both keep the felt dark and adapt the
-rail and result panel, with visible focus rings on every tile and button. The
-layout stays playable at 1024x700, where the rail scrolls above the hand.
+Two URL options help when testing:
 
-Every tile is an SVG image loaded from its canonical key in `web/tiles/`:
-characters, circles, bamboo, winds, dragons, flowers and seasons all share the
-same paper tile body, and the faces stay crisp at any zoom and keep their key
-in the tooltip and aria-label. The 34 play tiles and the tile back come from
-the public-domain [riichi-mahjong-tiles](https://github.com/FluffyStuff/riichi-mahjong-tiles)
-set (CC0); `web/tiles/LICENSE.md` records the file mapping. `?gallery=1`
-replaces the table with `#tile-gallery`, a grid of all 34 playable faces and
-the 8 bonus marks:
-
-```sh
-open "http://127.0.0.1:8080/?gallery=1"
-```
-
-Review states freeze one board each, so a screen can be looked at, screenshotted
-and compared without playing to it: `?state=turn|claim|wait|fishing|win|drawn|result`
-replays a fixed seed through the same reducer and the same bot policy the table
-uses, and stops at the state named. The tab and a tag on the rail carry the
-state's name, so a screenshot identifies itself, and `npm run test:layout`
-re-measures every state against a plain table at 1440x900 and 1280x800:
-
-```sh
-open "http://127.0.0.1:8080/?state=claim"
-```
-
-| State | The board it shows |
+| URL | Opens |
 | --- | --- |
-| `turn` | Your turn, fourteen tiles, the drawn tile apart, Discard offered |
-| `claim` | A claim window on a North discard, with two chow runs to choose from |
-| `wait` | Thirteen tiles (a kong, three melds) with one live completing tile |
-| `fishing` | Your fishing wait announced, both waits badged in the rail |
-| `win` | A winning hand and its computed pattern/points |
-| `drawn` | The wall exhausted: a drawn hand and its reason |
-| `result` | A win with payments, any fishing settlement and the score |
+| `/?state=turn\|claim\|wait\|fishing\|win\|drawn\|result` | one fixed review board, replayed from a seed |
+| `/?phone` | the table inside an iPhone-landscape frame, on any screen |
 
-### API
+`/table3d` redirects to `/` for old links.
+
+### The API the table calls
+
+The table never holds a `GameState`. It calls `routeApi` (`src/server/api.ts`)
+in the page through `src/web/local.ts`, and every answer is built from
+`viewFor(state, seat)`: your own hand, the public melds, discards and bonus
+tiles of the other seats, and their hand counts only.
 
 | Route | Body / query | Returns |
 | --- | --- | --- |
-| `GET /` | | the table page |
-| `GET /app.js`, `/app.css` | | the plain ES module and stylesheet |
-| `GET /tiles/<key>.svg`, `/tiles/back.svg` | | one tile face or the tile back |
-| `GET /api/state` | `game=<id>` (`&pretty=1` indents the JSON) | the `viewFor` view, legal actions, wall count, per-seat table, ledger, wait panel and result |
-| `GET /api/scenario` | `state=<name>` | one fixed review board, its tab title (`title`) and the hand's events |
+| `GET /api/state` | `game=<id>` | the view, legal actions, wall count, per-seat table, ledger, wait panel, result and `scoresBefore` |
+| `GET /api/scenario` | `state=<name>` | one fixed review board and its events |
 | `POST /api/new` | `{ "seed": "..." }` | a new game and its first state |
 | `POST /api/move` | `{ "game": "...", "action": {...} }` | the new state plus `events` as text lines |
-| `POST /api/undo` | `{ "game": "..." }` | the state before the previous human decision; the log is replaced |
 | `POST /api/step` | `{ "game": "..." }` | the next single bot decision, or `{ "done": true }` |
+| `POST /api/undo` | `{ "game": "..." }` | the state before your previous decision in this hand |
 | `POST /api/next` | `{ "game": "..." }` | the next hand after a finished one |
 
-The routes are one pure function, `routeApi` in `src/server/api.ts`; the Node
-server only adds HTTP and static files, and the offline app calls the same
-function in the page.
-
-An illegal move returns HTTP 400 with `{ "error": "..." }` using the
-reducer's own wording, and the game is unchanged. `POST /api/move` accepts
-exactly the actions `legalActions` offered for the human seat.
-
-### Why the browser never learns another seat's hand
-
-The server holds the `GameState`; it never serialises it. Every response is
-built by `statePayload` from `viewFor(state, seat)`, which gives the viewer
-their own hand and reduces the other three seats to a hand count, public
-melds, discards and bonus tiles. The wait panel is computed from the viewer's
-own tiles through `check.ts`. At a win by another seat the result panel names
-the pattern and the public melds but keeps the concealed hand hidden. The
-server tests walk a live payload and assert every opponent tile key appears
-only under a public path, and that no opponent object has a `hand` field.
-
-The payload is a `StatePayload`: `viewFor` for the viewer, legal actions,
-wall count, per-seat table, ledger and checker. `POST /api/new` now returns a
-discard-phase board with East holding 14 tiles; the other seats hold 13.
+An illegal move answers 400 with the reducer's own wording and changes
+nothing. `test/server.test.ts` walks live payloads and asserts every opponent
+tile appears only under a public path.
 
 ## Offline app
 
-The app the group plays is the offline build: no server, no account, three
-bots on the device.
+The app is a static site: no server, no account, three bots on the device.
 
 ```sh
 npm run build      # writes dist/ (about 80 files, no dependencies)
@@ -333,9 +271,8 @@ npm run preview -- --lan   # also reachable from a phone on the same Wi-Fi
 
 `tools/build-web.ts` follows the imports of `src/web/local.ts` and turns each
 TypeScript file into plain JavaScript with Node's own type stripper, so the
-browser runs the same engine, bots and API routes as the tests. The page is
-marked `data-transport="local"`, and `web/app.js` then answers its API in-page
-instead of over HTTP.
+browser runs the same engine, bots and API routes as the tests. It copies the
+3D table, its library and the tile faces beside it.
 
 - **Saving.** After every move the game is written to `localStorage` as its
   seed, its decisions and a checkpoint at the start of the current hand. A
@@ -377,15 +314,3 @@ step is required. `npm test` self-plays a couple of dozen seeded hands in
 conservation, the zero-sum ledger, legal-action membership, serialisation,
 event-log replay and termination. `npm run soak` runs the full 300 hands (about
 a minute), and `SOAK_SEEDS=1000 npm run soak` raises it further.
-
-The board's geometry has its own measurable check:
-
-```sh
-npm run test:layout
-```
-
-It starts the real server, drives headless Chrome, fills the reserved rivers
-with 0, 13 and 36 tiles, and asserts that no river, centre panel, seat chip or
-rack, or hand band intersects at 1440x900 and 1280x800. It also opens a real
-finished hand to verify the result modal fits the viewport. Screenshots are
-written to a temporary directory and printed.

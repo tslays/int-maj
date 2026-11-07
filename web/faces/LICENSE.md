@@ -2,8 +2,9 @@
 
 The 34 play-tile faces in this directory are vendored from
 **riichi-mahjong-tiles** by FluffyStuff. They are the faces of the 3D table
-prototype (`web/table3d.js`), which models the tile body itself and prints
-each face, with a corner index, onto it:
+table (`web/3d/tiles.js`), which models the tile body itself and prints each
+face, with a corner index, onto it. The app icon (`web/icons/`) is drawn from
+`dR.svg` too:
 
 - Source: <https://github.com/FluffyStuff/riichi-mahjong-tiles>
 - Licence: [CC0 1.0 Universal (public domain dedication)](https://creativecommons.org/publicdomain/zero/1.0/), as stated in the project README.

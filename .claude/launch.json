@@ -2,19 +2,6 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "table",
-      "runtimeExecutable": "node",
-      "runtimeArgs": [
-        "bin/serve.ts",
-        "--port",
-        "8090",
-        "--seed",
-        "review"
-      ],
-      "port": 8090,
-      "url": "http://127.0.0.1:8090"
-    },
-    {
       "name": "offline",
       "runtimeExecutable": "node",
       "runtimeArgs": [

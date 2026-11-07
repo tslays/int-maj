@@ -260,15 +260,16 @@ describe("the offline build", () => {
     await rm(outDir, { recursive: true, force: true });
   });
 
-  it("marks the page local and links the install metadata", async () => {
+  it("serves the 3D table at the start page with the install metadata", async () => {
     const html = await readFile(join(outDir, "index.html"), "utf8");
-    assert.match(html, /<html lang="en" data-transport="local">/);
+    assert.match(html, /<script type="module" src="3d\/main.js">/);
     assert.match(html, /rel="manifest" href="manifest.webmanifest"/);
     assert.match(html, /rel="apple-touch-icon" href="icons\/apple-touch-icon.png"/);
     assert.match(html, /serviceWorker\.register\("sw\.js"\)/);
-    assert.doesNotMatch(html, /reference3\.png/);
     const manifest = JSON.parse(await readFile(join(outDir, "manifest.webmanifest"), "utf8"));
     assert.equal(manifest.display, "standalone");
+    // Old links to the 3D table still land on it.
+    assert.match(await readFile(join(outDir, "table3d.html"), "utf8"), /location\.replace/);
   });
 
   it("emits JavaScript only, with no TypeScript imports left", async () => {
@@ -284,7 +285,7 @@ describe("the offline build", () => {
 
   it("pre-caches every file the page needs", async () => {
     const worker = await readFile(join(outDir, "sw.js"), "utf8");
-    for (const file of ["index.html", "app.js", "app.css", "engine/web/local.js", "tiles/dR.svg"]) {
+    for (const file of ["index.html", "3d/main.js", "3d/board.js", "engine/web/local.js", "faces/dR.svg", "vendor/three/three.module.min.js"]) {
       assert.ok(worker.includes(`"${file}"`), `${file} is cached`);
     }
     assert.match(worker, /cache: "reload"/, "install bypasses the HTTP cache");

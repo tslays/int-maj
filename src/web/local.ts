@@ -1,10 +1,10 @@
 /**
  * The table's API, answered inside the browser.
  *
- * The offline build has no server: `web/app.js` hands each request to
- * `request` here instead of `fetch`, and the same `routeApi` the Node server
- * uses answers it from an in-page `GameStore`. Answers pass through a JSON
- * round trip so the client receives exactly what it would receive over HTTP.
+ * The app has no server: the 3D table (`web/3d/main.js`) hands each request
+ * to `request` here, and `routeApi` answers it from an in-page `GameStore`.
+ * Answers pass through a JSON round trip, so the table only ever sees plain
+ * data - never a live engine object.
  *
  * After every answer about the dealt game, its seed and decisions are written
  * to storage, so closing the tab (or iOS evicting it) never loses a hand:

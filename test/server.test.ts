@@ -1,6 +1,7 @@
 /**
- * The web API is a thin projection of the engine, so these tests pin the
- * contracts the browser depends on:
+ * The table's API is a thin projection of the engine, so these tests pin the
+ * contracts the 3D table depends on, calling `routeApi` exactly as the page
+ * does in the browser:
  *   - the payload shape (view, legal actions, table, checker, outcome)
  *   - no opponent concealed hand ever appears in a payload
  *   - an illegal move returns the reducer's wording and changes nothing
@@ -9,9 +10,7 @@
  */
 
 import assert from "node:assert/strict";
-import type { Server } from "node:http";
-import type { AddressInfo } from "node:net";
-import { after, before, describe, it } from "node:test";
+import { before, describe, it } from "node:test";
 
 import {
   apply,
@@ -21,7 +20,7 @@ import {
 } from "../src/core/game/index.ts";
 import { checkHand } from "../src/core/check.ts";
 import { tileKey } from "../src/core/tiles.ts";
-import { createAppServer } from "../src/server/server.ts";
+import { createApiContext, routeApi, type ApiContext } from "../src/server/api.ts";
 import { GameStore, type StatePayload } from "../src/server/session.ts";
 import { viewFor } from "../src/core/game/view.ts";
 
@@ -36,40 +35,29 @@ interface ApiError {
 const TILE_KEY = /^(?:[bco][1-9]|w[ESWN]|d[RGW]|f[1-4]|s[1-4])$/;
 
 let store: GameStore;
-let server: Server;
-let baseUrl = "";
+let context: ApiContext;
 
-before(async () => {
+before(() => {
   store = new GameStore({ defaultSeed: "api-test" });
-  server = createAppServer({ store });
-  const { promise, resolve, reject } = Promise.withResolvers<void>();
-  server.once("error", reject);
-  server.listen(0, "127.0.0.1", resolve);
-  await promise;
-  const address = server.address() as AddressInfo;
-  baseUrl = `http://127.0.0.1:${address.port}`;
+  context = createApiContext(store);
 });
 
-after(async () => {
-  server.closeAllConnections();
-  const { promise, resolve } = Promise.withResolvers<void>();
-  server.close(() => resolve());
-  await promise;
-});
+/** One request, answered the way the page receives it: through JSON. */
+function call<T>(method: string, path: string, body?: unknown): { status: number; body: T } {
+  const url = new URL(path, "http://local.invalid");
+  const answer = routeApi(context, { method, path: url.pathname, query: url.searchParams, body });
+  assert.ok(answer !== null, `no route for ${path}`);
+  return { status: answer.status, body: JSON.parse(JSON.stringify(answer.body)) as T };
+}
 
 async function post<T>(path: string, body: unknown): Promise<{ status: number; body: T }> {
-  const response = await fetch(`${baseUrl}${path}`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  return { status: response.status, body: (await response.json()) as T };
+  return call<T>("POST", path, body);
 }
 
 async function getState(game: string): Promise<ApiPayload> {
-  const response = await fetch(`${baseUrl}/api/state?game=${encodeURIComponent(game)}`);
+  const response = call<ApiPayload>("GET", `/api/state?game=${encodeURIComponent(game)}`);
   assert.equal(response.status, 200);
-  return (await response.json()) as ApiPayload;
+  return response.body;
 }
 
 /** The table answers one decision at a time: ask until it is the human's move. */
@@ -83,37 +71,7 @@ async function stepToHuman(game: string): Promise<ApiPayload> {
   throw new Error("the table did not reach the human's move");
 }
 
-describe("web API", () => {
-  it("serves the page, modules and stylesheet", async () => {
-    const page = await fetch(`${baseUrl}/`);
-    assert.equal(page.status, 200);
-    assert.match(page.headers.get("content-type") ?? "", /text\/html/);
-    assert.match(await page.text(), /<title>Mahjong table<\/title>/);
-
-    const script = await fetch(`${baseUrl}/app.js`);
-    assert.equal(script.status, 200);
-    assert.match(script.headers.get("content-type") ?? "", /text\/javascript/);
-    assert.match(await script.text(), /async function api/);
-
-    const style = await fetch(`${baseUrl}/app.css`);
-    assert.equal(style.status, 200);
-    assert.match(style.headers.get("content-type") ?? "", /text\/css/);
-
-    const tiles = await fetch(`${baseUrl}/tiles.js`);
-    assert.equal(tiles.status, 200);
-    assert.match(tiles.headers.get("content-type") ?? "", /text\/javascript/);
-    assert.match(await tiles.text(), /export function artUrl/);
-
-    const art = await fetch(`${baseUrl}/tiles/b1.svg`);
-    assert.equal(art.status, 200);
-    assert.match(art.headers.get("content-type") ?? "", /image\/svg\+xml/);
-    assert.match(await art.text(), /<svg\b/);
-
-    const honour = await fetch(`${baseUrl}/tiles/wE.svg`);
-    assert.equal(honour.status, 200);
-    assert.match(honour.headers.get("content-type") ?? "", /image\/svg\+xml/);
-  });
-
+describe("table API", () => {
   it("returns the seat view, legal actions, table, ledger and wait panel", async () => {
     const created = await post<ApiPayload>("/api/new", { seed: "api-shape" });
     assert.equal(created.status, 200);

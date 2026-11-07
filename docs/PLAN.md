@@ -27,8 +27,8 @@ as the reference; no house rules; offline only, no accounts or multiplayer.
 
 ## The display: a 3D table (decided 2026-11-07)
 
-The owner's bar is Riichi City's table. The 2D client (`web/app.js`, kept at
-`/` for now) is not polished further; the new table is `web/table3d.html`
+The owner's bar is Riichi City's quality, with the game's own look. The 2D
+client and its art were removed on 2026-11-08; the table is `web/index.html`
 with `web/3d/` (Three.js 0.170, vendored under `web/vendor/three/`, MIT):
 
 - `tiles.js` models a tile (ivory front, sky-blue back, face from `faces/`
@@ -39,8 +39,10 @@ with `web/3d/` (Three.js 0.170, vendored under `web/vendor/three/`, MIT):
 - Done: real games against the bots, draws and throws, claims (chow variants
   behind one button), kongs, fishing, Goulash picks, result and next hand,
   save/resume, review states (`?state=`), landscape only.
-- Next: check it on a real iPhone; make it the start page; then Alpha 2-4
-  below are built into this table, not the 2D one.
+- Done: the start page (`/`; `/table3d` redirects there), `?phone` frame
+  mode for trying the phone layout anywhere, discards in a tested pinwheel
+  (`web/3d/layout.js`).
+- Next: your own melds flat in your right-hand corner; then Alpha 2-4 below.
 
 ## Alpha 2 — The table explains itself
 

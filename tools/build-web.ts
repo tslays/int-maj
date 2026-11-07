@@ -12,9 +12,9 @@
  *    turns each TypeScript file into plain JavaScript with Node's own type
  *    stripper, rewriting `./x.ts` imports to `./x.js`. The engine is the same
  *    source the tests run; nothing is reimplemented for the browser.
- * 2. Copies the client (`web/`) and tile art next to it, marks the page
- *    `data-transport="local"` so `app.js` answers its API in-page, and adds
- *    the install metadata an iPhone needs for "Add to Home Screen".
+ * 2. Copies the 3D table (`web/index.html`, `web/3d/`), its library and the
+ *    tile faces next to it, and adds the install metadata an iPhone needs for
+ *    "Add to Home Screen".
  * 3. Writes a service worker that pre-caches every file under a cache named
  *    after the content hash, so the installed app opens in airplane mode and
  *    a new deploy replaces the old files in one step.
@@ -32,7 +32,8 @@ const WEB = join(ROOT, "web");
 const ENTRY = join(SRC, "web", "local.ts");
 
 /** Client files copied as they are; design references stay local. */
-const WEB_FILES = ["app.js", "layout.js", "tiles.js", "app.css", "table3d.html"] as const;
+/** Single files copied as they are; `index.html` is written by `writePage`. */
+const WEB_FILES = ["table3d.html"] as const;
 
 /** Whole folders copied as they are: the 3D table, its library and tile faces. */
 const WEB_DIRS = [
@@ -43,7 +44,7 @@ const WEB_DIRS = [
 
 const APP_NAME = "International Mahjong";
 const SHORT_NAME = "Mahjong";
-const THEME_COLOR = "#1f3b2d";
+const THEME_COLOR = "#11191c";
 
 const IMPORT_SPECIFIER = /(\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(["'])(\.{1,2}\/[^"']+?)\.ts\2/g;
 
@@ -99,13 +100,6 @@ async function copyClient(outDir: string): Promise<string[]> {
     await cp(join(WEB, name), join(outDir, name));
     written.push(name);
   }
-  await mkdir(join(outDir, "tiles"), { recursive: true });
-  for (const name of await readdir(join(WEB, "tiles"))) {
-    if (!name.endsWith(".svg")) continue;
-    await cp(join(WEB, "tiles", name), join(outDir, "tiles", name));
-    written.push(`tiles/${name}`);
-  }
-  await cp(join(WEB, "tiles", "LICENSE.md"), join(outDir, "tiles", "LICENSE.md"));
   for (const { dir, pattern } of WEB_DIRS) {
     await mkdir(join(outDir, dir), { recursive: true });
     for (const name of await readdir(join(WEB, dir))) {
@@ -124,9 +118,6 @@ async function copyClient(outDir: string): Promise<string[]> {
 }
 
 const HEAD_EXTRAS = `
-    <meta name="theme-color" content="${THEME_COLOR}" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="${SHORT_NAME}" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <link rel="manifest" href="manifest.webmanifest" />
@@ -155,10 +146,7 @@ async function writePage(outDir: string): Promise<void> {
     if (next === html) throw new Error(`index.html no longer contains ${String(from)}`);
     html = next;
   };
-  replace(/<html lang="en">/, `<html lang="en" data-transport="local">`);
   replace(/<title>[^<]*<\/title>/, `<title>${APP_NAME}</title>${HEAD_EXTRAS}`);
-  // The design overlay is a gitignored local file; the offline page has none.
-  replace(/\s*src="reference3\.png"/, "");
   replace(/<\/body>/, `${SW_REGISTER}\n  </body>`);
   await writeFile(join(outDir, "index.html"), html);
 }

@@ -6,11 +6,8 @@ node_modules/
 rules/.generated/
 scans/
 
-# Local design references: the owner's screenshots and the derived overlay.
+# Local design references: the owner's screenshots.
 reference/
-web/reference.png
-web/reference2.png
-web/reference3.png
 
 # The offline build: `npm run build` regenerates it.
 dist/
