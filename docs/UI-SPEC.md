@@ -264,6 +264,19 @@ off: `?state=claim` keeps the bar hidden with nothing to click, `?state=announce
 still offers `Declare fishing`, and `?state=ron` still opens the bar with
 `Mahjong` and no set.
 
+### A drawn tile is a beat of its own (2026-11-07, owner report)
+
+The client stepped a bot's draw and then asked for its throw straight away, so
+a seat's fourteenth back was rendered and replaced within **39–120 ms (median
+40)**: the rack twitched. A bot's draw now holds for `DRAW_BEAT_MS = 340`, and
+the new back slides in along its own rack (`back-in`, 220 ms; no animation
+under `prefers-reduced-motion`), so the table reads draw → throw instead of
+draw-and-throw in one frame. Measured after the change: 399–441 ms per drawn
+back. The test drives a live hand, samples the three racks every 40 ms and
+fails if a fourteen-back run is shorter than 250 ms (39 ms on the old rule).
+
+Your own draw is not delayed: you are handed the tile at once.
+
 ### The discard rhythm (2026-11-05)
 ### The discard rhythm (2026-11-05)
 ### The hand's reading order (2026-11-06)

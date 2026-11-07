@@ -1955,6 +1955,41 @@ h3 {
   flex-direction: column;
 }
 
+/* A drawn tile arrives, it does not blink: the new back slides in along its
+   own rack, and the table holds it for a beat before the throw takes it. */
+@keyframes back-in {
+  from {
+    opacity: 0;
+    transform: translate(var(--back-in-x, 0px), var(--back-in-y, 0px)) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.variant-d .tile-back.is-drawn {
+  animation: back-in 220ms var(--ease) both;
+}
+
+.variant-d .seat-top .tile-back.is-drawn {
+  --back-in-y: -10px;
+}
+
+.variant-d .seat-left .tile-back.is-drawn {
+  --back-in-x: -10px;
+}
+
+.variant-d .seat-right .tile-back.is-drawn {
+  --back-in-x: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .variant-d .tile-back.is-drawn {
+    animation: none;
+  }
+}
+
 .variant-d .seat .meld .tile {
   width: var(--layout-back-w);
   height: var(--layout-back-h);
