@@ -349,19 +349,21 @@ instead of over HTTP.
   with its own icon (`web/icons/`). Service workers need https, so install
   from the deployed site, not from a `--lan` address.
 
-### Deploying (Cloudflare Pages)
+### Deploying
 
-Create a Pages project from the GitHub repository with:
+The app is live at **https://int-maj.int-maj.workers.dev** (Cloudflare
+Workers static assets; `wrangler.jsonc` names the folder). One command tests,
+builds and uploads it:
 
-| Setting | Value |
-| --- | --- |
-| Build command | `npm run build` |
-| Build output directory | `dist` |
-| Environment variable | `NODE_VERSION` = `24` |
+```sh
+npx wrangler login   # once per machine, in your own browser
+npm run deploy       # npm test, npm run build, then upload dist/
+```
 
-Every push to `main` then deploys, and installed copies update themselves on
-their next launch. Only `dist/` is published; the rule transcriptions in
-`rules/` stay in the private repository.
+Pushing to GitHub does not deploy: testers get a new version only when
+`npm run deploy` runs, and installed copies pick it up on their next launch.
+Only `dist/` is uploaded; the rule transcriptions in `rules/` stay in the
+private repository.
 
 ## Test
 
