@@ -5,6 +5,9 @@ import {
   computeLayout,
   DISCARD_CAPACITY,
   discardGap,
+  wallBackSize,
+  wallCells,
+  WALL_CAPACITY,
   discardTileSize,
   nextFreeCell,
   HAND_OVERLAP,
@@ -208,6 +211,43 @@ describe("computeLayout", () => {
     );
     assert.equal(nextFreeCell(new Set([0, 2]), 96), 1, "the innermost gap wins");
     assert.equal(nextFreeCell(new Set([0, 1]), 2), 2, "a full grid offers no cell");
+  });
+
+  it("frames the pile with a wall that holds the whole live wall", () => {
+    for (const [width, height, mode] of SIZES) {
+      const result = layout(width, height, mode);
+      const label = `${width}x${height}`;
+      const ring = wallCells(result.wall, result.wallBackWidth, result.wallGap);
+      assert.ok(
+        ring.length >= WALL_CAPACITY,
+        `${label}: the ring holds ${ring.length} of ${WALL_CAPACITY}`,
+      );
+      assert.equal(
+        result.wallBackWidth,
+        wallBackSize(result.wall, result.wallBackWidth),
+        `${label}: the wall's back is not the largest that fits`,
+      );
+      // The wall is a frame around the pile, and the pile sits inside it.
+      assert.ok(
+        result.pile[0] > result.wall[0] && result.pile[1] > result.wall[1],
+        `${label}: the pile does not sit inside the wall`,
+      );
+      assert.ok(
+        result.pile[0] + result.pile[2] < result.wall[0] + result.wall[2] &&
+          result.pile[1] + result.pile[3] < result.wall[1] + result.wall[3],
+        `${label}: the pile spills out of the wall`,
+      );
+      // Every cell is inside the frame.
+      for (const cell of ring) {
+        assert.ok(
+          cell.x >= -0.5 &&
+            cell.y >= -0.5 &&
+            cell.x + result.wallBackWidth <= result.wall[2] + 0.5 &&
+            cell.y + result.wallBackHeight <= result.wall[3] + 0.5,
+          `${label}: a wall back sits outside the frame (${cell.x},${cell.y})`,
+        );
+      }
+    }
   });
 
   it("fits fourteen overlapping tiles across the screen on a phone", () => {

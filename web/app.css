@@ -1032,6 +1032,44 @@ h3 {
   pointer-events: none;
 }
 
+/* The wall: one back per live tile round the frame between the hands and the
+   pile. It empties from the break corner; the loose pair and the dead wall are
+   parked at the far end and never move. */
+.variant-d .wall {
+  position: absolute;
+  left: var(--layout-wall-x);
+  top: var(--layout-wall-y);
+  width: var(--layout-wall-w);
+  height: var(--layout-wall-h);
+  pointer-events: none;
+}
+
+.variant-d .wall .wall-back {
+  position: absolute;
+  width: var(--wall-back-w);
+  height: var(--wall-back-h);
+}
+
+.variant-d .wall .wall-back img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+}
+
+.variant-d .wall .wall-back.dead {
+  opacity: 0.45;
+  outline: 1px dashed var(--accent-soft);
+  outline-offset: 1px;
+}
+
+.variant-d .wall .wall-back.loose {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
 .variant-d .pile .discard {
   position: absolute;
   width: var(--discard-w, 24px);
@@ -1063,6 +1101,19 @@ h3 {
     opacity: 0;
     transform: scale(1.25) rotate(0deg);
   }
+}
+
+/* The drawn tile's flight from the wall into the rack. */
+.wall-ghost {
+  position: fixed;
+  z-index: 39;
+  border-radius: 2px;
+  background: var(--back-art, #cfd6d3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  transition:
+    transform 260ms var(--ease),
+    opacity 260ms var(--ease);
 }
 
 .throw-ghost {

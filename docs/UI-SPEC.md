@@ -185,6 +185,28 @@ then shifts every region by `inset`, so the hand, the three walls, the rivers
 and the action row all sit a breath away from the edge. `layout.inset` is
 exported; the board box stays full-bleed because the felt is the background.
 
+### The wall is a frame around the pile (2026-11-07, owner request)
+
+The wall is drawn where a real one sits: the rectangle between the hands and
+the pile. `wall` is that frame; `pile` is the frame inset by one back height
+plus the gap, so the discards always live inside the wall (2026-11-07).
+
+    back    = the largest 3:4 back whose ring holds WALL_CAPACITY = 96 tiles
+    cells   = clockwise from the break corner: top, right, bottom, left
+    live    = one back per remaining tile, from cell 0; the ring shortens
+    loose   = the lifted pair, parked at the far end (never moves)
+    dead    = the Chinese dead wall, parked beside it, dimmed and dashed
+
+The payload carries counts only (`wall.remaining`, `wall.loose`, `wall.dead`) -
+the faces stay hidden. A drawn tile leaves the ring's head cell as a ghost and
+lands in that seat's rack, so the draw beat has a visible source.
+
+Space is the only cost, and it is small: the frame takes one back (14-29 px)
+off each side of the pile. Measured: discards 30 -> 28 at 770x400, 54 -> 51 at
+1024x768, 31 -> 31 at 390x844, 67 -> 61 at 1440x900. The audit compares the
+rendered backs with `wall.remaining` and the solver's ring, and fails on any
+overlap or any back outside the board.
+
 ### One grid, no scatter (2026-11-07, owner's rule)
 
 There are no rivers and no scatter: discards go into one grid in the middle.

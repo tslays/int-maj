@@ -14,7 +14,12 @@ import {
   BONUS_TILE_KEYS,
   PLAY_TILE_KEYS,
 } from "./tiles.js";
-import { computeLayout, discardCells, nextFreeCell } from "./layout.js";
+import {
+  computeLayout,
+  discardCells,
+  nextFreeCell,
+  wallCells,
+} from "./layout.js";
 
 const SEATS = ["E", "S", "W", "N"];
 const WIND_NAME = { E: "East", S: "South", W: "West", N: "North" };
@@ -421,15 +426,15 @@ function log(line) {
 }
 
 /**
- * True when an opponent's rack grew by one in this payload: that is a draw,
- * and the only moment a fourteenth back exists on the table.
+ * The seat whose rack grew by one in this payload: that is a draw, and the only
+ * moment a fourteenth back exists on the table.
  */
 function drewBack(data) {
   for (const entry of data.table) {
     if (entry.seat === data.seat) continue;
-    if ((previousConcealed[entry.seat] ?? 0) + 1 === entry.handCount) return true;
+    if ((previousConcealed[entry.seat] ?? 0) + 1 === entry.handCount) return entry.seat;
   }
-  return false;
+  return null;
 }
 
 function applyResponse(data, note, replaceLog = false) {
@@ -456,6 +461,7 @@ function applyResponse(data, note, replaceLog = false) {
   // just drawn, and that draw gets its own beat.
   const drew = drewBack(data);
   render();
+  if (drew !== null) wallGhost(drew);
   // Your own throw lands immediately. Give it the same settle as an opponent's
   // throw before asking the table to answer it, so a claim never appears on
   // the click's frame. A bot that has just drawn holds the tile for a beat
@@ -1168,7 +1174,30 @@ function revealDiscard(item) {
   playTileClack();
 }
 
-/** The tile leaves the wall: a back flies from the seat's rack to the river. */
+/** A drawn tile is one motion: it leaves the wall's head and lands in the rack. */
+function wallGhost(seat) {
+  const head = document.querySelector("#wall .wall-back.is-head");
+  const rack = document.querySelector(`#seat-${PLACE[seat]} .rack`);
+  if (head === null || rack === null) return;
+  const from = head.getBoundingClientRect();
+  const to = rack.getBoundingClientRect();
+  if (from.width === 0 || to.width === 0) return;
+  const ghost = div("wall-ghost");
+  ghost.style.left = `${from.left}px`;
+  ghost.style.top = `${from.top}px`;
+  ghost.style.width = `${from.width}px`;
+  ghost.style.height = `${from.height}px`;
+  document.body.append(ghost);
+  requestAnimationFrame(() => {
+    ghost.style.transform = `translate(${to.left + to.width / 2 - (from.left + from.width / 2)}px, ${
+      to.top + to.height / 2 - (from.top + from.height / 2)
+    }px) scale(0.7)`;
+    ghost.style.opacity = "0";
+  });
+  window.setTimeout(() => ghost.remove(), 300);
+}
+
+/** The tile leaves the wall: a back flies from the seat's rack to the river. *//** The tile leaves the wall: a back flies from the seat's rack to the river. */
 function throwGhost(seat, tile) {
   // Your own throw leaves the hand; an opponent's leaves that seat's wall.
   const source =
@@ -1333,6 +1362,10 @@ function applyLayout() {
   root.setProperty("--layout-control-h", px(layout.control[3]));
   setRect("hand", layout.handBand);
   setRect("centre", layout.centre);
+  setRect("wall", layout.wall);
+  root.setProperty("--layout-wall-back-w", px(layout.wallBackWidth));
+  root.setProperty("--layout-wall-back-h", px(layout.wallBackHeight));
+  root.setProperty("--layout-wall-gap", px(layout.wallGap));
   setRect("pile", layout.pile);
   setRect("seat-top", layout.seats.top);
   setRect("seat-left", layout.seats.left);
@@ -1350,6 +1383,7 @@ function renderSeats() {
     renderSeat(entry);
   }
   renderPile();
+  renderWall();
 }
 
 /* ------------------------------------------------------------- the pile */
@@ -1407,6 +1441,49 @@ function dealPile() {
   pileCells = [];
   pileOccupied = new Set();
   for (const item of items) addToPile(item);
+}
+
+/**
+ * The wall runs round the frame between the hands and the pile: one back per
+ * live tile, the loose pair and the dead wall parked at the far end. The frame
+ * empties from the break corner, so the ring's length is the wall's length.
+ */
+function renderWall() {
+  const element = $("#wall");
+  if (element === null || currentLayout === null || payload === null) return;
+  const layout = currentLayout;
+  element.replaceChildren();
+  element.style.setProperty("--wall-back-w", `${layout.wallBackWidth}px`);
+  element.style.setProperty("--wall-back-h", `${layout.wallBackHeight}px`);
+  const cells = wallCells(layout.wall, layout.wallBackWidth, layout.wallGap);
+  const wall = payload.wall ?? { remaining: 0, loose: 0, dead: 0 };
+  const place = (cell, kind, extra = "") => {
+    const back = backElement();
+    back.classList.add("wall-back", kind);
+    if (extra !== "") back.classList.add(extra);
+    back.style.left = `${cell.x}px`;
+    back.style.top = `${cell.y}px`;
+    element.append(back);
+  };
+  for (let index = 0; index < wall.remaining; index++) {
+    const cell = cells[index];
+    if (cell === undefined) break;
+    // The next tile to leave is the one at the head of the run.
+    place(cell, "live", index === wall.remaining - 1 ? "is-head" : "");
+  }
+  const tail = cells.length - wall.dead - wall.loose;
+  for (let index = 0; index < wall.dead; index++) {
+    const cell = cells[tail + index];
+    if (cell !== undefined) place(cell, "dead");
+  }
+  for (let index = 0; index < wall.loose; index++) {
+    const cell = cells[cells.length - wall.loose + index];
+    if (cell !== undefined) place(cell, "loose");
+  }
+  element.setAttribute(
+    "aria-label",
+    `${wall.remaining} tiles in the wall, ${wall.loose} loose`,
+  );
 }
 
 function renderPile() {
