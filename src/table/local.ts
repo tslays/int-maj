@@ -12,7 +12,7 @@
  */
 
 import { createApiContext, routeApi } from "./api.ts";
-import { describeEvent } from "../core/game/describe.ts";
+import { describeEventFor } from "../core/game/describe.ts";
 import { isSessionSnapshot, statePayload } from "./session.ts";
 
 /** Bump the suffix when a saved game can no longer be replayed. */
@@ -105,7 +105,7 @@ export function createLocalApi(storage: KeyValueStorage | null): LocalApi {
       return JSON.parse(
         JSON.stringify({
           ...statePayload(restored.session),
-          events: restored.events.flatMap((event) => describeEvent(event).split("\n")),
+          events: restored.events.flatMap((event) => describeEventFor(event, restored.session.seat).split("\n")),
           replaceLog: true,
         }),
       );

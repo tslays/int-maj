@@ -27,18 +27,31 @@ import {
   undoLastDecision,
   type PlaySession,
 } from "../src/cli/console.ts";
-import { describeEvent, formatAction } from "../src/core/game/describe.ts";
+import { describeEvent, describeEventFor, formatAction } from "../src/core/game/describe.ts";
 import { viewFor } from "../src/core/game/view.ts";
 import type { Event } from "../src/core/game/events.ts";
+import type { Seat } from "../src/core/game/state.ts";
 
 const MAX_DECISIONS = 5000;
 
-function printEvents(events: readonly Event[], from: number): void {
-  for (const event of events.slice(from)) console.log(describeEvent(event));
+/**
+ * Print the log as `viewer` may read it; `null` (all four seats are bots, the
+ * watcher sees everything) prints every tile.
+ */
+function printEvents(events: readonly Event[], from: number, viewer: Seat | null): void {
+  for (const event of events.slice(from)) {
+    console.log(viewer === null ? describeEvent(event) : describeEventFor(event, viewer));
+  }
 }
 
-function printBotAction(session: PlaySession, action: Parameters<typeof formatAction>[0], from: number, showEvents: boolean): void {
-  if (showEvents) printEvents(session.events, from);
+function printBotAction(
+  session: PlaySession,
+  action: Parameters<typeof formatAction>[0],
+  from: number,
+  showEvents: boolean,
+  viewer: Seat | null,
+): void {
+  if (showEvents) printEvents(session.events, from, viewer);
   else if (action.type !== "Pass") console.log(formatAction(action));
 }
 
@@ -104,7 +117,7 @@ async function main(): Promise<void> {
         if (action === null) throw new Error(`no action for ${actor} in ${actorView.phase}`);
         const before = session.events.length;
         session = recordAction(session, action, false);
-        printBotAction(session, action, before, options.events);
+        printBotAction(session, action, before, options.events, options.bot ? null : options.seat);
         continue;
       }
 
@@ -113,7 +126,7 @@ async function main(): Promise<void> {
         if (draw === undefined) throw new Error(`${actor} cannot draw`);
         const before = session.events.length;
         session = recordAction(session, draw, false);
-        if (options.events) printEvents(session.events, before);
+        if (options.events) printEvents(session.events, before, options.bot ? null : options.seat);
         continue;
       }
 
@@ -150,7 +163,7 @@ async function main(): Promise<void> {
       }
       const before = session.events.length;
       session = recordAction(session, command.action, true);
-      if (options.events) printEvents(session.events, before);
+      if (options.events) printEvents(session.events, before, options.bot ? null : options.seat);
     }
   } finally {
     rl.close();

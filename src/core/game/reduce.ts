@@ -1117,6 +1117,23 @@ function applyFalseMahJong(draft: Draft, seat: Seat, emit: Emit): ApplyError | n
   return null;
 }
 
+/**
+ * R-100 [I p. 21, 63]: "three tiles are exchanged with the player opposite.
+ * Then East exchanges three tiles with South, West exchanges with North.
+ * Lastly East exchanges three tiles with North while West and South exchange."
+ */
+export const GOULASH_PAIRS: readonly (readonly (readonly [Seat, Seat])[])[] = [
+  [["E", "W"], ["S", "N"]],
+  [["E", "S"], ["W", "N"]],
+  [["E", "N"], ["W", "S"]],
+];
+
+/** Who `seat` exchanges with in Goulash `stage` (0, 1 or 2). */
+export function goulashPartner(stage: 0 | 1 | 2, seat: Seat): Seat {
+  const pair = GOULASH_PAIRS[stage]!.find(([a, b]) => a === seat || b === seat)!;
+  return pair[0] === seat ? pair[1] : pair[0];
+}
+
 function applyGoulashExchange(
   draft: Draft,
   seat: Seat,
@@ -1150,13 +1167,7 @@ function applyGoulashExchange(
   }
 
   const stage = draft.goulashStage ?? 0;
-  const pairs: readonly (readonly [Seat, Seat])[] =
-    stage === 0
-      ? [["E", "W"], ["S", "N"]]
-      : stage === 1
-        ? [["E", "S"], ["W", "N"]]
-        : [["E", "N"], ["W", "S"]];
-  for (const [a, b] of pairs) {
+  for (const [a, b] of GOULASH_PAIRS[stage]) {
     const pickedA = picks[a]!;
     const pickedB = picks[b]!;
     const handA = draftPlayer(draft, a).hand as string[];
