@@ -63,8 +63,9 @@ const server = createServer(async (req, res) => {
     const data = await readFile(file);
     res.writeHead(200, {
       "content-type": TYPES[extname(file)] ?? "application/octet-stream",
-      // The service worker must always be re-checked, or updates never land.
-      "cache-control": path === "/sw.js" ? "no-cache" : "public, max-age=60",
+      // Always revalidate, like the production host: a rebuild is visible at
+      // once, and the service worker never caches a stale copy.
+      "cache-control": "no-cache",
     });
     res.end(data);
   } catch {

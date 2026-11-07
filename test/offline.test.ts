@@ -287,6 +287,7 @@ describe("the offline build", () => {
     for (const file of ["index.html", "app.js", "app.css", "engine/web/local.js", "tiles/dR.svg"]) {
       assert.ok(worker.includes(`"${file}"`), `${file} is cached`);
     }
+    assert.match(worker, /cache: "reload"/, "install bypasses the HTTP cache");
   });
 
   it("plays a hand to the end from the emitted files alone", async () => {
