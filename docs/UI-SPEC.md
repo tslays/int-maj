@@ -224,14 +224,21 @@ whenever the table is asking something, so it never competes with an offer.
 With calls off the table never asks for a pung, kong or chow: the offer is not
 drawn at all and the client answers `Pass` itself (`passClaimForPlayer`, 420 ms
 after the called tile has settled - the beat and the called tile stay
-readable). A **winning** tile is not a call, so it still asks, on its own, with
-only the win to take. Rules are untouched: the engine still offers everything,
-the player simply always passes. A review board (`?state=`) is never written
-to, so it neither asks nor auto-passes.
+readable). Rules are untouched: the engine still offers everything, the player
+simply always passes.
+
+Everything that is not a set stays: **fishing** is declared on your own
+announce turn and is never touched by the toggle, and a **winning** tile - on a
+discard or self-drawn - still asks, on its own (`renderClaimBar({ winOnly })`),
+labelled `Mahjong` so the one offer left cannot be mistaken for a pung. A
+review board (`?state=`) is never written to, so it neither asks nor
+auto-passes.
 
 Measured live at 770x400: 60 s of play with calls off - the claim bar never
-appeared and four passes were sent automatically; the audit loads `?state=claim`
-with calls off and asserts the bar stays hidden with nothing to click.
+appeared and four passes were sent automatically. The audit asserts, with calls
+off: `?state=claim` keeps the bar hidden with nothing to click, `?state=announce`
+still offers `Declare fishing`, and `?state=ron` still opens the bar with
+`Mahjong` and no set.
 
 ### The discard rhythm (2026-11-05)
 ### The discard rhythm (2026-11-05)
