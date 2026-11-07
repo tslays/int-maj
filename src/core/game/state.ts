@@ -131,6 +131,13 @@ export interface GameState {
   readonly prevailingWind: Wind;
   /** The game ends after the North round; no further hand may be dealt. */
   readonly gameOver?: boolean;
+  /**
+   * The seat that dealt the first hand of the current round. R-032: "A round
+   * is finished when each player has completed a turn as East Wind", so the
+   * Wind of the Round advances when the deal passes back to this seat.
+   * Absent on states saved before it existed; those read it as "E".
+   */
+  readonly roundDealer?: Seat;
   /** Agreed limit for ordinary-hand scoring (I p. 24, R93). */
   readonly limit?: number;
   /** R94: beginner pays the winner, intermediate also fishing, advanced all. */

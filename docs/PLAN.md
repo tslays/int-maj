@@ -1,10 +1,62 @@
 # Plan
 
-Written down so every slice is judged against the same target: a quiet, crisp
-international-mahjong table that reads like Tenhou's, follows the owner-designated
-primary rule scan (see `rules/SOURCE.md`), and behaves like a finished game.
+The target is an **alpha the owner's mahjong group can play**: each tester on
+their own device (an iPhone is the bar), alone against three bots, offline,
+following *The Game of Mah Jong Illustrated* as literally as possible (see
+`rules/SOURCE.md`). Every slice is judged by one question: does it bring that
+test closer? Visual polish waits until a tester asks for something specific.
 
-## M0 — repository tidy (done 2026-11-04)
+Agreed with the owner, 2026-11-07: solo against bots first; any device, iPhone
+as the reference; no house rules; offline only, no accounts or multiplayer.
+
+## Alpha 1 — Plays offline on any phone (done 2026-11-07, deploy pending)
+
+- The engine, bots and API routes run in the browser: `npm run build` emits a
+  static `dist/` (`tools/build-web.ts`), the routes are one pure function
+  shared with the dev server (`src/server/api.ts`).
+- The game is saved after every move and resumes after a reload or eviction;
+  a checkpoint per hand keeps resume and undo to one hand's replay.
+- Installable from Safari (manifest, icons, service worker) and playable in
+  airplane mode.
+- Running scores come from the engine (`scoresBefore`), not the browser.
+- Found on the way: the Wind of the Round advanced on every pass of the deal,
+  ending a game after about four hands; corrected to R-032 (AUDIT A28).
+- *Remaining:* create the Cloudflare Pages project (README, "Deploying") and
+  install it on an iPhone.
+
+## Alpha 2 — The table explains itself
+
+- Scores, whose turn it is, and who threw each discard, visible on a phone.
+- Portrait: either a real layout or a clear "turn your phone" screen.
+- The hand catalogue in the app, every hand pictured, with its book page.
+- "Report a problem": export the seed and steps (the saved game already is
+  this) so any tester's hand can be replayed exactly.
+
+## Alpha 3 — Bots worth playing against
+
+- Today about 80 % of bot-only hands end drawn and special hands are rare.
+- Give each catalogue hand a generator of its completing tile sets, so the
+  distance to every hand can be computed; bots aim for the nearest reachable
+  hand, discard towards it and chow when it helps. The same data powers a
+  "closest hands" helper for the player.
+- *Accept:* far fewer drawn hands in the soak, special hands appear.
+
+## Alpha 4 — Release to the group
+
+- A full game end screen (final scores after the North round), the book's
+  beginner/intermediate/advanced settlement as a setting, a version label and
+  a short tester guide.
+
+## Known follow-ups
+
+- `apply` costs about 3-4 ms per decision, so resuming late in a hand replays
+  for up to a second; worth profiling before the alpha.
+- The book starts each player with counters worth 16,000 points (p. 23); the
+  scorecard starts at zero.
+
+## History
+
+### M0 — repository tidy (done 2026-11-04)
 
 Owner request, 2026-11-04: the folder structure and architecture should read as
 one tidy project once extraction is done. Do this only when no agent is running,
@@ -35,7 +87,7 @@ Acceptance: every path in `README.md`, `AGENTS.md`, `rules/*.md`, `docs/*.md`,
 nothing); `.gitignore` matches the new generated directory; `git status` clean;
 `npm test` green; no generated file is tracked.
 
-## Blocking priority — reconcile the rules source (done)
+### Blocking priority — reconcile the rules source (done)
 
 The page-by-page work is complete: [`rules/RULES.md`](RULES.md) is the single
 framework (Illustrated book normative, Companion supplement, provenance tag per
@@ -44,7 +96,7 @@ The C1-C9 slices are landed and `npm test` is green with 344 tests. A few
 table rulings are deliberately deferred and listed in `rules/AUDIT.md`; they
 are not claimed as implemented.
 
-## Done so far
+### Done so far
 
 Audited catalogue (53 Illustrated entries plus the Companion supplement),
 ground-score/doubling scoring, all-three payments with East doubling, the
@@ -55,7 +107,7 @@ soak test, console table, web table (server + client), Tenhou-scale board, the
 reference overlay, claims/wait/result panels, review states (`?state=`), and
 one design-token set (`docs/STYLE.md`) that the stylesheet reads exclusively.
 
-## M1 — Reviewable states and design tokens
+### M1 — Reviewable states and design tokens
 
 *Why:* we can only see one mid-game board, and every CSS number is invented in
 place. Nothing after this can be judged until each state can be seen alone.
@@ -68,7 +120,7 @@ place. Nothing after this can be judged until each state can be seen alone.
 - *Accept:* every state renders without errors at 1440x900 and 1280x800; the
   layout proof still passes; the tokens file is the only place numbers live.
 
-## M2 — Components and motion
+### M2 — Components and motion
 
 *Why:* `render()` rebuilds the board each action, so tiles cannot move and
 states flash.
@@ -80,7 +132,7 @@ states flash.
 - *Accept:* playing a hand shows no full-board flash; a discard animates from
   the hand to its slot; layout proof unaffected.
 
-## M3 — A game, not a demo
+### M3 — A game, not a demo
 
 - Persistence: the server writes the session (seed, actions, scores) and
   resumes it after reload or restart. Not started.
@@ -90,17 +142,17 @@ states flash.
 - *Accept:* close the tab mid-hand, reopen, continue exactly; a round of four
   hands rotates the dealer correctly and the scorecard sums to zero.
 
-## M4 — Teach and include
+### M4 — Teach and include
 
 - A keys/help sheet in-app, first-run hint, `aria-live` turn announcements,
   focus order, contrast checked in both themes.
 
-## M5 — Ship
+### M5 — Ship
 
 - Sound set (the claim cue plus discard/win), final motion pass, README with
   screenshots, a `npm run serve -- --demo` that plays itself.
 
-## Out of scope, deliberately
+### Out of scope, deliberately
 
 Avatars, emotes, gacha, timers, riichi furniture; unrelated rules changes.
 Source-faithful corrections required by `rules/SOURCE.md` are in scope.

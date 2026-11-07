@@ -20,6 +20,8 @@ jobs:
           node-version: 24
       # No dependencies and no build step: Node runs the TypeScript directly.
       - run: npm test
+      # The offline app is what testers install: prove it still builds.
+      - run: npm run build
 
   soak:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'

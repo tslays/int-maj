@@ -224,12 +224,12 @@ becomes East.
 Wind." Wind discs may be used for seat selection and to mark the Wind of the
 Round (p. 18, referring back to p. 10).
 
-**R-028** `[I p. 22]` — The Wind of the Round advances one wind per round:
+**R-028** `[I p. 23]` — The Wind of the Round advances one wind per round:
 > "During the first round, the prevailing wind is East. During the second round,
 > the prevailing wind is South. During the third round, the prevailing wind is
 > West. During the fourth round, the prevailing wind is North."
 
-**R-029** `[I p. 22]` — Extra points are scored for the player's own wind and for the
+**R-029** `[I p. 23]` — Extra points are scored for the player's own wind and for the
 Wind of the Round.
 > "Extra points are awarded for holding tiles of one's own wind or the wind of
 > the round both."
@@ -246,7 +246,7 @@ player on his right, and every seat changes wind.
 > "If East loses, the next player on the right becomes the new East Wind and all
 > players change winds."
 
-**R-032** `[I p. 22]` — A hand, a round and a game are defined as follows:
+**R-032** `[I p. 23]` — A hand, a round and a game are defined as follows:
 > "A hand begins when the tiles have been dealt and ends when one player
 > completes the necessary groups with his tiles for Mah Jong or the hand is
 > drawn."

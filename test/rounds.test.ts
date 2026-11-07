@@ -3,7 +3,9 @@ import { describe, it } from "node:test";
 
 import {
   claimOptions,
+  endsGame,
   legalActions,
+  newGame,
   nextHand,
   type GameState,
   type Seat,
@@ -15,10 +17,12 @@ function finished(
   prevailingWind: GameState["prevailingWind"],
   nextDealer: Seat,
   kind: "win" | "drawn" = "win",
+  roundDealer: Seat = "E",
 ): GameState {
   return fixture({
     dealer,
     prevailingWind,
+    roundDealer,
     phase: "finished",
     result: {
       kind,
@@ -37,17 +41,42 @@ function finished(
 }
 
 describe("rounds and the Wind of the Round", () => {
-  it("advances East, South, West, North and then ends the game", () => {
-    const east = nextHand(finished("E", "E", "S")).state;
-    assert.equal(east.dealer, "S");
-    assert.equal(east.prevailingWind, "S");
-    const south = nextHand(finished("S", "S", "W")).state;
-    assert.equal(south.dealer, "W");
-    assert.equal(south.prevailingWind, "W");
-    const west = nextHand(finished("W", "W", "N")).state;
-    assert.equal(west.dealer, "N");
-    assert.equal(west.prevailingWind, "N");
-    assert.throws(() => nextHand(finished("N", "N", "E")), /game is over/);
+  // R-032 [I p. 23]: "A round is finished when each player has completed a
+  // turn as East Wind." The wind stays while the deal travels round the table.
+  it("keeps the round wind until every seat has dealt", () => {
+    for (const [dealer, next] of [["E", "S"], ["S", "W"], ["W", "N"]] as const) {
+      const state = nextHand(finished(dealer, "E", next)).state;
+      assert.equal(state.dealer, next);
+      assert.equal(state.prevailingWind, "E", `${dealer} passing to ${next}`);
+      assert.equal(state.roundDealer, "E");
+    }
+  });
+
+  it("advances the wind when the deal returns to the round's first dealer", () => {
+    const south = nextHand(finished("N", "E", "E")).state;
+    assert.equal(south.dealer, "E");
+    assert.equal(south.prevailingWind, "S");
+    assert.equal(south.roundDealer, "E");
+  });
+
+  it("counts the round from whichever seat the dice made the first dealer", () => {
+    const passing = nextHand(finished("N", "E", "E", "win", "S")).state;
+    assert.equal(passing.prevailingWind, "E");
+    const done = nextHand(finished("E", "E", "S", "win", "S")).state;
+    assert.equal(done.prevailingWind, "S");
+    assert.equal(done.roundDealer, "S");
+  });
+
+  it("ends the game when the North round is finished", () => {
+    const last = finished("N", "N", "E");
+    assert.equal(endsGame(last), true);
+    assert.throws(() => nextHand(last), /game is over/);
+    assert.equal(endsGame(finished("W", "N", "N")), false);
+    assert.equal(endsGame(finished("N", "W", "E")), false);
+  });
+
+  it("starts the first round at the dealt seat", () => {
+    assert.equal(newGame("rounds", { dealer: "W" }).state.roundDealer, "W");
   });
 
   it("keeps the round wind when the dealer repeats", () => {
@@ -59,9 +88,7 @@ describe("rounds and the Wind of the Round", () => {
   it("never advances the round wind out of order", () => {
     const winds = ["E", "S", "W", "N"] as const;
     for (let index = 0; index < winds.length - 1; index++) {
-      const next = nextHand(
-        finished(winds[index]!, winds[index]!, winds[index + 1]!),
-      ).state;
+      const next = nextHand(finished("N", winds[index]!, "E")).state;
       assert.equal(next.prevailingWind, winds[index + 1]);
     }
   });

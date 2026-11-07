@@ -22,13 +22,15 @@ import { chooseAction } from "../core/game/bot.ts";
 import type { Event } from "../core/game/events.ts";
 import {
   apply,
+  endsGame,
   isApplyError,
   ledgerTotals,
   newGame,
   nextHand,
 } from "../core/game/reduce.ts";
-import { replaySteps, type ReplayStep } from "../core/game/replay.ts";
+import { replayFrom, replaySteps, type ReplayStep } from "../core/game/replay.ts";
 import {
+  deserialize,
   SEATS,
   seatWindOf,
   type GameState,
@@ -62,7 +64,27 @@ export interface WebSession {
   /** Indices in `steps` that the human chose, in order. */
   readonly humanSteps: readonly number[];
   readonly events: readonly Event[];
+  /** The current hand as it was dealt: resume and undo replay from here. */
+  readonly handStart: HandStart;
 }
+
+/**
+ * A checkpoint at the deal of the current hand. Replaying a whole game from
+ * its seed takes seconds once it is a few hands old; replaying one hand from
+ * here takes milliseconds, and the full step log is still kept for reports.
+ */
+export interface HandStart {
+  /** Index in `steps` of the first decision of this hand. */
+  readonly step: number;
+  /** Index in `events` of the first event after the deal. */
+  readonly eventIndex: number;
+  /** The state right after the deal. */
+  readonly state: GameState;
+  /** Each seat's score from the hands finished before this one. */
+  readonly scoresBefore: Readonly<Record<Seat, number>>;
+}
+
+export const ZERO_SCORES: Readonly<Record<Seat, number>> = Object.freeze({ E: 0, S: 0, W: 0, N: 0 });
 
 export interface SessionUpdate {
   readonly session: WebSession;
@@ -133,6 +155,8 @@ export interface OutcomePayload {
   readonly fishing: readonly LedgerEntry[];
   readonly totals: Readonly<Record<Seat, number>>;
   readonly unknown: number;
+  /** This hand finished the North round, so it finished the game (R-032). */
+  readonly gameOver: boolean;
 }
 
 export interface TableSeat {
@@ -168,6 +192,12 @@ export interface StatePayload {
   };
   readonly checker: CheckerPayload;
   readonly outcome: OutcomePayload | null;
+  /**
+   * Each seat's running score from the hands finished before this one. The
+   * current hand's ledger is on `view.ledger`; the two together are the
+   * scorecard, so a resumed game keeps its scores.
+   */
+  readonly scoresBefore: Readonly<Record<Seat, number>>;
 }
 
 function startSession(id: string, seed: string | number): WebSession {
@@ -181,6 +211,7 @@ function startSession(id: string, seed: string | number): WebSession {
     steps: [],
     humanSteps: [],
     events: [...events],
+    handStart: { step: 0, eventIndex: events.length, state, scoresBefore: ZERO_SCORES },
   };
 }
 
@@ -338,6 +369,7 @@ function outcomeFor(session: WebSession, view: GameView): OutcomePayload | null 
     raw: result.raw,
     limit: result.limit,
     reason: result.reason,
+    gameOver: endsGame(state),
     winningTile: win?.type === "WinDeclared" ? win.tile : null,
     hand,
     melds,
@@ -374,6 +406,7 @@ export function statePayload(session: WebSession): StatePayload {
     },
     checker: checkerFor(view.player),
     outcome: outcomeFor(session, view),
+    scoresBefore: session.handStart.scoresBefore,
   };
 }
 
@@ -382,8 +415,56 @@ export interface GameStoreOptions {
 }
 
 /**
- * In-memory games keyed by a short id. No persistence: a restart deals fresh
- * tables, and the seed in the payload is enough to reproduce any hand.
+ * Everything needed to rebuild a session: the seed and the decisions taken.
+ * The whole game state is a pure function of these, so a saved game is a few
+ * kilobytes of JSON and resumes exactly, bots included.
+ */
+export interface SessionSnapshot {
+  readonly version: 1;
+  readonly seed: string | number;
+  readonly steps: readonly ReplayStep[];
+  readonly humanSteps: readonly number[];
+  /** The current hand's checkpoint; without it, restore replays from the seed. */
+  readonly handStart?: {
+    readonly step: number;
+    readonly state: GameState;
+    readonly scoresBefore: Readonly<Record<Seat, number>>;
+  };
+}
+
+export function isSessionSnapshot(value: unknown): value is SessionSnapshot {
+  if (typeof value !== "object" || value === null) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    record.version === 1 &&
+    (typeof record.seed === "string" || typeof record.seed === "number") &&
+    Array.isArray(record.steps) &&
+    Array.isArray(record.humanSteps) &&
+    record.humanSteps.every((index) => Number.isInteger(index)) &&
+    (record.handStart === undefined || isHandStartRecord(record.handStart, record.steps.length))
+  );
+}
+
+function isHandStartRecord(value: unknown, stepCount: number): boolean {
+  if (typeof value !== "object" || value === null) return false;
+  const record = value as Record<string, unknown>;
+  const scores = record.scoresBefore as Record<string, unknown> | undefined;
+  return (
+    Number.isInteger(record.step) &&
+    (record.step as number) >= 0 &&
+    (record.step as number) <= stepCount &&
+    typeof record.state === "object" &&
+    record.state !== null &&
+    typeof scores === "object" &&
+    scores !== null &&
+    SEATS.every((seat) => typeof scores[seat] === "number")
+  );
+}
+
+/**
+ * In-memory games keyed by a short id. The store itself keeps nothing across a
+ * restart; `snapshot` and `restore` let a caller (the offline build) save a
+ * game elsewhere and pick it up again.
  */
 export class GameStore {
   readonly defaultSeed: string | number;
@@ -414,6 +495,72 @@ export class GameStore {
     const stored: WebSession = { ...session, id: `g${++this.nextId}` };
     this.sessions.set(stored.id, stored);
     return stored;
+  }
+
+  /** The seed and decisions of a session, for saving it outside the store. */
+  snapshot(id: string): SessionSnapshot | undefined {
+    const session = this.sessions.get(id);
+    if (session === undefined) return undefined;
+    return {
+      version: 1,
+      seed: session.seed,
+      steps: session.steps,
+      humanSteps: session.humanSteps,
+      handStart: {
+        step: session.handStart.step,
+        state: session.handStart.state,
+        scoresBefore: session.handStart.scoresBefore,
+      },
+    };
+  }
+
+  /**
+   * Rebuild a saved session under a fresh id by replaying its steps from the
+   * seed through the reducer. A snapshot that no longer replays (an older
+   * engine, a damaged save) returns an error and leaves the store unchanged.
+   */
+  restore(snapshot: SessionSnapshot): SessionUpdate | { readonly error: string } {
+    let handStart: HandStart;
+    let replayed;
+    try {
+      if (snapshot.handStart !== undefined) {
+        const start = deserialize(JSON.stringify(snapshot.handStart.state));
+        replayed = replayFrom(start, snapshot.steps.slice(snapshot.handStart.step));
+        handStart = {
+          step: snapshot.handStart.step,
+          eventIndex: 0,
+          state: start,
+          scoresBefore: { ...snapshot.handStart.scoresBefore },
+        };
+      } else {
+        replayed = replaySteps(snapshot.seed, snapshot.steps, { dealer: SEAT });
+        const start = newGame(snapshot.seed, { dealer: SEAT });
+        handStart = {
+          step: 0,
+          eventIndex: start.events.length,
+          state: start.state,
+          scoresBefore: ZERO_SCORES,
+        };
+        if (snapshot.steps.some((step) => step.type === "NextHand")) {
+          return { error: "a saved game without a checkpoint must be in its first hand" };
+        }
+      }
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : String(error) };
+    }
+    const id = `g${++this.nextId}`;
+    const session: WebSession = {
+      id,
+      seed: snapshot.seed,
+      seat: SEAT,
+      state: replayed.state,
+      steps: [...snapshot.steps],
+      humanSteps: [...snapshot.humanSteps],
+      events: replayed.events,
+      handStart,
+    };
+    this.sessions.set(id, session);
+    return { session, events: [...session.events] };
   }
 
   /** Read-only inspection for tests; never serialised to a client. */
@@ -459,15 +606,19 @@ export class GameStore {
     const session = this.sessions.get(id);
     if (session === undefined) return { error: `unknown game: ${id}` };
     const last = session.humanSteps.at(-1);
-    if (last === undefined) return { error: "nothing to undo" };
+    // Undo stays inside the current hand: a finished hand has been paid.
+    if (last === undefined || last < session.handStart.step) {
+      return { error: "nothing to undo" };
+    }
     const steps = session.steps.slice(0, last);
-    const replayed = replaySteps(session.seed, steps, { dealer: SEAT });
+    const { handStart } = session;
+    const replayed = replayFrom(handStart.state, steps.slice(handStart.step));
     const next: WebSession = {
       ...session,
       state: replayed.state,
       steps,
       humanSteps: session.humanSteps.slice(0, -1),
-      events: replayed.events,
+      events: [...session.events.slice(0, handStart.eventIndex), ...replayed.events],
     };
     this.sessions.set(id, next);
     return { session: next, events: [] };
@@ -479,13 +630,25 @@ export class GameStore {
     if (session.state.phase !== "finished") {
       return { error: "nextHand requires a finished hand" };
     }
+    if (endsGame(session.state)) return { error: "the game is over" };
     const before = session.events.length;
     const dealt = nextHand(session.state);
+    const finished = ledgerTotals(session.state).totals;
+    const scores = { ...session.handStart.scoresBefore };
+    for (const seat of SEATS) scores[seat] += finished[seat];
+    const steps: ReplayStep[] = [...session.steps, { type: "NextHand" }];
+    const events = [...session.events, ...dealt.events];
     const next: WebSession = {
       ...session,
       state: dealt.state,
-      steps: [...session.steps, { type: "NextHand" }],
-      events: [...session.events, ...dealt.events],
+      steps,
+      events,
+      handStart: {
+        step: steps.length,
+        eventIndex: events.length,
+        state: dealt.state,
+        scoresBefore: scores,
+      },
     };
     this.sessions.set(id, next);
     return { session: next, events: next.events.slice(before) };

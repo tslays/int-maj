@@ -118,8 +118,18 @@ export function replaySteps(
   options: ReplayOptions = {},
 ): ApplyOk {
   const start = newGame(seed, options.dealer === undefined ? {} : { dealer: options.dealer });
-  let state = start.state;
-  const events: Event[] = [...start.events];
+  const rest = replayFrom(start.state, steps);
+  return { state: rest.state, events: [...start.events, ...rest.events] };
+}
+
+/**
+ * Continue from any state, typically one saved at the start of a hand, so a
+ * resume or an undo replays one hand instead of the whole game from its seed.
+ * The returned events are only those the steps produced.
+ */
+export function replayFrom(start: GameState, steps: readonly ReplayStep[]): ApplyOk {
+  let state = start;
+  const events: Event[] = [];
 
   for (const step of steps) {
     if (step.type === "NextHand") {
