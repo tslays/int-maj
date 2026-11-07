@@ -2061,26 +2061,33 @@ h3 {
   pointer-events: none;
 }
 
-/* Next to the rack, on the side that faces the table. */
+/* Where that seat's calls are shown: the meld end of its own band. Inside
+   the band, so it can never touch the wall. A side band is one tile wide, so
+   its chip reads down the band. */
 .variant-d .seat-top .fishing-chip {
   right: 0;
-  top: calc(100% + 4px);
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .variant-d .seat-left .fishing-chip {
-  left: calc(100% + 4px);
-  bottom: -10px;
+  left: 0;
+  top: 0;
+  padding: 6px 2px;
+  writing-mode: vertical-rl;
 }
 
 .variant-d .seat-right .fishing-chip {
-  right: calc(100% + 4px);
-  bottom: -10px;
+  right: 0;
+  top: 0;
+  padding: 6px 2px;
+  writing-mode: vertical-rl;
 }
 
-/* Yours sits above the hand, in the hand band's own free space. */
-.variant-d .hand-band .fishing-chip {
-  right: 0;
-  bottom: calc(100% + 4px);
+/* Yours sits in the flow beside your own calls, never over the tiles. */
+.variant-d #own-melds .fishing-chip {
+  position: static;
+  align-self: center;
 }
 
 .variant-d .own-fishing {
