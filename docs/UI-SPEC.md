@@ -185,23 +185,23 @@ then shifts every region by `inset`, so the hand, the three walls, the rivers
 and the action row all sit a breath away from the edge. `layout.inset` is
 exported; the board box stays full-bleed because the felt is the background.
 
-### A fishing hand breathes (2026-11-07, owner's rule)
+### A fishing hand says so (2026-11-07, owner's rule, third shape)
 
-The owner rejected a badge on the seat: fishing is a state of a whole hand, so
-the hand shows it. The fishing seat's backs **breathe** into a warmer tone -
-`fishing-breathe`, a 4.8 s ease-in-out cycle of sepia/hue/brightness, "like a
-relaxed heart rate" - with a static amber outline on the rack so the seat is
-found before the pulse is noticed. Your own declaration breathes round the hand
-band (`hand-breathe`), never over your tiles, which keep their own colour.
+Two earlier attempts failed: a badge of the wait tiles on the band (rejected -
+"not in love with the indicator") and a slow colour pulse ("too slow and not
+visible"). The state now says itself, still: a small amber chip reading
+`Fishing` sits next to the hand that declared it, on the inboard side of that
+seat's band (below the far seat, beside a side band, above your hand). No
+animation - the call pill is the only thing on the felt that moves.
 
-The words survive for screen readers only: the seat (or the hand band) carries
-`Fishing on 4 bamboo, 7 bamboo, limit`. Under `prefers-reduced-motion` the
-pulse is replaced by a static tint, never by nothing.
+The chip clears the pile by a gap (`bottom: -10px` on a side seat at
+770x400: y 245-264 against a pile ending at 242) and never leaves the board at
+any audited size. The wait and its tier stay in the chip's `title` and in the
+seat's / hand band's `aria-label` ("Fishing on 4 bamboo, 7 bamboo, limit").
 
 The audit loads `?state=result` (an opponent fishing) and `?state=fishing`
-(you are), and fails unless the seat's backs run `fishing-breathe` at 4.8 s
-with a fishing label, the hand band runs `hand-breathe`, and no `fishing-mark`
-badge exists anywhere.
+(you are) and fails unless the chip is visible, still, inside the board, within
+16 px of its own hand, and says `Fishing`.
 
 ### The wall is a frame around the pile (2026-11-07, owner request)
 

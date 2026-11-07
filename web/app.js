@@ -832,14 +832,21 @@ function rackLine(entry) {
 }
 
 /**
- * Fishing is a state of a whole hand, not a badge on it: the seat that has
- * declared it breathes, slowly, into a warmer tone (2026-11-07). The wait
- * itself is still announced in words - for screen readers, on the seat.
+ * Fishing is a public state, so it gets a word next to the hand that declared
+ * it: a small, still chip on the inboard side of that seat's band (2026-11-07,
+ * after a pulse that was too slow to see and a badge that sat on the tiles).
  */
-function fishingState(entry) {
+function fishingChip(entry) {
   const fishing = payload?.view.fishing.find((row) => row.seat === entry.seat);
   if (fishing === undefined) return null;
-  return `Fishing on ${fishing.wait.map(tileName).join(", ")}, ${tierName(fishing.tier) ?? fishing.tier}`;
+  const chip = div("fishing-chip");
+  chip.textContent = "Fishing";
+  const words = `Fishing on ${fishing.wait.map(tileName).join(", ")}, ${
+    tierName(fishing.tier) ?? fishing.tier
+  }`;
+  chip.title = words;
+  chip.setAttribute("aria-label", words);
+  return chip;
 }
 
 function meldRow(melds) {
@@ -895,12 +902,11 @@ function renderSeat(entry) {
 
   const rack = rackLine(entry);
   const melds = meldRow(entry.melds);
-  const fishing = fishingState(entry);
+  const fishing = fishingChip(entry);
   if (fishing !== null) {
-    // The seat breathes instead of wearing a badge; the words stay for
-    // screen readers.
     root.classList.add("is-fishing");
-    root.setAttribute("aria-label", fishing);
+    root.setAttribute("aria-label", fishing.getAttribute("aria-label") ?? "Fishing");
+    root.append(fishing);
   }
   const bonuses = bonusRow(entry);
 
@@ -1579,13 +1585,15 @@ function renderOwnMelds() {
   const melds = meldRow(payload.view.player.melds);
   if (melds === null) slot.replaceChildren();
   else slot.replaceChildren(melds);
-  // Your own declaration breathes round the hand band; your tiles keep their
-  // own colour.
+  // Your own declaration gets the same word, next to your hand.
   const band = document.querySelector(".hand-band");
-  const mine = fishingState({ seat: payload.view.player.seat });
-  band.classList.toggle("is-fishing", mine !== null);
+  band.querySelectorAll(".fishing-chip").forEach((chip) => chip.remove());
+  const mine = fishingChip({ seat: payload.view.player.seat });
   if (mine === null) band.removeAttribute("aria-label");
-  else band.setAttribute("aria-label", mine);
+  else {
+    band.setAttribute("aria-label", mine.getAttribute("aria-label") ?? "Fishing");
+    band.append(mine);
+  }
 }
 
 function renderOwnBonus() {
