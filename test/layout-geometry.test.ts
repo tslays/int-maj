@@ -66,6 +66,7 @@ const SIZES = [
   [1440, 900, "desktop"],
   [1280, 800, "desktop"],
   [1024, 768, "desktop"],
+  [770, 400, "phone"],
   [932, 430, "phone"],
   [844, 390, "phone"],
   [430, 932, "phone"],
@@ -91,13 +92,13 @@ const BREAKPOINTS: Record<
   },
   landscape: {
     riverColumns: 4,
-    handBandFraction: 0.24,
+    handBandFraction: 0.15,
     minTileWidth: 18,
     maxTileWidth: 46,
   },
   portrait: {
     riverColumns: 3,
-    handBandFraction: 0.18,
+    handBandFraction: 0.14,
     minTileWidth: 18,
     maxTileWidth: 46,
   },
@@ -826,20 +827,80 @@ describe("variant D whole hand on the heap", () => {
       ] as const) {
         await setViewport(cdp, sessionId, width, height);
         await navigate(cdp, sessionId, `${server.url}/?state=${state}&variant=d`);
-        const pile = await evaluate<{ tiles: number; unique: number }>(
+        const pile = await evaluate<{
+          tiles: number;
+          unique: number;
+          sizes: string[];
+        }>(
           cdp,
           sessionId,
           `(() => {
             const tiles = [...document.querySelectorAll("#pile .discard")];
             const spots = new Set(tiles.map((tile) => tile.style.left + "," + tile.style.top));
-            return { tiles: tiles.length, unique: spots.size };
+            return {
+              tiles: tiles.length,
+              unique: spots.size,
+              sizes: [...new Set(tiles.map((tile) => tile.offsetWidth + "x" + tile.offsetHeight))],
+            };
           })()`,
         );
         assert.equal(pile.tiles, total, `${state} ${width}x${height}: ${total - pile.tiles} discards are missing`);
         assert.equal(pile.unique, total, `${state} ${width}x${height}: discards share a spot`);
+        // A hand longer than the heap was drawn for is re-dealt once at the
+        // whole-hand size; every tile on the heap is that one size.
+        assert.equal(
+          pile.sizes.length,
+          1,
+          `${state} ${width}x${height}: the heap mixes tile sizes (${pile.sizes.join(", ")})`,
+        );
       }
     });
   }
+});
+
+describe("variant D heap resize", () => {
+  it("re-deals a full heap at the new size instead of leaving stale tiles", async () => {
+    const scenario = await (await fetch(`${server.url}/api/scenario?state=drawn`)).json();
+    const total = scenario.table.reduce(
+      (sum: number, seat: { discards: string[] }) => sum + seat.discards.length,
+      0,
+    );
+    await setViewport(cdp, sessionId, 1440, 900);
+    await navigate(cdp, sessionId, `${server.url}/?state=drawn&variant=d`);
+    await setViewport(cdp, sessionId, 844, 390);
+    const pile = await evaluate<{
+      tiles: number;
+      sizes: string[];
+      inside: boolean;
+      pile: number[];
+    }>(
+      cdp,
+      sessionId,
+      `(() => {
+        const root = document.querySelector("#pile");
+        const box = root.getBoundingClientRect();
+        const tiles = [...root.querySelectorAll(".discard")];
+        const margin = 40;
+        return {
+          tiles: tiles.length,
+          sizes: [...new Set(tiles.map((tile) => tile.offsetWidth + "x" + tile.offsetHeight))],
+          inside: tiles.every((tile) => {
+            const r = tile.getBoundingClientRect();
+            return (
+              r.x >= box.x - margin &&
+              r.y >= box.y - margin &&
+              r.x + r.width <= box.x + box.width + margin &&
+              r.y + r.height <= box.y + box.height + margin
+            );
+          }),
+          pile: [box.x, box.y, box.width, box.height],
+        };
+      })()`,
+    );
+    assert.equal(pile.tiles, total, "every discard survived the resize");
+    assert.equal(pile.sizes.length, 1, `the heap mixes sizes after a resize (${pile.sizes.join(", ")})`);
+    assert.ok(pile.inside, "a discard left the pile after the resize");
+  });
 });
 
 describe("variant D claim row", () => {

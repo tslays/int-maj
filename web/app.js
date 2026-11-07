@@ -14,7 +14,12 @@ import {
   BONUS_TILE_KEYS,
   PLAY_TILE_KEYS,
 } from "./tiles.js";
-import { computeLayout } from "./layout.js";
+import {
+  computeLayout,
+  DISCARD_CAPACITY,
+  DISCARD_TARGET,
+  discardTileSize,
+} from "./layout.js";
 
 const SEATS = ["E", "S", "W", "N"];
 const WIND_NAME = { E: "East", S: "South", W: "West", N: "North" };
@@ -1183,7 +1188,7 @@ function layoutSpec(width, height) {
     return {
       mode: "portrait",
       riverColumns: 3,
-      handBandFraction: 0.18,
+      handBandFraction: 0.14,
       minTileWidth: 18,
       maxTileWidth: 46,
     };
@@ -1191,7 +1196,7 @@ function layoutSpec(width, height) {
   return {
     mode: "landscape",
     riverColumns: 4,
-    handBandFraction: 0.24,
+    handBandFraction: 0.15,
     minTileWidth: 18,
     maxTileWidth: 46,
   };
@@ -1260,6 +1265,11 @@ function applyLayout() {
   setRect("seat-left", layout.seats.left);
   setRect("seat-right", layout.seats.right);
   setRect("controls", layout.controls);
+  // A resize changes the heap's tile size: deal the landed discards again at
+  // the size the new board gives them, so nothing is left at a stale spot.
+  if (pileSpots === null || pileSize.w !== layout.discardTileWidth) {
+    dealPile(DISCARD_TARGET);
+  }
 }
 
 function renderSeats() {
@@ -1467,8 +1477,10 @@ function nearestEdgeGap(candidate, placed) {
   return Math.max(0, gap);
 }
 
-/** The tile size the heap is using, and its candidate spots (built once). */
+/** The tile size the heap is using, the capacity it was sized for, and its
+    candidate spots (built once per size). */
 let pileSpots = null;
+let pileCapacity = DISCARD_TARGET;
 
 function spotsFor(w, h) {
   pileCandidatePhase = 0;
@@ -1479,15 +1491,17 @@ function spotsFor(w, h) {
 }
 
 /**
- * Adds one tile to the heap and never moves the tiles already down: the spot is
- * chosen once from a dense set of free candidate centres. If the first lattice
- * is full, add more centres at the same size before declaring the heap full.
+ * The tile size the heap is drawn at for a capacity: as large as a normal
+ * hand's throws allow, never larger than the hand's own tile.
  */
-function addToPile(item) {
-  if (currentLayout === null) return;
-  if (pileSpots === null) {
-    spotsFor(currentLayout.discardTileWidth, currentLayout.discardTileHeight);
-  }
+function pileTileFor(capacity) {
+  const layout = currentLayout;
+  const cap = layout.handTileWidth ?? layout.tileWidth;
+  return discardTileSize(layout.pile, capacity, cap);
+}
+
+/** One throw: the best free spot at the heap's current size, or null. */
+function findSpot(item) {
   let spot = tryPlace(item.seat, pileSpots, pileSize.w, pileSize.h);
   // If a lattice phase ran out, add more candidate centres at the same tile
   // size. Never resize or re-place tiles that have already landed.
@@ -1496,6 +1510,65 @@ function addToPile(item) {
     pileSpots.push(...pileCandidates(pileSize.w, pileSize.h, pileCandidatePhase));
     spot = tryPlace(item.seat, pileSpots, pileSize.w, pileSize.h);
   }
+  return spot;
+}
+
+/**
+ * Deal every landed discard again at a capacity's tile size. If that size
+ * cannot hold what is on the heap (a resize, or a hand longer than the size it
+ * was drawn for), the budget grows until it does; a failed attempt never
+ * leaves a half-dealt heap behind.
+ */
+function dealPile(capacity) {
+  const items = pileItems.map(({ key, seat, id }) => ({ key, seat, id }));
+  let budget = capacity;
+  while (budget <= DISCARD_CAPACITY * 2) {
+    pileCapacity = budget;
+    const width = pileTileFor(budget);
+    spotsFor(width, Math.round((width * 4) / 3));
+    pileItems = [];
+    let placedAll = true;
+    for (const item of items) {
+      const spot = findSpot(item);
+      if (spot === null) {
+        placedAll = false;
+        break;
+      }
+      const placed = { ...item, ...spot };
+      pileItems.push(placed);
+      gridAdd(placed);
+    }
+    if (placedAll) return true;
+    budget = Math.max(budget + 8, Math.round(budget * 1.4));
+  }
+  pileItems = [];
+  return false;
+}
+
+/**
+ * A long hand outgrew the heap: draw it once, smaller, for the longest hand
+ * there is. Every landed tile is dealt again in the order it was thrown, so it
+ * keeps its seat and its place in the heap; the CSS transition walks each tile
+ * to its new spot. This happens at most once per hand.
+ */
+function rebuildPile() {
+  if (pileCapacity >= DISCARD_CAPACITY) return false;
+  return dealPile(DISCARD_CAPACITY);
+}
+
+/**
+ * Adds one tile to the heap. The spot is chosen once from a dense set of free
+ * candidate centres and a landed tile never moves, except in the one rebuild
+ * above, when a hand turns out longer than a normal one.
+ */
+function addToPile(item) {
+  if (currentLayout === null) return;
+  if (pileSpots === null) {
+    pileCapacity = DISCARD_TARGET;
+    spotsFor(currentLayout.discardTileWidth, currentLayout.discardTileHeight);
+  }
+  let spot = findSpot(item);
+  if (spot === null && rebuildPile()) spot = findSpot(item);
   if (spot !== null) {
     const placed = { key: item.key, seat: item.seat, id: item.id, ...spot };
     pileItems.push(placed);
