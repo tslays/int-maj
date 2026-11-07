@@ -83,6 +83,24 @@ const TABLE = {
       view.fishing.some((entry) => entry.seat === view.seat),
   },
 
+  announce: {
+    title: "Your turn to declare fishing",
+    seed: "offer-announce-8",
+    at: (view) =>
+      view.phase === "announce" &&
+      view.turn === view.seat &&
+      view.legalActions.some((action) => action.type === "DeclareFishing"),
+  },
+
+  ron: {
+    title: "A winning tile in the claim window",
+    seed: "offer-ron-9",
+    at: (view) =>
+      view.phase === "claim" &&
+      view.turn === view.seat &&
+      view.legalActions.some((action) => action.type === "Win"),
+  },
+
   win: {
     title: "A winning hand and its pattern",
     seed: "win-scene-37",

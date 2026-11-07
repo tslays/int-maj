@@ -1595,9 +1595,12 @@ function renderClaimBar({ winOnly = false } = {}) {
 
   if (claim !== null) {
     const primary = div("claim-row claim-primary");
+    // A winning tile is not a call: it says so, so the one offer left when
+    // calls are off cannot be mistaken for a pung.
+    const winning = claim.type === "Win" || claim.kind === "mahjong";
     primary.append(makeClaimButton(claim, {
       primary: true,
-      label: "Claim",
+      label: winning ? "Mahjong" : "Claim",
       tiles:
         claim.type === "Claim" && claim.kind !== "mahjong" ? claim.tiles : null,
     }));

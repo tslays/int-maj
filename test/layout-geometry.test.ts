@@ -907,6 +907,65 @@ describe("variant D calls toggle", () => {
   });
 });
 
+describe("variant D calls off keeps the win and the fishing", () => {
+  async function withCallsOff(state: string): Promise<void> {
+    await navigate(cdp, sessionId, `${server.url}/?state=turn&variant=d`);
+    await evaluate(cdp, sessionId, `localStorage.setItem("mahjong-calls", "0")`);
+    await navigate(cdp, sessionId, `${server.url}/?state=${state}&variant=d`);
+    const deadline = Date.now() + 8000;
+    while (Date.now() < deadline) {
+      const ready = await evaluate<boolean>(
+        cdp,
+        sessionId,
+        `document.querySelectorAll("#pile .discard").length > 0 || !document.querySelector("#claim-bar").hidden`,
+      );
+      if (ready) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+
+  it("still lets you declare fishing", async () => {
+    await setViewport(cdp, sessionId, 770, 400);
+    await withCallsOff("announce");
+    const labels = await evaluate<string[]>(
+      cdp,
+      sessionId,
+      `[...document.querySelectorAll("#actions .action-button")].map((button) => button.textContent.trim())`,
+    );
+    assert.ok(
+      labels.includes("Declare fishing"),
+      `calls off hid the fishing declaration (${labels.join(", ")})`,
+    );
+    await evaluate(cdp, sessionId, `localStorage.removeItem("mahjong-calls")`);
+  });
+
+  it("still asks for a winning tile", async () => {
+    await setViewport(cdp, sessionId, 770, 400);
+    await withCallsOff("ron");
+    const bar = await evaluate<{ hidden: boolean; labels: string[] }>(
+      cdp,
+      sessionId,
+      `(() => {
+        const bar = document.querySelector("#claim-bar");
+        return {
+          hidden: bar.hidden,
+          labels: [...bar.querySelectorAll("button")].map((button) => button.textContent.trim()),
+        };
+      })()`,
+    );
+    assert.equal(bar.hidden, false, "a winning tile was skipped with calls off");
+    assert.ok(
+      bar.labels.includes("Mahjong"),
+      `the win was not offered as a win (${bar.labels.join(", ")})`,
+    );
+    assert.ok(
+      !bar.labels.some((label) => label.startsWith("Chow") || label.startsWith("Pung") || label.startsWith("Kong")),
+      `calls off still offered a set (${bar.labels.join(", ")})`,
+    );
+    await evaluate(cdp, sessionId, `localStorage.removeItem("mahjong-calls")`);
+  });
+});
+
 describe("variant D heap gaps", () => {
   for (const [width, height, mode] of [
     [770, 400, "phone"],
