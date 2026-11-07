@@ -212,7 +212,11 @@ plus the gap, so the discards always live inside the wall (2026-11-07).
     cells   = clockwise from the break corner: top, right, bottom, left
     live    = one back per remaining tile, from cell 0; the ring shortens
     loose   = the lifted pair, parked at the far end (never moves)
-    dead    = the Chinese dead wall, parked beside it, dimmed and dashed
+    dead    = the Chinese dead wall, parked beside it
+
+Every back in the ring looks the same: the loose pair and the dead wall are
+tiles of the same wall, so they are counted in the aria-label and never
+highlighted (an amber outline on two of them read as a mistake, 2026-11-07).
 
 The payload carries counts only (`wall.remaining`, `wall.loose`, `wall.dead`) -
 the faces stay hidden. A drawn tile leaves the ring's head cell as a ghost and

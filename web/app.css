@@ -1058,17 +1058,8 @@ h3 {
   user-select: none;
 }
 
-.variant-d .wall .wall-back.dead {
-  opacity: 0.45;
-  outline: 1px dashed var(--accent-soft);
-  outline-offset: 1px;
-}
-
-.variant-d .wall .wall-back.loose {
-  outline: 1px solid var(--accent);
-  outline-offset: 1px;
-  border-radius: 2px;
-}
+/* The loose pair and the dead wall are tiles of the same wall: they are marked
+   in the aria-label, not with a glow. Nothing in the ring is highlighted. */
 
 .variant-d .pile .discard {
   position: absolute;
