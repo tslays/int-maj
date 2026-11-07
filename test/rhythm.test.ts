@@ -605,4 +605,96 @@ describe("table rhythm", () => {
     }
   });
 
+  it("lets a bot hold its drawn tile before it throws", async () => {
+    await navigate(cdp, sessionId, `${server.url}/`);
+    const ready = Date.now() + 15000;
+    while (Date.now() < ready) {
+      const live = await evaluate<boolean>(
+        cdp,
+        sessionId,
+        `document.querySelectorAll("#hand .hand-tile").length > 0`,
+      );
+      if (live) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    // Sample the three racks: a draw is the only moment a seat shows fourteen
+    // backs, and it must last long enough to be a beat, not a twitch.
+    await evaluate<boolean>(
+      cdp,
+      sessionId,
+      `(() => {
+        window.__backs = [];
+        window.__backStart = performance.now();
+        const read = () => {
+          const counts = {};
+          for (const place of ["top", "left", "right"]) {
+            counts[place] = document.querySelectorAll("#seat-" + place + " .tile-back").length;
+          }
+          return counts;
+        };
+        let last = JSON.stringify(read());
+        window.__backTimer = setInterval(() => {
+          const now = read();
+          const key = JSON.stringify(now);
+          if (key === last) return;
+          window.__backs.push({ t: Math.round(performance.now() - window.__backStart), ...now });
+          last = key;
+        }, 40);
+        return true;
+      })()`,
+    );
+
+    const deadline = Date.now() + 22000;
+    while (Date.now() < deadline) {
+      await evaluate<boolean>(
+        cdp,
+        sessionId,
+        `(() => {
+          const bar = document.querySelector("#claim-bar");
+          if (bar !== null && !bar.hidden) {
+            const dismiss = [...bar.querySelectorAll("button")].find((button) =>
+              (button.textContent ?? "").includes("Dismiss"),
+            );
+            if (dismiss !== undefined) { dismiss.click(); return true; }
+          }
+          const hand = [...document.querySelectorAll("#hand .hand-tile")];
+          if (hand.length > 0) hand[hand.length - 1].click();
+          return true;
+        })()`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const enough = await evaluate<boolean>(
+        cdp,
+        sessionId,
+        `window.__backs.filter((row) => Object.values(row).some((count) => count === 14)).length >= 6`,
+      );
+      if (enough) break;
+    }
+
+    const backs = await evaluate<
+      Array<{ t: number; top: number; left: number; right: number }>
+    >(cdp, sessionId, `window.__backs`);
+    const lifetimes: Array<{ place: string; ms: number }> = [];
+    for (let index = 1; index < backs.length; index++) {
+      const previous = backs[index - 1]!;
+      const row = backs[index]!;
+      for (const place of ["top", "left", "right"] as const) {
+        if (previous[place] === 14 && row[place] === 13) {
+          lifetimes.push({ place, ms: row.t - previous.t });
+        }
+      }
+    }
+    assert.ok(
+      lifetimes.length >= 3,
+      `no drawn tile was observed (${JSON.stringify(backs.slice(0, 6))})`,
+    );
+    for (const run of lifetimes) {
+      assert.ok(
+        run.ms >= 250,
+        `${run.place}: the drawn back lived ${run.ms} ms - a twitch, not a beat`,
+      );
+    }
+  });
+
 });

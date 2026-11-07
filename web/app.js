@@ -51,6 +51,8 @@ let handInitialized = false;
 let tableInitialized = false;
 let previousHand = [];
 let previousDiscards = { E: 0, S: 0, W: 0, N: 0 };
+/** Concealed counts of the last render, so a draw can be told from a throw. */
+let previousConcealed = { E: 0, S: 0, W: 0, N: 0 };
 let announced = "";
 let focusedOutcomeKey = null;
 let scoresKey = null;
@@ -418,6 +420,18 @@ function log(line) {
   element.scrollTop = element.scrollHeight;
 }
 
+/**
+ * True when an opponent's rack grew by one in this payload: that is a draw,
+ * and the only moment a fourteenth back exists on the table.
+ */
+function drewBack(data) {
+  for (const entry of data.table) {
+    if (entry.seat === data.seat) continue;
+    if ((previousConcealed[entry.seat] ?? 0) + 1 === entry.handCount) return true;
+  }
+  return false;
+}
+
 function applyResponse(data, note, replaceLog = false) {
   payload = data;
   if (typeof data.game === "string" && scenarioName === null) {
@@ -438,11 +452,19 @@ function applyResponse(data, note, replaceLog = false) {
     pendingDiscards = discardsFromEvents(data.events);
     announceCalls(data.events);
   }
+  // Read the racks before the render moves them: a seat that gained a back has
+  // just drawn, and that draw gets its own beat.
+  const drew = drewBack(data);
   render();
   // Your own throw lands immediately. Give it the same settle as an opponent's
   // throw before asking the table to answer it, so a claim never appears on
-  // the click's frame.
-  const nextStepDelay = justDiscarded ? DISCARD_SETTLE_MS : 0;
+  // the click's frame. A bot that has just drawn holds the tile for a beat
+  // before it throws, so the table never flicks a back in and out.
+  const nextStepDelay = justDiscarded
+    ? DISCARD_SETTLE_MS
+    : drew
+      ? DRAW_BEAT_MS
+      : 0;
   setTimeout(() => {
     autoDraw();
     stepTable();
@@ -788,8 +810,17 @@ function rackLine(entry) {
   if (PLACE[entry.seat] === "left" || PLACE[entry.seat] === "right") {
     rack.classList.add("side");
   }
+  // The one back that grows the rack is a draw: it slides in, and the table
+  // holds it for a beat before the throw takes it away again.
+  const known = previousConcealed[entry.seat];
+  const drew =
+    known !== undefined && known > 0 && entry.handCount === known + 1;
   rack.setAttribute("aria-label", `${entry.handCount} concealed tiles`);
-  for (let index = 0; index < entry.handCount; index++) rack.append(backElement());
+  for (let index = 0; index < entry.handCount; index++) {
+    const back = backElement();
+    if (drew && index === entry.handCount - 1) back.classList.add("is-drawn");
+    rack.append(back);
+  }
   line.append(rack);
   return line;
 }
@@ -886,6 +917,13 @@ const DISCARD_BEAT_MS = 1000;
 const DISCARD_SETTLE_MS = 520;
 /** However late the step is, a new throw still gets this much air. */
 const MIN_BEAT_MS = 180;
+/**
+ * A bot's draw is its own beat: the fourteenth back slides in, rests long
+ * enough to see, and only then leaves as the throw. Without it the table
+ * rendered the draw and asked for the discard in the same breath, so the back
+ * appeared and vanished in ~40 ms and the rack twitched.
+ */
+const DRAW_BEAT_MS = 340;
 /**
  * A claim is only offered once the throw it answers has *finished*: the ghost
  * has landed, the frame has faded and the table's settle has passed. The extra
@@ -2221,6 +2259,9 @@ function render() {
 
 
   previousHand = displayHand();
+  for (const entry of payload.table) {
+    previousConcealed[entry.seat] = entry.handCount;
+  }
   if (tableInitialized) {
     for (const seat of SEATS) {
       previousDiscards[seat] = seatEntry(seat)?.discards.length ?? 0;
