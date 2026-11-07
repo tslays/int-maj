@@ -30,6 +30,10 @@ const PLACE = {
 };
 
 const RAIL_KEY = "mahjong-rail";
+/** Whether the table offers you pung, kong and chow at all (2026-11-07). */
+const CALLS_KEY = "mahjong-calls";
+/** How long the called tile is left on the heap before the table passes for you. */
+const CALLS_OFF_PASS_MS = 420;
 const GAME_KEY = "mahjong-game";
 const MUTE_KEY = "mahjong-mute";
 
@@ -53,6 +57,8 @@ let scoresKey = null;
 let sessionScores = { E: 0, S: 0, W: 0, N: 0 };
 let appliedOutcome = null;
 
+let callsEnabled = true;
+let autoPassKey = null;
 let muted = false;
 let audioContext = null;
 let lastClaimCueKey = null;
@@ -81,6 +87,59 @@ function persistMuted() {
   } catch {
     // The toggle still works for this visit.
   }
+}
+
+/** Calls are a house option, not a rule: off means the table passes for you. */
+function readCalls() {
+  try {
+    return localStorage.getItem(CALLS_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+function persistCalls() {
+  try {
+    localStorage.setItem(CALLS_KEY, callsEnabled ? "1" : "0");
+  } catch {
+    // The toggle still works for this visit.
+  }
+}
+
+/** The chip in the action row: the only control the bare table keeps. */
+function callsToggle() {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.id = "calls-toggle";
+  button.className = "calls-toggle";
+  button.setAttribute("aria-pressed", String(callsEnabled));
+  button.textContent = callsEnabled ? "Calls on" : "Calls off";
+  button.title = callsEnabled
+    ? "Pung, kong and chow are offered when a discard can be claimed"
+    : "You never claim: the table passes for you. A winning tile still asks.";
+  button.addEventListener("click", () => {
+    callsEnabled = !callsEnabled;
+    autoPassKey = null;
+    persistCalls();
+    log(callsEnabled ? "Calls on." : "Calls off: the table passes for you.");
+    render();
+  });
+  return button;
+}
+
+/** Calls are off and the table asked anyway: answer Pass without a prompt. */
+function passClaimForPlayer() {
+  const view = payload?.view;
+  const window = view?.claimWindow ?? null;
+  if (window === null) return;
+  const key =
+    `${payload.game}|${view.handNumber}|${window.discarder}|` +
+    `${window.tile}|${window.pending.join(",")}`;
+  if (autoPassKey === key) return;
+  const pass = payload.legalActions.find((action) => action.type === "Pass");
+  if (pass === undefined) return;
+  autoPassKey = key;
+  sendAction(pass, CALLS_OFF_PASS_MS);
 }
 
 function toggleMute() {
@@ -1493,7 +1552,7 @@ function makeChowVariant(action) {
  * throw's own slot at the right, both compact - never a button across the
  * whole board. A chow with several runs puts its variants beside Dismiss.
  */
-function renderClaimBar() {
+function renderClaimBar({ winOnly = false } = {}) {
   const bar = $("#claim-bar");
   bar.hidden = false;
   bar.replaceChildren();
@@ -1505,8 +1564,14 @@ function renderClaimBar() {
   const label = span("claim-label", `${seatLabel(window.discarder)} discards`);
   head.append(label, tileElement(window.tile));
 
-  const actions = payload.legalActions.filter(
-    (action) => action.type === "Win" || action.type === "Claim" || action.type === "Pass",
+  // With calls off, only the hand's own win is offered: pung, kong and chow
+  // never appear.
+  const actions = payload.legalActions.filter((action) =>
+    winOnly
+      ? action.type === "Win" ||
+        (action.type === "Claim" && action.kind === "mahjong") ||
+        action.type === "Pass"
+      : action.type === "Win" || action.type === "Claim" || action.type === "Pass",
   );
   const claim = bestClaimAction(actions);
   const pass =
@@ -1578,6 +1643,15 @@ function fishingPreview(action) {
 }
 
 function renderActions() {
+  renderActionRow();
+  const element = $("#actions");
+  if (payload === null || element.hidden) return;
+  // The only control the bare table keeps: it says whether a discard may ever
+  // be claimed, and it goes away while the table is asking something.
+  element.append(callsToggle());
+}
+
+function renderActionRow() {
   const element = $("#actions");
   const bar = $("#claim-bar");
 
@@ -1596,6 +1670,33 @@ function renderActions() {
     bar.replaceChildren();
     element.hidden = false;
     element.replaceChildren();
+    return;
+  }
+
+  if (isOwnClaimWindow() && !callsEnabled) {
+    const win = bestClaimAction(
+      payload.legalActions.filter(
+        (action) =>
+          action.type === "Win" ||
+          (action.type === "Claim" && action.kind === "mahjong"),
+      ),
+    );
+    if (win === null) {
+      // Calls are off: nothing is offered, so nothing is drawn. The table
+      // answers Pass for the player once the called tile has settled - but a
+      // review board is not a game, so it is never written to.
+      if (scenarioName === null) passClaimForPlayer();
+      bar.hidden = true;
+      bar.replaceChildren();
+      element.hidden = false;
+      element.replaceChildren();
+      return;
+    }
+    // A winning tile is not a call - it still asks, on its own.
+    renderClaimBar({ winOnly: true });
+    element.replaceChildren();
+    element.classList.remove("has-fishing-preview");
+    element.hidden = true;
     return;
   }
 
@@ -2485,6 +2586,7 @@ function initialRail() {
 
 async function boot() {
   muted = readMuted();
+  callsEnabled = readCalls();
   bindEvents();
   railOpen = initialRail();
   applyRail();

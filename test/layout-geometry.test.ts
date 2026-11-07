@@ -61,6 +61,7 @@ interface Measurement {
     >
   >;
   readonly discard: Rect | null;
+  readonly calls: Rect | null;
   readonly handToggle: boolean;
   readonly markers: number;
   readonly frameBorder: string;
@@ -222,6 +223,7 @@ const MEASURE = `(() => {
     handClientWidth: handBand === null ? 0 : handBand.clientWidth,
     lastTileDrawn: lastTile === null ? false : lastTile.classList.contains("is-drawn"),
     discard: R(document.querySelector('.action-button[data-action="discard"]')),
+    calls: R(document.querySelector("#calls-toggle")),
     handToggle: document.querySelector(".hand-toggle") !== null,
     markers: document.querySelectorAll(
       ".seat-badge, .hand-badge, .center-meta, .wall-dial, .center-scores, .self-label",
@@ -396,6 +398,15 @@ function assertPile(
 function assertActionRow(measurement: Measurement, label: string): void {
   const controls = measurement.rects.controls;
   assert.ok(controls, `${label}: no controls row`);
+  // The calls chip is the row's one permanent control: it must sit inside the
+  // row, at its right end, whatever else the table is asking.
+  const calls = measurement.calls;
+  if (calls !== null && calls[2] > 0) {
+    assert.ok(
+      inside(controls, calls),
+      `${label}: the calls chip sits outside the action row (${JSON.stringify(calls)} in ${JSON.stringify(controls)})`,
+    );
+  }
   // There is no throw button: a tap on a hand tile is the discard.
   assert.equal(
     measurement.discard,
@@ -829,6 +840,70 @@ describe("variant D seat melds", () => {
     );
     assert.ok(measured.row[3] <= measured.band[3] + 1, "the row stays within the top seat's height");
     assert.ok(measured.scrollWidth >= measured.clientWidth);
+  });
+});
+
+describe("variant D calls toggle", () => {
+  it("turns the claim prompt off and remembers it", async () => {
+    await setViewport(cdp, sessionId, 770, 400);
+    await navigate(cdp, sessionId, `${server.url}/?state=turn&variant=d`);
+    const deadline = Date.now() + 8000;
+    while (Date.now() < deadline) {
+      const ready = await evaluate<boolean>(
+        cdp,
+        sessionId,
+        `document.querySelector("#calls-toggle") !== null`,
+      );
+      if (ready) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    const before = await evaluate<{ pressed: string; label: string; stored: string | null }>(
+      cdp,
+      sessionId,
+      `(() => {
+        const chip = document.querySelector("#calls-toggle");
+        return {
+          pressed: chip.getAttribute("aria-pressed"),
+          label: chip.textContent.trim(),
+          stored: localStorage.getItem("mahjong-calls"),
+        };
+      })()`,
+    );
+    assert.equal(before.pressed, "true", "calls are offered by default");
+    assert.equal(before.label, "Calls on", "the chip says calls are on");
+
+    await evaluate(cdp, sessionId, `document.querySelector("#calls-toggle").click()`);
+    const after = await evaluate<{ pressed: string; label: string; stored: string | null }>(
+      cdp,
+      sessionId,
+      `(() => {
+        const chip = document.querySelector("#calls-toggle");
+        return {
+          pressed: chip.getAttribute("aria-pressed"),
+          label: chip.textContent.trim(),
+          stored: localStorage.getItem("mahjong-calls"),
+        };
+      })()`,
+    );
+    assert.equal(after.pressed, "false", "the chip turns calls off");
+    assert.equal(after.stored, "0", "the choice is remembered");
+
+    // With calls off the claim window is never drawn: the table passes for
+    // the player instead of asking.
+    await navigate(cdp, sessionId, `${server.url}/?state=claim&variant=d`);
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    const bar = await evaluate<{ hidden: boolean; buttons: number }>(
+      cdp,
+      sessionId,
+      `(() => {
+        const bar = document.querySelector("#claim-bar");
+        return { hidden: bar.hidden, buttons: bar.querySelectorAll("button").length };
+      })()`,
+    );
+    assert.equal(bar.hidden, true, "no claim prompt appears with calls off");
+    assert.equal(bar.buttons, 0, "and nothing is offered to click");
+
+    await evaluate(cdp, sessionId, `localStorage.removeItem("mahjong-calls")`);
   });
 });
 

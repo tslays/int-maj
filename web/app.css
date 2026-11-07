@@ -2364,6 +2364,55 @@ table offers you lines up from the left edge of the same row. */
 
 .variant-d .action-buttons {
   width: 100%;
+  /* The calls chip owns the row's right end; a button never sits under it. */
+  padding-right: 84px;
+}
+
+/* The one control the bare table keeps: whether a discard may ever be claimed.
+   It sits at the right end of the reserved row, and it leaves with the row
+   whenever the table is asking something. */
+.variant-d .calls-toggle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--layout-controls-h);
+  min-width: 72px;
+  padding: 0 10px;
+  border: var(--stroke) solid var(--button-border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--on-felt);
+  opacity: 0.45;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 160ms var(--ease), border-color 160ms var(--ease);
+}
+
+.variant-d .calls-toggle:hover,
+.variant-d .calls-toggle:focus-visible {
+  opacity: 1;
+}
+
+.variant-d .calls-toggle[aria-pressed="false"] {
+  opacity: 1;
+  border-color: var(--accent-strong);
+  color: var(--accent);
+}
+
+.variant-d .calls-toggle[aria-pressed="false"]::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  vertical-align: middle;
 }
 
 

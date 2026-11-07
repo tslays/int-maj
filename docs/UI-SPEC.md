@@ -214,6 +214,25 @@ resize), which is the one time the cells themselves change.
 
 Your own throw animates too: it leaves the hand, flies to its spot and clacks.
 
+### Calls can be turned off (2026-11-07, owner request)
+
+The bare table keeps one permanent control: a chip at the right end of the
+reserved action row that reads `Calls on` / `Calls off` (`#calls-toggle`,
+`aria-pressed`, remembered in `mahjong-calls`). It leaves with the row
+whenever the table is asking something, so it never competes with an offer.
+
+With calls off the table never asks for a pung, kong or chow: the offer is not
+drawn at all and the client answers `Pass` itself (`passClaimForPlayer`, 420 ms
+after the called tile has settled - the beat and the called tile stay
+readable). A **winning** tile is not a call, so it still asks, on its own, with
+only the win to take. Rules are untouched: the engine still offers everything,
+the player simply always passes. A review board (`?state=`) is never written
+to, so it neither asks nor auto-passes.
+
+Measured live at 770x400: 60 s of play with calls off - the claim bar never
+appeared and four passes were sent automatically; the audit loads `?state=claim`
+with calls off and asserts the bar stays hidden with nothing to click.
+
 ### The discard rhythm (2026-11-05)
 ### The discard rhythm (2026-11-05)
 ### The hand's reading order (2026-11-06)
