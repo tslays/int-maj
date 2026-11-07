@@ -156,6 +156,16 @@ export interface StatePayload {
   readonly wallRemaining: number;
   readonly ledger: readonly LedgerEntry[];
   readonly table: readonly TableSeat[];
+  /**
+   * What is left of the wall. Counts only - the faces stay hidden: the live
+   * wall (ordinary draws), the loose pair lifted at the break and, in the
+   * Chinese game, the dead wall kept for kong replacements.
+   */
+  readonly wall: {
+    readonly remaining: number;
+    readonly loose: number;
+    readonly dead: number;
+  };
   readonly checker: CheckerPayload;
   readonly outcome: OutcomePayload | null;
 }
@@ -357,6 +367,11 @@ export function statePayload(session: WebSession): StatePayload {
     wallRemaining: view.wallRemaining,
     ledger: view.ledger,
     table: tableFor(session.state, view),
+    wall: {
+      remaining: view.wallRemaining,
+      loose: session.state.wall.loose.length,
+      dead: session.state.wall.dead?.length ?? 0,
+    },
     checker: checkerFor(view.player),
     outcome: outcomeFor(session, view),
   };

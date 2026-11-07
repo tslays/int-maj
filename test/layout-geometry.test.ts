@@ -1101,6 +1101,84 @@ describe("variant D calls off keeps the win and the fishing", () => {
   });
 });
 
+describe("variant D wall", () => {
+  for (const [width, height] of [
+    [770, 400],
+    [1024, 768],
+  ] as const) {
+    it(`${width}x${height} rings the pile with one back per live tile`, async () => {
+      await setViewport(cdp, sessionId, width, height);
+      await navigate(cdp, sessionId, `${server.url}/?state=turn&variant=d`);
+      const deadline = Date.now() + 8000;
+      while (Date.now() < deadline) {
+        const ready = await evaluate<boolean>(
+          cdp,
+          sessionId,
+          `document.querySelectorAll("#wall .wall-back").length > 0`,
+        );
+        if (ready) break;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      const wall = await evaluate<{
+        live: number;
+        loose: number;
+        payload: number;
+        box: [number, number, number, number];
+        clash: number;
+        inside: boolean;
+        tile: [number, number];
+      }>(
+        cdp,
+        sessionId,
+        `(async () => {
+          const box = (el) => {
+            const r = el.getBoundingClientRect();
+            return [r.x, r.y, r.width, r.height];
+          };
+          const frame = document.querySelector("#wall");
+          const backs = [...frame.querySelectorAll(".wall-back")];
+          const boxes = backs.map(box);
+          const overlap = (a, b) =>
+            Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0]) > 0.5 &&
+            Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]) > 0.5;
+          let clash = 0;
+          for (let i = 0; i < boxes.length; i++) {
+            for (let j = i + 1; j < boxes.length; j++) {
+              if (overlap(boxes[i], boxes[j])) clash += 1;
+            }
+          }
+          const board = box(document.querySelector("#board"));
+          const ring = box(frame);
+          const payload = await (await fetch("/api/scenario?state=turn")).json();
+          return {
+            live: backs.filter((b) => b.classList.contains("live")).length,
+            loose: backs.filter((b) => b.classList.contains("loose")).length,
+            payload: payload.wall.remaining,
+            box: ring,
+            clash,
+            inside: boxes.every((b) =>
+              b[0] >= board[0] - 1 &&
+              b[1] >= board[1] - 1 &&
+              b[0] + b[2] <= board[0] + board[2] + 1 &&
+              b[1] + b[3] <= board[1] + board[3] + 1,
+            ),
+            tile: [Math.round(boxes[0][2]), Math.round(boxes[0][3])],
+          };
+        })()`,
+      );
+      assert.equal(
+        wall.live,
+        wall.payload,
+        `${width}x${height}: ${wall.live} backs for ${wall.payload} tiles`,
+      );
+      assert.ok(wall.loose >= 0 && wall.loose <= 2, "the loose pair is a pair");
+      assert.equal(wall.clash, 0, `${width}x${height}: wall backs overlap`);
+      assert.ok(wall.inside, `${width}x${height}: a wall back left the board`);
+      assert.ok(wall.tile[0] >= 8, `${width}x${height}: the wall back is too small`);
+    });
+  }
+});
+
 describe("variant D heap gaps", () => {
   for (const [width, height, mode] of [
     [770, 400, "phone"],

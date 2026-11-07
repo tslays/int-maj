@@ -42,6 +42,66 @@ export function discardGap(tile) {
  * cell the grid has not reached yet, so the heap closes its own gap instead of
  * growing around a hole (2026-11-07, owner's rule).
  */
+/** How many tiles the wall ring must be able to show: the whole live wall. */
+export const WALL_CAPACITY = 96;
+
+/**
+ * The wall's cells: one back per tile, running clockwise around the frame from
+ * the break corner. The frame is the rectangle between the hands and the pile,
+ * so the wall always sits where a real one does. Cells are handed out from the
+ * corner in draw order, which is the order they disappear in.
+ */
+export function wallCells(frame, backWidth, gap = discardGap(backWidth)) {
+  const backHeight = Math.round((backWidth * 4) / 3);
+  const columns = Math.max(1, Math.floor((frame[2] + gap) / (backWidth + gap)));
+  const rows = Math.max(
+    1,
+    Math.floor((frame[3] - 2 * (backHeight + gap) + gap) / (backHeight + gap)),
+  );
+  const cells = [];
+  // Top edge, left to right.
+  for (let column = 0; column < columns; column++) {
+    cells.push({
+      x: frame[2] / 2 + (column - (columns - 1) / 2) * (backWidth + gap) - backWidth / 2,
+      y: 0,
+    });
+  }
+  // Right edge, top to bottom.
+  for (let row = 0; row < rows; row++) {
+    cells.push({
+      x: frame[2] - backWidth,
+      y: backHeight + gap + row * (backHeight + gap),
+    });
+  }
+  // Bottom edge, right to left.
+  for (let column = columns - 1; column >= 0; column--) {
+    cells.push({
+      x: frame[2] / 2 + (column - (columns - 1) / 2) * (backWidth + gap) - backWidth / 2,
+      y: frame[3] - backHeight,
+    });
+  }
+  // Left edge, bottom to top.
+  for (let row = rows - 1; row >= 0; row--) {
+    cells.push({
+      x: 0,
+      y: backHeight + gap + row * (backHeight + gap),
+    });
+  }
+  return cells;
+}
+
+/**
+ * The wall's back size for a frame: the largest back whose ring holds
+ * WALL_CAPACITY tiles, never larger than the seat's own back.
+ */
+export function wallBackSize(frame, cap) {
+  const limit = Math.max(6, Math.floor(cap));
+  for (let width = limit; width >= 6; width--) {
+    if (wallCells(frame, width).length >= WALL_CAPACITY) return width;
+  }
+  return 6;
+}
+
 export function nextFreeCell(occupied, cellCount) {
   let index = 0;
   while (index < cellCount && occupied.has(index)) index += 1;
@@ -174,6 +234,7 @@ export function computeLayout(input) {
     hand: shift(inner.hand),
     centre: shift(inner.centre),
     pile: shift(inner.pile),
+    wall: shift(inner.wall),
     rivers: shiftAll(inner.rivers),
     seats: shiftAll(inner.seats),
     controls: shift(inner.controls),
@@ -304,9 +365,21 @@ function solveLayout({
       pileRight - pileLeft,
       bottomRiverY + riverHeight - pileTop,
     ];
+    // The wall is the rectangle between the hands and the pile: one back per
+    // live tile runs round it, and the discards sit inside that frame.
+    const wallFrame = pile;
+    const wallBack = wallBackSize(wallFrame, wallTileWidth);
+    const wallGap = discardGap(wallBack);
+    const wallInset = Math.round((wallBack * 4) / 3) + wallGap;
+    const pileInner = [
+      wallFrame[0] + wallInset,
+      wallFrame[1] + wallInset,
+      Math.max(24, wallFrame[2] - 2 * wallInset),
+      Math.max(24, wallFrame[3] - 2 * wallInset),
+    ];
     // One tile size for every discard, for the whole hand at once: the grid
     // holds all 84 throws, so a discard never has to change size mid-hand.
-    const discardTile = discardTileSize(pile, DISCARD_CAPACITY, handScale);
+    const discardTile = discardTileSize(pileInner, DISCARD_CAPACITY, handScale);
 
     const rivers = {
       top: [centreX, topRiverY, flatRiverWidth, riverHeight],
@@ -345,7 +418,11 @@ function solveLayout({
       hand,
       centre,
       rivers,
-      pile,
+      pile: pileInner,
+      wall: wallFrame,
+      wallBackWidth: wallBack,
+      wallBackHeight: Math.round((wallBack * 4) / 3),
+      wallGap,
       discardTileWidth: discardTile,
       discardTileHeight: (discardTile * 4) / 3,
       seats,
@@ -539,10 +616,22 @@ function solveLayout({
     pileRight - pileLeft,
     bottomRiverY + riverHeight - pileTop,
   ];
+  // The wall is the rectangle between the hands and the pile: one back per live
+  // tile runs round it, and the discards sit inside that frame.
+  const wallFrame = pile;
+  const wallBack = wallBackSize(wallFrame, wallTileWidth);
+  const wallGap = discardGap(wallBack);
+  const wallInset = Math.round((wallBack * 4) / 3) + wallGap;
+  const pileInner = [
+    wallFrame[0] + wallInset,
+    wallFrame[1] + wallInset,
+    Math.max(24, wallFrame[2] - 2 * wallInset),
+    Math.max(24, wallFrame[3] - 2 * wallInset),
+  ];
   // One tile size for every discard, for the whole hand at once: the grid holds
   // all 84 throws, so a discard never changes size mid-hand. The discard may be
   // as large as the hand's own tile: it is what the table is read from.
-  const discardTile = discardTileSize(pile, DISCARD_CAPACITY, handTile);
+  const discardTile = discardTileSize(pileInner, DISCARD_CAPACITY, handTile);
   const rivers = {
     top: [round((width - riverWidth) / 2), topRiverY, riverWidth, riverHeight],
     bottom: [
@@ -586,7 +675,11 @@ function solveLayout({
     hand,
     centre,
     rivers,
-    pile,
+    pile: pileInner,
+    wall: wallFrame,
+    wallBackWidth: wallBack,
+    wallBackHeight: Math.round((wallBack * 4) / 3),
+    wallGap,
     discardTileWidth: discardTile,
     discardTileHeight: (discardTile * 4) / 3,
     seats,
