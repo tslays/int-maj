@@ -1106,7 +1106,7 @@ describe("variant D fishing", () => {
     [770, 400],
     [1024, 768],
   ] as const) {
-    it(`${width}x${height} says fishing next to the hand that declared it`, async () => {
+    it(`${width}x${height} shows fishing where that seat's calls are`, async () => {
       await setViewport(cdp, sessionId, width, height);
       await navigate(cdp, sessionId, `${server.url}/?state=result&variant=d`);
       const deadline = Date.now() + 10000;
@@ -1123,11 +1123,10 @@ describe("variant D fishing", () => {
         Array<{
           seat: string;
           text: string;
-          rect: [number, number, number, number];
-          band: [number, number, number, number];
-          board: [number, number, number, number];
           animation: string;
-          gap: number;
+          inside: boolean;
+          hitsWall: boolean;
+          hitsMelds: boolean;
         }>
       >(
         cdp,
@@ -1137,24 +1136,28 @@ describe("variant D fishing", () => {
             const r = el.getBoundingClientRect();
             return [r.x, r.y, r.width, r.height];
           };
-          const board = box(document.querySelector("#board"));
+          const hits = (a, b) =>
+            Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0]) > 0.5 &&
+            Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]) > 0.5;
+          const wall = box(document.querySelector("#wall"));
           const out = [];
           for (const seat of document.querySelectorAll(".seat.is-fishing")) {
             const chip = seat.querySelector(".fishing-chip");
             if (chip === null) continue;
-            const band = box(seat);
             const rect = box(chip);
-            // How far the chip sits from its own band, whichever side it is on.
-            const dx = Math.max(band[0] - (rect[0] + rect[2]), rect[0] - (band[0] + band[2]), 0);
-            const dy = Math.max(band[1] - (rect[1] + rect[3]), rect[1] - (band[1] + band[3]), 0);
+            const band = box(seat);
+            const melds = [...seat.querySelectorAll(".meld")].map(box);
             out.push({
               seat: seat.id,
               text: chip.textContent.trim(),
-              rect,
-              band,
-              board,
               animation: getComputedStyle(chip).animationName,
-              gap: Math.round(Math.max(dx, dy)),
+              inside:
+                rect[0] >= band[0] - 1 &&
+                rect[1] >= band[1] - 1 &&
+                rect[0] + rect[2] <= band[0] + band[2] + 1 &&
+                rect[1] + rect[3] <= band[1] + band[3] + 1,
+              hitsWall: hits(rect, wall),
+              hitsMelds: melds.some((meld) => hits(rect, meld)),
             });
           }
           return out;
@@ -1164,26 +1167,14 @@ describe("variant D fishing", () => {
       for (const chip of chips) {
         assert.equal(chip.text, "Fishing", `${chip.seat}: the chip does not say fishing`);
         assert.equal(chip.animation, "none", `${chip.seat}: the chip moves`);
-        assert.ok(
-          chip.rect[2] > 20 && chip.rect[3] > 8,
-          `${chip.seat}: the chip is not visible (${chip.rect[2]}x${chip.rect[3]})`,
-        );
-        assert.ok(
-          chip.rect[0] >= chip.board[0] - 1 &&
-            chip.rect[1] >= chip.board[1] - 1 &&
-            chip.rect[0] + chip.rect[2] <= chip.board[0] + chip.board[2] + 1 &&
-            chip.rect[1] + chip.rect[3] <= chip.board[1] + chip.board[3] + 1,
-          `${chip.seat}: the fishing chip leaves the board`,
-        );
-        assert.ok(
-          chip.gap <= 16,
-          `${chip.seat}: the chip is ${chip.gap}px away from its hand`,
-        );
+        assert.ok(chip.inside, `${chip.seat}: the fishing chip leaves its own band`);
+        assert.equal(chip.hitsWall, false, `${chip.seat}: the chip covers the wall`);
+        assert.equal(chip.hitsMelds, false, `${chip.seat}: the chip covers a call`);
       }
     });
   }
 
-  it("puts your own fishing next to your hand", async () => {
+  it("shows your own fishing beside your calls, never over the wall or the hand", async () => {
     await setViewport(cdp, sessionId, 1024, 768);
     await navigate(cdp, sessionId, `${server.url}/?state=fishing&variant=d`);
     const deadline = Date.now() + 12000;
@@ -1191,7 +1182,7 @@ describe("variant D fishing", () => {
       const ready = await evaluate<boolean>(
         cdp,
         sessionId,
-        `document.querySelector(".hand-band .fishing-chip") !== null`,
+        `document.querySelector("#own-melds .fishing-chip") !== null`,
       );
       if (ready) break;
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -1199,24 +1190,44 @@ describe("variant D fishing", () => {
     const own = await evaluate<{
       text: string | null;
       label: string | null;
-      above: boolean;
+      hitsWall: boolean;
+      hitsHand: boolean;
+      insideBand: boolean;
     }>(
       cdp,
       sessionId,
       `(() => {
-        const chip = document.querySelector(".hand-band .fishing-chip");
-        const band = document.querySelector(".hand-band").getBoundingClientRect();
-        const rect = chip === null ? null : chip.getBoundingClientRect();
+        const box = (el) => {
+          const r = el.getBoundingClientRect();
+          return [r.x, r.y, r.width, r.height];
+        };
+        const hits = (a, b) =>
+          Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0]) > 0.5 &&
+          Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]) > 0.5;
+        const chip = document.querySelector("#own-melds .fishing-chip");
+        if (chip === null) return { text: null };
+        const rect = box(chip);
+        const band = box(document.querySelector(".hand-band"));
         return {
-          text: chip === null ? null : chip.textContent.trim(),
+          text: chip.textContent.trim(),
           label: document.querySelector(".hand-band").getAttribute("aria-label"),
-          above: rect === null ? false : rect.y + rect.height <= band.y + 1,
+          hitsWall: hits(rect, box(document.querySelector("#wall"))),
+          hitsHand: [...document.querySelectorAll("#hand .hand-tile")].some((tile) =>
+            hits(rect, box(tile)),
+          ),
+          insideBand:
+            rect[0] >= band[0] - 1 &&
+            rect[1] >= band[1] - 1 &&
+            rect[0] + rect[2] <= band[0] + band[2] + 1 &&
+            rect[1] + rect[3] <= band[1] + band[3] + 1,
         };
       })()`,
     );
     assert.equal(own.text, "Fishing", "your own fishing is not marked");
     assert.match(own.label ?? "", /Fishing on /, "your fishing wait is not labelled");
-    assert.ok(own.above, "your fishing chip sits over your hand");
+    assert.equal(own.hitsWall, false, "your fishing chip covers the wall");
+    assert.equal(own.hitsHand, false, "your fishing chip covers your tiles");
+    assert.ok(own.insideBand, "your fishing chip leaves the hand band");
   });
 });
 

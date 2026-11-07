@@ -1585,14 +1585,15 @@ function renderOwnMelds() {
   const melds = meldRow(payload.view.player.melds);
   if (melds === null) slot.replaceChildren();
   else slot.replaceChildren(melds);
-  // Your own declaration gets the same word, next to your hand.
+  // Your own declaration stands with your calls: the same slot the seats use.
   const band = document.querySelector(".hand-band");
   band.querySelectorAll(".fishing-chip").forEach((chip) => chip.remove());
   const mine = fishingChip({ seat: payload.view.player.seat });
   if (mine === null) band.removeAttribute("aria-label");
   else {
     band.setAttribute("aria-label", mine.getAttribute("aria-label") ?? "Fishing");
-    band.append(mine);
+    // In the flow beside your melds, never floating over your tiles.
+    slot.prepend(mine);
   }
 }
 

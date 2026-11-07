@@ -185,23 +185,22 @@ then shifts every region by `inset`, so the hand, the three walls, the rivers
 and the action row all sit a breath away from the edge. `layout.inset` is
 exported; the board box stays full-bleed because the felt is the background.
 
-### A fishing hand says so (2026-11-07, owner's rule, third shape)
+### A fishing hand says so, where its calls are (2026-11-07)
 
-Two earlier attempts failed: a badge of the wait tiles on the band (rejected -
-"not in love with the indicator") and a slow colour pulse ("too slow and not
-visible"). The state now says itself, still: a small amber chip reading
-`Fishing` sits next to the hand that declared it, on the inboard side of that
-seat's band (below the far seat, beside a side band, above your hand). No
-animation - the call pill is the only thing on the felt that moves.
+A badge of the wait tiles on the band was rejected ("not in love with the
+indicator"), a slow colour pulse too ("too slow and not visible"), and a chip
+floating beside the seat was wrong in one way that matters: it drifted over the
+wall. The state now sits **in the seat's own band, at the end where its melds
+are shown** - the far seat's chip at the band's right end, a side seat's chip
+reading down its band's top end (a side band is one tile wide), and your own in
+the flow of `#own-melds`, beside your calls and never over your tiles.
 
-The chip clears the pile by a gap (`bottom: -10px` on a side seat at
-770x400: y 245-264 against a pile ending at 242) and never leaves the board at
-any audited size. The wait and its tier stay in the chip's `title` and in the
-seat's / hand band's `aria-label` ("Fishing on 4 bamboo, 7 bamboo, limit").
-
-The audit loads `?state=result` (an opponent fishing) and `?state=fishing`
-(you are) and fails unless the chip is visible, still, inside the board, within
-16 px of its own hand, and says `Fishing`.
+It is still: no animation, because the call pill is the only thing on the felt
+that moves. By construction it cannot touch the wall ring (the band is outside
+the frame), and the audit proves it: the chip must be inside its band, must not
+intersect `#wall`, and must not intersect any `.meld` of that seat - at
+770x400 and 1024x768. The wait and its tier stay in the chip's `title` and in
+the seat's / hand band's `aria-label`.
 
 ### The wall is a frame around the pile (2026-11-07, owner request)
 
