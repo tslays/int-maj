@@ -294,6 +294,22 @@ function assertPile(
     Math.abs(height / width - 4 / 3) <= 0.05,
     `${label}: discard is ${width}x${height}, not 3:4`,
   );
+  // The heap is a grid: every tile sits square, and no two share a cell.
+  assert.deepEqual(
+    [...new Set(measurement.discardAngles)].map((angle) => Math.round(angle)),
+    [0],
+    `${label}: a discard is rotated (${measurement.discardAngles.join(", ")})`,
+  );
+  const gridColumns = new Set(
+    measurement.discards.map((box) => Math.round(box[0])),
+  );
+  const gridRows = new Set(measurement.discards.map((box) => Math.round(box[1])));
+  assert.equal(
+    gridColumns.size * gridRows.size,
+    measurement.discards.length,
+    `${label}: the discards are not a grid (${gridColumns.size} columns x ${gridRows.size} rows for ${measurement.discards.length} tiles)`,
+  );
+
   // No two discards may overlap, whatever angle each one lies at.
   const boxesAt = measurement.discards.map((box, index) => ({
     cx: box[0] + box[2] / 2,
@@ -808,6 +824,36 @@ describe("variant D seat melds", () => {
     );
     assert.ok(measured.row[3] <= measured.band[3] + 1, "the row stays within the top seat's height");
     assert.ok(measured.scrollWidth >= measured.clientWidth);
+  });
+});
+
+describe("variant D far-seat calls", () => {
+  it("770x400 keeps every far-seat call inside its band", async () => {
+    await setViewport(cdp, sessionId, 770, 400);
+    await navigate(cdp, sessionId, `${server.url}/?state=win&variant=d`);
+    const deadline = Date.now() + 8000;
+    while (Date.now() < deadline) {
+      const ready = await evaluate<boolean>(
+        cdp,
+        sessionId,
+        `document.querySelectorAll("#seat-top .meld").length > 0`,
+      );
+      if (ready) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    const measured = await evaluate<{
+      seats: Record<string, { band: Rect; melds: Rect[]; inside: boolean }>;
+    }>(cdp, sessionId, MEASURE_MELDS);
+    const top = measured.seats.top!;
+    assert.ok(top.melds.length > 0, "the review hand has a far-seat call");
+    for (const meld of top.melds) {
+      // A squeezed meld row scrolls its first call out of the band, and a
+      // claim that never shows reads as a call that never happened.
+      assert.ok(
+        inside(top.band, meld),
+        `a far-seat call sits outside its band: ${JSON.stringify(meld)} in ${JSON.stringify(top.band)}`,
+      );
+    }
   });
 });
 

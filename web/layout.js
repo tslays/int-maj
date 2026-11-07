@@ -19,28 +19,34 @@ export const HAND_TILE_COUNT = 14;
 export const HAND_OVERLAP = 0.17;
 
 /**
- * The heap's packing budget: how many 3:4 tiles it is drawn to hold.
- *
- * A normal hand throws about TARGET tiles, so discards are drawn large enough
- * to read. A long hand that outgrows that makes the heap rebuild once, at
- * CAPACITY, rather than let two tiles touch. CAPACITY is the headroom past the
- * longest hand there is (84 throws).
+ * The heap is one grid, so it must hold the whole hand: 84 throws is the
+ * longest a hand can go. Nothing is random about the heap (2026-11-07), so its
+ * cells are exact and a full hand is a tidy block, not a scatter.
  */
-export const DISCARD_TARGET = 48;
-export const DISCARD_CAPACITY = 96;
+export const DISCARD_CAPACITY = 84;
+export const DISCARD_MIN = 18;
+
+/** The space between two discards: a share of the tile, never under 2 px. */
+export function discardGap(tile) {
+  return Math.max(2, Math.round(tile * 0.1));
+}
 
 /**
- * The discard tile's width for a pile, sized so `capacity` 3:4 tiles fit
- * inside it without touching. The constant is measured against the real
- * placement in `test/layout-geometry.test.ts`: a heap sized this way lands
- * within a few tiles of full and never draws tiles it cannot place.
+ * The discard tile's width for a pile: the largest 3:4 tile whose axis-aligned
+ * grid holds `capacity` of them, never wider than `cap` (the hand's own tile).
+ * A grid is exact — columns x rows cells at a fixed gap — so this is the whole
+ * fit, and every cell is a place a tile can land.
  */
 export function discardTileSize(pile, capacity, cap) {
-  const heapRadius = Math.sqrt((pile[2] * pile[3]) / Math.PI);
-  const fitted = Math.floor(
-    Math.sqrt((Math.PI * heapRadius * heapRadius * 0.55) / (capacity * 2.18)),
-  );
-  return Math.max(8, Math.min(Math.round(cap), fitted));
+  const limit = Math.max(DISCARD_MIN, Math.floor(cap));
+  for (let tile = limit; tile >= DISCARD_MIN; tile--) {
+    const height = Math.round((tile * 4) / 3);
+    const gap = discardGap(tile);
+    const columns = Math.floor((pile[2] + gap) / (tile + gap));
+    const rows = Math.floor((pile[3] + gap) / (height + gap));
+    if (columns >= 1 && rows >= 1 && columns * rows >= capacity) return tile;
+  }
+  return DISCARD_MIN;
 }
 
 /** Width of a hand row: one tile plus the thirteen that follow it. */
@@ -254,10 +260,9 @@ function solveLayout({
       pileRight - pileLeft,
       bottomRiverY + riverHeight - pileTop,
     ];
-    // One tile size for every discard: the heap is sized for a normal hand's
-    // throws so the faces stay readable, and a long hand rebuilds it once at
-    // DISCARD_CAPACITY rather than let two tiles touch.
-    const discardTile = discardTileSize(pile, DISCARD_TARGET, handScale);
+    // One tile size for every discard, for the whole hand at once: the grid
+    // holds all 84 throws, so a discard never has to change size mid-hand.
+    const discardTile = discardTileSize(pile, DISCARD_CAPACITY, handScale);
 
     const rivers = {
       top: [centreX, topRiverY, flatRiverWidth, riverHeight],
@@ -490,11 +495,10 @@ function solveLayout({
     pileRight - pileLeft,
     bottomRiverY + riverHeight - pileTop,
   ];
-  // One tile size for every discard: the heap is sized for a normal hand's
-  // throws so the faces stay readable, and a long hand rebuilds it once at
-  // DISCARD_CAPACITY rather than let two tiles touch. The discard may be as
-  // large as the hand's own tile: it is the thing the table is read from.
-  const discardTile = discardTileSize(pile, DISCARD_TARGET, handTile);
+  // One tile size for every discard, for the whole hand at once: the grid holds
+  // all 84 throws, so a discard never changes size mid-hand. The discard may be
+  // as large as the hand's own tile: it is what the table is read from.
+  const discardTile = discardTileSize(pile, DISCARD_CAPACITY, handTile);
   const rivers = {
     top: [round((width - riverWidth) / 2), topRiverY, riverWidth, riverHeight],
     bottom: [

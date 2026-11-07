@@ -2088,7 +2088,9 @@ h3 {
    wrapping a second row where the fixed-height seat would hide it. */
 .variant-d .seat-top .meld-row {
   flex-wrap: nowrap;
-  flex: 0 1 auto;
+  /* The calls take the width they need: squeeze them and a claim is scrolled
+     out of its own band, which reads as a call that never arrived. */
+  flex: 0 0 auto;
   min-width: 0;
   max-width: 100%;
   overflow-x: auto;

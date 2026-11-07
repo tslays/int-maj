@@ -185,38 +185,30 @@ then shifts every region by `inset`, so the hand, the three walls, the rivers
 and the action row all sit a breath away from the edge. `layout.inset` is
 exported; the board box stays full-bleed because the felt is the background.
 
-### One round heap (2026-11-05)
+### One grid, no scatter (2026-11-07, owner's rule)
 
-There are no rivers: discards go into one heap in the middle. It is a heap, not
-a pattern:
+There are no rivers and no scatter: discards go into one grid in the middle.
+The owner rejected the random heap — "make a fixed grid that keeps growing,
+don't make it random ... so discards are easy to see" — and a grid also packs
+far better than a scatter can:
 
-    tile      = min(hand_tile, sqrt(pi * r^2 * 0.55 / (48 * 2.18)))    // r = the heap's radius
-    spots     = a jittered grid inside the pile's ellipse, ordered from the centre
-    angle     = random +-26 degrees, trying a few turns per spot
-    fit       = rotated-rectangle (SAT) test with a half-pixel gap
-    seat side = top -90deg, right 0deg, bottom +90deg, left 180deg
+    tile   = the largest 3:4 tile whose grid holds 84 throws, capped by hand_tile
+    gap    = max(2, round(tile * 0.1))
+    cells  = columns x rows inside the pile, the block centred in it
+    fill   = rings outward from the middle, clockwise inside a ring
+    angle  = 0, always
 
-Each throw takes the innermost free spot on its own side (widening only when
-that side is full), so the heap builds from the middle and each player's tiles
-stay on their side: yours south, the right-hand player's east, the left-hand
-player's west, the far seat's north. A tile may lie at any angle; no two discs
-ever overlap, and the audit proves it with a rotated-rectangle test.
+The sizing is exact rather than a packing estimate: `columns = floor((W+gap)/
+(tile+gap))` and `rows` likewise, so `columns*rows >= DISCARD_CAPACITY` is the
+whole fit and every cell is a place a tile can land. The heap therefore holds
+the whole hand at one size — no mid-hand shrink, no re-deal — and the discard
+may be as large as the hand's own tile. Measured: 30x40 at 770x400 (was 19x25
+as a scatter), 54x72 at 1024x768, 67x89 at 1440x900.
 
-A discard is drawn for a normal hand, not for the worst one. `DISCARD_TARGET`
-(48 throws) sets the tile: every face the table is read from stays legible, and
-a discard may grow to the hand's own tile, never past it (2026-11-07). The
-packing constant is measured against the real placement, so a heap drawn this
-way fills within a few tiles of its size and never over.
-
-A tile never moves once it has landed: each throw takes the innermost free spot
-from the spots still open, and the heap is left exactly as it was. The one
-exception is a hand that outgrows its heap: when the last free spot is taken,
-every landed tile is dealt again at once at `DISCARD_CAPACITY` (96, the headroom
-past the longest hand's 84 throws), so nothing overlaps and nothing is dropped.
-The CSS transition walks each tile to its new spot, so the heap gathers rather
-than jumps. A resize re-deals at the new size the same way; a window too short
-for the whole hand even then keeps the earlier landings fixed rather than
-repack twice.
+A tile never moves once it has landed, and a claimed tile simply leaves its cell
+empty. `dealPile()` re-deals every landed discard into the grid, in the order
+thrown, only when the board changes size (a resize), which is the one time the
+cells themselves change.
 
 Your own throw animates too: it leaves the hand, flies to its spot and clacks.
 
@@ -238,6 +230,11 @@ own tile size (`--layout-back-w/h`), stacked down the band on a side seat and
 run along it on the top seat. Thirteen tiles still fit the band - a call
 replaces as many backs as it exposes - so the call never leaves its band, and
 the audit measures that, plus that no call covers the hand or a discard.
+
+A far-seat call is never squeezed: its row takes the width it needs, so a
+claim is never scrolled out of its own band and mistaken for one that never
+arrived (measured at 770x400: the row was 59 px wide for 90 px of calls, and
+the first call hung outside the band).
 
 The call is also announced: the seat's meld row lights up for 950 ms (a
 brightness/scale pulse; a 2 px outline instead when the user prefers reduced
@@ -320,9 +317,9 @@ throw it answers.
 
 ### A whole hand fits the heap (2026-11-06)
 
-The heap must hold every throw of the game: a hand can reach 84 discards. It is
-drawn for a normal hand (`DISCARD_TARGET = 48`) and rebuilt once, smaller, at
-`DISCARD_CAPACITY = 96` when it fills (see "One round heap"). The
+The grid must hold every throw of the game: a hand can reach 84 discards, and
+`discardTileSize` picks the largest tile whose grid does (see "One grid, no
+scatter"). The
 candidate lattice covers the whole pile rectangle instead of its inscribed
 ellipse, up to fourteen jittered lattice phases are tried before giving up, and
 placed tiles are bucketed in a spatial grid so overlap checks stay local. A
