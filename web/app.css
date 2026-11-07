@@ -872,20 +872,11 @@ h3 {
 }
 
 .score-points.is-up,
-.result-score .is-up {
-  color: var(--positive);
-}
 
-.score-points.is-down,
-.result-score .is-down {
+.score-points.is-down {
   color: var(--negative);
 }
 
-.result-score td.is-up,
-.result-score td.is-down,
-.result-score th {
-  font-variant-numeric: tabular-nums;
-}
 
 .seat.is-turn .rack {
   outline: var(--stroke) solid var(--accent-soft);
@@ -1571,50 +1562,16 @@ h3 {
   text-transform: none;
 }
 
-.result-sub {
-  color: var(--on-felt-muted);
-  font-size: var(--fs-label);
-}
 
-.result-source {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: center;
-  margin-top: var(--space-1);
-  color: var(--on-felt);
-  font-size: var(--fs-body);
-}
 
-.result-source-sep {
-  color: var(--on-felt-muted);
-}
 
-.result-source .tile,
-.result-sub .tile {
-  width: var(--source-tile-w);
-  height: var(--source-tile-h);
-  vertical-align: middle;
-}
 
 .result-card > h3 {
   margin: var(--space-6) 0 var(--space-2);
 }
 
-.result-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-  gap: var(--space-6);
-  margin: var(--space-6) 0;
-}
 
-.result-grid h3 {
-  margin: var(--space-5) 0 var(--space-2);
-}
 
-.result-grid h3:first-child {
-  margin-top: 0;
-}
 
 .result-pattern {
   display: flex;
@@ -1665,138 +1622,19 @@ h3 {
   margin-left: var(--space-3);
 }
 
-.result-list {
-  padding-left: var(--space-6);
-  margin: 0;
-  color: var(--on-felt);
-  font-size: var(--fs-label);
-  line-height: var(--lh-log);
-}
 
-.result-list li + li {
-  margin-top: var(--space-1);
-}
 
-.result-payments li {
-  display: flex;
-  gap: var(--space-3);
-  align-items: baseline;
-}
 
-.result-amount {
-  min-width: 4.2em;
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
-  font-weight: var(--fw-bold);
-  text-align: right;
-}
 
-.result-entry {
-  color: var(--on-felt);
-}
 
-.result-fishing {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
 
-.result-fishing-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  align-items: center;
-  padding-left: var(--space-3);
-  border-left: var(--stroke-strong) solid var(--accent-soft);
-  font-size: var(--fs-label);
-}
 
-.result-fishing-seat {
-  min-width: 5.5em;
-  font-weight: var(--fw-bold);
-}
 
-.result-fishing-waits {
-  display: inline-flex;
-  gap: var(--stroke);
-}
 
-.result-fishing-waits .tile {
-  width: var(--settle-tile-w);
-  height: var(--settle-tile-h);
-}
 
-.result-fishing-tier {
-  color: var(--on-felt-muted);
-}
 
-.result-fishing-points {
-  margin-left: auto;
-  color: var(--positive);
-  font-variant-numeric: tabular-nums;
-  font-weight: var(--fw-bold);
-}
 
-.result-score {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--fs-label);
-  font-variant-numeric: tabular-nums;
-}
 
-.result-score th,
-.result-score td {
-  padding: var(--space-2);
-  border-bottom: var(--stroke) solid var(--line-soft);
-  text-align: right;
-}
-
-.result-score th:first-child,
-.result-score td:first-child {
-  text-align: left;
-}
-
-.result-score th {
-  color: var(--on-felt-muted);
-  font-weight: var(--fw-strong);
-}
-
-.result-score .delta {
-  color: var(--on-felt);
-  font-weight: var(--fw-bold);
-}
-
-.result-score td.delta.is-up {
-  color: var(--positive);
-}
-
-.result-score td.delta.is-down {
-  color: var(--negative);
-}
-
-.result-score tr.is-winner td {
-  background: var(--accent-fill);
-}
-
-.result-score tr.is-winner td:first-child {
-  box-shadow: inset var(--stroke-strong) 0 var(--seat-color, var(--accent));
-}
-
-.result-score tfoot tr.result-total th,
-.result-score tfoot tr.result-total td {
-  padding-top: var(--space-3);
-  border-bottom: 0;
-  color: var(--on-felt-muted);
-  font-weight: var(--fw-bold);
-}
-
-.result-score tfoot td.delta {
-  color: var(--on-felt);
-}
-
-.result-score tfoot td.delta.is-invalid {
-  color: var(--danger);
-}
 
 .result-next {
   display: inline-flex;
@@ -1819,11 +1657,6 @@ h3 {
   outline-offset: var(--space-1);
 }
 
-.result-note {
-  margin: var(--space-5) 0 var(--space-4);
-  color: var(--on-felt-muted);
-  font-size: var(--fs-label);
-}
 
 /* ------------------------------------------------------------- dialog */
 
@@ -2224,66 +2057,426 @@ h3 {
   max-width: none;
 }
 
-.variant-d .outcome {
-  position: absolute;
-  inset: auto 0 auto 0;
-  bottom: calc(var(--hand-h) + var(--hand-lift) + var(--action-row) + var(--space-6));
-  display: flex;
-  padding: 0;
-  background: none;
-  justify-content: center;
-  pointer-events: none;
-}
+/* ------------------------------------------------ the celebration
+   The result is not a receipt: it is the screen that celebrates the hand the
+   winner worked for. One combination, what the book says it is, what it paid,
+   and who paid it. Light is allowed here and nowhere else on the table. */
 
-.variant-d .result-card {
-  display: flex;
-  gap: var(--space-5);
-  align-items: center;
-  width: auto;
-  max-height: none;
-  padding: 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
-  color: var(--on-felt);
-  overflow: visible;
+.variant-d .outcome {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.78)),
+    radial-gradient(ellipse at 50% 30%, rgba(232, 193, 105, 0.10), transparent 62%);
   pointer-events: auto;
 }
 
-.variant-d .result-card > :not(h2):not(.result-source):not(.result-pattern):not(#result-next),
-.variant-d .result-card > h3,
-.variant-d .result-sub,
-.variant-d .result-tiles,
-.variant-d .result-grid,
-.variant-d .result-note,
-.variant-d .result-list {
-  display: none !important;
+.variant-d .result-card {
+  --gold: #e8c169;
+  --gold-soft: rgba(232, 193, 105, 0.42);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: min(620px, 100%);
+  max-height: min(88vh, 760px);
+  padding: var(--space-6) var(--space-6) var(--space-5);
+  overflow-y: auto;
+  border: var(--stroke) solid var(--gold-soft);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(232, 193, 105, 0.16), transparent 55%),
+    linear-gradient(180deg, rgba(44, 37, 26, 0.98), rgba(20, 17, 13, 0.99));
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: var(--on-felt);
+  text-align: center;
 }
 
-.variant-d .result-card h2 {
+/* The bigger the hand, the brighter the rim. A calculated hand stays plain. */
+.variant-d .result-card[data-tier="limit"],
+.variant-d .result-card[data-tier="middle"],
+.variant-d .result-card[data-tier="double"] {
+  border-color: var(--gold);
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(232, 193, 105, 0.18),
+    0 0 48px rgba(232, 193, 105, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+.variant-d .result-card[data-tier="double"] {
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(232, 193, 105, 0.26),
+    0 0 72px rgba(232, 193, 105, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.variant-d .result-kicker {
   margin: 0;
+  color: rgba(244, 237, 222, 0.72);
+  font-size: var(--fs-small);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* The name of the hand is the hero: a sweep of light crosses it, slowly. */
+.variant-d .result-hero {
+  margin: 0;
+  font-size: clamp(26px, 4.6vw, 46px);
+  font-weight: var(--fw-black);
+  line-height: 1.04;
+  letter-spacing: 0.01em;
+  background: linear-gradient(
+    100deg,
+    #f4e6bb 0%,
+    #fffaf0 32%,
+    var(--gold) 52%,
+    #fffaf0 68%,
+    #f4e6bb 100%
+  );
+  background-size: 240% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: hero-sweep 6s ease-in-out infinite;
+}
+
+.variant-d .outcome[data-kind="drawn"] .result-hero {
+  background: none;
+  color: var(--on-felt);
+  animation: none;
+}
+
+@keyframes hero-sweep {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.variant-d .result-meta {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.variant-d .result-meta .tier-badge {
+  padding: 2px 10px;
+  border: var(--stroke) solid var(--gold-soft);
+  border-radius: 999px;
+  color: var(--gold);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-black);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.variant-d .result-meta .tier-badge[data-tier="double"] {
+  background: rgba(232, 193, 105, 0.16);
+}
+
+.variant-d .result-page {
+  color: rgba(244, 237, 222, 0.55);
+  font-size: var(--fs-small);
+}
+
+/* What the book says the hand IS: the requirement, in its own words. */
+.variant-d .result-requirement {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: 2px solid var(--gold-soft);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(246, 240, 226, 0.92);
+  font-size: var(--fs-body);
+  line-height: 1.45;
+  text-align: left;
+}
+
+.variant-d .result-requirement-label {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--gold);
+  font-size: 10px;
+  font-weight: var(--fw-black);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.variant-d .result-card .result-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+}
+
+.variant-d .result-score {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-3) 0 0;
+  border-top: 1px solid rgba(244, 237, 222, 0.12);
+}
+
+.variant-d .score-line {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  color: rgba(244, 237, 222, 0.78);
+  font-size: var(--fs-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.variant-d .score-line.is-total {
+  margin-top: 4px;
+  color: var(--on-felt);
   font-size: var(--fs-body);
   font-weight: var(--fw-black);
 }
 
-.variant-d .result-pattern {
-  font-size: 0;
+.variant-d .score-value {
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
 }
 
-.variant-d .result-pattern .tier-badge {
+/* Who pays and who is paid, seat by seat. */
+.variant-d .result-pay {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.variant-d .result-pay li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 6px var(--space-4);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
   font-size: var(--fs-body);
+  font-variant-numeric: tabular-nums;
 }
 
-.variant-d .outcome[data-kind="win"] .result-source {
-  display: none !important;
+.variant-d .result-pay li::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--seat-color, var(--gold));
 }
 
-.variant-d .outcome[data-kind="drawn"] .result-pattern {
-  display: none !important;
+.variant-d .result-pay .pay-seat {
+  margin-right: auto;
+  color: rgba(246, 240, 226, 0.9);
 }
 
-.variant-d #result-next {
-  pointer-events: auto;
+.variant-d .result-pay li.is-winner {
+  background: rgba(232, 193, 105, 0.12);
+}
+
+.variant-d .result-pay .pay-amount {
+  font-weight: var(--fw-black);
+}
+
+.variant-d .result-pay .pay-amount.is-gain {
+  color: #8fe0a6;
+}
+
+.variant-d .result-pay .pay-amount.is-loss {
+  color: #f0a9a0;
+}
+
+.variant-d .result-reasons {
+  display: grid;
+  gap: 2px;
+  color: rgba(244, 237, 222, 0.5);
+  font-size: 11px;
+  text-align: left;
+}
+
+.variant-d .result-reason {
+  display: flex;
+  gap: 6px;
+}
+
+.variant-d .reason-amount {
+  color: rgba(244, 237, 222, 0.78);
+  font-variant-numeric: tabular-nums;
+}
+
+.variant-d .result-next {
+  /* The card scrolls on a short window; the one action stays reachable. */
+  position: sticky;
+  bottom: 0;
+  align-self: center;
+  min-height: var(--control-h);
+  margin-top: var(--space-2);
+  padding: 0 var(--space-6);
+  border: var(--stroke) solid var(--gold);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, rgba(52, 43, 29, 0.98), rgba(28, 23, 17, 0.98));
+  color: var(--gold);
+  font: inherit;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-black);
+  cursor: pointer;
+}
+
+.variant-d .result-next:hover {
+  background: rgba(232, 193, 105, 0.22);
+}
+
+.variant-d .result-next:focus-visible {
+  outline: var(--stroke-strong) solid var(--accent);
+  outline-offset: var(--space-1);
+}
+
+/* Three sparks: enough to feel the hand land, not enough to distract. */
+.variant-d .result-sparks {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.variant-d .spark {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #fff3cf;
+  box-shadow: 0 0 8px 2px rgba(232, 193, 105, 0.7);
+  opacity: 0;
+  animation: spark 4.2s ease-in-out infinite;
+}
+
+.variant-d .spark:nth-child(1) {
+  left: 14%;
+  top: 22%;
+  animation-delay: 0.2s;
+}
+
+.variant-d .spark:nth-child(2) {
+  right: 12%;
+  top: 38%;
+  animation-delay: 1.6s;
+}
+
+.variant-d .spark:nth-child(3) {
+  left: 46%;
+  top: 8%;
+  animation-delay: 2.9s;
+}
+
+@keyframes spark {
+  0%,
+  82%,
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  88% {
+    opacity: 1;
+    transform: scale(1.4);
+  }
+  94% {
+    opacity: 0.2;
+    transform: scale(0.9);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .variant-d .result-hero,
+  .variant-d .spark {
+    animation: none;
+  }
+
+  .variant-d .spark {
+    opacity: 0.5;
+  }
+}
+
+/* A short window keeps the essentials and drops the fine print. */
+@media (max-height: 460px) {
+  .variant-d .result-card {
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .variant-d .result-kicker,
+  .variant-d .result-page {
+    display: none;
+  }
+
+  .variant-d .result-hero {
+    font-size: clamp(20px, 4.4vw, 28px);
+  }
+
+  .variant-d .result-requirement {
+    padding: var(--space-2) var(--space-3);
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .variant-d .result-requirement-label {
+    display: none;
+  }
+
+  .variant-d .result-score,
+  .variant-d .result-pay li,
+  .variant-d .score-line {
+    font-size: 11px;
+  }
+
+  .variant-d .result-pay li {
+    padding: 3px var(--space-3);
+  }
+
+  .variant-d .result-reasons {
+    display: none;
+  }
+
+  /* Fourteen tiles still read at 22px; the card must not need a scroll. */
+  .variant-d .result-tiles .tile {
+    width: 22px;
+    height: 29px;
+  }
+
+  .variant-d .result-score {
+    padding-top: var(--space-2);
+  }
+}
+
+@media (max-width: 520px), (max-height: 520px) {
+  .variant-d .outcome {
+    padding: var(--space-3);
+  }
+
+  .variant-d .result-card {
+    gap: var(--space-3);
+    padding: var(--space-4);
+    max-height: 92vh;
+  }
+
+  .variant-d .result-hero {
+    font-size: clamp(22px, 7vw, 32px);
+  }
 }
 
 /* ------------------------------------------- variant D: solved geometry */

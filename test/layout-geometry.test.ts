@@ -843,6 +843,141 @@ describe("variant D seat melds", () => {
   });
 });
 
+describe("variant D win screen", () => {
+  for (const [width, height] of [
+    [1024, 768],
+    [770, 400],
+    [390, 844],
+  ] as const) {
+    it(`${width}x${height} celebrates the combination and balances the payments`, async () => {
+      await setViewport(cdp, sessionId, width, height);
+      await navigate(cdp, sessionId, `${server.url}/?state=win&variant=d`);
+      const deadline = Date.now() + 8000;
+      while (Date.now() < deadline) {
+        const ready = await evaluate<boolean>(
+          cdp,
+          sessionId,
+          `document.querySelector("#outcome .result-hero") !== null`,
+        );
+        if (ready) break;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      const card = await evaluate<{
+        box: [number, number, number, number];
+        hero: string;
+        tier: string;
+        requirement: string;
+        score: string[];
+        pay: string[];
+        tiles: number;
+        next: [number, number, number, number] | null;
+        viewport: [number, number];
+      }>(
+        cdp,
+        sessionId,
+        `(() => {
+          const rect = (el) => {
+            if (el === null) return null;
+            const r = el.getBoundingClientRect();
+            return [r.x, r.y, r.width, r.height];
+          };
+          const panel = document.querySelector("#outcome");
+          const card = panel.querySelector(".result-card");
+          return {
+            box: rect(card),
+            hero: card.querySelector(".result-hero").textContent.trim(),
+            tier: card.querySelector(".tier-badge")?.textContent.trim() ?? "",
+            requirement: card.querySelector(".result-requirement")?.textContent.trim() ?? "",
+            score: [...card.querySelectorAll(".score-line")].map((row) => row.textContent.trim()),
+            pay: [...card.querySelectorAll(".result-pay li")].map((row) => row.textContent.trim()),
+            tiles: card.querySelectorAll(".result-tiles .tile").length,
+            next: rect(card.querySelector("#result-next")),
+            viewport: [innerWidth, innerHeight],
+          };
+        })()`,
+      );
+      const [x, y, w, h] = card.box;
+      const [viewWidth, viewHeight] = card.viewport;
+      assert.ok(
+        x >= -1 && y >= -1 && x + w <= viewWidth + 1 && y + h <= viewHeight + 1,
+        `${width}x${height}: the card leaves the viewport (${JSON.stringify(card.box)})`,
+      );
+      assert.equal(card.hero, "Ordinary Mah Jong", `${width}x${height}: the hand is named`);
+      assert.ok(card.tier.length > 0, `${width}x${height}: no tier badge`);
+      assert.match(
+        card.requirement,
+        /Four pungs\/kongs/,
+        `${width}x${height}: the book requirement is missing`,
+      );
+      assert.ok(
+        card.score.some((line) => line.includes("Ground")),
+        `${width}x${height}: the ground score is missing`,
+      );
+      assert.ok(
+        card.score.some((line) => line.includes("Limit")),
+        `${width}x${height}: the limit is missing`,
+      );
+      assert.ok(card.tiles > 0, `${width}x${height}: the winning tiles are missing`);
+      // Every seat that moved appears once, and the hand balances to zero.
+      let total = 0;
+      for (const row of card.pay) {
+        const amount = Number.parseInt(row.replace(/[^\d-]/g, ""), 10);
+        total += row.includes("−") ? -amount : amount;
+      }
+      assert.equal(total, 0, `${width}x${height}: the payments do not balance (${card.pay.join(" / ")})`);
+      assert.ok(card.pay.length >= 2, `${width}x${height}: no payments listed`);
+      // The one action is always reachable, even when the card scrolls.
+      const next = card.next;
+      assert.ok(next !== null, `${width}x${height}: no next-hand button`);
+      assert.ok(
+        next[1] >= y - 1 && next[1] + next[3] <= y + h + 1,
+        `${width}x${height}: the next-hand button is out of the card`,
+      );
+      assert.ok(
+        next[1] + next[3] <= viewHeight + 1,
+        `${width}x${height}: the next-hand button is below the fold`,
+      );
+    });
+  }
+
+  it("keeps a drawn hand plain", async () => {
+    await setViewport(cdp, sessionId, 1024, 768);
+    await navigate(cdp, sessionId, `${server.url}/?state=drawn&variant=d`);
+    const deadline = Date.now() + 8000;
+    while (Date.now() < deadline) {
+      const ready = await evaluate<boolean>(
+        cdp,
+        sessionId,
+        `document.querySelector("#outcome .result-hero") !== null`,
+      );
+      if (ready) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    const drawn = await evaluate<{
+      hero: string;
+      tier: string;
+      pay: number;
+      sparks: number;
+    }>(
+      cdp,
+      sessionId,
+      `(() => {
+        const card = document.querySelector("#outcome .result-card");
+        return {
+          hero: card.querySelector(".result-hero").textContent.trim(),
+          tier: card.querySelector(".tier-badge")?.textContent.trim() ?? "",
+          pay: card.querySelectorAll(".result-pay li").length,
+          sparks: card.querySelectorAll(".spark").length,
+        };
+      })()`,
+    );
+    assert.equal(drawn.hero, "No winner", "a drawn hand has no winning combination");
+    assert.equal(drawn.tier, "", "a drawn hand has no tier");
+    assert.equal(drawn.pay, 0, "a drawn hand pays nobody");
+    assert.equal(drawn.sparks, 0, "a drawn hand does not celebrate");
+  });
+});
+
 describe("variant D calls toggle", () => {
   it("turns the claim prompt off and remembers it", async () => {
     await setViewport(cdp, sessionId, 770, 400);

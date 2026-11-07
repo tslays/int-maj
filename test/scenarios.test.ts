@@ -112,6 +112,38 @@ describe("review states", () => {
     );
   });
 
+  it("explains the winning combination in the book's own words", () => {
+    const win = buildScenario("win");
+    const payload = statePayload({ ...win, id: "win" });
+    const outcome = payload.outcome;
+    assert.ok(outcome !== null && outcome.kind === "win");
+    assert.equal(outcome.patternDescription?.startsWith("Four pungs/kongs"), true);
+    assert.deepEqual([...outcome.patternPages], [42]);
+    // The hand is over, so the winning tiles are public - the screen shows the
+    // combination, not a count of hidden tiles. Concealed tiles plus public
+    // melds make the fourteen that won.
+    const held =
+      (outcome.hand?.length ?? 0) +
+      (outcome.melds ?? []).reduce((sum, meld) => sum + meld.tiles.length, 0);
+    assert.equal(held, 14);
+    assert.ok((outcome.hand?.length ?? 0) > 0);
+
+    // A bot's win explains itself the same way, and pays the same way.
+    const result = buildScenario("result");
+    const resultPayload = statePayload({ ...result, id: "result" });
+    const botWin = resultPayload.outcome;
+    assert.ok(botWin !== null && botWin.kind === "win");
+    assert.notEqual(botWin.winner, "E");
+    assert.ok(
+      (botWin.hand?.length ?? 0) > 0,
+      "the winner's hand is public at hand end",
+    );
+    assert.ok((botWin.patternDescription ?? "").length > 20);
+    const paid = Object.values(botWin.totals).reduce((sum, value) => sum + value, 0);
+    assert.equal(paid, 0, "the hand's payments balance");
+    assert.ok((botWin.totals[botWin.winner!] ?? 0) > 0, "the winner is paid");
+  });
+
   it("serves each state by name and keeps its board until it moves", async () => {
     const store = new GameStore({ defaultSeed: "scenario-test" });
     const server: Server = createAppServer({ store });
