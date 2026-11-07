@@ -1106,39 +1106,35 @@ describe("variant D fishing", () => {
     [770, 400],
     [1024, 768],
   ] as const) {
-    it(`${width}x${height} marks a fishing seat inside its own band`, async () => {
+    it(`${width}x${height} breathes the seat that is fishing`, async () => {
       await setViewport(cdp, sessionId, width, height);
       await navigate(cdp, sessionId, `${server.url}/?state=result&variant=d`);
-      const deadline = Date.now() + 8000;
+      const deadline = Date.now() + 10000;
       while (Date.now() < deadline) {
         const ready = await evaluate<boolean>(
           cdp,
           sessionId,
-          `document.querySelector(".seat .fishing-mark") !== null`,
+          `document.querySelector(".seat.is-fishing .rack .tile-back") !== null`,
         );
         if (ready) break;
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
       const marked = await evaluate<
-        Array<{ place: string; band: [number, number, number, number]; mark: [number, number, number, number]; tiles: number }>
+        Array<{ seat: string; animation: string; duration: string; label: string | null; badges: number }>
       >(
         cdp,
         sessionId,
         `(() => {
           const out = [];
-          for (const place of ["top", "left", "right"]) {
-            const seat = document.querySelector("#seat-" + place);
-            const mark = seat === null ? null : seat.querySelector(".fishing-mark");
-            if (mark === null) continue;
-            const box = (el) => {
-              const r = el.getBoundingClientRect();
-              return [r.x, r.y, r.width, r.height];
-            };
+          for (const seat of document.querySelectorAll(".seat.is-fishing")) {
+            const back = seat.querySelector(".rack .tile-back");
+            const style = back === null ? null : getComputedStyle(back);
             out.push({
-              place,
-              band: box(seat),
-              mark: box(mark),
-              tiles: mark.querySelectorAll(".tile").length,
+              seat: seat.id,
+              animation: style === null ? "none" : style.animationName,
+              duration: style === null ? "0s" : style.animationDuration,
+              label: seat.getAttribute("aria-label"),
+              badges: seat.querySelectorAll(".fishing-mark").length,
             });
           }
           return out;
@@ -1146,58 +1142,48 @@ describe("variant D fishing", () => {
       );
       assert.ok(marked.length > 0, `${width}x${height}: nobody is marked as fishing`);
       for (const entry of marked) {
-        assert.ok(entry.tiles > 0, `${entry.place}: the wait tiles are missing`);
-        assert.ok(
-          inside(entry.band, entry.mark),
-          `${entry.place}: the fishing mark sits outside the seat (${JSON.stringify(entry.mark)} in ${JSON.stringify(entry.band)})`,
+        assert.equal(
+          entry.animation,
+          "fishing-breathe",
+          `${entry.seat} is not breathing (${entry.animation})`,
         );
+        assert.match(entry.duration, /4\.8s/, `${entry.seat} breathes at ${entry.duration}`);
+        assert.match(
+          entry.label ?? "",
+          /Fishing on /,
+          `${entry.seat} carries no fishing label`,
+        );
+        assert.equal(entry.badges, 0, `${entry.seat} still wears a fishing badge`);
       }
     });
   }
 
-  it("marks your own fishing above your hand", async () => {
+  it("breathes your own hand band when you are fishing", async () => {
     await setViewport(cdp, sessionId, 1024, 768);
     await navigate(cdp, sessionId, `${server.url}/?state=fishing&variant=d`);
-    const deadline = Date.now() + 8000;
+    const deadline = Date.now() + 12000;
     while (Date.now() < deadline) {
       const ready = await evaluate<boolean>(
         cdp,
         sessionId,
-        `document.querySelector("#own-fishing .fishing-mark") !== null`,
+        `document.querySelector(".hand-band.is-fishing") !== null`,
       );
       if (ready) break;
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    const own = await evaluate<{
-      mark: [number, number, number, number] | null;
-      band: [number, number, number, number];
-      tiles: number;
-      waits: number;
-    }>(
+    const own = await evaluate<{ animation: string; label: string | null }>(
       cdp,
       sessionId,
-      `(async () => {
-        const box = (el) => {
-          const r = el.getBoundingClientRect();
-          return [r.x, r.y, r.width, r.height];
-        };
-        const mark = document.querySelector("#own-fishing .fishing-mark");
-        const payload = await (await fetch("/api/scenario?state=fishing")).json();
-        const mine = payload.view.fishing.find((row) => row.seat === payload.seat);
+      `(() => {
+        const band = document.querySelector(".hand-band");
         return {
-          mark: mark === null ? null : box(mark),
-          band: box(document.querySelector(".hand-band")),
-          tiles: mark === null ? 0 : mark.querySelectorAll(".tile").length,
-          waits: mine === undefined ? 0 : mine.wait.length,
+          animation: getComputedStyle(band).animationName,
+          label: band.getAttribute("aria-label"),
         };
       })()`,
     );
-    assert.ok(own.mark !== null, "your own fishing is not marked");
-    assert.equal(own.tiles, own.waits, "the mark does not show your declared waits");
-    assert.ok(
-      own.mark[1] >= own.band[1] - 1 && own.mark[1] + own.mark[3] <= own.band[1] + own.band[3] + 1,
-      `your fishing mark sits outside the hand band (${JSON.stringify(own.mark)} in ${JSON.stringify(own.band)})`,
-    );
+    assert.equal(own.animation, "hand-breathe", "your hand band is not breathing");
+    assert.match(own.label ?? "", /Fishing on /, "your fishing is not labelled");
   });
 });
 
