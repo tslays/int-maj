@@ -94,7 +94,7 @@ const TABLE = {
 
   ron: {
     title: "A winning tile in the claim window",
-    seed: "ron-v2-221",
+    seed: "ron-v5-14",
     at: (view) =>
       view.phase === "claim" &&
       view.turn === view.seat &&
@@ -113,13 +113,13 @@ const TABLE = {
 
   drawn: {
     title: "A drawn hand",
-    seed: "drawn-v2-2",
+    seed: "drawn-v5-2",
     at: (view) => view.result !== null && view.result.kind === "drawn",
   },
 
   result: {
     title: "The result panel with payments and fishing",
-    seed: "result-v3-96",
+    seed: "result-v5-76",
     at: (_view, state) =>
       state.result !== null &&
       state.result.kind === "win" &&
