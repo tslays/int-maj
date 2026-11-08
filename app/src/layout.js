@@ -115,7 +115,9 @@ export function meldLayout(groupSizes, wallStacks, handCount, { bonusFirst = fal
     const groupGap = 0.3 * scale;
     const rowStep = (H + 0.1) * scale;
     const limit = (row) => (row === 0 ? rowZero : -handHalf - 0.4);
-    const rowZ = (row) => WALL_R + LANE_OUT + row * rowStep;
+    // Your own lane stays by the wall, above your hand strip. The others lie
+    // against the rail, and any further row goes inward, never into the wall.
+    const rowZ = (row) => (rel === 0 ? WALL_R + LANE_OUT + row * rowStep : LANE_FAR - (H * scale) / 2 - row * rowStep);
     const tiles = [];
     let row = 0;
     let x = laneStart;
@@ -130,7 +132,8 @@ export function meldLayout(groupSizes, wallStacks, handCount, { bonusFirst = fal
           row += 1;
           x = laneStart;
         }
-        if (row >= maxRows || rowZ(row) + (H * scale) / 2 > LANE_FAR) fits = false;
+        const past = rel === 0 ? rowZ(row) + (H * scale) / 2 > LANE_FAR : rowZ(row) - (H * scale) / 2 < WALL_R + H / 2 + 0.1;
+        if (row >= maxRows || past) fits = false;
       }
       for (let index = 0; index < size; index++) {
         tiles.push({ group, index, x: x + index * tileStep + (W * scale) / 2, z: rowZ(row) });
