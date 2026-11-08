@@ -1,22 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400">
-  <g stroke-linecap="round" stroke-linejoin="round">
-    <g fill="none" stroke="#ffffff" stroke-width="46">
-      <path d="M104 62 L104 344"/>
-      <path d="M196 100 L196 344"/>
-    </g>
-    <g fill="none" stroke="#004900" stroke-width="30">
-      <path d="M104 62 L104 344"/>
-      <path d="M196 100 L196 344"/>
-    </g>
-    <g fill="none" stroke="#ffffff" stroke-width="10">
-      <path d="M79 138 L129 138 M79 232 L129 232 M79 310 L129 310"/>
-      <path d="M171 174 L221 174 M171 254 L221 254 M171 322 L221 322"/>
-    </g>
-    <g fill="#004900" stroke="#ffffff" stroke-width="9">
-      <path d="M104 138 C72 128 48 104 36 74 C72 86 96 110 104 138 Z"/>
-      <path d="M104 232 C136 222 162 198 174 168 C138 180 112 204 104 232 Z"/>
-      <path d="M196 174 C164 162 142 138 132 108 C166 122 188 146 196 174 Z"/>
-      <path d="M196 254 C228 244 252 220 264 190 C228 202 204 226 196 254 Z"/>
-    </g>
-  </g>
+  <!-- Bamboo: drawn for this project (original art). -->
+  <text x="272" y="78" text-anchor="end" font-family="'Songti SC','STSong','Noto Serif CJK SC','Noto Serif CJK','Source Han Serif SC',serif" font-size="66" font-weight="700" fill="#1d2f6b">竹</text>
+  <g transform="translate(150 212) scale(1.24) translate(-150 -222)"><rect x="139" y="125" width="22" height="185" rx="8" fill="#2f7d3a" stroke="#0f5a2a" stroke-width="3"/><path d="M140,150 L160,150" stroke="#d9ead3" stroke-width="3"/><path d="M140,205 L160,205" stroke="#d9ead3" stroke-width="3"/><path d="M140,260 L160,260" stroke="#d9ead3" stroke-width="3"/><path d="M150,205 C180,190 200,175 218,158" fill="none" stroke="#0f5a2a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M150,150 C128,140 110,130 95,118" fill="none" stroke="#0f5a2a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M218.0,158.0 Q208.6,142.2 178.2,135.0 Q199.6,157.7 218.0,158.0Z" fill="#2f7d3a" stroke="#0f5a2a" stroke-width="3.5" stroke-linejoin="round"/><path d="M218.0,158.0 L184.1,138.4" stroke="#d9ead3" stroke-width="2.2" stroke-linecap="round"/><path d="M218.0,158.0 Q224.1,140.6 210.0,112.7 Q206.3,143.7 218.0,158.0Z" fill="#2f7d3a" stroke="#0f5a2a" stroke-width="3.5" stroke-linejoin="round"/><path d="M218.0,158.0 L211.2,119.5" stroke="#d9ead3" stroke-width="2.2" stroke-linecap="round"/><path d="M218.0,158.0 Q236.1,154.5 253.2,128.4 Q224.5,140.8 218.0,158.0Z" fill="#2f7d3a" stroke="#0f5a2a" stroke-width="3.5" stroke-linejoin="round"/><path d="M218.0,158.0 L248.0,132.9" stroke="#d9ead3" stroke-width="2.2" stroke-linecap="round"/><path d="M95.0,118.0 Q109.0,105.9 110.7,74.8 Q92.0,99.8 95.0,118.0Z" fill="#2f7d3a" stroke="#0f5a2a" stroke-width="3.5" stroke-linejoin="round"/><path d="M95.0,118.0 L108.4,81.3" stroke="#d9ead3" stroke-width="2.2" stroke-linecap="round"/><path d="M95.0,118.0 Q88.5,100.8 59.8,88.4 Q76.9,114.5 95.0,118.0Z" fill="#2f7d3a" stroke="#0f5a2a" stroke-width="3.5" stroke-linejoin="round"/><path d="M95.0,118.0 L65.0,92.9" stroke="#d9ead3" stroke-width="2.2" stroke-linecap="round"/><path d="M95.0,118.0 Q109.3,129.7 140.3,126.0 Q112.4,111.9 95.0,118.0Z" fill="#2f7d3a" stroke="#0f5a2a" stroke-width="3.5" stroke-linejoin="round"/><path d="M95.0,118.0 L133.5,124.8" stroke="#d9ead3" stroke-width="2.2" stroke-linecap="round"/><path d="M150.0,262.0 Q132.1,257.5 105.6,273.9 Q136.8,274.9 150.0,262.0Z" fill="#2f7d3a" stroke="#0f5a2a" stroke-width="3.5" stroke-linejoin="round"/><path d="M150.0,262.0 L112.2,272.1" stroke="#d9ead3" stroke-width="2.2" stroke-linecap="round"/><path d="M150.0,262.0 Q163.2,274.9 194.4,273.9 Q167.9,257.5 150.0,262.0Z" fill="#2f7d3a" stroke="#0f5a2a" stroke-width="3.5" stroke-linejoin="round"/><path d="M150.0,262.0 L187.8,272.1" stroke="#d9ead3" stroke-width="2.2" stroke-linecap="round"/></g>
+  <text x="150" y="380" text-anchor="middle" font-family="'Helvetica Neue','Arial Narrow',Arial,sans-serif" font-size="40" font-weight="800" letter-spacing="3" fill="#b93c3c">BAMBOO</text>
 </svg>
