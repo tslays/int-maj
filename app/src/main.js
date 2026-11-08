@@ -177,6 +177,10 @@ async function run() {
         await apply(await request("/api/move", { game: payload.game, action: legal[0] }));
         continue;
       }
+      if (callsOff && onlyWinOrPass(legal)) {
+        await apply(await request("/api/move", { game: payload.game, action: legal.find((a) => a.type === "Pass") }));
+        continue;
+      }
       showChoices();
       return;
     }
@@ -185,6 +189,14 @@ async function run() {
   } finally {
     busy = false;
   }
+}
+
+/** With calls off: a claim window offering nothing but calls (and Pass) is passed. */
+function onlyWinOrPass(legal) {
+  const pass = legal.some((a) => a.type === "Pass");
+  const rest = legal.filter((a) => a.type !== "Pass");
+  const isCall = (a) => a.type === "Claim" && a.kind !== "mahjong";
+  return pass && rest.length > 0 && rest.every(isCall);
 }
 
 function threwSince(before, after) {
@@ -261,9 +273,9 @@ function showChoices() {
   }
 
   const wins = legal.filter((action) => action.type === "Win");
-  const claims = legal.filter((action) => action.type === "Claim" && action.kind !== "mahjong");
+  const claims = callsOff ? [] : legal.filter((action) => action.type === "Claim" && action.kind !== "mahjong");
   const mahjongClaim = legal.find((action) => action.type === "Claim" && action.kind === "mahjong");
-  const kongs = legal.filter((action) => action.type === "ConcealedKong" || action.type === "AddedKong");
+  const kongs = callsOff ? [] : legal.filter((action) => action.type === "ConcealedKong" || action.type === "AddedKong");
   const fishing = legal.find((action) => action.type === "DeclareFishing");
   const pass = legal.find((action) => action.type === "Pass");
   const reshuffle = legal.find((action) => action.type === "RequestReshuffle");
@@ -508,6 +520,8 @@ function toast(text) {
   toast.timer = setTimeout(() => (element.hidden = true), 3200);
 }
 
+let callsOff = false;
+
 async function newGame() {
   if (busy) return;
   busy = true;
@@ -524,6 +538,16 @@ async function newGame() {
   }
   void run();
 }
+
+$("#calls").addEventListener("click", () => {
+  callsOff = !callsOff;
+  const button = $("#calls");
+  button.classList.toggle("on", callsOff);
+  button.setAttribute("aria-pressed", String(callsOff));
+  button.firstElementChild.textContent = callsOff ? "Calls off" : "Calls on";
+  // Re-offer (or drop) the calls for the decision already on screen.
+  if (!busy && payload !== null && payload.outcome === null) void run();
+});
 
 $("#new-game").addEventListener("click", () => void newGame());
 
