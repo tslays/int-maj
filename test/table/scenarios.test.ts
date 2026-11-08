@@ -78,7 +78,11 @@ describe("review states", () => {
 
     const wait = payloadFor("wait");
     assert.ok(wait.checker.size === 13 && wait.checker.waits.length > 0);
-    assert.equal(wait.view.fishing.length, 0, "the wait page shows a plain wait");
+    assert.equal(
+      wait.view.fishing.some((entry) => entry.seat === "E"),
+      false,
+      "the wait page shows your plain wait, not a fishing declaration",
+    );
 
     const fishing = payloadFor("fishing");
     assert.equal(fishing.view.player.hand.length, 13);

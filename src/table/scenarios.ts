@@ -64,10 +64,12 @@ const TABLE = {
 
   wait: {
     title: "Thirteen tiles with a live wait",
-    seed: "wait-q-1",
+    seed: "wait-v10-7",
     at: (view) => {
       if (view.phase !== "discard" || view.turn === view.seat) return false;
-      if (view.fishing.length > 0) return false;
+      // Your own plain wait: you have not shown the fish. Another seat's fish
+      // reveals no tiles, so it may be on the table.
+      if (view.fishing.some((entry) => entry.seat === view.seat)) return false;
       const check = handCheck(view.player);
       return check.size === 13 && check.waits.length > 0;
     },
