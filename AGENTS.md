@@ -83,6 +83,10 @@ The full workflow is `docs/WORKFLOW.md`. The rules every session follows:
   deploys every push to `main` whose tests and build pass, to
   https://int-maj.int-maj.workers.dev. (`npm run deploy` publishes by hand
   from a machine logged in with wrangler.)
+- **Deliver autonomously, end to end** (owner-authorized, `docs/WORKFLOW.md`
+  "Autonomous delivery loop"): on a `claude/...` branch, open a pull request,
+  wait for green CI, merge it into `main`, confirm the Cloudflare deploy
+  succeeded, then report. Do not stop at a pushed branch or ask first.
 - Work can be done from any machine, including a cloud session started from
   the owner's phone: the code, the book pages and the deploy all live in the
   repository and its CI.
