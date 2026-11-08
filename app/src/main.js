@@ -600,6 +600,21 @@ $("#calls").addEventListener("click", () => {
   if (!busy && payload !== null && payload.outcome === null) void run();
 });
 
+/* Custom sort: on = the hand keeps itself sorted; swapping or dragging turns it off. */
+function showSort(custom) {
+  const button = $("#sort");
+  button.classList.toggle("on", custom);
+  button.setAttribute("aria-pressed", String(!custom));
+  button.firstElementChild.textContent = custom ? "Custom sort off" : "Custom sort on";
+}
+board.onCustomChange = showSort;
+showSort(board.custom);
+
+$("#sort").addEventListener("click", () => {
+  if (board.custom) void board.autoSort();
+  else board.setCustom(true);
+});
+
 $("#new-game").addEventListener("click", () => void newGame());
 
 /* --------------------------------------------------------- start */
