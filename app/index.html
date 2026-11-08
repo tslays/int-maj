@@ -389,7 +389,7 @@
         display: none;
       }
       /* Like the big mahjong apps, the table is landscape only. */
-      @media (orientation: portrait) {
+      @media (orientation: portrait) and (pointer: coarse) {
         .rotate {
           position: fixed;
           inset: 0;
@@ -429,7 +429,11 @@
       }
     </style>
     <script>
-      if (new URLSearchParams(location.search).has("phone")) {
+      // `?phone`, or a tall window on a computer (which cannot be turned):
+      // show the table in a phone-landscape frame instead of asking to rotate.
+      const tallDesktop =
+        matchMedia("(orientation: portrait)").matches && !matchMedia("(pointer: coarse)").matches;
+      if (new URLSearchParams(location.search).has("phone") || tallDesktop) {
         document.documentElement.classList.add("phone-frame");
       }
     </script>
