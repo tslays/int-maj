@@ -79,21 +79,40 @@
         display: flex;
         gap: 6px;
       }
+      .menu {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      /* The game's own slanted buttons, small, in the dark corner. */
       .ghost {
-        padding: 6px 12px;
-        border: 1px solid rgba(233, 228, 214, 0.18);
-        border-radius: 999px;
-        background: rgba(17, 25, 28, 0.55);
+        min-width: 84px;
+        padding: 6px 14px;
+        border: 0;
+        border-radius: 7px;
+        transform: skewX(-12deg);
+        background: linear-gradient(180deg, var(--silver-1), var(--silver-2));
+        color: #26323a;
         font-size: 12px;
-        font-weight: 600;
+        font-style: italic;
+        font-weight: 800;
         letter-spacing: 0.01em;
-        color: var(--muted);
-        text-decoration: none;
-        -webkit-backdrop-filter: blur(6px);
-        backdrop-filter: blur(6px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      }
+      .ghost > span {
+        display: block;
+        transform: skewX(12deg);
       }
       .ghost:active {
-        background: rgba(17, 25, 28, 0.85);
+        filter: brightness(0.92);
+      }
+      /* Calls off: bright, so nobody forgets they are not being asked. */
+      .ghost.on {
+        background: linear-gradient(180deg, var(--gold-1), var(--gold-2));
+        color: #4a2a05;
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+        box-shadow: 0 0 14px rgba(255, 200, 80, 0.55), 0 4px 10px rgba(0, 0, 0, 0.35),
+          inset 0 1px 0 rgba(255, 255, 255, 0.6);
       }
 
       /* Decisions, above the hand on the right, like the big apps. */
@@ -436,7 +455,8 @@
       Turn your phone sideways to play
     </div>
     <nav class="menu">
-      <button class="ghost" id="new-game" type="button">New game</button>
+      <button class="ghost" id="new-game" type="button"><span>New game</span></button>
+      <button class="ghost" id="calls" type="button" aria-pressed="false"><span>Calls on</span></button>
     </nav>
     <div class="actions" id="actions"></div>
     <section class="result" id="result" hidden></section>

@@ -34,6 +34,28 @@ the deploy (`.github/workflows/test.yml`). No session needs the Mac to be on.
 4. **Finish:** commit with a descriptive message and push. Never leave
    finished work uncommitted on one device while continuing on another.
 
+## Autonomous delivery loop
+
+The owner has authorized this in advance; a session does it without asking
+and does not stop at "pushed to a branch". A cloud session works on the branch
+it is given (`claude/...`), so delivery is a pull request:
+
+1. `npm test` passes locally (Node 24; `npx -y node@24` if the default is older).
+2. Commit, push the branch, open a pull request into `main` (mirror
+   `.github/pull_request_template.md` if one exists).
+3. Watch the pull request's `Tests and build` check. Red: reproduce, fix, push
+   again; never skip or disable a test to get green.
+4. Green and no unresolved review comments: merge it into `main` (ordinary
+   merge, no force-push, no history rewriting, no merging someone else's PR).
+5. The push to `main` runs `Deploy to Cloudflare`. Check that job succeeds and
+   report the live URL. If the deploy job fails, say so and why; do not retry
+   blindly.
+6. Report what shipped. A session on `main` directly skips steps 2 and 4.
+
+Stop and ask only for: a failing check you cannot fix, merge conflicts that
+need a product decision, or anything outside the ordinary (force-push,
+deleting branches or history, changing the Cloudflare token or secrets).
+
 ## Going live
 
 - Every push to `main` whose tests and build pass is deployed by the
