@@ -135,6 +135,7 @@ async function apply(next, { animated = true } = {}) {
     if (!previousFishing.has(seat) && before !== null) announcements.push(callOut(seat, "Fishing"));
   }
   previousFishing = fishing;
+  void refreshHints();
   if (announcements.length > 0) await sleep(650);
   return before;
 }
@@ -257,6 +258,7 @@ function showChoices() {
   const bar = $("#actions");
   bar.replaceChildren();
   selected = null;
+  void refreshHints(true);
 
   if (legal.some((action) => action.type === "GoulashExchange")) {
     goulashPicks = [];
@@ -408,6 +410,106 @@ function endPress(event, cancelled) {
 
 renderer.domElement.addEventListener("pointerup", (event) => endPress(event, false));
 renderer.domElement.addEventListener("pointercancel", (event) => endPress(event, true));
+
+/* --------------------------------------------------------- closest hands */
+
+const HINTS_KEY = "int-maj.hints";
+
+function readHints() {
+  try {
+    return storage()?.getItem(HINTS_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
+
+let hintsOn = readHints();
+let hintsFor = null; // the tiles the panel was last built for
+
+/**
+ * The catalogue hands your tiles are nearest to, top right. Asked for when
+ * your own tiles change and at each of your decisions (the tiles in sight
+ * change too), never on a bot's beat alone.
+ */
+async function refreshHints(force = false) {
+  const panel = $("#closest");
+  if (!hintsOn || payload === null || payload.outcome !== null || payload.view.phase === "finished") {
+    panel.hidden = true;
+    hintsFor = null;
+    return;
+  }
+  const player = payload.view.player;
+  const key = `${payload.game}|${player.hand.join()}|${player.melds.map((meld) => meld.tiles.join()).join("/")}`;
+  if (!force && key === hintsFor) return;
+  hintsFor = key;
+  try {
+    const answer = await request(`/api/closest?game=${encodeURIComponent(payload.game)}`);
+    if (hintsFor === key) renderHints(answer.hands);
+  } catch {
+    panel.hidden = true;
+  }
+}
+
+function renderHints(hands) {
+  const panel = $("#closest");
+  const title = document.createElement("p");
+  title.className = "closest-title";
+  title.textContent = "Closest hands";
+  if (hands.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "closest-empty";
+    empty.textContent = "Nothing within six tiles yet.";
+    panel.replaceChildren(title, empty);
+    panel.hidden = false;
+    return;
+  }
+  const list = document.createElement("ol");
+  for (const hand of hands) {
+    const item = document.createElement("li");
+    const name = document.createElement("span");
+    name.className = "closest-name";
+    name.textContent = hand.name;
+    const meta = document.createElement("span");
+    meta.className = "closest-meta";
+    const value = hand.points === null ? "calculated" : hand.points.toLocaleString("en");
+    if (hand.away === 0) {
+      const done = document.createElement("span");
+      done.className = "closest-done";
+      done.textContent = "Complete";
+      meta.append(done, ` · ${value}`);
+    } else {
+      meta.textContent = `${hand.away} to go · ${value}`;
+    }
+    item.append(name, meta);
+    if (hand.need.length > 0) {
+      const need = document.createElement("span");
+      need.className = "closest-need";
+      for (const key of hand.need) need.append(faceChip(key));
+      item.append(need);
+    }
+    list.append(item);
+  }
+  panel.replaceChildren(title, list);
+  panel.hidden = false;
+}
+
+function showHintsButton() {
+  const button = $("#hints");
+  button.setAttribute("aria-pressed", String(hintsOn));
+  button.firstElementChild.textContent = hintsOn ? "Hints on" : "Hints off";
+}
+showHintsButton();
+
+$("#hints").addEventListener("click", () => {
+  hintsOn = !hintsOn;
+  try {
+    storage()?.setItem(HINTS_KEY, hintsOn ? "on" : "off");
+  } catch {
+    // Private mode: the choice lasts for this visit.
+  }
+  showHintsButton();
+  void refreshHints(true);
+});
 
 /* --------------------------------------------------------- outcome */
 

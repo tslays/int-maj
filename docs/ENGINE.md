@@ -200,3 +200,17 @@ careful) that scales its appetite for special hands, calls and caution. The bot
 never sees another seat's hand. `node scripts/bot-targets.ts` regenerates the
 target table from the catalogue fixtures; every target is re-checked against
 its pattern in `test/core/bot-targets.test.ts`.
+
+`node scripts/bot-soak.ts [hands] [workers]` (`npm run bot-soak`) plays
+bot-only hands, seeded `bots-0`, `bots-1`, ..., and prints the drawn rate, the
+hands won, calls and fishing per hand and the time per decision. On
+2026-11-08, 400 hands: 35 % drawn (about 80 % before the planner), 98 % of
+wins special hands, 1.1 calls and 1.2 fishing declarations per hand, about
+9 ms per decision.
+
+The same plan powers the player's "closest hands" helper
+(`src/core/game/closest.ts`): `closestHands(view)` names the catalogue hands a
+seat's own tiles are nearest to - for each pattern its closest version,
+fewest tiles missing first, then the best chance times the value - with the
+missing tiles, and drops a version whose missing copies are all in sight. It
+reads only that seat's `GameView`.

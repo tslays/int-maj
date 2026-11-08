@@ -378,6 +378,73 @@
         }
       }
 
+      /* Closest hands: the catalogue hands your tiles are nearest to. */
+      .closest {
+        position: fixed;
+        top: var(--safe-t);
+        right: var(--safe-r);
+        width: 172px;
+        margin: 0;
+        padding: 8px 10px 6px;
+        border-radius: 10px;
+        background: var(--panel);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+        font-size: 12px;
+        pointer-events: none;
+      }
+      .closest-title {
+        margin: 0 0 4px;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .closest ol {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .closest li {
+        padding: 4px 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .closest li:first-child {
+        border-top: 0;
+      }
+      .closest-name {
+        display: block;
+        overflow: hidden;
+        font-weight: 700;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      .closest-meta {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+      }
+      .closest-done {
+        color: var(--gold-1);
+        font-weight: 700;
+      }
+      .closest-need {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px;
+        margin-top: 3px;
+      }
+      .closest-need .chip {
+        width: 15px;
+        height: 20px;
+        border-radius: 3px;
+      }
+      .closest-empty {
+        margin: 0;
+        color: var(--muted);
+      }
+
       .toast {
         position: fixed;
         top: var(--safe-t);
@@ -458,8 +525,10 @@
       <button class="ghost" id="new-game" type="button"><span>New game</span></button>
       <button class="ghost" id="calls" type="button" aria-pressed="false"><span>Calls on</span></button>
       <button class="ghost" id="sort" type="button" aria-pressed="true"><span>Custom sort on</span></button>
+      <button class="ghost" id="hints" type="button" aria-pressed="true"><span>Hints on</span></button>
     </nav>
     <div class="actions" id="actions"></div>
+    <aside class="closest" id="closest" aria-live="polite" hidden></aside>
     <section class="result" id="result" hidden></section>
     <p class="toast" id="toast" role="status" hidden></p>
     <script type="module" src="src/main.js"></script>
