@@ -103,7 +103,7 @@ browser runs the same engine, bots and API routes as the tests. It copies the
 
 ## Deploying
 
-The app is live at **https://int-maj.int-maj.workers.dev** (Cloudflare
+The app is live at **https://int.mah-jong.workers.dev** (Cloudflare
 Workers static assets; `wrangler.jsonc` names the folder and the account).
 
 **Automatically:** every push to `main` whose tests and build pass is

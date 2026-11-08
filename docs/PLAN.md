@@ -36,7 +36,7 @@ through GitHub Actions, and the book pages are in the private repository, so
 a Claude cloud session started from the owner's iPhone can do any task
 without the Mac (`docs/WORKFLOW.md`).
 
-Live at https://int-maj.int-maj.workers.dev.
+Live at https://int.mah-jong.workers.dev.
 
 ## Next
 

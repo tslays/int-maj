@@ -4,7 +4,7 @@ International mahjong, played by the rules of *The Game of Mah Jong
 Illustrated*, on a 3D table in the browser against three bots. It runs
 offline, saves after every move and installs on a phone's home screen.
 
-**Play:** https://int-maj.int-maj.workers.dev (landscape; add `?phone` to try
+**Play:** https://int.mah-jong.workers.dev (landscape; add `?phone` to try
 the phone layout on a laptop).
 
 ## Quick start
