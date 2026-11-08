@@ -79,7 +79,7 @@ export class Board {
     for (const frame of this.frames) frame.clear();
     this.handGroup.clear();
     this.hand = [];
-    this.custom = false;
+    this.setCustom(false);
     this.seats = {};
     for (const seat of SEATS) {
       this.seats[seat] = {
@@ -499,7 +499,24 @@ export class Board {
     this.hand[i] = b;
     this.hand[j] = a;
     [a.drawn, b.drawn] = [b.drawn, a.drawn];
-    this.custom = true;
+    this.setCustom(true);
+  }
+
+  /** Note (and announce) whether the hand is in your own order. */
+  setCustom(custom) {
+    if (this.custom === custom) return;
+    this.custom = custom;
+    this.onCustomChange?.(custom);
+  }
+
+  /** Back to the default order: sorted, the drawn tile apart at the end. */
+  autoSort() {
+    this.setCustom(false);
+    const drawn = this.hand.filter((entry) => entry.drawn);
+    const plain = this.hand.filter((entry) => !entry.drawn);
+    plain.sort((a, b) => tileOrder(a.key) - tileOrder(b.key));
+    this.hand = [...plain, ...drawn];
+    return this.layoutHand(new Set(), true);
   }
 
   /** Carry a tile with the pointer; it trades places with each tile it passes. */
