@@ -14,7 +14,7 @@
 
 import * as THREE from "three";
 import { D, H, W, TABLE, makeTile, poseFaceUp, poseFaceDown, tileOrder, jitter } from "./tiles.js";
-import { discardSlot, meldPlacement } from "./layout.js";
+import { discardSlot, meldLayout, wallSlotX } from "./layout.js";
 import {
   animate,
   easeInOutCubic,
@@ -33,12 +33,7 @@ import {
 const SEATS = ["E", "S", "W", "N"];
 const { WALL_STACKS, WALL_R, HAND_Z, DISCARD_Z, DISCARD_SCALE } = TABLE;
 const GAP = 0.02;
-const OWN_SCALE = 0.72;
 const HAND_TILT = -0.16;
-
-function meldKey(melds) {
-  return JSON.stringify(melds.map((meld) => [meld.kind, meld.tiles, meld.exposed]));
-}
 
 /** Lay a meld's tiles in a row; a concealed kong shows its ends face down. */
 function meldTiles(meld, scale) {
@@ -62,10 +57,8 @@ export class Board {
     this.wallOrder = [];
     this.wallShown = 0;
     this.handGroup = new THREE.Group();
-    this.exposedGroup = new THREE.Group();
-    handScene.add(this.handGroup, this.exposedGroup);
+    handScene.add(this.handGroup);
     this.hand = []; // { key, tile, drawn }
-    this.exposedKey = "";
     this.lastThrowX = 0;
     this.raycaster = new THREE.Raycaster();
   }
@@ -83,18 +76,22 @@ export class Board {
   clear() {
     for (const frame of this.frames) frame.clear();
     this.handGroup.clear();
-    this.exposedGroup.clear();
     this.hand = [];
-    this.exposedKey = "";
-    this.exposedMelds = 0;
-    this.exposedWidthValue = 0;
     this.seats = {};
     for (const seat of SEATS) {
-      this.seats[seat] = { discards: [], meldKey: "[]", bonusKey: "[]", row: new THREE.Group(), backs: 0 };
-      this.frameOf(seat).add(this.seats[seat].row);
+      this.seats[seat] = {
+        discards: [],
+        callCount: 0,
+        backs: -1,
+        row: new THREE.Group(),
+        melds: new THREE.Group(),
+        meldsKey: "",
+      };
+      this.frameOf(seat).add(this.seats[seat].row, this.seats[seat].melds);
     }
     this.wallOrder = [];
     this.wallShown = 0;
+    this.wallSides = [[], [], [], []];
   }
 
   /** 72 stacks of two in a pinwheel; drawing starts at a break that moves each hand. */
@@ -102,13 +99,14 @@ export class Board {
     const stacks = [];
     for (let rel = 0; rel < 4; rel++) {
       for (let stack = 0; stack < WALL_STACKS; stack++) {
-        const x = (WALL_STACKS / 2 - 0.5 - stack) * W - H / 2 + W / 2;
+        const x = wallSlotX(stack);
         const tiles = [0, 1].map((level) => {
           const tile = poseFaceDown(makeTile(null), x, D / 2 + level * D, WALL_R);
           this.frames[rel].add(tile);
           return tile;
         });
         stacks.push(tiles);
+        this.wallSides[rel].push(tiles);
       }
     }
     const breakAt = (seedOffset * 23 + 2 * WALL_STACKS + 7) % stacks.length;
@@ -140,6 +138,16 @@ export class Board {
       }
     }
     this.wallShown = Math.max(0, Math.min(count, this.wallOrder.length));
+    // Each side's remaining stacks are pushed to that side's right end, as
+    // players push their wall, so the lane for melds grows at its left.
+    const willShow = new Set(this.wallOrder.slice(hideUpTo));
+    this.wallStacks = this.wallSides.map((side) => {
+      const standing = side.filter((tiles) => tiles.some((tile) => willShow.has(tile)));
+      standing.forEach((tiles, slot) => {
+        for (const tile of tiles) tile.position.x = wallSlotX(slot);
+      });
+      return standing.length;
+    });
     return work;
   }
 
@@ -161,26 +169,25 @@ export class Board {
     const meldsGrew = new Map();
     for (const entry of payload.table) {
       const state = this.seats[entry.seat];
-      const key = meldKey(entry.melds);
-      if (key !== state.meldKey && entry.melds.length > JSON.parse(state.meldKey).length) {
+      if (entry.melds.length > state.callCount && animated) {
         const added = entry.melds[entry.melds.length - 1];
         meldsGrew.set(entry.seat, added);
         calls.push({ seat: entry.seat, kind: added.kind });
       }
-      // Opponents' rows record their melds when redrawn; yours is beside the hand.
-      if (entry.seat === this.me) state.meldKey = key;
+      state.callCount = entry.melds.length;
     }
 
+    // The wall first: where it stands decides how much lane the melds have.
+    const wall = payload.wall.remaining + payload.wall.loose + payload.wall.dead;
+    work.push(...this.setWall(wall, animated));
     for (const entry of payload.table) {
       work.push(...this.reconcileDiscards(entry, meldsGrew, animated));
     }
     for (const entry of payload.table) {
-      if (entry.seat === this.me) continue;
-      work.push(...this.reconcileRow(entry, animated));
+      if (entry.seat !== this.me) work.push(...this.reconcileRow(entry, animated));
+      work.push(...this.reconcileMelds(entry, meldsGrew.has(entry.seat)));
     }
     work.push(...this.reconcileHand(payload, animated));
-    const wall = payload.wall.remaining + payload.wall.loose + payload.wall.dead;
-    work.push(...this.setWall(wall, animated));
     requestRender();
     await Promise.all(work);
     return calls;
@@ -245,11 +252,7 @@ export class Board {
   /** A claimed discard flies from the heap towards the claimer and goes into the meld. */
   flyToClaimer(tile, claimer) {
     tableScene.attach(tile);
-    // Your melds join your hand row; an opponent's lie in its meld zone.
-    const target =
-      this.rel(claimer) === 0
-        ? this.frameOf(claimer).localToWorld(new THREE.Vector3(3.5, 1.2, HAND_Z - 0.2))
-        : this.meldTarget(claimer);
+    const target = this.meldTarget(claimer);
     const from = tile.position.clone();
     return animate(360, (t) => {
       const k = easeInOutCubic(t);
@@ -261,62 +264,75 @@ export class Board {
 
   /* ------------------------------------------------------- opponents */
 
-  /**
-   * An opponent: the hand stands at the table's edge (backs towards you), and
-   * the melds and bonus tiles lie face up in the seat's meld zone, where no
-   * wall or hand hides them.
-   */
+  /** An opponent's concealed hand, standing at the table's edge, backs towards you. */
   reconcileRow(entry, animated) {
     const state = this.seats[entry.seat];
-    const bonus = [...entry.flowers, ...entry.seasons];
-    const meldKeyNow = meldKey(entry.melds);
-    const bonusKeyNow = JSON.stringify(bonus);
     const grewBy = entry.handCount - state.backs;
-    if (meldKeyNow === state.meldKey && bonusKeyNow === state.bonusKey && grewBy === 0) return [];
-    const newMeld = animated && meldKeyNow !== state.meldKey;
-    state.meldKey = meldKeyNow;
-    state.bonusKey = bonusKeyNow;
+    if (grewBy === 0) return [];
     state.backs = entry.handCount;
-
     const row = state.row;
     row.clear();
     const work = [];
-    const drop = (tile, height, duration, ease) => {
-      const y = tile.position.y;
-      tile.position.y = y + height;
-      work.push(tween(tile.position, { y }, duration, ease));
-    };
-
-    // The concealed hand, standing and centred on the seat.
     const start = -((entry.handCount - 1) / 2) * (W + GAP);
     for (let index = 0; index < entry.handCount; index++) {
       const tile = makeTile(null);
       tile.position.set(start + index * (W + GAP), H / 2, HAND_Z);
       row.add(tile);
-      if (animated && grewBy === 1 && index === entry.handCount - 1) drop(tile, 0.9, 220, easeOutCubic);
+      if (animated && grewBy === 1 && index === entry.handCount - 1) {
+        tile.position.y += 0.9;
+        work.push(tween(tile.position, { y: H / 2 }, 220, easeOutCubic));
+      }
     }
+    return work;
+  }
 
-    // Melds, then the bonus tiles as one more group, in the meld zone.
-    const groups = entry.melds.map((meld) => meldTiles(meld, 1));
-    if (bonus.length > 0) groups.push(bonus.map((key) => ({ key, faceUp: true })));
-    if (groups.length === 0) return work;
-    const { scale, tiles } = meldPlacement(groups.map((group) => group.length));
+  /** The groups a seat has laid out: its bonus tiles first, then its melds in order. */
+  exposedGroups(entry) {
+    const bonus = [...entry.flowers, ...entry.seasons].sort();
+    const groups = bonus.length > 0 ? [bonus.map((key) => ({ key, faceUp: true }))] : [];
+    return [...groups, ...entry.melds.map((meld) => meldTiles(meld, 1))];
+  }
+
+  /**
+   * Every seat's melds and bonus tiles, face up in its own wall's lane: from
+   * the table corner on its left, each new meld to the right of the last.
+   */
+  reconcileMelds(entry, fresh) {
+    const state = this.seats[entry.seat];
+    const groups = this.exposedGroups(entry);
+    const key = JSON.stringify([groups, this.wallStacks?.[this.rel(entry.seat)] ?? 18]);
+    if (key === state.meldsKey) return [];
+    state.meldsKey = key;
+    state.melds.clear();
+    if (groups.length === 0) return [];
+    const work = [];
+    const bonusFirst = entry.flowers.length + entry.seasons.length > 0;
+    const { scale, tiles } = meldLayout(
+      groups.map((group) => group.length),
+      this.wallStacks?.[this.rel(entry.seat)] ?? WALL_STACKS,
+      entry.handCount,
+      { bonusFirst },
+    );
     for (const place of tiles) {
       const piece = groups[place.group][place.index];
       const tile = makeTile(piece.key);
       if (piece.faceUp) poseFaceUp(tile, place.x, place.z, place.group * 5 + place.index, scale);
       else poseFaceDown(tile, place.x, (D / 2) * scale, place.z, scale);
-      row.add(tile);
-      if (newMeld && place.group === entry.melds.length - 1) drop(tile, 1.6, 300, easeOutBack);
+      state.melds.add(tile);
+      if (fresh && place.group === groups.length - 1) {
+        const y = tile.position.y;
+        tile.position.y = y + 1.6;
+        work.push(tween(tile.position, { y }, 300, easeOutBack));
+      }
     }
     return work;
   }
 
-  /** Where a seat's newest meld lands, in table space: the end of its meld zone. */
+  /** Where a seat's newest meld lands, in table space: the end of its lane. */
   meldTarget(seat) {
-    const entry = this.seats[seat];
-    const groups = JSON.parse(entry?.meldKey ?? "[]").length;
-    const place = meldPlacement(new Array(Math.max(groups, 1)).fill(3)).tiles.at(-1);
+    const state = this.seats[seat];
+    const count = Math.max(1, state?.callCount ?? 1);
+    const place = meldLayout(new Array(count).fill(3), this.wallStacks?.[this.rel(seat)] ?? WALL_STACKS, 8).tiles.at(-1);
     return this.frameOf(seat).localToWorld(new THREE.Vector3(place.x, 1.2, place.z));
   }
 
@@ -360,18 +376,17 @@ export class Board {
     this.hand = next;
 
     const work = this.layoutHand(fresh, animated);
-    work.push(...this.reconcileExposed(payload, animated));
+
     return work;
   }
 
-  /** Positions of the hand tiles, the drawn tile set apart, and the exposed group. */
+  /** Positions of the hand tiles, with the drawn tile set apart. */
   handPlaces() {
     const gap = 0.04;
     const drawnGap = 0.45;
     const plain = this.hand.filter((entry) => !entry.drawn);
     const handWidth = plain.length * (W + gap) - gap + drawnGap + W;
-    const exposed = this.exposedWidth;
-    const total = handWidth + (exposed > 0 ? 0.7 + exposed : 0);
+    const total = handWidth;
     let x = -total / 2 + W / 2;
     const places = new Map();
     for (const entry of plain) {
@@ -380,13 +395,12 @@ export class Board {
     }
     const drawn = this.hand.find((entry) => entry.drawn);
     if (drawn) places.set(drawn, x - gap + drawnGap);
-    return { places, total, exposedX: -total / 2 + handWidth + 0.7 };
+    return { places, total };
   }
 
   layoutHand(fresh, animated) {
-    const { places, total, exposedX } = this.handPlaces();
+    const { places, total } = this.handPlaces();
     setHandRowWidth(total);
-    this.exposedGroup.position.x = exposedX;
     const work = [];
     for (const entry of this.hand) {
       const x = places.get(entry);
@@ -401,45 +415,6 @@ export class Board {
         else position.set(x, 0, 0);
       }
     }
-    return work;
-  }
-
-  get exposedWidth() {
-    return this.exposedWidthValue ?? 0;
-  }
-
-  reconcileExposed(payload, animated) {
-    const own = payload.table.find((entry) => entry.seat === this.me);
-    const bonus = [...own.flowers, ...own.seasons];
-    const groups = [...own.melds.map((meld) => meldTiles(meld, OWN_SCALE))];
-    if (bonus.length > 0) groups.push(bonus.map((key) => ({ key, faceUp: true, scale: OWN_SCALE })));
-    const key = JSON.stringify(groups);
-    if (key === this.exposedKey) return [];
-    const grew = animated && own.melds.length > (this.exposedMelds ?? 0);
-    this.exposedKey = key;
-    this.exposedMelds = own.melds.length;
-    this.exposedGroup.clear();
-    let x = 0;
-    const work = [];
-    groups.forEach((group, groupIndex) => {
-      for (const piece of group) {
-        const tile = makeTile(piece.key, { shadows: false });
-        tile.scale.setScalar(OWN_SCALE);
-        tile.rotation.x = piece.faceUp ? -0.62 : -0.62 + Math.PI;
-        tile.position.set(x + (W * OWN_SCALE) / 2, -0.12, -0.15);
-        this.exposedGroup.add(tile);
-        if (grew && groupIndex === own.melds.length - 1) {
-          tile.position.y += 1.2;
-          work.push(tween(tile.position, { y: -0.12 }, 300, easeOutBack));
-        }
-        x += (W + GAP) * OWN_SCALE;
-      }
-      x += 0.3 * OWN_SCALE;
-    });
-    this.exposedWidthValue = Math.max(0, x - 0.3 * OWN_SCALE);
-    const { total, exposedX } = this.handPlaces();
-    setHandRowWidth(total);
-    this.exposedGroup.position.x = exposedX;
     return work;
   }
 

@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 // @ts-expect-error - a plain browser module without type declarations
-import { discardRect, discardSlot, meldPlacement, meldRects, TABLE, WALL_INNER, W, H } from "../../app/src/layout.js";
+import { discardRect, discardSlot, handRects, meldLayout, meldRects, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
 
 interface Rect {
   readonly minX: number;
@@ -86,37 +86,61 @@ describe("3D table discard layout", () => {
     assert.ok(W > 0);
   });
 
-  it("lays every seat's melds and bonus tiles in its own corner, clear of everything", () => {
-    // From a single pung up to four kongs and all eight bonus tiles.
-    const hands = [[3], [3, 3], [3, 3, 3, 3], [4, 3, 4, 3, 2], [4, 4, 4, 4, 8]];
-    for (const groups of hands) {
-      const melds: { rel: number; rect: Rect }[] = [];
-      for (let rel = 0; rel < 4; rel++) {
-        for (const rect of meldRects(rel, groups)) melds.push({ rel, rect });
-      }
-      for (const meld of melds) {
-        const label = `seat ${meld.rel} melds ${groups.join("+")}`;
-        assert.ok(Math.max(Math.abs(meld.rect.minX), Math.abs(meld.rect.maxX)) <= WALL_INNER, `${label} reach the wall`);
-        assert.ok(Math.max(Math.abs(meld.rect.minZ), Math.abs(meld.rect.maxZ)) <= WALL_INNER, `${label} reach the wall`);
-        for (const discard of all) {
-          assert.equal(
-            overlaps(meld.rect, discard.rect),
-            false,
-            `${label} cover seat ${discard.rel} discard ${discard.index + 1}`,
-          );
+  it("lays every seat's melds in its wall's lane, clear of walls, hands, discards and other melds", () => {
+    // Groups as the table lays them: [bonus tiles?, melds...], with the hand that is left.
+    const hands: { groups: number[]; bonusFirst: boolean; hand: number }[] = [
+      { groups: [3], bonusFirst: false, hand: 10 },
+      { groups: [2, 3], bonusFirst: true, hand: 10 },
+      { groups: [3, 3], bonusFirst: false, hand: 7 },
+      { groups: [4, 3, 3, 3], bonusFirst: true, hand: 4 },
+      { groups: [8, 4, 4, 4, 4], bonusFirst: true, hand: 1 },
+    ];
+    for (const walls of [18, 12, 6, 0]) {
+      for (const { groups, bonusFirst, hand } of hands) {
+        const label = `wall ${walls}, groups ${groups.join("+")}`;
+        const melds: { rel: number; rect: Rect }[] = [];
+        const solid: { what: string; rect: Rect }[] = [];
+        for (let rel = 0; rel < 4; rel++) {
+          for (const rect of meldRects(rel, groups, walls, hand, { bonusFirst })) melds.push({ rel, rect });
+          for (const rect of wallRects(rel, walls)) solid.push({ what: `seat ${rel} wall`, rect });
+          for (const rect of handRects(rel, hand)) solid.push({ what: `seat ${rel} hand`, rect });
         }
-      }
-      for (let i = 0; i < melds.length; i++) {
-        for (let j = i + 1; j < melds.length; j++) {
-          if (melds[i]!.rel === melds[j]!.rel) continue;
-          assert.equal(overlaps(melds[i]!.rect, melds[j]!.rect), false, `seats ${melds[i]!.rel} and ${melds[j]!.rel} melds touch`);
+        for (const discard of all) solid.push({ what: `seat ${discard.rel} discard ${discard.index + 1}`, rect: discard.rect });
+        for (const meld of melds) {
+          const edge = TABLE.TABLE_HALF - 0.05;
+          assert.ok(
+            Math.max(Math.abs(meld.rect.minX), Math.abs(meld.rect.maxX), Math.abs(meld.rect.minZ), Math.abs(meld.rect.maxZ)) <= edge,
+            `${label}: seat ${meld.rel} melds leave the table`,
+          );
+          for (const thing of solid) {
+            assert.equal(overlaps(meld.rect, thing.rect), false, `${label}: seat ${meld.rel} melds cover ${thing.what}`);
+          }
+        }
+        for (let i = 0; i < melds.length; i++) {
+          for (let j = i + 1; j < melds.length; j++) {
+            if (melds[i]!.rel === melds[j]!.rel) {
+              assert.equal(overlaps(melds[i]!.rect, melds[j]!.rect), false, `${label}: seat ${melds[i]!.rel} melds overlap each other`);
+            } else {
+              assert.equal(overlaps(melds[i]!.rect, melds[j]!.rect), false, `${label}: seats ${melds[i]!.rel} and ${melds[j]!.rel} melds touch`);
+            }
+          }
         }
       }
     }
   });
 
-  it("keeps an ordinary hand's melds at a readable size", () => {
-    assert.ok(meldPlacement([3, 3, 3, 3]).scale >= 0.85, "four pungs stay large");
-    assert.ok(meldPlacement([4, 4, 4, 4, 8]).scale >= 0.6, "even the fullest hand stays legible");
+  it("starts in the left-hand corner and grows to the right, bonus tiles first", () => {
+    // Once some of the wall in front of the player is used, the lane has room.
+    const one = meldLayout([3], 12, 10).tiles;
+    const two = meldLayout([3, 3], 12, 7).tiles;
+    assert.ok(one[0]!.x < -12, "the first meld lies in the corner on the player's left");
+    assert.deepEqual(two.slice(0, 3), one, "an earlier meld never moves when another is made");
+    assert.ok(two[3]!.x > two[2]!.x, "the next meld goes to its right");
+    const crowded = meldLayout([3, 3], 18, 7).tiles;
+    assert.ok(crowded[3]!.z > crowded[0]!.z, "with the whole wall still there, it starts a row towards the rail");
+    const withBonus = meldLayout([2, 3], 6, 10, { bonusFirst: true });
+    const plain = meldLayout([2, 3], 6, 10);
+    assert.ok(withBonus.tiles[2]!.x - withBonus.tiles[1]!.x > plain.tiles[2]!.x - plain.tiles[1]!.x, "a wider space after the bonus tiles");
+    assert.ok(meldLayout([3, 3, 3, 3], 6, 1).scale >= 0.85, "four pungs stay large");
   });
 });

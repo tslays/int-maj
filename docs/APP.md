@@ -20,11 +20,12 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
 ```
 
 - `app/src/layout.js` is the table geometry as plain numbers: walls, hands,
-  the discard pinwheel, and each seat's meld zone - the corner to its right,
-  out by the walls, where an opponent's melds and bonus tiles lie face up with
-  nothing in front of them. `test/app/layout.test.ts` proves no discard or
-  meld ever overlaps another, up to 29 discards and four kongs plus eight
-  bonus tiles per seat.
+  the discard pinwheel and the meld lanes. By table custom each player's melds
+  lie in their own wall's lane, starting in the table corner on their left -
+  bonus tiles hard left, a space, then the melds in the order made - and grow
+  to the right as the wall in front of them is used up; each side's remaining
+  wall is pushed to its right end. `test/app/layout.test.ts` proves no meld
+  touches a wall, a hand, a discard or another player's melds.
 - `app/src/tiles.js` models a tile: a rounded off-white front, a sky-blue
   lacquered back, and the face printed on it with a small corner index. The
   faces are the public-domain riichi set in `app/assets/faces/` (see its
