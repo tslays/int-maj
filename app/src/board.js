@@ -314,7 +314,7 @@ export class Board {
       groups.map((group) => group.length),
       this.wallStacks?.[this.rel(entry.seat)] ?? WALL_STACKS,
       entry.handCount,
-      { bonusFirst },
+      { bonusFirst, rel: this.rel(entry.seat) },
     );
     for (const place of tiles) {
       const piece = groups[place.group][place.index];
@@ -335,7 +335,7 @@ export class Board {
   meldTarget(seat) {
     const state = this.seats[seat];
     const count = Math.max(1, state?.callCount ?? 1);
-    const place = meldLayout(new Array(count).fill(3), this.wallStacks?.[this.rel(seat)] ?? WALL_STACKS, 8).tiles.at(-1);
+    const place = meldLayout(new Array(count).fill(3), this.wallStacks?.[this.rel(seat)] ?? WALL_STACKS, 8, { rel: this.rel(seat) }).tiles.at(-1);
     return this.frameOf(seat).localToWorld(new THREE.Vector3(place.x, 1.2, place.z));
   }
 
