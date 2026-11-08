@@ -40,7 +40,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
 - `app/src/main.js` runs the turn loop (bots one decision per beat, automatic
   draws and passes), the decision buttons, call-outs and the result card.
 
-Tap a tile to lift it and tap it again to discard. Claims, kongs, fishing,
+Tap a tile to lift it and tap it again to discard. Tap a second tile while one is lifted and the two swap places; drag a tile along the hand and it trades places with every tile it passes, so you can arrange the hand your own way (it stays arranged for the hand). Claims, kongs, fishing,
 Mah Jong, reshuffle and the Goulash exchange appear as buttons when the engine
 offers them. The table is landscape only.
 
