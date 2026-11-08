@@ -214,8 +214,6 @@ async function act(action) {
 
 function hideChoices() {
   $("#actions").replaceChildren();
-  $("#prompt").textContent = "";
-  $("#prompt").hidden = true;
 }
 
 function button(label, kind, onClick, tiles = []) {
@@ -240,11 +238,6 @@ function button(label, kind, onClick, tiles = []) {
   return element;
 }
 
-function prompt(text) {
-  $("#prompt").textContent = text;
-  $("#prompt").hidden = text === "";
-}
-
 function showChoices() {
   const legal = payload.legalActions;
   const view = payload.view;
@@ -254,12 +247,6 @@ function showChoices() {
 
   if (legal.some((action) => action.type === "GoulashExchange")) {
     goulashPicks = [];
-    const goulash = view.goulash;
-    prompt(
-      goulash === null
-        ? "Goulash: choose three tiles to pass on"
-        : `Goulash ${goulash.stage + 1} of 3: choose three tiles to pass to ${seatName(goulash.partner)}`,
-    );
     const confirm = button("Pass 3 tiles", "claim", () => {
       const keys = goulashPicks.map((entry) => entry.key).sort();
       const action = legal.find(
@@ -280,7 +267,6 @@ function showChoices() {
   const fishing = legal.find((action) => action.type === "DeclareFishing");
   const pass = legal.find((action) => action.type === "Pass");
   const reshuffle = legal.find((action) => action.type === "RequestReshuffle");
-  const canDiscard = legal.some((action) => action.type === "Discard");
 
   if (pass) bar.append(button(fishing ? "Don't announce" : "Pass", "pass", () => void act(pass)));
   if (reshuffle) bar.append(button("Reshuffle", "pass", () => void act(reshuffle)));
@@ -308,12 +294,7 @@ function showChoices() {
   if (win) bar.append(button("Mah Jong", "win", () => void act(win)));
 
   if (view.claimWindow !== null && view.phase === "claim") {
-    prompt(`${seatName(view.claimWindow.discarder)} threw this tile`);
     bar.prepend(faceChipLarge(view.claimWindow.tile));
-  } else if (fishing) {
-    prompt("You are one tile from Mah Jong");
-  } else if (canDiscard) {
-    prompt(win ? "Mah Jong, or tap a tile to discard" : "Your turn: tap a tile to discard");
   }
 }
 

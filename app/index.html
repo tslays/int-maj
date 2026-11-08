@@ -189,20 +189,6 @@
         box-shadow: inset 0 -3px 0 #8ccbea, 0 4px 12px rgba(0, 0, 0, 0.4);
       }
 
-      .prompt {
-        position: fixed;
-        left: var(--safe-l);
-        bottom: calc(var(--strip) + 14px);
-        margin: 0;
-        padding: 6px 12px;
-        border-radius: 999px;
-        background: var(--panel);
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--ink);
-        pointer-events: none;
-      }
-
       .callout {
         position: fixed;
         z-index: 5;
@@ -452,7 +438,6 @@
     <nav class="menu">
       <button class="ghost" id="new-game" type="button">New game</button>
     </nav>
-    <p class="prompt" id="prompt" hidden></p>
     <div class="actions" id="actions"></div>
     <section class="result" id="result" hidden></section>
     <p class="toast" id="toast" role="status" hidden></p>
