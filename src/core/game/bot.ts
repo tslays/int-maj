@@ -96,7 +96,8 @@ function unseenFor(view: GameView): Counts {
   return unseen;
 }
 
-function situationFor(view: GameView, seat: Seat): Situation {
+/** Everything the planner needs from one seat's view, with that seat's ambition. */
+export function situationFor(view: GameView, seat: Seat): Situation {
   return {
     hand: countsOf(view.player.hand),
     melds: view.player.melds.map((meld) => ({

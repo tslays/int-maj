@@ -28,6 +28,14 @@ interface ApiPayload extends StatePayload {
   readonly events: readonly string[];
 }
 
+interface ClosestHandPayload {
+  readonly pattern: string;
+  readonly name: string;
+  readonly away: number;
+  readonly need: readonly string[];
+  readonly pages: readonly number[];
+}
+
 interface ApiError {
   readonly error: string;
 }
@@ -110,6 +118,30 @@ describe("table API", () => {
     assert.equal(payload.checker.size, 14);
     assert.ok(Array.isArray(payload.checker.matches));
     assert.equal(payload.outcome, null);
+  });
+
+  it("answers the closest hands for your own tiles, nearest first", async () => {
+    const created = await post<ApiPayload>("/api/new", { seed: "api-closest" });
+    const game = created.body.game;
+    const response = call<{ game: string; hands: ClosestHandPayload[] }>(
+      "GET",
+      `/api/closest?game=${encodeURIComponent(game)}`,
+    );
+    assert.equal(response.status, 200);
+    assert.equal(response.body.game, game);
+    const hands = response.body.hands;
+    assert.ok(hands.length > 0 && hands.length <= 3);
+    for (const [index, hand] of hands.entries()) {
+      assert.equal(typeof hand.name, "string");
+      assert.equal(hand.need.length, hand.away);
+      assert.ok(hand.need.every((key) => TILE_KEY.test(key)));
+      assert.ok(hand.pages.length > 0);
+      if (index > 0) assert.ok(hands[index - 1]!.away <= hand.away);
+    }
+    assert.ok(hands.every((hand) => hand.away <= 6), "only hands within reach are named");
+
+    assert.equal(call<ApiError>("GET", "/api/closest").status, 400);
+    assert.equal(call<ApiError>("GET", "/api/closest?game=missing").status, 404);
   });
 
   it("never puts another seat's concealed tiles in a payload", async () => {

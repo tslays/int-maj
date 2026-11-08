@@ -52,16 +52,16 @@ Live at https://int.mah-jong.workers.dev.
 
 ## Alpha 3 - bots worth playing against
 
-- Before 2026-11-08 about 80 % of bot-only hands ended drawn and special
-  hands were rare. The bots now plan towards concrete target hands
-  (`src/core/game/bot/plan.ts`): special hands appear in bot play, calls are
-  made only when they raise the hand's value. Still open: the drawn rate, and
-  the "closest hands" helper for the player.
-- Give each catalogue hand a generator of its completing tile sets, so the
-  distance to every hand can be computed; bots aim for the nearest reachable
-  hand, discard towards it and chow when it helps. The same data powers a
-  "closest hands" helper for the player.
-- *Accept:* far fewer drawn hands in the soak, special hands appear.
+- Done (2026-11-08): the bots plan towards concrete target hands
+  (`src/core/game/bot/plan.ts`): calls are made only when they raise the
+  hand's value, and special hands appear in bot play. Measured with
+  `npm run bot-soak` over 400 bot-only hands: 35 % drawn, against about 80 %
+  before; 98 % of wins are special hands.
+- Done (2026-11-08): the "closest hands" helper. The same plan names the three
+  catalogue hands your tiles are nearest to, with the tiles each still needs,
+  in a panel at the top right (the menu's Hints button turns it off).
+- *Accept:* far fewer drawn hands in the soak, special hands appear - met.
+- Worth watching in testing: Crazy Chows is over a quarter of bot wins.
 
 ## Alpha 4 - release to the group
 

@@ -17,4 +17,5 @@ export * from "./reduce.ts";
 export * from "./view.ts";
 export * from "./replay.ts";
 export * from "./bot.ts";
+export * from "./closest.ts";
 export * from "./describe.ts";
