@@ -2,7 +2,7 @@
 
 Extracted from the owner-designated primary scan, `scans/The Game of Mah Jong
 Illustrated - trimmed.pdf`, read from the page renders in
-`rules/.generated/primary-pages/`. Page numbers below are **printed** page numbers; each
+`rules/pages/illustrated/`. Page numbers below are **printed** page numbers; each
 render `pNN.png` is an open-book spread of printed pages `2NN-2` and `2NN-1`
 (PDF 32 is printed 62-63).
 

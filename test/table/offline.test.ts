@@ -283,6 +283,13 @@ describe("the offline build", () => {
     }
   });
 
+  it("never ships the private book pages or rule documents", async () => {
+    const files = await readdir(outDir, { recursive: true });
+    for (const name of files) {
+      assert.doesNotMatch(String(name), /^(rules|scans)\b|\.jpe?g$|\.pdf$/i, `${name} must not be published`);
+    }
+  });
+
   it("pre-caches every file the page needs", async () => {
     const worker = await readFile(join(outDir, "sw.js"), "utf8");
     for (const file of ["index.html", "src/main.js", "src/board.js", "engine/table/local.js", "assets/faces/dR.svg", "vendor/three/three.module.min.js"]) {

@@ -4,7 +4,7 @@ Milestone A scope: printed pages 4-33 and 62-63 (general play). Each row is a
 conflict between the primary scan and `rules/archive/PLAY.md`,
 `rules/archive/ASSUMPTIONS.md`, or the engine (`src/core/game/`, `src/core/fishing.ts`,
 `src/core/score.ts`). Page numbers are printed pages; the corresponding render
-is `rules/.generated/primary-pages/pNN.png`.
+is `rules/pages/illustrated/pNN.jpg`.
 
 "Printed" is the literal reading of the page (quotes and rule numbers refer to
 `rules/PRIMARY-RULES.md`). "Old / engine" is what the tree currently says or

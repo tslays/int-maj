@@ -9,7 +9,7 @@ and the code changes.
 
 | Tag | Meaning |
 |---|---|
-| `[I p.N]` | Transcribed from *The Game of Mah Jong Illustrated* — primary and normative. Page numbers are the book's **printed** pages; the render is `rules/.generated/primary-pages/pNN.png` (each render is a two-page spread, printed `2NN-2` and `2NN-1`). |
+| `[I p.N]` | Transcribed from *The Game of Mah Jong Illustrated* — primary and normative. Page numbers are the book's **printed** pages; the render is `rules/pages/illustrated/pNN.jpg` (each render is a two-page spread, printed `2NN-2` and `2NN-1`). |
 | `[C p.N]` | From *The Mah Jong Player's Companion* — a supplement that extends this framework where the primary book is silent. It never overrides an `[I]` rule. |
 | `[A]` | A recorded assumption for a question both books leave open; the reasoning is in `rules/archive/ASSUMPTIONS.md`. |
 
@@ -923,7 +923,7 @@ the Companion readings that differ are listed in `rules/AUDIT.md` under
 "Catalogue and Part III conflicts" and are not applied here.
 
 Page tags `[C p. N]` are the Companion's **printed** pages. The render
-`rules/.generated/pages/pNN.png` is the spread of printed pages `2NN-4` and `2NN-3`
+`rules/pages/companion/pNN.jpg` is the spread of printed pages `2NN-4` and `2NN-3`
 (so `p04.png` is printed pp. 4-5, `p30.png` is pp. 56-57).
 
 ## 1. The tier ladder

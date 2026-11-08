@@ -62,7 +62,7 @@ the Illustrated book contradicts is wrong and must change:
 - `rules/archive/PLAY.md` — prior proposals and owner decisions;
 - `rules/archive/ASSUMPTIONS.md` — prior rules and implementation assumptions;
 - `rules/archive/NOTES.md` and `rules/archive/MISSING.md` — prior source readings and gaps;
-- `rules/.generated/pages/`, `rules/.generated/companion-ocr.txt`, and other OCR/transcriptions —
+- `rules/pages/companion/`, `rules/.generated/companion-ocr.txt`, and other OCR/transcriptions —
   earlier source material;
 - `src/core/patterns/table.ts`, gameplay code and tests — existing behavior.
 
