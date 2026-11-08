@@ -34,6 +34,7 @@ const SEATS = ["E", "S", "W", "N"];
 const { WALL_STACKS, WALL_R, HAND_Z, DISCARD_Z, DISCARD_SCALE } = TABLE;
 const GAP = 0.02;
 const HAND_TILT = -0.16;
+const LIFT = 0.32; // how far a selected hand tile rises
 
 /** Lay a meld's tiles in a row; a concealed kong shows its ends face down. */
 function meldTiles(meld, scale) {
@@ -59,6 +60,7 @@ export class Board {
     this.handGroup = new THREE.Group();
     handScene.add(this.handGroup);
     this.hand = []; // { key, tile, drawn }
+    this.custom = false; // true once you have arranged the hand yourself
     this.lastThrowX = 0;
     this.raycaster = new THREE.Raycaster();
   }
@@ -77,6 +79,7 @@ export class Board {
     for (const frame of this.frames) frame.clear();
     this.handGroup.clear();
     this.hand = [];
+    this.custom = false;
     this.seats = {};
     for (const seat of SEATS) {
       this.seats[seat] = {
@@ -359,18 +362,37 @@ export class Board {
     };
     const next = [];
     const fresh = new Set();
-    const order = plain.map((key) => [key, false]);
-    if (drawnKey !== null) order.push([drawnKey, true]);
-    for (const [key, drawn] of order) {
-      let entry = take(key, drawn);
-      if (entry === null) {
-        entry = { key, tile: makeTile(key, { shadows: false }), drawn };
-        entry.tile.rotation.x = HAND_TILT;
-        this.handGroup.add(entry.tile);
-        fresh.add(entry);
+    const make = (key) => {
+      const entry = { key, tile: makeTile(key, { shadows: false }), drawn: false, glide: 0 };
+      entry.tile.rotation.x = HAND_TILT;
+      this.handGroup.add(entry.tile);
+      fresh.add(entry);
+      return entry;
+    };
+    if (this.custom) {
+      // Your own arrangement stands: tiles keep their places, new ones join at the end.
+      const left = [...keys];
+      for (const entry of this.hand) {
+        const at = left.indexOf(entry.key);
+        if (at < 0) continue;
+        left.splice(at, 1);
+        pool.splice(pool.indexOf(entry), 1);
+        next.push(entry);
       }
-      entry.drawn = drawn;
-      next.push(entry);
+      left.sort((a, b) => tileOrder(a) - tileOrder(b));
+      if (drawnKey !== null && left.includes(drawnKey)) left.push(left.splice(left.indexOf(drawnKey), 1)[0]);
+      for (const key of left) next.push(make(key));
+      next.forEach((entry, index) => {
+        entry.drawn = drawnKey !== null && index === next.length - 1;
+      });
+    } else {
+      const order = plain.map((key) => [key, false]);
+      if (drawnKey !== null) order.push([drawnKey, true]);
+      for (const [key, drawn] of order) {
+        const entry = take(key, drawn) ?? make(key);
+        entry.drawn = drawn;
+        next.push(entry);
+      }
     }
     for (const entry of pool) entry.tile.removeFromParent();
     this.hand = next;
@@ -398,11 +420,12 @@ export class Board {
     return { places, total };
   }
 
-  layoutHand(fresh, animated) {
+  layoutHand(fresh, animated, skip = null) {
     const { places, total } = this.handPlaces();
     setHandRowWidth(total);
     const work = [];
     for (const entry of this.hand) {
+      if (entry === skip) continue;
       const x = places.get(entry);
       if (fresh.has(entry)) {
         entry.tile.position.set(x + (entry.drawn ? 1.4 : 0), animated ? 0.9 : 0, 0);
@@ -411,7 +434,7 @@ export class Board {
       }
       const position = entry.tile.position;
       if (Math.abs(position.x - x) > 1e-3 || Math.abs(position.y) > 1e-3) {
-        if (animated) work.push(tween(position, { x, y: 0 }, 220, easeOutCubic));
+        if (animated) work.push(this.glide(entry, { x, y: 0 }, 220));
         else position.set(x, 0, 0);
       }
     }
@@ -436,7 +459,79 @@ export class Board {
   }
 
   lift(entry, up) {
-    return tween(entry.tile.position, { y: up ? 0.32 : 0 }, 140, easeOutCubic);
+    return this.glide(entry, { y: up ? LIFT : 0 }, 140);
+  }
+
+  /** Move a hand tile; a newer move of the same tile replaces the one in flight. */
+  glide(entry, to, ms) {
+    const id = (entry.glide = (entry.glide ?? 0) + 1);
+    const position = entry.tile.position;
+    const from = { x: position.x, y: position.y };
+    return animate(ms, (t) => {
+      if (entry.glide !== id) return;
+      const k = easeOutCubic(t);
+      if (to.x !== undefined) position.x = from.x + (to.x - from.x) * k;
+      if (to.y !== undefined) position.y = from.y + (to.y - from.y) * k;
+    });
+  }
+
+  /* ------------------------------------------------------- arranging */
+
+  /** Hand-space x under a pointer event (on the hand's plane), or null. */
+  handX(event) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    const fromBottom = rect.bottom - event.clientY;
+    const pointer = new THREE.Vector2(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      (fromBottom / viewport.strip) * 2 - 1,
+    );
+    this.raycaster.setFromCamera(pointer, handCamera);
+    const hit = new THREE.Vector3();
+    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    return this.raycaster.ray.intersectPlane(plane, hit) ? hit.x : null;
+  }
+
+  /** Swap two tiles' places in the hand. */
+  swap(a, b) {
+    const i = this.hand.indexOf(a);
+    const j = this.hand.indexOf(b);
+    if (i < 0 || j < 0 || i === j) return;
+    this.hand[i] = b;
+    this.hand[j] = a;
+    [a.drawn, b.drawn] = [b.drawn, a.drawn];
+    this.custom = true;
+  }
+
+  /** Carry a tile with the pointer; it trades places with each tile it passes. */
+  dragTo(entry, event) {
+    const x = this.handX(event);
+    if (x === null) return;
+    const { places, total } = this.handPlaces();
+    entry.glide += 1; // the pointer owns this tile now
+    entry.tile.position.x = Math.max(-total / 2, Math.min(total / 2, x));
+    entry.tile.position.y = LIFT;
+    let target = this.hand.indexOf(entry);
+    let best = Infinity;
+    this.hand.forEach((other, index) => {
+      const distance = Math.abs(places.get(other) - x);
+      if (distance < best) {
+        best = distance;
+        target = index;
+      }
+    });
+    let at = this.hand.indexOf(entry);
+    if (at === target) return;
+    while (at !== target) {
+      const step = target > at ? 1 : -1;
+      this.swap(entry, this.hand[at + step]);
+      at += step;
+    }
+    this.layoutHand(new Set(), true, entry);
+  }
+
+  /** Settle every hand tile into its place (after a drag or a swap). */
+  settle() {
+    return this.layoutHand(new Set(), true);
   }
 
   /** Remember where the tile you throw left the hand, so its arc starts there. */

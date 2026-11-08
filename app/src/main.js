@@ -24,6 +24,7 @@ let api = null;
 let payload = null;
 let busy = false;
 let selected = null;
+let press = null; // the tile under a held pointer
 let goulashPicks = [];
 const board = new Board();
 
@@ -342,21 +343,71 @@ renderer.domElement.addEventListener("pointerdown", (event) => {
     return;
   }
 
-  if (entry === null || legalDiscard(entry.key) === null) {
+  if (entry === null) {
     if (selected !== null) void board.lift(selected, false);
     selected = null;
     return;
   }
-  if (entry === selected) {
+  // Press on a hand tile: a tap selects / swaps / discards, a drag re-arranges.
+  const wasSelected = entry === selected;
+  if (selected === null) {
+    selected = entry;
+    void board.lift(entry, true);
+  }
+  press = { entry, wasSelected, x: event.clientX, y: event.clientY, dragging: false, id: event.pointerId };
+  renderer.domElement.setPointerCapture?.(event.pointerId);
+});
+
+const DRAG_SLOP = 6;
+
+renderer.domElement.addEventListener("pointermove", (event) => {
+  if (press === null || event.pointerId !== press.id) return;
+  if (!press.dragging) {
+    if (Math.hypot(event.clientX - press.x, event.clientY - press.y) < DRAG_SLOP) return;
+    press.dragging = true;
+    if (selected !== null && selected !== press.entry) void board.lift(selected, false);
+    selected = press.entry;
+  }
+  board.dragTo(press.entry, event);
+});
+
+function endPress(event, cancelled) {
+  if (press === null || event.pointerId !== press.id) return;
+  const { entry, wasSelected, dragging } = press;
+  press = null;
+  renderer.domElement.releasePointerCapture?.(event.pointerId);
+  if (dragging) {
+    // Dropped: it settles where it was carried; nothing is thrown.
     selected = null;
-    board.noteThrow(entry);
-    void act(legalDiscard(entry.key));
+    void board.settle();
     return;
   }
-  if (selected !== null) void board.lift(selected, false);
-  selected = entry;
-  void board.lift(entry, true);
-});
+  if (cancelled) {
+    if (selected !== null) void board.lift(selected, false);
+    selected = null;
+    return;
+  }
+  if (selected === entry) {
+    if (!wasSelected) return; // first tap: it stays lifted
+    selected = null;
+    const discard = legalDiscard(entry.key);
+    if (discard === null) {
+      void board.lift(entry, false);
+      return;
+    }
+    board.noteThrow(entry);
+    void act(discard);
+    return;
+  }
+  // A second tile tapped while one is lifted: they trade places.
+  const other = selected;
+  selected = null;
+  board.swap(other, entry);
+  void board.settle();
+}
+
+renderer.domElement.addEventListener("pointerup", (event) => endPress(event, false));
+renderer.domElement.addEventListener("pointercancel", (event) => endPress(event, true));
 
 /* --------------------------------------------------------- outcome */
 
