@@ -21,6 +21,12 @@ import {
 import { chooseAction } from "../../src/core/game/bot.ts";
 import { fixture, play } from "../helpers/game-fixture.ts";
 
+/** A wall long enough that the bot still expects to draw for a while. */
+const LONG_WALL: readonly string[] = Array.from(
+  { length: 60 },
+  (_, index) => ["c6", "o9", "dW", "c3", "o5", "wN"][index % 6]!,
+);
+
 function sameAction(a: Action, b: Action): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
@@ -108,41 +114,85 @@ describe("bot policy", () => {
     assert.equal(action?.type, "DeclareFishing");
   });
 
-  it("claims a pung when another pair remains", () => {
+  it("lets a discard go rather than break a concealed special hand", () => {
+    // South is one tile (the North wind) from Wriggly Snake, a concealed-only
+    // limit hand. A pung of b5 would expose the hand and forfeit it.
     const state = fixture({
       hands: {
-        E: "b1 b1 b1 c1 c2 c3 o1 o1 o1 o2 o3 o4 wE o5",
-        S: "o5 o5 b2 b2 b3 c2 c3 c4 c5 c6 c7 dR dG",
-        W: "b7 b8 b9 c7 c8 c9 o2 o3 o4 wE wS wW wN",
-        N: "b7 b8 b9 c7 c8 c9 o1 o6 o7 wE wS wW wN",
+        E: "c1 c1 c1 c2 c3 c4 o1 o1 o1 o2 o3 o4 wE b5",
+        S: "b1 b2 b3 b4 b5 b6 b7 b8 b9 wE wS wW b5",
+        W: "c7 c8 c9 c7 c8 c9 o2 o3 o4 dR dR dG dG",
+        N: "c5 c6 c7 o5 o6 o7 o7 o8 o9 dW dW dG c2",
       },
-      wall: ["o1", "o2", "o3", "o4"],
+      wall: LONG_WALL,
       phase: "discard",
       turn: "E",
     });
-    const discarded = play(state, { type: "Discard", seat: "E", tile: "o5" });
+    const discarded = play(state, { type: "Discard", seat: "E", tile: "b5" });
+    const view = viewFor(discarded.state, "S");
+    assert.ok(view.legalActions.some((action) => action.type === "Claim" && action.kind === "pung"));
+    assert.equal(chooseAction(view, "S")?.type, "Pass");
+  });
+
+  it("claims a pung that brings an exposed hand within one tile", () => {
+    // South has already exposed red dragons; the pung of b2 leaves it
+    // fishing for an all-bamboo ordinary hand.
+    const state = fixture({
+      hands: {
+        E: "c1 c1 c1 c2 c3 c4 o1 o1 o1 o2 o3 o4 wN b2",
+        S: "b2 b2 b5 b5 b7 b8 wE wE wE c9",
+        W: "c7 c8 c9 c7 c8 c9 o2 o3 o4 dG dG dW dW",
+        N: "c5 c6 c7 o5 o6 o7 o7 o8 o9 dW dG wS wS",
+      },
+      melds: { S: [{ kind: "pung", tiles: ["dR", "dR", "dR"], exposed: true }] },
+      wall: LONG_WALL,
+      phase: "discard",
+      turn: "E",
+    });
+    const discarded = play(state, { type: "Discard", seat: "E", tile: "b2" });
     const view = viewFor(discarded.state, "S");
     const action = chooseAction(view, "S");
     assert.equal(action?.type, "Claim");
     assert.equal(action?.type === "Claim" ? action.kind : null, "pung");
   });
 
-  it("declines a claim that would spend the hand's last pair", () => {
+  it("keeps the tiles of a special hand it is close to", () => {
+    // Nine bamboo in a run and three winds: East throws the stray character,
+    // not a tile of the Wriggly Snake.
     const state = fixture({
       hands: {
-        E: "b1 b1 b1 c1 c2 c3 o1 o1 o1 o2 o3 o4 wE o5",
-        S: "o5 o5 b2 b3 b4 b5 c2 c3 c4 c5 c6 c7 dR",
-        W: "b7 b8 b9 c7 c8 c9 o2 o3 o4 wE wS wW wN",
-        N: "b7 b8 b9 c7 c8 c9 o1 o6 o7 wE wS wW wN",
+        E: "b1 b2 b3 b4 b5 b6 b7 b8 b9 wE wS wW c5 o7",
+        S: "c1 c1 c1 c2 c3 c4 o1 o1 o1 o2 o3 o4 wN",
+        W: "c7 c8 c9 c7 c8 c9 o2 o3 o4 dR dR dG dG",
+        N: "c5 c6 c7 o5 o6 o7 o7 o8 o9 dW dW dG c2",
       },
-      wall: ["o1", "o2", "o3", "o4"],
+      wall: LONG_WALL,
       phase: "discard",
       turn: "E",
     });
-    const discarded = play(state, { type: "Discard", seat: "E", tile: "o5" });
-    const view = viewFor(discarded.state, "S");
-    const action = chooseAction(view, "S");
-    assert.equal(action?.type, "Pass");
+    const action = chooseAction(viewFor(state, "E"), "E");
+    assert.equal(action?.type, "Discard");
+    assert.ok(
+      action?.type === "Discard" && (action.tile === "c5" || action.tile === "o7"),
+      `discarded ${JSON.stringify(action)}`,
+    );
+  });
+
+  it("does not throw a tile another seat is fishing for", () => {
+    const state = fixture({
+      hands: {
+        E: "b1 b2 b3 b4 b5 b6 b7 b8 b9 wE wS wW c5 o7",
+        S: "c1 c1 c1 c2 c3 c4 o1 o1 o1 o2 o3 o4 wN",
+        W: "c7 c8 c9 c7 c8 c9 o2 o3 o4 dR dR dG dG",
+        N: "c5 c6 c7 o5 o6 o7 o7 o8 o9 dW dW dG c2",
+      },
+      wall: LONG_WALL,
+      phase: "discard",
+      turn: "E",
+      fishing: [{ seat: "S", wait: ["c5"], tier: "limit" }],
+    });
+    const action = chooseAction(viewFor(state, "E"), "E");
+    assert.deepEqual(action, { type: "Discard", seat: "E", tile: "o7" });
   });
 
   it("is blind to the other seats' concealed tiles", () => {
