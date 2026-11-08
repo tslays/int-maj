@@ -4,7 +4,7 @@
  * `reconcile(payload)` compares the payload with what is on the table and
  * animates only the difference: a longer discard row is a throw, a discard
  * that disappears was claimed and flies to the claimer, a new meld drops in,
- * a bigger hand is a draw. Anything it cannot explain (a new hand, an undo)
+ * a bigger hand is a draw. Anything it cannot explain (a new hand)
  * is rebuilt in place. The screen therefore cannot drift from the game.
  *
  * Seats are placed relative to you: rel 0 is your seat at the bottom, rel 1

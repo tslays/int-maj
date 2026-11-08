@@ -544,23 +544,7 @@ async function newGame() {
   void run();
 }
 
-async function undo() {
-  if (busy || payload === null) return;
-  busy = true;
-  hideChoices();
-  try {
-    board.handId = null; // the replayed hand is rebuilt, not animated
-    await apply(await request("/api/undo", { game: payload.game }), { animated: false });
-  } catch (error) {
-    toast(error.message === "nothing to undo" ? "Nothing to undo in this hand" : error.message);
-  } finally {
-    busy = false;
-  }
-  void run();
-}
-
 $("#new-game").addEventListener("click", () => void newGame());
-$("#undo").addEventListener("click", () => void undo());
 
 /* --------------------------------------------------------- start */
 
