@@ -81,7 +81,7 @@ The full workflow is `docs/WORKFLOW.md`. The rules every session follows:
 - Commit and push finished, tested work to `main` without asking. Pushing
   publishes: the `Deploy to Cloudflare` job in `.github/workflows/test.yml`
   deploys every push to `main` whose tests and build pass, to
-  https://int-maj.int-maj.workers.dev. (`npm run deploy` publishes by hand
+  https://int.mah-jong.workers.dev. (`npm run deploy` publishes by hand
   from a machine logged in with wrangler.)
 - **Deliver autonomously, end to end** (owner-authorized, `docs/WORKFLOW.md`
   "Autonomous delivery loop"): on a `claude/...` branch, open a pull request,
