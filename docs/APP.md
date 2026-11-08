@@ -44,6 +44,12 @@ Tap a tile to lift it and tap it again to discard. Tap a second tile while one i
 Mah Jong, reshuffle and the Goulash exchange appear as buttons when the engine
 offers them. The table is landscape only.
 
+The panel at the top right lists the closest hands: up to three catalogue
+hands your tiles are nearest to, with how many tiles each still needs, its
+value and the missing tiles. It is asked for when your own tiles change and at
+each of your decisions, and hides on the result card. The menu's Hints button
+turns it off (remembered on the device).
+
 Two URL options help when testing:
 
 | URL | Opens |
@@ -63,6 +69,7 @@ tiles of the other seats, and their hand counts only.
 | Route | Body / query | Returns |
 | --- | --- | --- |
 | `GET /api/state` | `game=<id>` | the view, legal actions, wall count, per-seat table, ledger, wait panel, result and `scoresBefore` |
+| `GET /api/closest` | `game=<id>` | the catalogue hands your tiles are nearest to (`closestHands`), at most three |
 | `GET /api/scenario` | `state=<name>` | one fixed review board and its events |
 | `POST /api/new` | `{ "seed": "..." }` | a new game and its first state |
 | `POST /api/move` | `{ "game": "...", "action": {...} }` | the new state plus `events` as text lines |

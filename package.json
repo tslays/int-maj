@@ -10,6 +10,7 @@
   "scripts": {
     "test": "node --test \"test/**/*.test.ts\"",
     "soak": "SOAK_SEEDS=300 node --test test/core/soak.test.ts",
+    "bot-soak": "node scripts/bot-soak.ts",
     "test:watch": "node --test --watch \"test/**/*.test.ts\"",
     "check": "node bin/check.ts",
     "replay": "node bin/replay.ts",

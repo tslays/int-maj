@@ -19,6 +19,7 @@ import { checkHand, summarizeMatch, type MatchSummary } from "../core/check.ts";
 import { tileKey } from "../core/tiles.ts";
 import type { Action } from "../core/game/actions.ts";
 import { chooseAction } from "../core/game/bot.ts";
+import { closestHands, type ClosestHand } from "../core/game/closest.ts";
 import type { Event } from "../core/game/events.ts";
 import {
   apply,
@@ -408,6 +409,17 @@ export function statePayload(session: WebSession): StatePayload {
     outcome: outcomeFor(session, view),
     scoresBefore: session.handStart.scoresBefore,
   };
+}
+
+/**
+ * The catalogue hands your tiles are nearest to, for the "closest hands"
+ * helper. Built from your own `viewFor` projection only, and on request
+ * rather than with every state, because planning costs a few milliseconds.
+ * Empty once the hand is over.
+ */
+export function closestPayload(session: WebSession): { readonly game: string; readonly hands: readonly ClosestHand[] } {
+  if (session.state.phase === "finished") return { game: session.id, hands: [] };
+  return { game: session.id, hands: closestHands(viewFor(session.state, session.seat)) };
 }
 
 export interface GameStoreOptions {
