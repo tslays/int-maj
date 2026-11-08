@@ -104,15 +104,20 @@ browser runs the same engine, bots and API routes as the tests. It copies the
 ## Deploying
 
 The app is live at **https://int-maj.int-maj.workers.dev** (Cloudflare
-Workers static assets; `wrangler.jsonc` names the folder). One command tests,
-builds and uploads it:
+Workers static assets; `wrangler.jsonc` names the folder and the account).
+
+**Automatically:** every push to `main` whose tests and build pass is
+published by the `Deploy to Cloudflare` job in `.github/workflows/test.yml`.
+It needs the repository secret `CLOUDFLARE_API_TOKEN` (a Cloudflare API token
+from the "Edit Cloudflare Workers" template); without it the job skips with a
+notice. So any session - a laptop or a cloud session from a phone - publishes
+just by pushing, and installed copies update on their next launch.
+
+**By hand**, from a machine logged in with `npx wrangler login`:
 
 ```sh
-npx wrangler login   # once per machine, in your own browser
 npm run deploy       # npm test, npm run build, then upload dist/
 ```
 
-Pushing to GitHub does not deploy: testers get a new version only when
-`npm run deploy` runs, and installed copies pick it up on their next launch.
-Only `dist/` is uploaded; the rule transcriptions in `rules/` stay in the
-private repository.
+Only `dist/` is uploaded; the rule documents and book pages in `rules/` stay
+in the private repository (`test/table/offline.test.ts` checks this).
