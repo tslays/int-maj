@@ -32,10 +32,16 @@ face, with a corner index, onto it. The app icon (`app/assets/icons/`) is drawn 
 used: the 3D table models the body and back, and this variant has no dora
 tiles. `Haku.svg` is blank; the prototype draws the white dragon's frame.
 
-## Bonus marks
+## Flowers and seasons
 
-The upstream set has no flowers or seasons. `f1.svg`–`f4.svg` (plum, orchid,
-chrysanthemum, bamboo) and `s1.svg`–`s4.svg` (spring, summer, autumn, winter)
-were drawn for this project on the same `0 0 300 400` canvas and in the same
-visual language: transparent face art, flat fills, white outlines and no tile
-body.
+The upstream set has no flowers or seasons. `f1.svg`-`f4.svg` (plum, orchid,
+chrysanthemum, bamboo) and `s1.svg`-`s4.svg` (spring, summer, autumn, winter)
+are original art drawn for this project by `scripts/art/bonus-faces.py`, in
+the layout of a classic Western set: the table prints the number in the
+top-left corner, the Chinese name sits top-right, a botanical drawing fills
+the middle and the English name runs along the bottom, in the riichi faces'
+inks. Rerun the script to change them:
+
+```sh
+python3 scripts/art/bonus-faces.py app/assets/faces
+```

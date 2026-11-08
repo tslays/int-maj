@@ -1,16 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400">
-  <g stroke-linecap="round" stroke-linejoin="round">
-    <path d="M150 322 L150 372" fill="none" stroke="#ffffff" stroke-width="24"/>
-    <path d="M150 322 L150 372" fill="none" stroke="#004900" stroke-width="12"/>
-    <path d="M150 60 L176 122 L218 92 L210 152 L268 154 L226 196 L264 250 L204 240 L206 302 L150 262 L94 302 L96 240 L36 250 L74 196 L32 154 L90 152 L82 92 L124 122 Z"
-          fill="#b93c3c" stroke="#ffffff" stroke-width="12"/>
-    <g fill="none" stroke="#000037" stroke-width="7">
-      <path d="M150 150 L150 262"/>
-      <path d="M150 196 L96 132"/>
-      <path d="M150 196 L204 132"/>
-      <path d="M150 220 L100 256"/>
-      <path d="M150 220 L200 256"/>
-    </g>
-    <circle cx="150" cy="200" r="13" fill="#000037" stroke="#ffffff" stroke-width="6"/>
-  </g>
+  <!-- Autumn: drawn for this project (original art). -->
+  <text x="272" y="78" text-anchor="end" font-family="'Songti SC','STSong','Noto Serif CJK SC','Noto Serif CJK','Source Han Serif SC',serif" font-size="66" font-weight="700" fill="#b93c3c">秋</text>
+  <g transform="translate(150 212) scale(1.24) translate(-150 -222)"><path d="M150,305 C140,240 160,190 175,130" fill="none" stroke="#0f5a2a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="M150,305 C135,250 110,200 95,160" fill="none" stroke="#0f5a2a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M150,305 C165,255 200,225 215,195" fill="none" stroke="#0f5a2a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M150.0,300.0 Q195.2,285.7 200.0,213.4 Q139.8,253.7 150.0,300.0Z" fill="#2f7d3a" stroke="#0f5a2a" stroke-width="3.5" stroke-linejoin="round"/><path d="M150.0,300.0 L192.5,226.4" stroke="#d9ead3" stroke-width="2.2" stroke-linecap="round"/><path d="M150.0,300.0 Q159.4,256.2 102.5,217.7 Q107.4,286.2 150.0,300.0Z" fill="#2f7d3a" stroke="#0f5a2a" stroke-width="3.5" stroke-linejoin="round"/><path d="M150.0,300.0 L109.6,230.1" stroke="#d9ead3" stroke-width="2.2" stroke-linecap="round"/><path d="M150.0,300.0 Q169.5,270.2 143.0,220.3 Q125.6,274.0 150.0,300.0Z" fill="#2f7d3a" stroke="#0f5a2a" stroke-width="3.5" stroke-linejoin="round"/><path d="M150.0,300.0 L144.1,232.3" stroke="#d9ead3" stroke-width="2.2" stroke-linecap="round"/><path d="M150.0,300.0 Q181.2,305.1 210.6,265.0 Q161.2,270.4 150.0,300.0Z" fill="#2f7d3a" stroke="#0f5a2a" stroke-width="3.5" stroke-linejoin="round"/><path d="M150.0,300.0 L201.5,270.2" stroke="#d9ead3" stroke-width="2.2" stroke-linecap="round"/><path d="M150.0,300.0 Q139.0,272.9 92.8,267.0 Q121.0,304.0 150.0,300.0Z" fill="#2f7d3a" stroke="#0f5a2a" stroke-width="3.5" stroke-linejoin="round"/><path d="M150.0,300.0 L101.4,271.9" stroke="#d9ead3" stroke-width="2.2" stroke-linecap="round"/><ellipse cx="172" cy="140" rx="7" ry="12" fill="#b93c3c" transform="rotate(20 172 140)"/><ellipse cx="178" cy="160" rx="7" ry="12" fill="#b93c3c" transform="rotate(30 178 160)"/><ellipse cx="100" cy="170" rx="7" ry="12" fill="#b93c3c" transform="rotate(-30 100 170)"/><ellipse cx="94" cy="152" rx="7" ry="12" fill="#b93c3c" transform="rotate(-25 94 152)"/><ellipse cx="210" cy="200" rx="7" ry="12" fill="#b93c3c" transform="rotate(40 210 200)"/></g>
+  <text x="150" y="380" text-anchor="middle" font-family="'Helvetica Neue','Arial Narrow',Arial,sans-serif" font-size="40" font-weight="800" letter-spacing="3" fill="#b93c3c">AUTUMN</text>
 </svg>
