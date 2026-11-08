@@ -524,3 +524,11 @@ export function leadingGoal(goals: readonly Goal[], hand: Counts, odds: Odds): G
   }
   return lead;
 }
+
+/** The catalogue pattern this seat's hand makes with `tile` added, if any. */
+export function completedPattern(situation: Situation, tile: string): string | null {
+  const concealed = new Int8Array(situation.hand);
+  concealed[indexOf(tile)]! += 1;
+  const scored = scoredValue(concealed, situation);
+  return scored === null ? null : scored.pattern;
+}

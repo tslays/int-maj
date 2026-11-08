@@ -16,7 +16,6 @@ import type {
   Seat,
   LedgerEntry,
   HandResult,
-  FishingState,
   GameState,
 } from "./state.ts";
 import type { Action } from "./actions.ts";
@@ -40,6 +39,19 @@ export interface OpponentView {
   readonly flowers: readonly string[];
   readonly seasons: readonly string[];
   readonly discards: readonly string[];
+}
+
+/**
+ * A fishing declaration as one seat sees it. The table sees only that a seat
+ * is fishing (the Companion's displayed fish, C p. 55); the wait and the
+ * hand's tier stay with the fishing player.
+ */
+export interface FishingView {
+  readonly seat: Seat;
+  /** The viewer's own wait; empty for another seat. */
+  readonly wait: readonly string[];
+  /** The viewer's own fishing tier; null for another seat. */
+  readonly tier: Tier | null;
 }
 
 export interface ClaimWindowView {
@@ -66,7 +78,7 @@ export interface GameView {
     readonly end: "front" | "loose";
   } | null;
   readonly claimWindow: ClaimWindowView | null;
-  readonly fishing: readonly FishingState[];
+  readonly fishing: readonly FishingView[];
   readonly ledger: readonly LedgerEntry[];
   readonly result: HandResult | null;
   readonly legalActions: readonly Action[];
@@ -128,11 +140,11 @@ export function viewFor(state: GameState, seat: Seat): GameView {
             tile: state.claimWindow.tile,
             pending: [...state.claimWindow.pending],
           },
-    fishing: state.fishing.map((entry) => ({
-      seat: entry.seat,
-      wait: [...entry.wait],
-      tier: entry.tier,
-    })),
+    fishing: state.fishing.map((entry) =>
+      entry.seat === seat
+        ? { seat: entry.seat, wait: [...entry.wait], tier: entry.tier }
+        : { seat: entry.seat, wait: [], tier: null },
+    ),
     ledger: state.ledger.map((entry) => ({ ...entry })),
     result: state.result === null ? null : { ...state.result },
     legalActions: legalActions(state, seat),

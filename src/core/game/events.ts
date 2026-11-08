@@ -18,7 +18,7 @@
  *   Claimed               pung/kong/chow or a winning chow
  *   KongDeclared          concealed or added kong
  *   KongReplacementDrawn  the loose (or Chinese dead-wall) tile
- *   FishingDeclared       an announced wait, not a claim restriction
+ *   FishingDeclared       the fish is shown; the wait is the fisher's alone
  *   WinDeclared           mah jong, self-drawn or on the discard
  *   HandScored            the winning pattern and its points
  *   Payments              ledger entries; each names both sides and a reason

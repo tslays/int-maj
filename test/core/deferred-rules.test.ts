@@ -7,6 +7,7 @@ import { describe, it } from "node:test";
 
 import {
   apply,
+  exposureIndicates,
   isApplyError,
   isFeaturelessHand,
   legalActions,
@@ -275,54 +276,66 @@ describe("A15 penalties", () => {
 });
 
 describe("A16 careless discard", () => {
-  it("makes the discarder pay the other losers when the discard was visibly needed", () => {
+  // South's three exposed bamboo pungs show a one-suit hand: its exposed
+  // tiles indicate that it needs bamboo or honours (I p. 22).
+  const BAMBOO_SHOWN = [
+    { kind: "pung" as const, tiles: ["b7", "b7", "b7"], exposed: true },
+    { kind: "pung" as const, tiles: ["b8", "b8", "b8"], exposed: true },
+    { kind: "pung" as const, tiles: ["b9", "b9", "b9"], exposed: true },
+  ];
+
+  function winOnB5(melds: typeof BAMBOO_SHOWN, fishing: { seat: "E"; wait: string[]; tier: "half" }[] = []) {
     const state = fixture({
       hands: {
-        E: "b1 b1 b1 c1 c2 c3 c7 c8 c9 wE wS wW b5 o9",
-        S: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5",
         ...FILLER,
+        E: "b1 b1 b1 c1 c2 c3 c7 c8 c9 wE wS wW b5 o9",
+        S: melds.length === 3 ? "b2 b2 b2 b5" : "b2 b2 b2 b6 b6 b6 b5",
       },
-      fishing: [{ seat: "W", wait: ["b5"], tier: "half" }],
+      melds: { S: melds },
+      fishing,
       wall: ["o6", "o7", "o8"],
       phase: "discard",
       turn: "E",
     });
     const discarded = play(state, { type: "Discard", seat: "E", tile: "b5" });
-    const won = play(discarded.state, {
-      type: "Claim",
-      seat: "S",
-      kind: "mahjong",
-      tiles: ["b5"],
-    });
+    return play(discarded.state, { type: "Claim", seat: "S", kind: "mahjong", tiles: ["b5"] });
+  }
+
+  it("makes the discarder pay the other losers when exposed tiles indicated the tile", () => {
+    const won = winOnB5(BAMBOO_SHOWN);
+    assert.equal(won.state.result?.winner, "S");
     const careless = won.state.ledger.filter((entry) => entry.reason.startsWith("careless"));
     assert.equal(careless.length, 2);
     assert.ok(careless.every((entry) => entry.from === "E" && entry.to === "S"));
     zeroSum(won.state);
   });
 
-  it("exempts a discarder who was fishing", () => {
-    const state = fixture({
-      hands: {
-        E: "b1 b1 b1 c1 c2 c3 c7 c8 c9 wE wS wW b5 o9",
-        S: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5",
-        ...FILLER,
-      },
-      fishing: [
-        { seat: "E", wait: ["o9"], tier: "half" },
-        { seat: "W", wait: ["b5"], tier: "half" },
-      ],
-      wall: ["o6", "o7", "o8"],
-      phase: "discard",
-      turn: "E",
-    });
-    const discarded = play(state, { type: "Discard", seat: "E", tile: "b5" });
-    const won = play(discarded.state, {
-      type: "Claim",
-      seat: "S",
-      kind: "mahjong",
-      tiles: ["b5"],
-    });
+  it("does not apply while fewer than three sets are exposed", () => {
+    const won = winOnB5(BAMBOO_SHOWN.slice(0, 2));
+    assert.equal(won.state.result?.winner, "S");
     assert.equal(won.state.ledger.some((entry) => entry.reason.startsWith("careless")), false);
+  });
+
+  it("exempts a discarder who was fishing", () => {
+    const won = winOnB5(BAMBOO_SHOWN, [{ seat: "E", wait: ["o9"], tier: "half" }]);
+    assert.equal(won.state.result?.winner, "S");
+    assert.equal(won.state.ledger.some((entry) => entry.reason.startsWith("careless")), false);
+  });
+
+  it("reads the indication from exposed sets, never from an announced wait", () => {
+    assert.equal(exposureIndicates(BAMBOO_SHOWN, "b5"), true);
+    assert.equal(exposureIndicates(BAMBOO_SHOWN, "dR"), true);
+    assert.equal(exposureIndicates(BAMBOO_SHOWN, "c5"), false);
+    assert.equal(exposureIndicates(BAMBOO_SHOWN.slice(0, 2), "b5"), false);
+    const honours = [
+      { kind: "pung" as const, tiles: ["dR", "dR", "dR"], exposed: true },
+      { kind: "pung" as const, tiles: ["dG", "dG", "dG"], exposed: true },
+      { kind: "pung" as const, tiles: ["wE", "wE", "wE"], exposed: true },
+    ];
+    assert.equal(exposureIndicates(honours, "wN"), true);
+    assert.equal(exposureIndicates(honours, "b5"), false);
+    const mixed = [...BAMBOO_SHOWN.slice(0, 2), { kind: "pung" as const, tiles: ["c1", "c1", "c1"], exposed: true }];
+    assert.equal(exposureIndicates(mixed, "b5"), false);
   });
 });
 

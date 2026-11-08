@@ -491,7 +491,11 @@ fully concealed if agreed before play.
 ### G. Fishing or calling
 
 **R-067** `[I p. 21, p. 32]` — A player one tile from Mah Jong is "fishing" or
-"calling" and should announce it; special-hand fishing changes the scoring.
+"calling"; special-hand fishing changes the scoring. The page names the state;
+it does not require an announcement or say that the wait is told to anyone.
+Showing that one is fishing, and only that, is the Companion's display (C p. 55,
+§3.4): it is the fishing player's choice, and a fishing score is claimed only
+when it was shown `[A]` (ASSUMPTIONS.md, "Showing the fish").
 > "When a player requires only one more tile to complete his hand for Mah Jong,
 > his hand is said to be 'fishing' or 'calling'. When a player is fishing for a
 > special hand, and another player goes Mah Jong, certain conditions apply to
@@ -564,9 +568,14 @@ doubled five times is 2688, the 1000 limit applies, South and North each pay
 
 **R-079** `[I p. 22]` — A player who discards a tile that was visibly needed (enough
 exposed tiles show the wait) pays the other two losers' debts as well as his
-own, unless he was himself fishing or held at least three doubles.
-> "the player responsible for that discard must pay not only his debt to the
-> winner, but also those of the other two losers."
+own, unless he was himself fishing or held at least three doubles. The
+indication comes from the winner's exposed tiles, never from an announced wait;
+"sufficient" is read as three exposed sets of one suit `[A]` (ASSUMPTIONS.md,
+"Careless discard").
+> "Careless discards If a player has a sufficient number of exposed tiles to
+> indicate the tile needed to complete his hand and another player discards
+> that tile, the player responsible for that discard must pay not only his debt
+> to the winner, but also those of the other two losers."
 > "This rule does not apply if the player discarding the winning tile was also
 > Fishing or holding at least three doubles."
 
@@ -1101,7 +1110,8 @@ why it is not applied.
 > "Many players display a small fish (not real!) to indicate that they are
 > fishing; this must be done if a fishing score is to be claimed." `[C p. 55]`
 
-This is a table display convention; Part I's announcement (R67) still applies.
+Only the fact of fishing is shown, not the wait. Part I (R67) prints no
+announcement of its own, so this display is how a fishing score is claimed.
 
 ### 3.5 Drawing and discarding `[C pp. 63-64]`
 

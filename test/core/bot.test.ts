@@ -178,21 +178,50 @@ describe("bot policy", () => {
     );
   });
 
-  it("does not throw a tile another seat is fishing for", () => {
+  it("does not feed a fishing player whose exposed sets show the suit it needs", () => {
+    // South shows the fish and three exposed sets of characters, so a
+    // character could be the tile it needs: East throws the circle instead.
     const state = fixture({
       hands: {
         E: "b1 b2 b3 b4 b5 b6 b7 b8 b9 wE wS wW c5 o7",
+        S: "c8 c8 wN wN",
+        W: "c7 c8 c9 c7 c8 c9 o2 o3 o4 dR dR dG dG",
+        N: "c5 c6 c7 o5 o6 o7 o7 o8 o9 dW dW dG c2",
+      },
+      melds: {
+        S: [
+          { kind: "pung", tiles: ["c1", "c1", "c1"], exposed: true },
+          { kind: "pung", tiles: ["c3", "c3", "c3"], exposed: true },
+          { kind: "chow", tiles: ["c4", "c5", "c6"], exposed: true },
+        ],
+      },
+      wall: LONG_WALL,
+      phase: "discard",
+      turn: "E",
+      fishing: [{ seat: "S", wait: ["c8", "wN"], tier: "calculate" }],
+    });
+    const view = viewFor(state, "E");
+    assert.deepEqual(view.fishing, [{ seat: "S", wait: [], tier: null }], "the wait stays hidden");
+    assert.deepEqual(chooseAction(view, "E"), { type: "Discard", seat: "E", tile: "o7" });
+  });
+
+  it("keeps an ordinary wait quiet while the wall is long", () => {
+    // East waits on an all-bamboo ordinary hand early in the hand: showing
+    // the fish would earn little and warn the table.
+    const state = fixture({
+      hands: {
+        E: "b1 b1 b1 b2 b2 b2 b3 b3 b3 b4 b4 b4 b5",
         S: "c1 c1 c1 c2 c3 c4 o1 o1 o1 o2 o3 o4 wN",
         W: "c7 c8 c9 c7 c8 c9 o2 o3 o4 dR dR dG dG",
         N: "c5 c6 c7 o5 o6 o7 o7 o8 o9 dW dW dG c2",
       },
       wall: LONG_WALL,
-      phase: "discard",
+      phase: "announce",
       turn: "E",
-      fishing: [{ seat: "S", wait: ["c5"], tier: "limit" }],
     });
-    const action = chooseAction(viewFor(state, "E"), "E");
-    assert.deepEqual(action, { type: "Discard", seat: "E", tile: "o7" });
+    const view = viewFor(state, "E");
+    assert.ok(view.legalActions.some((action) => action.type === "DeclareFishing"));
+    assert.equal(chooseAction(view, "E")?.type, "Pass");
   });
 
   it("is blind to the other seats' concealed tiles", () => {

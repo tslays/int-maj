@@ -183,13 +183,17 @@ chance of collecting them in the draws left (the last tile may also be claimed
 off a discard). A hand's value is that chance times what the hand pays, over
 its best few targets. The bot then:
 
-- wins when legal and announces fishing whenever the engine offers it;
+- wins when legal; shows the fish for a special hand, whose fishing figure is
+  worth claiming, but keeps an ordinary wait quiet while the wall is long;
 - calls a pung, kong or chow only when the hand is worth clearly more after
   the call, so it lets discards go when a call would forfeit a concealed hand;
 - declares a kong when the replacement tile is worth more than a discard;
-- discards the tile whose loss costs least, avoiding tiles another seat is
-  announced fishing for and, late in a hand, tiles that feed an opponent's
-  visible one-suit hand.
+- discards the tile whose loss costs least, avoiding tiles an opponent's
+  exposed sets show it needs (a careless discard, I p. 22), the more so when
+  that opponent shows the fish.
+
+Other seats see only that a player is fishing, never the wait (`viewFor`,
+`describeEventFor`).
 
 Each seat has a temperament (`temperamentOf`: steady, ambitious, quick,
 careful) that scales its appetite for special hands, calls and caution. The bot

@@ -12,17 +12,17 @@
  * (special hands from the catalogue, ordinary hands, pair hands), from the
  * tiles this seat has not seen, times what that hand pays. The policy:
  *
- *   1. Win when a win is legal; announce fishing when the engine offers it
- *      (it is free: a fishing hand is paid when someone else wins).
+ *   1. Win when a win is legal. Show the fish (announce fishing) for a
+ *      special hand, whose fishing figure is worth claiming; with an ordinary
+ *      hand stay quiet while the wall is long, so the table keeps feeding it.
  *   2. Claim a pung, kong or chow only when the hand is worth clearly more
  *      after the call than before it. Exposing a set forfeits every
  *      concealed-only hand and the concealed bonuses, so a bot with a good
  *      concealed hand lets the discard go, as a careful player would.
  *   3. Declare a kong when the extra tile is worth more than discarding.
  *   4. Discard the tile whose loss costs least, with a defensive penalty for
- *      tiles another seat has announced it is fishing for (a careless discard
- *      pays everyone's debts) and, late in the hand, for tiles that feed an
- *      opponent's visible one-suit hand.
+ *      tiles an opponent's exposed sets show it needs (a careless discard
+ *      pays the other losers' debts too), more so when it shows the fish.
  *
  * Each seat has a temperament (ambition for special hands, appetite for
  * calls, caution), so the three opponents do not play like copies of one
@@ -32,9 +32,11 @@
 import type { Action } from "./actions.ts";
 import { seatIndex, SEATS, type Seat } from "./state.ts";
 import type { GameView } from "./view.ts";
-import { TIER_POINTS } from "../patterns/types.ts";
+import { PATTERNS } from "../patterns/table.ts";
 import { WINDS } from "../tiles.ts";
+import { exposureIndicates } from "./reduce.ts";
 import {
+  completedPattern,
   countsOf,
   expectedValue,
   indexOf,
@@ -47,6 +49,8 @@ import {
   type Situation,
 } from "./bot/plan.ts";
 
+const PATTERN_BY_ID = new Map(PATTERNS.map((pattern) => [pattern.id, pattern]));
+
 /** A seat's playing style. */
 export interface Temperament {
   readonly name: string;
@@ -56,13 +60,15 @@ export interface Temperament {
   readonly callMargin: number;
   /** Weight of the defensive penalties. */
   readonly caution: number;
+  /** An ordinary hand shows the fish once the wall is this short. */
+  readonly quietUntil: number;
 }
 
 const TEMPERAMENTS: readonly Temperament[] = [
-  { name: "steady", ambition: 1.0, callMargin: 0.15, caution: 1.0 },
-  { name: "ambitious", ambition: 1.3, callMargin: 0.3, caution: 0.8 },
-  { name: "quick", ambition: 0.85, callMargin: 0.05, caution: 0.9 },
-  { name: "careful", ambition: 1.1, callMargin: 0.2, caution: 1.4 },
+  { name: "steady", ambition: 1.0, callMargin: 0.15, caution: 1.0, quietUntil: 50 },
+  { name: "ambitious", ambition: 1.3, callMargin: 0.3, caution: 0.8, quietUntil: 35 },
+  { name: "quick", ambition: 0.85, callMargin: 0.05, caution: 0.9, quietUntil: 30 },
+  { name: "careful", ambition: 1.1, callMargin: 0.2, caution: 1.4, quietUntil: 70 },
 ];
 
 /** The temperament a seat plays with; fixed per seat so styles stay recognisable. */
@@ -139,35 +145,56 @@ function discardValues(situation: Situation): Map<string, number> {
 }
 
 /**
- * Points this seat risks by throwing `tile`. Announced fishing waits are
- * public; a discard that completes one makes the discarder pay the other
- * losers too, unless the discarder is fishing (I p. 22, R79).
+ * Points this seat risks by throwing `tile`, from public information only:
+ * who is fishing (the table sees the fish, not the wait) and what each
+ * opponent has exposed. When exposed sets indicate the tile needed, a
+ * discard that lets that player win makes the discarder pay the other
+ * losers' debts too, unless the discarder is fishing (I p. 22, R79).
  */
 function danger(view: GameView, tile: string): number {
   const caution = temperamentOf(view.seat).caution;
   const fishingSelf = view.fishing.some((entry) => entry.seat === view.seat);
-  let risk = 0;
-  for (const entry of view.fishing) {
-    if (entry.seat === view.seat || !entry.wait.includes(tile)) continue;
-    const points = (entry.tier === null ? null : TIER_POINTS[entry.tier]) ?? 300;
-    risk += points * (fishingSelf ? 1 : 3);
-  }
-
   const late = Math.max(0, 1 - view.wallRemaining / 70);
-  if (late > 0) {
-    const suit = /^[bco]/.test(tile) ? tile[0] : null;
-    for (const opponent of view.opponents) {
-      const exposed = opponent.melds.filter((meld) => meld.exposed);
-      if (exposed.length < 2) continue;
-      const suits = new Set(
-        exposed.flatMap((meld) => meld.tiles).filter((key) => /^[bco]/.test(key)).map((key) => key[0]),
-      );
-      if (suits.size > 1) continue;
-      const feeds = suit === null || suits.has(suit) || suits.size === 0;
-      if (feeds) risk += 25 * (exposed.length - 1) * late;
+  const suit = /^[bco]/.test(tile) ? tile[0] : null;
+  let risk = 0;
+  for (const opponent of view.opponents) {
+    const fishing = view.fishing.some((entry) => entry.seat === opponent.seat);
+    const exposed = opponent.melds.filter((meld) => meld.exposed);
+    const suits = new Set(
+      exposed.flatMap((meld) => meld.tiles).filter((key) => /^[bco]/.test(key)).map((key) => key[0]),
+    );
+    const oneSuit = exposed.length > 0 && suits.size <= 1;
+    const feeds = oneSuit && (suit === null ? true : suits.has(suit));
+
+    if (exposureIndicates(opponent.melds, tile)) {
+      // A careless discard pays two other debts besides one's own.
+      const penalty = fishingSelf ? 150 : 600;
+      risk += penalty * (fishing ? 1 : 0.25 + 0.5 * late);
+    } else if (fishing) {
+      risk += feeds ? 80 : 15;
+    } else if (feeds && exposed.length >= 2) {
+      risk += 25 * (exposed.length - 1) * late;
     }
   }
   return risk * caution;
+}
+
+/**
+ * Whether to show the fish. Showing it earns the fishing figure if another
+ * player wins (C p. 55: it must be shown for a fishing score to be claimed),
+ * but tells the table this hand is one tile away, so careful players stop
+ * feeding it. A special hand's fishing figure (200 or more) is always worth
+ * claiming; an ordinary hand's small figure is kept quiet while the wall is
+ * long, the moment depending on the seat's temperament.
+ */
+function showsFish(view: GameView, action: Extract<Action, { type: "DeclareFishing" }>): boolean {
+  const situation = situationFor(view, view.seat);
+  const special = action.wait.some((tile) => {
+    const pattern = completedPattern(situation, tile);
+    return pattern !== null && PATTERN_BY_ID.get(pattern)?.tier !== "calculate";
+  });
+  if (special) return true;
+  return view.wallRemaining <= temperamentOf(view.seat).quietUntil;
 }
 
 function chooseDiscard(view: GameView, situation: Situation): Action | null {
@@ -319,8 +346,11 @@ export function chooseAction(view: GameView, seat: Seat): Action | null {
   const mahjong = legal.find((action) => action.type === "Claim" && action.kind === "mahjong");
   if (mahjong !== undefined) return mahjong;
 
-  const fishing = legal.find((action) => action.type === "DeclareFishing");
-  if (fishing !== undefined) return fishing;
+  const fishing = legal.find(
+    (action): action is Extract<Action, { type: "DeclareFishing" }> =>
+      action.type === "DeclareFishing",
+  );
+  if (fishing !== undefined && showsFish(view, fishing)) return fishing;
 
   if (view.phase === "announce") {
     return legal.find((action) => action.type === "Pass") ?? legal[0]!;
