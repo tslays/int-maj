@@ -10,6 +10,7 @@
 
 import * as THREE from "three";
 import { RoomEnvironment } from "../vendor/three/RoomEnvironment.js";
+import { fitTableCamera } from "./camera.js";
 import { D, H, TABLE } from "./tiles.js";
 
 const { TABLE_HALF, WALL_R, HAND_Z, CENTER_HALF } = TABLE;
@@ -37,7 +38,7 @@ export const handScene = new THREE.Scene();
 handScene.environment = environment;
 handScene.environmentIntensity = 0.32;
 
-export const tableCamera = new THREE.PerspectiveCamera(17, 1, 0.5, 400);
+export const tableCamera = new THREE.PerspectiveCamera(17, 1, 0.5, 1200);
 // A long lens: the hand strip is about eight times wider than tall, and a wide
 // lens would stretch the tiles at its ends.
 export const handCamera = new THREE.PerspectiveCamera(5, 1, 1, 600);
@@ -234,51 +235,6 @@ export function setHandRowWidth(width) {
   frameHand();
 }
 
-/**
- * Place the table camera so the far opponent's hand touches the top of the
- * screen and your own wall sits just above the hand strip, at a fixed tilt.
- * Solved numerically, so it holds on any aspect ratio.
- */
-function fitTableCamera(tiltDegrees, stripFraction) {
-  const tilt = THREE.MathUtils.degToRad(tiltDegrees);
-  const far = new THREE.Vector3(0, H, -(HAND_Z + 0.4));
-  const near = new THREE.Vector3(0, 2 * D, WALL_R + H / 2 + 0.2);
-  // The side opponents' hands may touch the edges, never leave them.
-  const sides = [new THREE.Vector3(-(HAND_Z + 0.5), H, 0), new THREE.Vector3(HAND_Z + 0.5, H, 0)];
-  const farTarget = 0.985;
-  const nearTarget = -1 + 2 * stripFraction + 0.04;
-
-  const place = (distance, target) => {
-    tableCamera.position.set(0, Math.sin(tilt) * distance, target + Math.cos(tilt) * distance);
-    tableCamera.lookAt(0, 0, target);
-    tableCamera.updateMatrixWorld();
-    tableCamera.updateProjectionMatrix();
-  };
-  const ndc = (point) => point.clone().project(tableCamera);
-  const solveTarget = (distance) => {
-    let low = -TABLE_HALF;
-    let high = TABLE_HALF;
-    for (let step = 0; step < 40; step++) {
-      const mid = (low + high) / 2;
-      place(distance, mid);
-      if (ndc(far).y > farTarget) high = mid;
-      else low = mid;
-    }
-    return (low + high) / 2;
-  };
-  let low = 5;
-  let high = 200;
-  for (let step = 0; step < 40; step++) {
-    const mid = (low + high) / 2;
-    place(mid, solveTarget(mid));
-    const tooLow = ndc(near).y < nearTarget;
-    const tooWide = sides.some((point) => Math.abs(ndc(point).x) > 1);
-    if (tooLow || tooWide) low = mid;
-    else high = mid;
-  }
-  place(high, solveTarget(high));
-}
-
 function frameHand() {
   const { width, strip } = viewport;
   handCamera.aspect = width / strip;
@@ -305,7 +261,7 @@ export function frame() {
   viewport.strip = Math.round(portrait ? height * 0.16 : height * 0.27);
   document.documentElement.style.setProperty("--strip", `${viewport.strip}px`);
   tableCamera.aspect = width / height;
-  fitTableCamera(portrait ? 62 : 46, viewport.strip / height);
+  fitTableCamera(tableCamera, portrait ? 62 : 46, viewport.strip / height);
   frameHand();
 }
 

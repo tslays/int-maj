@@ -85,6 +85,9 @@ export function wallSlotX(slot) {
 
 /** A seat's melds start in the table corner on its left, in its wall's lane. */
 export const MELD_LANE_X0 = -(TABLE.TABLE_HALF - 0.35);
+// Set aside tiles sit towards the rail, as they do on a real table.
+export const LANE_OUT = 0.6;
+const NEAR_CORNER_INSET = 2.8;
 const LANE_FAR = TABLE.TABLE_HALF - 0.2;
 
 /**
@@ -97,30 +100,37 @@ const LANE_FAR = TABLE.TABLE_HALF - 0.2;
  * rail, never past the end of the seat's own hand. Tiles shrink only when a
  * hand is unusually full. Returns the scale and each tile's centre.
  */
-export function meldLayout(groupSizes, wallStacks, handCount, { bonusFirst = false } = {}) {
+export function meldLayout(groupSizes, wallStacks, handCount, { bonusFirst = false, rel = 0 } = {}) {
+  // The seat on your right starts in the corner beside your own hand, which
+  // your hand strip covers, so its lane begins a little further along.
+  const laneStart = rel === 1 ? MELD_LANE_X0 + NEAR_CORNER_INSET : MELD_LANE_X0;
   const rowZero = wallStacks > 0 ? wallSlotX(wallStacks - 1) - W / 2 - 0.25 : wallSlotX(0) + W / 2;
   const handHalf = (handCount * (W + GAP)) / 2;
-  for (let scale = 0.9; scale > 0.3; scale -= 0.05) {
+  // One row first: a second row would lie towards the rail, behind your hand.
+  const attempts = [];
+  for (let scale = 0.9; scale >= 0.74; scale -= 0.05) attempts.push([scale, 1]);
+  for (let scale = 0.9; scale > 0.3; scale -= 0.05) attempts.push([scale, Infinity]);
+  for (const [scale, maxRows] of attempts) {
     const tileStep = (W + GAP) * scale;
     const groupGap = 0.3 * scale;
     const rowStep = (H + 0.1) * scale;
     const limit = (row) => (row === 0 ? rowZero : -handHalf - 0.4);
-    const rowZ = (row) => WALL_R + row * rowStep;
+    const rowZ = (row) => WALL_R + LANE_OUT + row * rowStep;
     const tiles = [];
     let row = 0;
-    let x = MELD_LANE_X0;
+    let x = laneStart;
     let fits = true;
     groupSizes.forEach((size, group) => {
       const groupWidth = size * tileStep - GAP * scale;
       while (fits && x + groupWidth > limit(row)) {
-        if (x === MELD_LANE_X0) {
+        if (x === laneStart) {
           // Not even an empty row holds it: try the next row, or give up.
           row += 1;
         } else {
           row += 1;
-          x = MELD_LANE_X0;
+          x = laneStart;
         }
-        if (rowZ(row) + (H * scale) / 2 > LANE_FAR) fits = false;
+        if (row >= maxRows || rowZ(row) + (H * scale) / 2 > LANE_FAR) fits = false;
       }
       for (let index = 0; index < size; index++) {
         tiles.push({ group, index, x: x + index * tileStep + (W * scale) / 2, z: rowZ(row) });
@@ -134,7 +144,7 @@ export function meldLayout(groupSizes, wallStacks, handCount, { bonusFirst = fal
 
 /** Table-space rectangles of a seat's meld tiles. */
 export function meldRects(rel, groupSizes, wallStacks, handCount, options = {}) {
-  const { scale, tiles } = meldLayout(groupSizes, wallStacks, handCount, options);
+  const { scale, tiles } = meldLayout(groupSizes, wallStacks, handCount, { ...options, rel });
   return tiles.map((tile) => tileRect(rel, tile.x, tile.z, W * scale, H * scale));
 }
 
