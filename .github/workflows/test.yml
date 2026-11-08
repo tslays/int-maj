@@ -4,28 +4,37 @@ on:
   push:
     branches: [main]
   pull_request:
-  # The 300-hand soak takes minutes on a small runner: it runs nightly, or on
-  # demand, instead of on every push.
+  # The 300-hand soak takes minutes: it runs nightly, or on demand.
   schedule:
     - cron: "0 3 * * *"
   workflow_dispatch:
 
+# A newer push supersedes a run still going for the same branch.
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: Tests and build
+    # Pinned, so the runner image never changes underneath the tests.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-      # No dependencies and no build step: Node runs the TypeScript directly.
+      # No dependencies to install: Node runs the TypeScript directly.
       - run: npm test
-      # The offline app is what testers install: prove it still builds.
+      # The app testers install is the static build: prove it still builds.
       - run: npm run build
 
   soak:
+    name: Soak (300 hands)
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
