@@ -43,6 +43,10 @@ the deploy (`.github/workflows/test.yml`). No session needs the Mac to be on.
 - A session that works on a branch and opens a pull request publishes only
   when the pull request is merged into `main` (the GitHub app on the phone
   can merge it).
+- Sessions run autonomously and may merge their own finished, tested work into
+  `main` (or open and merge a pull request) without asking first. The owner
+  has given this permission in advance; it covers ordinary merges, which
+  deploy on green CI, and not force-pushes or rewriting shared history.
 - `npm run deploy` publishes by hand from a machine logged in with
   `npx wrangler login`; it is rarely needed now.
 
