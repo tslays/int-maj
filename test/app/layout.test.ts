@@ -136,8 +136,8 @@ describe("3D table discard layout", () => {
     assert.ok(one[0]!.x < -12, "the first meld lies in the corner on the player's left");
     assert.deepEqual(two.slice(0, 3), one, "an earlier meld never moves when another is made");
     assert.ok(two[3]!.x > two[2]!.x, "the next meld goes to its right");
-    const crowded = meldLayout([3, 3], 18, 7).tiles;
-    assert.ok(crowded[3]!.z > crowded[0]!.z, "with the whole wall still there, it starts a row towards the rail");
+    const crowded = meldLayout([3, 3, 3], 18, 7).tiles;
+    assert.ok(crowded[6]!.z > crowded[0]!.z, "with the whole wall still there, it starts a row towards the rail");
     const withBonus = meldLayout([2, 3], 6, 10, { bonusFirst: true });
     const plain = meldLayout([2, 3], 6, 10);
     assert.ok(withBonus.tiles[2]!.x - withBonus.tiles[1]!.x > plain.tiles[2]!.x - plain.tiles[1]!.x, "a wider space after the bonus tiles");
