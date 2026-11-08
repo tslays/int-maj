@@ -7,7 +7,8 @@
  * including yours, is driven by the same `chooseAction` policy the bots use,
  * through the same `apply`, and the frozen state is simply where the replay
  * halted. The seed and the policy are the whole recipe, so rebuilding a
- * scenario always gives the same board.
+ * scenario always gives the same board. One scenario may have you pass on a
+ * fishing announcement (`youKeepQuiet`), a legal choice any player can make.
  *
  * `scenarioSession` keeps a built scenario in the store so the browser can
  * play it like any other game. A cached scenario is reused only while its
@@ -37,6 +38,12 @@ export interface Scenario {
   readonly seed: string;
   /** True at the board the page freezes. */
   readonly at: (view: GameView, state: GameState) => boolean;
+  /**
+   * You (East) pass when offered a fishing announcement, as a player may.
+   * The bots announce whenever they can, so without this a plain wait with
+   * no announcement on the table is almost never reached.
+   */
+  readonly youKeepQuiet?: boolean;
 }
 
 const TABLE = {
@@ -64,7 +71,8 @@ const TABLE = {
 
   wait: {
     title: "Thirteen tiles with a live wait",
-    seed: "wait-c5-165",
+    seed: "wait-q-1",
+    youKeepQuiet: true,
     at: (view) => {
       if (view.phase !== "discard" || view.turn === view.seat) return false;
       if (view.fishing.length > 0) return false;
@@ -171,7 +179,12 @@ export function buildScenario(name: ScenarioName): Omit<WebSession, "id"> {
     if (state.phase === "finished") break;
 
     const actor = state.turn;
-    const action: Action | null = chooseAction(viewFor(state, actor), actor);
+    const actorView = viewFor(state, actor);
+    const quiet =
+      scenario.youKeepQuiet === true && actor === SEAT && actorView.phase === "announce";
+    const action: Action | null = quiet
+      ? (actorView.legalActions.find((candidate) => candidate.type === "Pass") ?? null)
+      : chooseAction(actorView, actor);
     if (action === null) {
       throw new Error(`${name}: the replay stalled with no legal action`);
     }
