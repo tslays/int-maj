@@ -15,7 +15,7 @@ sync with each other directly:
                                           GitHub Actions: tests, build
                                                  |  (green push to main)
                                                  v
-                                   https://int-maj.int-maj.workers.dev
+                                   https://int.mah-jong.workers.dev
 ```
 
 Everything a session needs is in the repository: the code, the rules
