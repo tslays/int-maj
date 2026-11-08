@@ -3,6 +3,8 @@
 // server code. Only `dist/` is uploaded, never the repository.
 {
   "name": "int-maj",
+  // Not a secret: it names the account; the API token is the secret.
+  "account_id": "8dff3ba1767be52478763587743e143b",
   "compatibility_date": "2026-11-04",
   "assets": {
     "directory": "./dist"
