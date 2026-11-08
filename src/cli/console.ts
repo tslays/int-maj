@@ -306,7 +306,11 @@ export function renderTable(view: GameView): string {
     );
   }
   for (const declaration of view.fishing) {
-    lines.push(`Fishing: ${declaration.seat} on ${declaration.wait.join(" ")} (${declaration.tier})`);
+    lines.push(
+      declaration.wait.length > 0
+        ? `Fishing: ${declaration.seat} on ${declaration.wait.join(" ")} (${declaration.tier})`
+        : `Fishing: ${declaration.seat}`,
+    );
   }
   const result = resultText(view);
   if (result !== null) lines.push(result);

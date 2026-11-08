@@ -174,9 +174,29 @@ options and changes nothing.
 The console prints the numbered hand, the public table, the legal options and
 the reducer events; the first turn is East's discard, with East holding 14.
 
-The bot wins when legal, announces fishing whenever the engine offers it,
-claims a pung or kong only when the call completes a set without spending the
-hand's last pair, draws otherwise and discards the least useful tile: pairs,
-triplets and same-suit neighbours are kept, isolated tiles go first. A kong
-is preferred to a pung when both are offered, because its replacement tile is
-free. The bot never chows and never sees another seat's hand.
+The bot (`src/core/game/bot.ts`) prices every decision with the hand planner
+(`src/core/game/bot/plan.ts`). For each hand it could still build - a special
+hand from the generated target table `bot/targets.ts`, or an ordinary or
+seven-pair hand assembled around its own tiles and priced by `scoreHand` - it
+counts the missing tiles and the copies it has not seen, and estimates the
+chance of collecting them in the draws left (the last tile may also be claimed
+off a discard). A hand's value is that chance times what the hand pays, over
+its best few targets. The bot then:
+
+- wins when legal; shows the fish for a special hand, whose fishing figure is
+  worth claiming, but keeps an ordinary wait quiet while the wall is long;
+- calls a pung, kong or chow only when the hand is worth clearly more after
+  the call, so it lets discards go when a call would forfeit a concealed hand;
+- declares a kong when the replacement tile is worth more than a discard;
+- discards the tile whose loss costs least, avoiding tiles an opponent's
+  exposed sets show it needs (a careless discard, I p. 22), the more so when
+  that opponent shows the fish.
+
+Other seats see only that a player is fishing, never the wait (`viewFor`,
+`describeEventFor`).
+
+Each seat has a temperament (`temperamentOf`: steady, ambitious, quick,
+careful) that scales its appetite for special hands, calls and caution. The bot
+never sees another seat's hand. `node scripts/bot-targets.ts` regenerates the
+target table from the catalogue fixtures; every target is re-checked against
+its pattern in `test/core/bot-targets.test.ts`.

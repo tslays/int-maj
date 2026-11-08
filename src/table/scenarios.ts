@@ -64,10 +64,12 @@ const TABLE = {
 
   wait: {
     title: "Thirteen tiles with a live wait",
-    seed: "wait-c5-165",
+    seed: "wait-v10-7",
     at: (view) => {
       if (view.phase !== "discard" || view.turn === view.seat) return false;
-      if (view.fishing.length > 0) return false;
+      // Your own plain wait: you have not shown the fish. Another seat's fish
+      // reveals no tiles, so it may be on the table.
+      if (view.fishing.some((entry) => entry.seat === view.seat)) return false;
       const check = handCheck(view.player);
       return check.size === 13 && check.waits.length > 0;
     },
@@ -94,7 +96,7 @@ const TABLE = {
 
   ron: {
     title: "A winning tile in the claim window",
-    seed: "offer-ron-9",
+    seed: "ron-v5-14",
     at: (view) =>
       view.phase === "claim" &&
       view.turn === view.seat &&
@@ -103,7 +105,7 @@ const TABLE = {
 
   win: {
     title: "A winning hand and its pattern",
-    seed: "win-scene-37",
+    seed: "win-v3-0",
     at: (view) =>
       view.result !== null &&
       view.result.kind === "win" &&
@@ -113,13 +115,13 @@ const TABLE = {
 
   drawn: {
     title: "A drawn hand",
-    seed: "drawn-new-0",
+    seed: "drawn-v5-2",
     at: (view) => view.result !== null && view.result.kind === "drawn",
   },
 
   result: {
     title: "The result panel with payments and fishing",
-    seed: "result-c5-22",
+    seed: "result-v5-76",
     at: (_view, state) =>
       state.result !== null &&
       state.result.kind === "win" &&

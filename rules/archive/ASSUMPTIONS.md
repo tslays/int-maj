@@ -205,3 +205,39 @@ source reading.
   does not offer a redeal action.
 - Tournament hand-count and repeat-history limits (I p. 63) are table-level
   bookkeeping, not engine state.
+
+## Showing the fish (2026-11-08)
+
+*Illustrated* p. 21 (§22 "Fishing or calling") names the state of needing one
+tile; it prints no announcement and nothing about telling the wait. *Companion*
+p. 55 ("Interesting ideas suggested by experienced players", 2): "Many players
+display a small fish (not real!) to indicate that they are fishing; this must
+be done if a fishing score is to be claimed."
+
+Narrowest reading kept by the engine: a fishing player may show the fish
+(`DeclareFishing`) or not (`Pass`). Showing it is what makes the fishing figure
+payable. The table learns only that the seat is fishing: `viewFor` gives other
+seats the seat alone, and `describeEventFor` prints "S is fishing" without the
+wait. The fixed wait stays with the fishing player for settlement.
+
+Uncertainty: the Companion offers this as an idea from experienced players, not
+as a printed law; the primary book is silent. Before this date the engine
+published every fishing wait to the whole table, which neither page prints.
+
+## Careless discard (2026-11-08)
+
+*Illustrated* p. 22, Penalties 5: "If a player has a sufficient number of
+exposed tiles to indicate the tile needed to complete his hand and another
+player discards that tile, the player responsible for that discard must pay
+not only his debt to the winner, but also those of the other two losers. This
+rule does not apply if the player discarding the winning tile was also Fishing
+or holding at least three doubles."
+
+The page does not say how many exposed tiles are "sufficient" or what they
+must show. Narrowest reading (`exposureIndicates` in
+`src/core/game/reduce.ts`): the winner has three or more exposed sets and all
+suited tiles in them are of one suit, which shows a one-suit hand; the
+indicated tiles are that suit and the honours (only the honours when every
+exposed set is of honours). Fewer than three exposed sets, or exposed sets in
+two suits, indicate nothing. The engine previously keyed the penalty on an
+announced fishing wait; p. 22 speaks only of exposed tiles.

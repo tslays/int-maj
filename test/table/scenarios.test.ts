@@ -11,6 +11,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { PATTERNS } from "../../src/core/patterns/table.ts";
 import { viewFor } from "../../src/core/game/view.ts";
 import { createApiContext, routeApi } from "../../src/table/api.ts";
 import {
@@ -77,7 +78,11 @@ describe("review states", () => {
 
     const wait = payloadFor("wait");
     assert.ok(wait.checker.size === 13 && wait.checker.waits.length > 0);
-    assert.equal(wait.view.fishing.length, 0, "the wait page shows a plain wait");
+    assert.equal(
+      wait.view.fishing.some((entry) => entry.seat === "E"),
+      false,
+      "the wait page shows your plain wait, not a fishing declaration",
+    );
 
     const fishing = payloadFor("fishing");
     assert.equal(fishing.view.player.hand.length, 13);
@@ -115,8 +120,11 @@ describe("review states", () => {
     const payload = statePayload({ ...win, id: "win" });
     const outcome = payload.outcome;
     assert.ok(outcome !== null && outcome.kind === "win");
-    assert.equal(outcome.patternDescription?.startsWith("Four pungs/kongs"), true);
-    assert.deepEqual([...outcome.patternPages], [42]);
+    // The explanation is the catalogue's own entry for the hand that won.
+    const pattern = PATTERNS.find((entry) => entry.id === win.state.result?.patternId);
+    assert.ok(pattern !== undefined, "the win names a catalogue hand");
+    assert.equal(outcome.patternDescription, pattern.description);
+    assert.deepEqual([...outcome.patternPages], [...pattern.pages]);
     // The hand is over, so the winning tiles are public - the screen shows the
     // combination, not a count of hidden tiles. Concealed tiles plus public
     // melds make the fourteen that won.
