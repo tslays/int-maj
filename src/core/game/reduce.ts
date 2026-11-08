@@ -606,6 +606,25 @@ function overfullEntries(draft: Draft): LedgerEntry[] {
   return entries;
 }
 
+/**
+ * True when a player's exposed sets "indicate the tile needed" (I p. 22,
+ * careless discards). The page does not say how many exposed tiles suffice;
+ * the recorded narrowest reading (rules/archive/ASSUMPTIONS.md, "Careless
+ * discard") is three or more exposed sets whose suited tiles are all of one
+ * suit, which shows a one-suit hand: the indicated tiles are that suit and
+ * the honours (only honours when every exposed set is of honours).
+ */
+export function exposureIndicates(melds: readonly MeldState[], tile: string): boolean {
+  const exposed = melds.filter((meld) => meld.exposed);
+  if (exposed.length < 3) return false;
+  const suits = new Set(
+    exposed.flatMap((meld) => meld.tiles).filter((key) => /^[bco]/.test(key)).map((key) => key[0]),
+  );
+  if (suits.size > 1) return false;
+  if (!/^[bco]/.test(tile)) return true;
+  return suits.has(tile[0]!);
+}
+
 function ledgerFor(
   draft: Draft,
   winner: Seat,
@@ -639,13 +658,14 @@ function ledgerFor(
     entries.push(entry);
   }
 
-  // Careless discard: a discard visibly needed by an announced fishing wait
-  // makes the discarder pay the other two losers' debts too, unless the
+  // Careless discard: when the winner's exposed tiles indicated the tile
+  // needed, the discarder pays the other two losers' debts too, unless the
   // discarder was fishing or held at least three doubles (I p. 22, R79).
   if (from !== null && from !== winner) {
     const discarderFishing = draft.fishing.some((entry) => entry.seat === from);
-    const visiblyNeeded = draft.fishing.some(
-      (entry) => entry.seat !== from && entry.wait.includes(winningTile),
+    const visiblyNeeded = exposureIndicates(
+      playerOf(draft as GameState, winner).melds,
+      winningTile,
     );
     if (visiblyNeeded && !discarderFishing && discarderHeldDoubles < 3) {
       for (const entry of winnerEntries) {

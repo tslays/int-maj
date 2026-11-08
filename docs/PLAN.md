@@ -52,7 +52,11 @@ Live at https://int.mah-jong.workers.dev.
 
 ## Alpha 3 - bots worth playing against
 
-- Today about 80 % of bot-only hands end drawn and special hands are rare.
+- Before 2026-11-08 about 80 % of bot-only hands ended drawn and special
+  hands were rare. The bots now plan towards concrete target hands
+  (`src/core/game/bot/plan.ts`): special hands appear in bot play, calls are
+  made only when they raise the hand's value. Still open: the drawn rate, and
+  the "closest hands" helper for the player.
 - Give each catalogue hand a generator of its completing tile sets, so the
   distance to every hand can be computed; bots aim for the nearest reachable
   hand, discard towards it and chow when it helps. The same data powers a

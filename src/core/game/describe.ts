@@ -3,7 +3,8 @@
  *
  * `describeEvent` is the omniscient text the replay tool prints: it names
  * every drawn and exchanged tile. `describeEventFor` is what one seat may
- * read: another seat's drawn, replacement and exchanged tiles stay hidden.
+ * read: another seat's drawn, replacement and exchanged tiles, and its
+ * fishing wait, stay hidden.
  * Anything sent to a player - the app's log, the console table - must use
  * `describeEventFor`.
  */
@@ -116,6 +117,10 @@ export function describeEventFor(event: Event, viewer: Seat): string {
       // You know what you gave and what you received; nobody else's tiles.
       return `Goulash ${event.stage + 1}: you give ${own.tiles.join(" ")} to ${other.seat} and receive ${other.tiles.join(" ")}`;
     }
+    case "FishingDeclared":
+      // The table sees the fish, not the wait (C p. 55).
+      if (event.seat === viewer) break;
+      return `${event.seat} is fishing`;
     default:
       break;
   }

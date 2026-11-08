@@ -40,4 +40,10 @@ describe("event and action text", () => {
     const loose = { type: "KongReplacementDrawn", seq: 6, seat: "W", tile: "dG" } as unknown as Event;
     assert.equal(describeEventFor(loose, "E"), "W draws a loose tile");
   });
+
+  it("shows the table that a seat is fishing, never its wait", () => {
+    const fishing = { type: "FishingDeclared", seq: 7, seat: "S", wait: ["b5", "b8"], tier: "limit" } as unknown as Event;
+    assert.equal(describeEventFor(fishing, "E"), "S is fishing");
+    assert.equal(describeEventFor(fishing, "S"), "S announces fishing on b5 b8 (limit)");
+  });
 });

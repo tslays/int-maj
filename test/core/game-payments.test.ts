@@ -181,7 +181,6 @@ describe("payments", () => {
     assert.ok(!won.state.ledger.some((entry) => entry.reason.startsWith("fishing")));
     assert.deepEqual(
       won.state.ledger
-        .filter((entry) => !entry.reason.startsWith("careless"))
         .map((entry) => [entry.from, entry.to, entry.points]),
       [
         ["S", "E", 2000],
@@ -189,7 +188,9 @@ describe("payments", () => {
         ["N", "E", 2000],
       ],
     );
-    assert.ok(won.state.ledger.some((entry) => entry.reason.startsWith("careless")));
+    // East had nothing exposed, so no exposed tiles indicated b5: South's
+    // discard was not careless (I p. 22), whatever East had announced.
+    assert.equal(won.state.ledger.some((entry) => entry.reason.startsWith("careless")), false);
     zeroSum(won.state);
   });
 
