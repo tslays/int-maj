@@ -14,8 +14,12 @@ Node 24 or later; there is nothing to install.
 ```sh
 npm run dev        # build the app and serve it on http://127.0.0.1:8091/
 npm test           # every test (about 30 s)
-npm run deploy     # test, build and publish the app (needs `npx wrangler login` once)
 ```
+
+Every push to `main` whose tests pass is published automatically, so the
+project can be worked on from any device - a Mac, or a Claude cloud session
+started from a phone. Start each session with `git pull` and end it pushed;
+[docs/WORKFLOW.md](docs/WORKFLOW.md) has the details.
 
 Command-line tools on the same engine:
 
@@ -63,6 +67,8 @@ engine against the scan.
 ## Documentation
 
 - [docs/PLAN.md](docs/PLAN.md) - the goal and the alpha phases
+- [docs/WORKFLOW.md](docs/WORKFLOW.md) - working from any device, deploying,
+  the Cloudflare token
 - [docs/APP.md](docs/APP.md) - the 3D table, the table service and its API,
   saving, offline use and deploying
 - [docs/ENGINE.md](docs/ENGINE.md) - the hand catalogue, fishing, the

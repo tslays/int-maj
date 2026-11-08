@@ -25,17 +25,21 @@ deal and ended a game after about four hands.
 prototype. It plays whole games against the bots: draws and throws, claims
 (chow runs behind one button), kongs, fishing, Goulash picks, the result card
 with the book's arithmetic, next hand, undo, save and resume, review boards
-(`?state=`), a phone frame (`?phone`) and a tested discard pinwheel. The 2D
+(`?state=`), a phone frame (`?phone`), a tested discard pinwheel, and melds
+laid by table custom in each player's wall lane from the left corner. The 2D
 client and its art were removed, and the repository was restructured into
 `app/`, `src/core`, `src/table`, `src/cli`, `scripts/` and grouped tests
 (2026-11-08).
 
-Live at https://int-maj.int-maj.workers.dev, published with `npm run deploy`.
+**Work from anywhere (2026-11-08).** Every green push to `main` deploys
+through GitHub Actions, and the book pages are in the private repository, so
+a Claude cloud session started from the owner's iPhone can do any task
+without the Mac (`docs/WORKFLOW.md`).
+
+Live at https://int-maj.int-maj.workers.dev.
 
 ## Next
 
-- **Your own melds** flat on the table in your right-hand corner, as the big
-  apps place them, instead of beside the hand.
 - **Try it on a real iPhone** (smoothness, tap size, pace) and fix what that
   shows.
 

@@ -70,6 +70,11 @@ test in the matching `test/` folder.
 
 ## Workflow
 
+The full workflow is `docs/WORKFLOW.md`. The rules every session follows:
+
+- **Start with `git pull`** - another device may have pushed since this copy
+  was made. Use Node 24 or later (`.nvmrc`); `npm test` refuses older ones.
+- **Finish pushed:** never leave finished work uncommitted on one device.
 - Run `npm test` before every commit. `npm run dev` builds and serves the app;
   review boards (`/?state=turn|claim|wait|fishing|win|drawn|result`) and
   `/?phone` show a screen without playing to it.

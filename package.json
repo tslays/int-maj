@@ -17,6 +17,7 @@
     "build": "node --disable-warning=ExperimentalWarning scripts/build.ts",
     "preview": "node scripts/preview.ts",
     "deploy": "npm test && npm run build && npx --yes wrangler@4.158.0 deploy",
-    "dev": "npm run build && npm run preview"
+    "dev": "npm run build && npm run preview",
+    "pretest": "node -e \"if (+process.versions.node.split('.')[0] < 24) { console.error('int-maj needs Node 24 or later (see .nvmrc); this is Node ' + process.version + '.'); process.exit(1); }\""
   }
 }

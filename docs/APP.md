@@ -113,6 +113,8 @@ from the "Edit Cloudflare Workers" template); without it the job skips with a
 notice. So any session - a laptop or a cloud session from a phone - publishes
 just by pushing, and installed copies update on their next launch.
 
+The token, its renewal and the rest of the workflow: `docs/WORKFLOW.md`.
+
 **By hand**, from a machine logged in with `npx wrangler login`:
 
 ```sh
