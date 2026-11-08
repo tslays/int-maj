@@ -11,9 +11,9 @@
  * fourth row takes every later tile and runs on to the seat's right, into the
  * corner that no other seat uses.
  *
- * The rest of that corner is the seat's meld zone: exposed melds and bonus
- * tiles lie there face up, in front of the walls and hands, so nothing on the
- * table hides them (they used to lie beside the hand at the table's edge).
+ * Melds follow the table custom: they lie in the player's own wall lane,
+ * starting in the table corner on the player's left and growing to the right
+ * as the wall in front of the player is used up - never inside the walls.
  */
 
 export const W = 1;
@@ -78,77 +78,80 @@ export function discardRect(rel, index) {
 /** The inner edge of the walls: discards must stay inside this square. */
 export const WALL_INNER = WALL_R - H / 2;
 
-/**
- * The seat's meld zone, in its own frame: to its right of the discard rows,
- * nearer the centre than the corner row, inside the walls.
- */
-export const MELD_ZONE = Object.freeze({
-  x0: ROW_HALF + 0.25,
-  x1: WALL_INNER - 0.25,
-  z0: TABLE.DISCARD_Z + 0.05,
-  z1: TABLE.DISCARD_Z + FULL_ROWS * STEP_Z - 0.1,
-});
+/** Where wall stack `slot` lies in its seat's frame: slot 0 is the seat's right end. */
+export function wallSlotX(slot) {
+  return (WALL_STACKS / 2 - 0.5 - slot) * W - H / 2 + W / 2;
+}
+
+/** A seat's melds start in the table corner on its left, in its wall's lane. */
+export const MELD_LANE_X0 = -(TABLE.TABLE_HALF - 0.35);
+const LANE_FAR = TABLE.TABLE_HALF - 0.2;
 
 /**
- * Lay a seat's exposed groups (melds, then its bonus tiles as one more group)
- * into its meld zone. Groups never split across rows. The rows are anchored
- * in the zone's outer corner - by the walls, at the seat's right - and fill
- * inwards, so a normal hand keeps a band of felt between its melds and the
- * discards. The tiles shrink only when a hand is unusually full.
- * Returns the scale and each tile's centre as { group, index, x, z }.
+ * Lay a seat's exposed groups along its wall's lane. With `bonusFirst` the
+ * first group is its flowers and seasons: hard left in the table corner, with
+ * a wider space before the melds. The melds follow in the order made, each
+ * new one to the right of the last. The seat's remaining wall is pushed
+ * to its right end (see `wallSlotX`), so the lane grows as the wall shrinks.
+ * Groups that do not fit go into further rows in the same corner, towards the
+ * rail, never past the end of the seat's own hand. Tiles shrink only when a
+ * hand is unusually full. Returns the scale and each tile's centre.
  */
-export function meldPlacement(groupSizes) {
-  const width = MELD_ZONE.x1 - MELD_ZONE.x0;
-  const depth = MELD_ZONE.z1 - MELD_ZONE.z0;
+export function meldLayout(groupSizes, wallStacks, handCount, { bonusFirst = false } = {}) {
+  const rowZero = wallStacks > 0 ? wallSlotX(wallStacks - 1) - W / 2 - 0.25 : wallSlotX(0) + W / 2;
+  const handHalf = (handCount * (W + GAP)) / 2;
   for (let scale = 0.9; scale > 0.3; scale -= 0.05) {
     const tileStep = (W + GAP) * scale;
     const groupGap = 0.3 * scale;
-    const rowStep = (H + 0.08) * scale;
-    // Pack left to right into rows, as offsets from each row's start.
-    const rows = [[]];
-    let x = 0;
+    const rowStep = (H + 0.1) * scale;
+    const limit = (row) => (row === 0 ? rowZero : -handHalf - 0.4);
+    const rowZ = (row) => WALL_R + row * rowStep;
+    const tiles = [];
+    let row = 0;
+    let x = MELD_LANE_X0;
     let fits = true;
     groupSizes.forEach((size, group) => {
       const groupWidth = size * tileStep - GAP * scale;
-      if (groupWidth > width) fits = false;
-      if (x > 0 && x + groupWidth > width) {
-        rows.push([]);
-        x = 0;
+      while (fits && x + groupWidth > limit(row)) {
+        if (x === MELD_LANE_X0) {
+          // Not even an empty row holds it: try the next row, or give up.
+          row += 1;
+        } else {
+          row += 1;
+          x = MELD_LANE_X0;
+        }
+        if (rowZ(row) + (H * scale) / 2 > LANE_FAR) fits = false;
       }
       for (let index = 0; index < size; index++) {
-        rows.at(-1).push({ group, index, offset: x + index * tileStep });
+        tiles.push({ group, index, x: x + index * tileStep + (W * scale) / 2, z: rowZ(row) });
       }
-      x += groupWidth + groupGap;
+      x += groupWidth + (bonusFirst && group === 0 ? 3 * groupGap : groupGap);
     });
-    const used = groupSizes.length === 0 ? 0 : rows.length * rowStep - 0.08 * scale;
-    if (!fits || used > depth) continue;
-    const tiles = [];
-    rows.forEach((row, rowIndex) => {
-      if (row.length === 0) return;
-      const rowWidth = row.at(-1).offset + W * scale;
-      for (const tile of row) {
-        tiles.push({
-          group: tile.group,
-          index: tile.index,
-          // Right-aligned to the zone's outer edge, first row by the walls.
-          x: MELD_ZONE.x1 - rowWidth + tile.offset + (W * scale) / 2,
-          z: MELD_ZONE.z1 - rowIndex * rowStep - (H * scale) / 2,
-        });
-      }
-    });
-    return { scale, tiles };
+    if (fits) return { scale, tiles };
   }
-  throw new Error(`meld zone cannot hold groups of ${groupSizes.join(", ")}`);
+  throw new Error(`meld lane cannot hold groups of ${groupSizes.join(", ")}`);
 }
 
 /** Table-space rectangles of a seat's meld tiles. */
-export function meldRects(rel, groupSizes) {
-  const { scale, tiles } = meldPlacement(groupSizes);
-  const across = (W * scale) / 2;
-  const along = (H * scale) / 2;
-  const [halfX, halfZ] = rel % 2 === 0 ? [across, along] : [along, across];
-  return tiles.map((tile) => {
-    const centre = toTable(rel, tile.x, tile.z);
-    return { minX: centre.x - halfX, maxX: centre.x + halfX, minZ: centre.z - halfZ, maxZ: centre.z + halfZ };
-  });
+export function meldRects(rel, groupSizes, wallStacks, handCount, options = {}) {
+  const { scale, tiles } = meldLayout(groupSizes, wallStacks, handCount, options);
+  return tiles.map((tile) => tileRect(rel, tile.x, tile.z, W * scale, H * scale));
+}
+
+/** Table-space rectangles of a seat's remaining wall, pushed to its right end. */
+export function wallRects(rel, wallStacks) {
+  return Array.from({ length: wallStacks }, (_, slot) => tileRect(rel, wallSlotX(slot), WALL_R, W, H));
+}
+
+/** Table-space rectangles of a seat's standing hand. */
+export function handRects(rel, handCount) {
+  const start = -((handCount - 1) / 2) * (W + GAP);
+  return Array.from({ length: handCount }, (_, index) => tileRect(rel, start + index * (W + GAP), TABLE.HAND_Z, W, D));
+}
+
+/** A tile of `width` across and `depth` along the seat's view, turned onto the table. */
+function tileRect(rel, x, z, width, depth) {
+  const centre = toTable(rel, x, z);
+  const [halfX, halfZ] = rel % 2 === 0 ? [width / 2, depth / 2] : [depth / 2, width / 2];
+  return { minX: centre.x - halfX, maxX: centre.x + halfX, minZ: centre.z - halfZ, maxZ: centre.z + halfZ };
 }
