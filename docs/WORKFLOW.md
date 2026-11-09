@@ -25,8 +25,11 @@ the deploy (`.github/workflows/test.yml`). No session needs the Mac to be on.
 ## A session, start to finish
 
 1. **Start:** `git pull` before changing anything, so you work on what the
-   last session pushed. Check `node --version` is 24 or later (`.nvmrc`
-   names it; `npm test` stops with a clear message on an older Node).
+   last session pushed. Node must be 24 or later (`.nvmrc` names it; `npm
+   test` stops with a clear message on an older Node). Cloud containers
+   default to Node 22 but ship 24: the SessionStart hook
+   (`.claude/hooks/session-start.sh`) puts the `.nvmrc` Node first on PATH
+   for the whole session, so nothing needs doing by hand.
 2. **Work:** one task per session. Two sessions may run at once only if they
    do not change the same files.
 3. **Check:** `npm test` passes. For anything visible, look at it with
@@ -40,13 +43,16 @@ The owner has authorized this in advance; a session does it without asking
 and does not stop at "pushed to a branch". A cloud session works on the branch
 it is given (`claude/...`), so delivery is a pull request:
 
-1. `npm test` passes locally (Node 24; `npx -y node@24` if the default is older).
+1. `npm test` passes locally (the hook has already picked Node 24).
 2. Commit, push the branch, open a pull request into `main` (mirror
    `.github/pull_request_template.md` if one exists).
 3. Watch the pull request's `Tests and build` check. Red: reproduce, fix, push
    again; never skip or disable a test to get green.
-4. Green and no unresolved review comments: merge it into `main` (ordinary
-   merge, no force-push, no history rewriting, no merging someone else's PR).
+4. Green and no unresolved review comments: squash-merge it into `main` (one
+   commit per pull request; no force-push, no history rewriting, no merging
+   someone else's PR). GitHub then deletes the merged `claude/...` branch
+   (repository setting "Automatically delete head branches"); the pull
+   request keeps its history and can restore the branch.
 5. The push to `main` runs `Deploy to Cloudflare`. Check that job succeeds and
    report the live URL. If the deploy job fails, say so and why; do not retry
    blindly.

@@ -13,7 +13,7 @@ Node 24 or later; there is nothing to install.
 
 ```sh
 npm run dev        # build the app and serve it on http://127.0.0.1:8091/
-npm test           # every test (about 30 s)
+npm test           # every test (a few minutes)
 ```
 
 Every push to `main` whose tests pass is published automatically, so the
@@ -48,6 +48,8 @@ test/             core/, table/, cli/, app/ and shared helpers/
 rules/            the rule framework, its sources, audit and scan tools
 docs/             PLAN, ENGINE and APP references
 examples/         a recorded hand for the replay tool
+.github/          CI: tests and build on every push and PR, deploy on main
+.claude/          Claude Code settings: the hook that picks Node 24
 ```
 
 The layers only call downwards: `app` uses `table`, `table` uses `core`, and
