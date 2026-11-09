@@ -683,15 +683,6 @@ function renderOutcome(outcome) {
     name: seatName,
     fishing: payload.view.fishing.map((entry) => entry.seat),
   });
-  const summary = document.createElement("div");
-  summary.className = "result-summary";
-  for (const sentence of account.summary) {
-    const paragraph = document.createElement("p");
-    paragraph.textContent = sentence;
-    summary.append(paragraph);
-  }
-  side.append(summary);
-
   const table = document.createElement("div");
   table.className = "result-scores";
   const totals = scores();
@@ -715,18 +706,31 @@ function renderOutcome(outcome) {
 
     const why = document.createElement("ul");
     why.className = "result-why";
-    for (const line of account.seats[entry.seat].lines) {
+    for (const line of account[entry.seat]) {
       const item = document.createElement("li");
       item.className = `why-${line.dir}`;
-      const text = document.createElement("span");
-      text.className = "why-text";
-      text.textContent = line.text;
-      item.append(text);
       if (line.why) {
-        const reason = document.createElement("span");
+        // The payment is the answer; tapping it opens the reason.
+        const toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.className = "why-text why-toggle";
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.textContent = line.text;
+        const reason = document.createElement("p");
         reason.className = "why-reason";
         reason.textContent = line.why;
-        item.append(reason);
+        reason.hidden = true;
+        toggle.addEventListener("click", () => {
+          const open = reason.hidden;
+          reason.hidden = !open;
+          toggle.setAttribute("aria-expanded", String(open));
+        });
+        item.append(toggle, reason);
+      } else {
+        const text = document.createElement("span");
+        text.className = "why-text";
+        text.textContent = line.text;
+        item.append(text);
       }
       why.append(item);
     }
