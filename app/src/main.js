@@ -690,10 +690,15 @@ window.addEventListener("keydown", (event) => {
   if (event.key === "Escape") closeHandDetail();
 });
 
+/* A menu toggle shows its state by its glow alone: lit = on, the label stays the word. */
+function showToggle(selector, on) {
+  const button = $(selector);
+  button.classList.toggle("on", on);
+  button.setAttribute("aria-pressed", String(on));
+}
+
 function showHintsButton() {
-  const button = $("#hints");
-  button.setAttribute("aria-pressed", String(hintsOn));
-  button.firstElementChild.textContent = hintsOn ? "Hints on" : "Hints off";
+  showToggle("#hints", hintsOn);
 }
 showHintsButton();
 
@@ -936,22 +941,18 @@ async function newGame() {
   void run();
 }
 
+/* Calls: lit = you are offered calls on each discard; off = you are not asked. */
 $("#calls").addEventListener("click", () => {
   callsOff = !callsOff;
-  const button = $("#calls");
-  button.classList.toggle("on", callsOff);
-  button.setAttribute("aria-pressed", String(callsOff));
-  button.firstElementChild.textContent = callsOff ? "Calls off" : "Calls on";
+  showToggle("#calls", !callsOff);
   // Re-offer (or drop) the calls for the decision already on screen.
   if (!busy && payload !== null && payload.outcome === null) void run();
 });
+showToggle("#calls", !callsOff);
 
-/* Custom sort: on = the hand keeps itself sorted; swapping or dragging turns it off. */
+/* Sort: lit = the hand keeps itself sorted; swapping or dragging turns it off. */
 function showSort(custom) {
-  const button = $("#sort");
-  button.classList.toggle("on", custom);
-  button.setAttribute("aria-pressed", String(!custom));
-  button.firstElementChild.textContent = custom ? "Custom sort off" : "Custom sort on";
+  showToggle("#sort", custom);
 }
 board.onCustomChange = showSort;
 showSort(board.custom);
@@ -961,12 +962,9 @@ $("#sort").addEventListener("click", () => {
   else board.setCustom(true);
 });
 
-/* Sound: on by default; the choice is remembered on the device. */
+/* Sound: lit = on by default; the choice is remembered on the device. */
 function showSound() {
-  const button = $("#sound");
-  button.classList.toggle("on", sound.muted);
-  button.setAttribute("aria-pressed", String(!sound.muted));
-  button.firstElementChild.textContent = sound.muted ? "Sound off" : "Sound on";
+  showToggle("#sound", !sound.muted);
 }
 showSound();
 
