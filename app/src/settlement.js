@@ -28,8 +28,9 @@ const capital = (text) => text.charAt(0).toUpperCase() + text.slice(1);
  * @param {string} input.dealer    the seat that was East this hand
  * @param {(seat: string) => string} input.name  a seat's wind name, "South"
  * @param {readonly string[]} input.fishing      the seats that announced they were fishing
- * @returns {Record<string, { dir: "pay" | "get" | "none", text: string, why: string }[]>}
- *   each seat's lines: the short text always shown, the reason shown on tap
+ * @returns {Record<string, { dir: "pay" | "get" | "none", text: string, full: string, why: string }[]>}
+ *   each seat's lines: the short tag always shown ("To South 1,200", "From
+ *   West 600"), its full sentence for screen readers, and the reason shown on tap
  */
 export function explainSettlement({ outcome, you, dealer, name, fishing }) {
   const ledger = outcome.ledger.filter((entry) => entry.points !== null);
@@ -80,8 +81,18 @@ export function explainSettlement({ outcome, you, dealer, name, fishing }) {
   const seats = { E: [], S: [], W: [], N: [] };
   for (const entry of ledger) {
     const why = [reasonOf(entry), doubleNote(entry)].filter(Boolean).join(" ");
-    seats[entry.from].push({ dir: "pay", text: `Pays ${who(entry.to)} ${fmt(entry.points)}`, why });
-    seats[entry.to].push({ dir: "get", text: `Receives ${fmt(entry.points)} from ${who(entry.from)}`, why });
+    seats[entry.from].push({
+      dir: "pay",
+      text: `To ${who(entry.to)} ${fmt(entry.points)}`,
+      full: `Pays ${who(entry.to)} ${fmt(entry.points)}`,
+      why,
+    });
+    seats[entry.to].push({
+      dir: "get",
+      text: `From ${who(entry.from)} ${fmt(entry.points)}`,
+      full: `Receives ${fmt(entry.points)} from ${who(entry.from)}`,
+      why,
+    });
   }
 
   const winner = outcome.kind === "win" ? outcome.winner : null;
@@ -100,7 +111,12 @@ export function explainSettlement({ outcome, you, dealer, name, fishing }) {
         why.push(`${capital(who(seat))} ${was(seat)} fishing, but fishing only pays when another player goes Mah Jong (p. 21, 32).`);
       }
     }
-    seats[seat].push({ dir: "none", text: "Nothing paid or received", why: why.join(" ") });
+    seats[seat].push({
+      dir: "none",
+      text: "Nothing paid or received",
+      full: "Nothing paid or received",
+      why: why.join(" "),
+    });
   }
   return seats;
 }

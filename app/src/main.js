@@ -830,37 +830,40 @@ function renderOutcome(outcome) {
     if (outcome.winner === entry.seat) row.classList.add("is-winner");
     seatBox.append(row);
 
+    // The payments sit side by side, so the card stays short enough to read
+    // without scrolling. Tapping one opens its reason under the seat.
     const why = document.createElement("ul");
     why.className = "result-why";
+    const detail = document.createElement("p");
+    detail.className = "why-reason";
+    detail.hidden = true;
     for (const line of account[entry.seat]) {
       const item = document.createElement("li");
-      item.className = `why-${line.dir}`;
       if (line.why) {
-        // The payment is the answer; tapping it opens the reason.
         const toggle = document.createElement("button");
         toggle.type = "button";
-        toggle.className = "why-text why-toggle";
+        toggle.className = `why-chip why-${line.dir}`;
         toggle.setAttribute("aria-expanded", "false");
         toggle.textContent = line.text;
-        const reason = document.createElement("p");
-        reason.className = "why-reason";
-        reason.textContent = line.why;
-        reason.hidden = true;
+        toggle.setAttribute("aria-label", line.full);
+        toggle.title = line.full;
         toggle.addEventListener("click", () => {
-          const open = reason.hidden;
-          reason.hidden = !open;
-          toggle.setAttribute("aria-expanded", String(open));
+          const open = toggle.getAttribute("aria-expanded") === "true";
+          for (const other of why.querySelectorAll(".why-chip")) other.setAttribute("aria-expanded", "false");
+          detail.hidden = open;
+          if (!open) {
+            detail.textContent = line.why;
+            toggle.setAttribute("aria-expanded", "true");
+          }
         });
-        item.append(toggle, reason);
+        item.append(toggle);
       } else {
-        const text = document.createElement("span");
-        text.className = "why-text";
-        text.textContent = line.text;
-        item.append(text);
+        item.className = `why-chip why-${line.dir}`;
+        item.textContent = line.text;
       }
       why.append(item);
     }
-    seatBox.append(why);
+    seatBox.append(why, detail);
     table.append(seatBox);
   }
   side.append(table);
