@@ -89,6 +89,7 @@ export const MELD_LANE_X0 = -(TABLE.TABLE_HALF - 0.35);
 export const LANE_OUT = 0.6;
 const NEAR_CORNER_INSET = 2.8;
 const LANE_FAR = TABLE.TABLE_HALF - 0.2;
+const LANE_END = TABLE.TABLE_HALF - 1.6;
 
 /**
  * Lay a seat's exposed groups along its wall's lane. With `bonusFirst` the
@@ -96,9 +97,9 @@ const LANE_FAR = TABLE.TABLE_HALF - 0.2;
  * a wider space before the melds. The melds follow in the order made, each
  * new one to the right of the last. The seat's remaining wall is pushed
  * to its right end (see `wallSlotX`), so the lane grows as the wall shrinks.
- * Groups that do not fit go into further rows in the same corner, towards the
- * rail, never past the end of the seat's own hand. Tiles shrink only when a
- * hand is unusually full. Returns the scale and each tile's centre.
+ * Everything lies in one single row; when the lane is short the tiles shrink
+ * to fit, never wrapping into a second row. Returns the scale and each
+ * tile's centre.
  *
  * A kong (its group index listed in `kongs`) is a pung with the fourth tile
  * lying on top of the middle one: it takes the room of three tiles, and that
@@ -108,47 +109,32 @@ export function meldLayout(groupSizes, wallStacks, handCount, { bonusFirst = fal
   // The seat on your right starts in the corner beside your own hand, which
   // your hand strip covers, so its lane begins a little further along.
   const laneStart = rel === 1 ? MELD_LANE_X0 + NEAR_CORNER_INSET : MELD_LANE_X0;
-  const rowZero = wallStacks > 0 ? wallSlotX(wallStacks - 1) - W / 2 - 0.25 : wallSlotX(0) + W / 2;
-  const handHalf = (handCount * (W + GAP)) / 2;
-  // One row first: a second row would lie towards the rail, behind your hand.
-  const attempts = [];
-  for (let scale = 0.9; scale >= 0.74; scale -= 0.05) attempts.push([scale, 1]);
-  for (let scale = 0.9; scale > 0.3; scale -= 0.05) attempts.push([scale, Infinity]);
-  for (const [scale, maxRows] of attempts) {
+  // Your own lane lies by your wall and ends where the wall begins. The other
+  // three lie against the rail, outside their walls, so they run the rail's
+  // length, up to the corner where the next seat's lane begins.
+  const rowZero = rel !== 0 ? LANE_END : wallStacks > 0 ? wallSlotX(wallStacks - 1) - W / 2 - 0.25 : wallSlotX(0) + W / 2;
+  // Always one single row, flowers and melds together: when the lane is short
+  // the tiles shrink to fit rather than start a second row.
+  for (let scale = 0.9; scale >= 0.1; scale -= 0.02) {
     const tileStep = (W + GAP) * scale;
     const groupGap = 0.3 * scale;
-    const rowStep = (H + 0.1) * scale;
-    const limit = (row) => (row === 0 ? rowZero : -handHalf - 0.4);
-    // Your own lane stays by the wall, above your hand strip. The others lie
-    // against the rail, and any further row goes inward, never into the wall.
-    const rowZ = (row) => (rel === 0 ? WALL_R + LANE_OUT + row * rowStep : LANE_FAR - (H * scale) / 2 - row * rowStep);
+    // Your own lane stays by the wall, above your hand strip; the others lie against the rail.
+    const z = rel === 0 ? WALL_R + LANE_OUT : LANE_FAR - (H * scale) / 2;
     const tiles = [];
-    let row = 0;
     let x = laneStart;
-    let fits = true;
+    let end = laneStart;
     groupSizes.forEach((size, group) => {
       const stacked = kongs.includes(group) && size === 4;
       const footprint = stacked ? 3 : size;
-      const groupWidth = footprint * tileStep - GAP * scale;
-      while (fits && x + groupWidth > limit(row)) {
-        if (x === laneStart) {
-          // Not even an empty row holds it: try the next row, or give up.
-          row += 1;
-        } else {
-          row += 1;
-          x = laneStart;
-        }
-        const past = rel === 0 ? rowZ(row) + (H * scale) / 2 > LANE_FAR : rowZ(row) - (H * scale) / 2 < WALL_R + H / 2 + 0.1;
-        if (row >= maxRows || past) fits = false;
-      }
       for (let index = 0; index < size; index++) {
         const level = stacked && index === 3 ? 1 : 0;
         const column = level === 1 ? 1 : index;
-        tiles.push({ group, index, level, x: x + column * tileStep + (W * scale) / 2, z: rowZ(row) });
+        tiles.push({ group, index, level, x: x + column * tileStep + (W * scale) / 2, z });
       }
-      x += groupWidth + (bonusFirst && group === 0 ? 3 * groupGap : groupGap);
+      end = x + footprint * tileStep - GAP * scale;
+      x = end + (bonusFirst && group === 0 ? 3 * groupGap : groupGap);
     });
-    if (fits) return { scale, tiles };
+    if (end <= rowZero) return { scale, tiles };
   }
   throw new Error(`meld lane cannot hold groups of ${groupSizes.join(", ")}`);
 }
