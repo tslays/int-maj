@@ -478,8 +478,8 @@ export class Board {
     return this.hand.find((entry) => entry.tile === object) ?? null;
   }
 
-  /** Gold-mark every identical tile already open on the table (discards, melds) or in your hand. */
-  markCopies(key, except = null) {
+  /** Gold-mark every identical tile already open on the table (discards, melds), never your own hand. */
+  markCopies(key) {
     this.clearMarks();
     const found = [];
     for (const seat of SEATS) {
@@ -487,7 +487,6 @@ export class Board {
       for (const item of state.discards) if (item.key === key) found.push(item.tile);
       for (const tile of state.melds.children) if (tile.userData.key === key) found.push(tile);
     }
-    for (const entry of this.hand) if (entry !== except && entry.key === key) found.push(entry.tile);
     if (found.length === 0) return;
     for (const tile of found) this.marked.push(markTile(tile));
     const id = ++this.markId;
@@ -512,7 +511,7 @@ export class Board {
   }
 
   lift(entry, up) {
-    if (up) this.markCopies(entry.key, entry);
+    if (up) this.markCopies(entry.key);
     else this.clearMarks();
     return this.glide(entry, { y: up ? LIFT : 0 }, 140);
   }
