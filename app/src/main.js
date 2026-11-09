@@ -12,6 +12,7 @@ import { createLocalApi } from "../engine/table/local.js";
 import { Board } from "./board.js";
 import { explainSettlement } from "./settlement.js";
 import { sound } from "./sound.js";
+import { rankSeats, winnerLine } from "./standings.js";
 import { ALL_FACES, initTiles, preloadFaces, tileOrder } from "./tiles.js";
 import { mountStage, renderer, requestRender, screenPoint, sleep, updateConsole, viewport } from "./stage.js";
 
@@ -742,6 +743,11 @@ async function showOutcome() {
   if ($("#result").dataset.hand === board.handId) return;
   $("#result").dataset.hand = board.handId;
   hideChoices();
+  // Reloaded on the final standings: go straight back to them.
+  if (outcome.gameOver && standingsOpen() === board.handId) {
+    renderStandings();
+    return;
+  }
   if (outcome.kind === "win" && outcome.winner !== null) {
     sound.cue(outcome.winner === payload.seat ? "win" : "lose");
     await callOut(outcome.winner, "Mah Jong", 1100);
@@ -905,14 +911,15 @@ function renderOutcome(outcome) {
   const next = document.createElement("button");
   next.type = "button";
   next.className = "act act-win result-next";
-  next.textContent = outcome.gameOver ? "New game" : "Next hand";
+  next.textContent = outcome.gameOver ? "Final standings" : "Next hand";
   next.addEventListener("click", async () => {
-    panel.hidden = true;
-    panel.replaceChildren();
     if (outcome.gameOver) {
-      await newGame();
+      standingsOpen(board.handId);
+      renderStandings();
       return;
     }
+    panel.hidden = true;
+    panel.replaceChildren();
     busy = true;
     try {
       await apply(await request("/api/next", { game: payload.game }), { animated: false });
@@ -925,6 +932,69 @@ function renderOutcome(outcome) {
   });
   side.append(next);
   card.append(main, side);
+  panel.replaceChildren(card);
+  panel.hidden = false;
+}
+
+/**
+ * The final standings after the last hand: the seats ranked by total score.
+ * Which hand's standings are open is kept in storage, so a reload resumes them.
+ */
+const STANDINGS_KEY = "int-maj.standings";
+
+function standingsOpen(handId) {
+  try {
+    if (handId === undefined) return storage()?.getItem(STANDINGS_KEY) ?? null;
+    if (handId === null) storage()?.removeItem(STANDINGS_KEY);
+    else storage()?.setItem(STANDINGS_KEY, handId);
+  } catch {
+    // Storage can be blocked; the standings simply do not survive a reload.
+  }
+  return null;
+}
+
+function renderStandings() {
+  const panel = $("#result");
+  const totals = scores();
+  const ranking = rankSeats(totals);
+  const windOf = Object.fromEntries(payload.table.map((entry) => [entry.seat, entry.wind]));
+  const name = (seat) => (seat === payload.seat ? "You" : WIND_NAME[windOf[seat]]);
+
+  const card = document.createElement("div");
+  card.className = "result-card standings-card";
+  const kicker = document.createElement("p");
+  kicker.className = "result-kicker";
+  kicker.textContent = "Final standings";
+  const title = document.createElement("h2");
+  const line = winnerLine(ranking, name);
+  title.textContent = line.replace(/^You wins/, "You win");
+  const list = document.createElement("ol");
+  list.className = "standings-list";
+  for (const entry of ranking) {
+    const row = document.createElement("li");
+    row.className = `standings-row${entry.winner ? " is-winner" : ""}`;
+    const rank = document.createElement("span");
+    rank.className = "standings-rank";
+    rank.textContent = `${entry.tied ? "=" : ""}${entry.rank}`;
+    const who = document.createElement("span");
+    who.textContent = `${WIND_NAME[windOf[entry.seat]]}${entry.seat === payload.seat ? " (you)" : ""}`;
+    const total = document.createElement("span");
+    total.className = "total";
+    total.textContent = entry.total.toLocaleString("en");
+    row.append(rank, who, total);
+    list.append(row);
+  }
+  const again = document.createElement("button");
+  again.type = "button";
+  again.className = "act act-win result-next";
+  again.textContent = "New game";
+  again.addEventListener("click", async () => {
+    standingsOpen(null);
+    panel.hidden = true;
+    panel.replaceChildren();
+    await newGame();
+  });
+  card.append(kicker, title, list, again);
   panel.replaceChildren(card);
   panel.hidden = false;
 }
