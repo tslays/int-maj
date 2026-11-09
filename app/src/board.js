@@ -13,7 +13,7 @@
  */
 
 import * as THREE from "three";
-import { D, H, W, TABLE, makeTile, poseFaceUp, poseFaceDown, tileOrder, jitter } from "./tiles.js";
+import { D, H, W, TABLE, makeTile, markTile, markMaterial, markFillMaterial, poseFaceUp, poseFaceDown, tileOrder, jitter } from "./tiles.js";
 import { discardSlot, meldLayout, wallSlotX } from "./layout.js";
 import {
   animate,
@@ -63,6 +63,8 @@ export class Board {
     this.custom = false; // true once you have arranged the hand yourself
     this.lastThrowX = 0;
     this.raycaster = new THREE.Raycaster();
+    this.marked = [];
+    this.markId = 0;
   }
 
   rel(seat) {
@@ -159,6 +161,7 @@ export class Board {
    * started has finished. Returns what happened worth announcing.
    */
   async reconcile(payload, { animated = true } = {}) {
+    this.clearMarks();
     this.me = payload.seat;
     const handId = `${payload.game}:${payload.view.handNumber}`;
     if (handId !== this.handId) {
@@ -458,7 +461,41 @@ export class Board {
     return this.hand.find((entry) => entry.tile === object) ?? null;
   }
 
+  /** Gold-frame every identical tile already open on the table (discards, melds). */
+  markCopies(key) {
+    this.clearMarks();
+    const found = [];
+    for (const seat of SEATS) {
+      const state = this.seats[seat];
+      for (const item of state.discards) if (item.key === key) found.push(item.tile);
+      for (const tile of state.melds.children) if (tile.userData.key === key) found.push(tile);
+    }
+    if (found.length === 0) return;
+    for (const tile of found) this.marked.push(markTile(tile));
+    const id = ++this.markId;
+    animate(1500, (t) => {
+      if (this.markId !== id) return;
+      const pulse = t < 0.2 ? t / 0.2 : 0.8 + 0.2 * Math.cos(((t - 0.2) / 0.8) * Math.PI * 3);
+      markMaterial.opacity = Math.min(1, pulse);
+      markFillMaterial.opacity = 0.28 * Math.min(1, pulse);
+    }).then(() => {
+      if (this.markId !== id) return;
+      markMaterial.opacity = 0.85;
+      markFillMaterial.opacity = 0.22;
+      requestRender();
+    });
+  }
+
+  clearMarks() {
+    this.markId++;
+    for (const frame of this.marked) frame.removeFromParent();
+    this.marked = [];
+    requestRender();
+  }
+
   lift(entry, up) {
+    if (up) this.markCopies(entry.key);
+    else this.clearMarks();
     return this.glide(entry, { y: up ? LIFT : 0 }, 140);
   }
 
@@ -548,6 +585,7 @@ export class Board {
 
   /** Settle every hand tile into its place (after a drag or a swap). */
   settle() {
+    this.clearMarks();
     return this.layoutHand(new Set(), true);
   }
 

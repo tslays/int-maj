@@ -362,7 +362,25 @@ renderer.domElement.addEventListener("pointerdown", (event) => {
 
 const DRAG_SLOP = 6;
 
+/** With a mouse (or pen) the tile under the pointer is pre-selected: click discards. */
+function hover(event) {
+  if (press !== null || busy || payload === null) return;
+  if (payload.legalActions.some((action) => action.type === "GoulashExchange")) return;
+  const entry = board.pick(event);
+  if (entry === selected) return;
+  if (selected !== null) void board.lift(selected, false);
+  selected = entry;
+  if (entry !== null) void board.lift(entry, true);
+}
+
+renderer.domElement.addEventListener("pointerleave", (event) => {
+  if (event.pointerType === "touch" || press !== null || selected === null) return;
+  void board.lift(selected, false);
+  selected = null;
+});
+
 renderer.domElement.addEventListener("pointermove", (event) => {
+  if (event.pointerType !== "touch" && press === null) hover(event);
   if (press === null || event.pointerId !== press.id) return;
   if (!press.dragging) {
     if (Math.hypot(event.clientX - press.x, event.clientY - press.y) < DRAG_SLOP) return;
