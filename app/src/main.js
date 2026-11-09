@@ -7,6 +7,7 @@
  * or shows you the choices the engine offers.
  */
 
+import { BUILD } from "./build-info.js";
 import { createLocalApi } from "../engine/table/local.js";
 import { Board } from "./board.js";
 import { explainSettlement } from "./settlement.js";
@@ -1056,4 +1057,51 @@ $("#help-sheet").addEventListener("click", (event) => {
 });
 window.addEventListener("keydown", (event) => {
   if (event.key === "Escape") closeHelp();
+});
+
+/* --------------------------------------------------------- report a problem */
+
+/* The report text is built in the table layer (`api.report`); this only asks
+   for a note and hands the text to the share sheet, or the clipboard. */
+function closeReport() {
+  $("#report-sheet").hidden = true;
+}
+$("#report").addEventListener("click", () => {
+  $("#report-sheet").hidden = false;
+  $("#report-note").focus();
+});
+$("#report-close").addEventListener("click", closeReport);
+$("#report-sheet").addEventListener("click", (event) => {
+  if (event.target === event.currentTarget) closeReport();
+});
+$("#report-send").addEventListener("click", async () => {
+  const text = api.report({
+    version: BUILD.version,
+    build: BUILD.id,
+    userAgent: navigator.userAgent,
+    note: $("#report-note").value,
+  });
+  if (text === null) {
+    toast("There is no game to report yet.");
+    return;
+  }
+  closeReport();
+  // The share sheet needs this tap's activation, so it is called right here.
+  if (typeof navigator.share === "function") {
+    try {
+      await navigator.share({ title: `int-maj report ${BUILD.id}`, text });
+      return;
+    } catch (error) {
+      if (error?.name === "AbortError") return; // the tester closed the sheet
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    toast("Report copied. Paste it into your message.");
+  } catch {
+    toast("Could not share or copy the report.");
+  }
+});
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeReport();
 });
