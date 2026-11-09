@@ -23,17 +23,21 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   the discard pinwheel and the meld lanes. By table custom each player's melds
   lie in their own wall's lane, starting in the table corner on their left -
   bonus tiles hard left, a space, then the melds in the order made - and grow
-  to the right as the wall in front of them is used up; each side's remaining
-  wall is pushed to its right end. `test/app/layout.test.ts` proves no meld
+  to the right as the wall in front of them is used up (the wall never
+  slides). `test/app/layout.test.ts` proves no meld
   touches a wall, a hand, a discard or another player's melds.
-- The wall is broken and drawn as *Illustrated* p. 18-19 and p. 62 show: the
-  dice (`breakFor`) name the wall and the stack count from its right-hand
-  end; draws leave the open end, the left of the break, top tile first, and
-  run on into the wall at the builder's left (`wallDrawOrder`); replacement
-  tiles leave the other end, right of the break. A wall with a gap keeps its
-  stacks in place so the gap is seen moving; a wall without one is pushed to
-  its right end. What the book leaves open is in `rules/archive/ASSUMPTIONS.md`
-  ("Wall draw animation"); `test/app/layout.test.ts` pins the order.
+- The wall is broken and drawn as *Illustrated* pp. 18-19 and p. 62 show: the
+  dice (`breakFor`) name the wall and the stack counted from its right-hand
+  end; that stack is lifted and its two tiles lie on top of the 2nd and 7th
+  stack right of the break (3 high). The replacement block right of the break
+  never moves; replacements and the refill of the loose pair leave its far
+  (corner) end. Ordinary draws start at the open end, left of the break: the
+  upper tile, then the lower, then the next stack, round the table and finally
+  through the block, so no tile is left over. Stacks vanish where they stand;
+  nothing slides (`wallPlan`, `wallLook` in `layout.js`; see
+  `rules/archive/ASSUMPTIONS.md`, "Wall draw animation"). The lane for melds
+  ends at the highest wall slot still standing; `test/app/layout.test.ts`
+  pins the order and proves no meld touches a wall.
 - `app/src/tiles.js` models a tile: a rounded off-white front, a sky-blue
   lacquered back, and the face printed on it with a small corner index. The
   faces are the public-domain riichi set in `app/assets/faces/` (see its
