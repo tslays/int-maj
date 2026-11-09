@@ -513,8 +513,18 @@ of 1000:
 > "Limit hand scores two-fifths of the limit = 400 points"
 > "Double limit hand scores one-half of the limit = 500 points"
 
-**R-070** `[I p. 32]` — East pays or receives double on these fishing scores too.
+**R-070** `[I p. 21 #24, p. 24, p. 32]` — East pays or receives double on these fishing
+scores too. A fishing hand is a losing hand that is scored, and it is settled
+as every losing hand is: the winner is paid first and "does not pay anyone",
+then "all the other players expose their hands, total their scores and settle
+the differences" (p. 21). The settlement level says which losing hands are
+scored: Intermediate "winning and fishing hands", Advanced "all hands" (p. 24,
+R-094). At Intermediate a fishing player scores the fishing figure and the
+other losers score nothing, so each of the other two losers pays the fishing
+player that figure; two fishing players settle the difference between their
+figures. The winner neither pays nor receives a fishing score.
 > "As with other scores, East Wind pays or receives double."
+> "If he loses, he pays the other players double their scores" (p. 21)
 
 **R-071** `[I p. 32]` — Only the ordinary cleared-suit, Purity, All Honour and
 Concealed Mah Jong (Buried Treasure) hands use the ground score and doubles;
@@ -762,12 +772,10 @@ other mahjong knowledge or the old Companion text.
 4. **What happens if the loose tiles are exhausted before a kong replacement.**
    p. 18 says loose tiles are replenished from the wall, but not what occurs
    when there is no tile left.
-5. **Who pays a fishing player.** p. 21 says "certain conditions apply to the
-   scoring" and p. 32 fixes the figures and says East pays/receives double.
-   Read with R76 ("All players pay the winner") and R71 ("score in the same
-   way"), the three other players pay the fishing hand as if it had won; the
-   figure is per payer. This is the narrowest reading of the two printed
-   sentences; the page never names the payers in one sentence.
+5. **Who pays a fishing player.** Resolved from the printed pages, not
+   assumed: p. 21 #24 (the winner pays no-one; the losers settle the
+   differences between their scores) read with p. 24 (Intermediate scores and
+   pays fishing hands) and p. 32. See R-070.
 6. **Whether a fishing player may still pung, chow or kong.** No restriction is
    printed; fishing is described only as the state of needing one tile.
 7. **How a chow that wins is displayed or scored as exposed or concealed.**

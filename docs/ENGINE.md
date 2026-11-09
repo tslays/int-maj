@@ -28,8 +28,10 @@ to win. `src/core/fishing.ts` models the announcement and settlement
 independent of the winner. The Illustrated figures are fractions of the limit:
 half 200, limit 400, double 500; Companion-only middle hands use 600 and a
 Companion double hand keeps its printed 800. An ordinary/Purity/All Honour
-fishing hand scores its ground score without the 20 points for Mah Jong. The
-payer set remains an explicit recorded assumption.
+fishing hand scores its ground score without the 20 points for Mah Jong.
+A fishing hand is paid by the other two losers as a difference between losing
+hands, the winner paying nothing (I p. 21 #24, p. 24, p. 32; R-070). A drawn
+hand pays no fishing at all.
 
 ## Table checker
 

@@ -190,6 +190,12 @@ East's payment or receipt doubled like any other score. This is an assumption,
 not a printed rule; it is tracked as AUDIT A7 and must not be described as a
 source reading.
 
+**Superseded 2026-11-09:** the printed pages do give the mechanism (I p. 21 #24:
+the winner pays no-one and the losers settle the differences; p. 24: the
+Intermediate level scores fishing hands). The engine now pays a fishing hand
+from the other two losers as a difference, not from all three seats; see
+`rules/RULES.md` R-070 and AUDIT A7.
+
 ## Milestone C6 — round and table rulings (checked pages)
 
 - A drawn Western hand repeats East once and marks the next hand as a
