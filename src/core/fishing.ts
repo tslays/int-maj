@@ -2,8 +2,9 @@
  * Fishing is the printed state of needing one tile, announced.
  *
  * A player one tile from mah jong announces the wait. If another player wins,
- * every fishing player still scores their fishing figure — a "mini win".
- * Settlement is independent of the winner's hand. The announcement does not
+ * every fishing player scores their fishing figure as a losing hand, settled
+ * against the other losers by difference (`ledgerFor`, I p. 21 #24, p. 24,
+ * p. 32); a drawn hand pays no fishing. The announcement does not
  * restrict what the player may claim: a player needing one tile may take any
  * discard to win and has precedence (I p. 62), and may still pung, chow or
  * kong. There is no dead-wait rule in the printed pages.

@@ -340,12 +340,14 @@ function playHand(seed: string, replayEvery: number): SoakStats {
   stats.kongDeclarations = log.filter((event) => event.type === "KongDeclared").length;
   stats.fishingDeclarations = log.filter((event) => event.type === "FishingDeclared").length;
   stats.fishingPayments = state.ledger.filter((entry) => entry.reason.startsWith("fishing")).length;
-  assert.equal(
-    stats.fishingPayments % 3,
-    0,
-    `${seed}: a fishing award must name three payers`,
-  );
-  stats.fishingSettlements = stats.fishingPayments / 3;
+  // I p. 21 #24: the winner pays nobody, so a fishing settlement never moves
+  // points to or from the winner, and a drawn hand settles no fishing at all.
+  for (const entry of state.ledger.filter((entry) => entry.reason.startsWith("fishing"))) {
+    assert.equal(result.kind, "win", `${seed}: a drawn hand paid fishing`);
+    assert.notEqual(entry.from, result.winner, `${seed}: the winner paid a fishing settlement`);
+    assert.notEqual(entry.to, result.winner, `${seed}: the winner was paid a fishing settlement`);
+  }
+  stats.fishingSettlements = stats.fishingPayments;
 
   const index = Number(seed.slice("soak-".length));
   if (index % replayEvery === 0) {

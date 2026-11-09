@@ -146,12 +146,11 @@ describe("payments", () => {
     assert.deepEqual(
       fishingEntries.map((entry) => [entry.from, entry.to, entry.points]),
       [
-        ["S", "E", 800],
         ["W", "E", 800],
         ["N", "E", 800],
       ],
     );
-    assert.deepEqual(ledgerTotals(won.state).totals, { E: 400, S: 3200, W: -1800, N: -1800 });
+    assert.deepEqual(ledgerTotals(won.state).totals, { E: -400, S: 4000, W: -1800, N: -1800 });
     zeroSum(won.state);
   });
 
