@@ -86,6 +86,7 @@
       }
       /* The game's own slanted buttons, small, in the dark corner. */
       .ghost {
+        position: relative;
         min-width: 84px;
         padding: 6px 14px;
         border: 0;
@@ -106,13 +107,30 @@
       .ghost:active {
         filter: brightness(0.92);
       }
-      /* Lit = on: a menu option that is active glows gold, the label stays just the word. */
+      /* Toggles: a status light marks the state (green = on, grey = off), and an
+         on option sits pressed into the panel. Labels stay just the word. */
+      .ghost[aria-pressed] {
+        padding-left: 24px;
+      }
+      .ghost[aria-pressed]::before {
+        content: "";
+        position: absolute;
+        left: 11px;
+        top: 50%;
+        width: 6px;
+        height: 6px;
+        margin-top: -3px;
+        border-radius: 50%;
+        background: #7d8a94;
+        box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.35);
+      }
       .ghost.on {
-        background: linear-gradient(180deg, var(--gold-1), var(--gold-2));
-        color: #4a2a05;
-        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
-        box-shadow: 0 0 14px rgba(255, 200, 80, 0.55), 0 4px 10px rgba(0, 0, 0, 0.35),
-          inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        background: linear-gradient(180deg, var(--silver-2), #c4cdd4);
+        box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3), inset 0 -1px 0 rgba(255, 255, 255, 0.35);
+      }
+      .ghost.on::before {
+        background: #6fd08e;
+        box-shadow: 0 0 4px rgba(111, 208, 142, 0.55), inset 0 1px 1px rgba(0, 0, 0, 0.2);
       }
 
       /* Decisions, above the hand on the right, like the big apps. */
