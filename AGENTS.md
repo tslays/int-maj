@@ -74,6 +74,8 @@ The full workflow is `docs/WORKFLOW.md`. The rules every session follows:
 
 - **Start with `git pull`** - another device may have pushed since this copy
   was made. Use Node 24 or later (`.nvmrc`); `npm test` refuses older ones.
+  In a cloud session the SessionStart hook in `.claude/settings.json`
+  already put Node 24 first on PATH.
 - **Finish pushed:** never leave finished work uncommitted on one device.
 - Run `npm test` before every commit. `npm run dev` builds and serves the app;
   review boards (`/?state=turn|claim|wait|fishing|win|drawn|result`) and
