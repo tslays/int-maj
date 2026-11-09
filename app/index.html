@@ -356,17 +356,7 @@
         text-align: right;
         color: var(--muted);
       }
-      /* Why the points moved: a sentence, then each seat's own payments. */
-      .result-summary {
-        display: grid;
-        gap: 4px;
-        font-size: 13px;
-        line-height: 1.4;
-        color: var(--ink);
-      }
-      .result-summary p {
-        margin: 0;
-      }
+      /* Each seat's payments, short; tapping one opens the reason. */
       .result-seat {
         display: grid;
         gap: 2px;
@@ -377,13 +367,10 @@
         margin: 0;
         padding: 0 10px 4px 14px;
         list-style: none;
-        font-size: 12px;
+        font-size: 13px;
         line-height: 1.35;
       }
       .result-why li {
-        display: flex;
-        flex-wrap: wrap;
-        column-gap: 8px;
         padding-left: 10px;
         border-left: 2px solid rgba(233, 228, 214, 0.16);
       }
@@ -394,10 +381,37 @@
         border-left-color: #7ee2a8;
       }
       .result-why .why-text {
-        font-weight: 600;
         color: var(--ink);
       }
+      .result-why .why-toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+        padding: 3px 0;
+        border: 0;
+        background: none;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+      /* A small chevron says the line opens; it turns when it has. */
+      .result-why .why-toggle::after {
+        content: "›";
+        color: var(--muted);
+        transition: transform 120ms ease-out;
+      }
+      .result-why .why-toggle[aria-expanded="true"]::after {
+        transform: rotate(90deg);
+      }
+      .result-why .why-toggle:hover,
+      .result-why .why-toggle:focus-visible {
+        text-decoration: underline;
+      }
       .result-why .why-reason {
+        margin: 0 0 4px;
+        font-size: 12px;
+        line-height: 1.4;
         color: var(--muted);
       }
       .result-side {
