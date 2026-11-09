@@ -23,6 +23,7 @@
 
 const MUTE_KEY = "int-maj.sound";
 const LEAD = 0.004; // seconds between "now" and the earliest sound
+const IDLE_MS = 5000; // quiet this long and the audio context is suspended
 const FLOOR = 0.0001; // exponential ramps cannot reach zero
 
 /** Cues that may not repeat faster than this many milliseconds. */
@@ -299,10 +300,14 @@ export function createSound({
   now = () => (globalThis.performance ? globalThis.performance.now() : Date.now()),
   random = Math.random,
   doc = globalThis.document ?? null,
+  setTimer = (fn, ms) => globalThis.setTimeout(fn, ms),
+  clearTimer = (id) => globalThis.clearTimeout(id),
 } = {}) {
   let ctx = null;
   let voices = null;
   const lastPlayed = new Map();
+  let idleTimer = null;
+  let idleSuspended = false;
 
   const store = () => (typeof storage === "function" ? storage() : storage);
 
@@ -334,17 +339,39 @@ export function createSound({
     voices = createVoices(ctx, master, random);
   }
 
+  /** Stop the clock when nothing has sounded for a while, so iOS sees no audio activity. */
+  function armIdle() {
+    if (idleTimer !== null) clearTimer(idleTimer);
+    idleTimer = setTimer(() => {
+      idleTimer = null;
+      if (ctx === null || ctx.state !== "running") return;
+      idleSuspended = true;
+      try {
+        void ctx.suspend()?.catch?.(() => {});
+      } catch {
+        idleSuspended = false;
+      }
+    }, IDLE_MS);
+  }
+
   /** Called from a user gesture: create / resume the context so sound can play. */
   function unlock() {
     if (AudioContextClass === null) return;
     try {
-      // iOS: play through the media channel, so the silent switch does not mute the game.
-      if (globalThis.navigator?.audioSession) globalThis.navigator.audioSession.type = "playback";
+      // iOS: "ambient" mixes with other audio and does not count as media
+      // playback, so no speaker symbol shows in the Dynamic Island. The price
+      // is that the silent switch mutes the game; the menu's Sound button stays.
+      if (globalThis.navigator?.audioSession) globalThis.navigator.audioSession.type = "ambient";
     } catch {
-      // Not supported: Web Audio still plays with the switch up.
+      // Not supported: Web Audio still plays.
     }
     build();
-    if (ctx === null || ctx.state === "running") return;
+    if (ctx === null) return;
+    idleSuspended = false;
+    if (ctx.state === "running") {
+      armIdle();
+      return;
+    }
     try {
       void ctx.resume()?.catch?.(() => {});
       // Older iOS only counts a sound started inside the gesture.
@@ -376,7 +403,7 @@ export function createSound({
         target.addEventListener(type, unlock, { capture: true, passive: true });
       }
       doc?.addEventListener?.("visibilitychange", () => {
-        if (doc.hidden || ctx === null || ctx.state === "running") return;
+        if (doc.hidden || ctx === null || ctx.state === "running" || idleSuspended) return;
         void ctx.resume()?.catch?.(() => {});
       });
     },
@@ -399,7 +426,8 @@ export function createSound({
      */
     cue(name, options = {}) {
       if (engine.trace) engine.trace.push({ name, ...options });
-      if (muted || ctx === null || voices === null || ctx.state !== "running") return false;
+      if (muted || ctx === null || voices === null) return false;
+      if (ctx.state !== "running" && !idleSuspended) return false;
       if (doc?.hidden) return false;
       const voice = voices[name];
       if (typeof voice !== "function") return false;
@@ -409,7 +437,18 @@ export function createSound({
         if (at - (lastPlayed.get(name) ?? -Infinity) < gap) return false;
         lastPlayed.set(name, at);
       }
+      if (idleSuspended) {
+        // Woken from idle: the clock is frozen while suspended, so what is
+        // scheduled now starts the moment the context runs again.
+        idleSuspended = false;
+        try {
+          void ctx.resume()?.catch?.(() => {});
+        } catch {
+          // The next gesture unlocks again.
+        }
+      }
       voice(ctx.currentTime + LEAD + Math.max(0, options.delay ?? 0), options);
+      armIdle();
       return true;
     },
   };
