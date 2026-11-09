@@ -88,12 +88,29 @@ export interface FishingState {
   readonly value?: number | null;
 }
 
+/** Why one seat pays another; the table shows each kind in plain words. */
+export type LedgerKind =
+  | "win" /* a loser pays the winner (I p. 21 #24) */
+  | "careless" /* a careless discarder pays another loser's debt (I p. 22) */
+  | "fishing" /* a fishing hand is paid by the other losers (I p. 21, 24, 32) */
+  | "difference" /* advanced: the losers settle their losing hands (I p. 24) */
+  | "goulash" /* the Goulash pool goes to the winner (I p. 21) */
+  | "too-many-tiles" /* a player with too many tiles pays everyone (I p. 22) */
+  | "false-mahjong"; /* a false Mah Jong pays a half limit to each other player */
+
 export interface LedgerEntry {
   readonly from: Seat;
   readonly to: Seat;
   /** null means a Calculate figure the caller must supply. */
   readonly points: number | null;
   readonly reason: string;
+  readonly kind: LedgerKind;
+  /** East paid or received double on this payment (I p. 21 #24). */
+  readonly doubled?: boolean;
+  /** "careless": the loser whose debt `from` is also paying. */
+  readonly covers?: Seat;
+  /** "fishing": the tier of the hand `to` was fishing for. */
+  readonly tier?: Tier;
 }
 
 export interface HandResult {

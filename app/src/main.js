@@ -9,6 +9,7 @@
 
 import { createLocalApi } from "../engine/table/local.js";
 import { Board } from "./board.js";
+import { explainSettlement } from "./settlement.js";
 import { sound } from "./sound.js";
 import { ALL_FACES, initTiles, preloadFaces, tileOrder } from "./tiles.js";
 import { mountStage, renderer, requestRender, screenPoint, sleep, updateConsole, viewport } from "./stage.js";
@@ -675,10 +676,28 @@ function renderOutcome(outcome) {
     main.append(sums);
   }
 
+  const account = explainSettlement({
+    outcome,
+    you: payload.seat,
+    dealer: payload.view.dealer,
+    name: seatName,
+    fishing: payload.view.fishing.map((entry) => entry.seat),
+  });
+  const summary = document.createElement("div");
+  summary.className = "result-summary";
+  for (const sentence of account.summary) {
+    const paragraph = document.createElement("p");
+    paragraph.textContent = sentence;
+    summary.append(paragraph);
+  }
+  side.append(summary);
+
   const table = document.createElement("div");
   table.className = "result-scores";
   const totals = scores();
   for (const entry of payload.table) {
+    const seatBox = document.createElement("div");
+    seatBox.className = "result-seat";
     const row = document.createElement("div");
     row.className = "result-row";
     const delta = outcome.totals[entry.seat] ?? 0;
@@ -692,7 +711,27 @@ function renderOutcome(outcome) {
     total.textContent = totals[entry.seat].toLocaleString("en");
     row.append(name, change, total);
     if (outcome.winner === entry.seat) row.classList.add("is-winner");
-    table.append(row);
+    seatBox.append(row);
+
+    const why = document.createElement("ul");
+    why.className = "result-why";
+    for (const line of account.seats[entry.seat].lines) {
+      const item = document.createElement("li");
+      item.className = `why-${line.dir}`;
+      const text = document.createElement("span");
+      text.className = "why-text";
+      text.textContent = line.text;
+      item.append(text);
+      if (line.why) {
+        const reason = document.createElement("span");
+        reason.className = "why-reason";
+        reason.textContent = line.why;
+        item.append(reason);
+      }
+      why.append(item);
+    }
+    seatBox.append(why);
+    table.append(seatBox);
   }
   side.append(table);
 
