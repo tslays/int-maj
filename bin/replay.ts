@@ -23,11 +23,14 @@ import {
   type Event,
   type GameState,
   type LedgerEntry,
+  type Seat,
   type ReplayStep,
 } from "../src/core/game/index.ts";
+import { isReportText, parseReport } from "../src/table/report.ts";
 
 const USAGE = `Usage: npm run replay -- <file.json>
        npm run replay -- --events <file.json>
+       npm run replay -- <problem-report.txt>
        cat <file.json> | npm run replay
 Options:
   --events       treat the input's "events" as the replay source
@@ -97,7 +100,21 @@ async function main(): Promise<void> {
     return;
   }
 
-  const input: unknown = JSON.parse(text);
+  // A "Report a problem" text carries its own seed, dealer and decisions.
+  let reportDealer: Seat | undefined;
+  let input: unknown;
+  if (isReportText(text)) {
+    const report = parseReport(text);
+    if ("error" in report) {
+      console.error(`replay failed: ${report.error}`);
+      process.exitCode = 1;
+      return;
+    }
+    reportDealer = report.dealer;
+    input = { seed: report.seed, actions: report.steps };
+  } else {
+    input = JSON.parse(text);
+  }
   // Parsed JSON is an unchecked boundary; only the fields read below are used.
   const record: Record<string, unknown> = Array.isArray(input)
     ? { seed: seedArg, actions: input }
@@ -130,7 +147,7 @@ async function main(): Promise<void> {
 
   let result;
   try {
-    result = replaySteps(seed, steps);
+    result = replaySteps(seed, steps, reportDealer === undefined ? {} : { dealer: reportDealer });
   } catch (error) {
     console.error(`replay failed: ${error instanceof Error ? error.message : String(error)}`);
     process.exitCode = 1;
