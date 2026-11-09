@@ -73,26 +73,22 @@ test in the matching `test/` folder.
 
 The full workflow is `docs/WORKFLOW.md`. The rules every session follows:
 
-- **Start with `git pull`** - another device may have pushed since this copy
-  was made. Use Node 24 or later (`.nvmrc`); `npm test` refuses older ones.
-  In a cloud session the SessionStart hook in `.claude/settings.json`
-  already put Node 24 first on PATH.
-- **Finish pushed:** never leave finished work uncommitted on one device.
-- Run `npm test` before every commit. `npm run dev` builds and serves the app;
-  review boards (`/?state=turn|claim|wait|fishing|win|drawn|result`) and
-  `/?phone` show a screen without playing to it.
-- Commit and push finished, tested work to `main` without asking. Pushing
-  publishes: the `Deploy to Cloudflare` job in `.github/workflows/test.yml`
-  deploys every push to `main` whose tests and build pass, to
-  https://int.mah-jong.workers.dev. (`npm run deploy` publishes by hand
-  from a machine logged in with wrangler.)
-- **Deliver autonomously, end to end** (owner-authorized, `docs/WORKFLOW.md`
-  "Autonomous delivery loop"): on a `claude/...` branch, open a pull request,
-  wait for green CI, merge it into `main`, confirm the Cloudflare deploy
-  succeeded, then report. Do not stop at a pushed branch or ask first.
-- Work can be done from any machine, including a cloud session started from
-  the owner's phone: the code, the book pages and the deploy all live in the
-  repository and its CI.
+- **Cloud only:** every session is a Claude cloud session in the `int-maj`
+  environment, on a fresh clone of `main`; there is no local copy anywhere.
+  Run `git pull` if the session has been open a while. Node 24 or later
+  (`.nvmrc`) is required; the SessionStart hook in `.claude/settings.json`
+  already put it first on PATH, and `npm test` refuses older ones.
+- **Finish pushed:** a cloud container is discarded, so nothing finished may
+  stay uncommitted or unpushed.
+- Run `npm test` (under a minute) before every commit. `npm run dev` builds
+  and serves the app; review boards (`/?state=turn|claim|wait|fishing|win|drawn|result`)
+  and `/?phone` show a screen without playing to it.
+- **Deliver autonomously, end to end** (owner-authorized until the owner says
+  otherwise, `docs/WORKFLOW.md` "Autonomous delivery loop"): on the session's
+  `claude/...` branch, open a pull request, wait for green CI, squash-merge it
+  into `main`, confirm the `Deploy to Cloudflare` job succeeded (it publishes
+  every green push to `main` to https://int.mah-jong.workers.dev), then report.
+  Do not stop at a pushed branch or ask first.
 - The look is the game's own: Riichi City is the quality bar, but never copy
   another app's art, tiles, characters, sounds or distinctive look.
 
