@@ -128,6 +128,7 @@ Concrete readings worth naming:
   including the last. Encoded as `requiresSelfDrawn: true`,
   `exposedTier: null` and no melds. **Heavenly Twins** (p. 48) is the separate
   one-suit, no-honour seven-pairs hand.
+- **Seven Twins, kongs** (owner ruling): a four-of-a-kind counts as two pairs, as in the other seven-pairs hands. The Companion page is silent. Tested in `test/core/seven-twins.test.ts`.
 - **Three Great Scholars** (p. 33): pungs/kongs of all three dragons, plus one
   pung/kong or chow and a pair in the fourth set's suit or a wind pair. The
   hand page prints MIDDLE LIMIT (Exposed).
