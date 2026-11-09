@@ -14,7 +14,7 @@
 
 import * as THREE from "three";
 import { D, H, W, TABLE, makeTile, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, tileOrder, jitter } from "./tiles.js";
-import { HAND_LIFT, discardSlot, meldLayout, wallSlotX } from "./layout.js";
+import { HAND_LIFT, breakFor, discardSlot, meldLayout, wallDrawOrder, wallSlotX } from "./layout.js";
 import { sound } from "./sound.js";
 import {
   animate,
@@ -105,41 +105,55 @@ export class Board {
     }
     this.wallOrder = [];
     this.wallShown = 0;
+    this.wallFront = 0;
+    this.wallBack = 0;
     this.wallSides = [[], [], [], []];
   }
 
-  /** 72 stacks of two in a pinwheel; drawing starts at a break that moves each hand. */
-  buildWall(seedOffset) {
-    const stacks = [];
+  /**
+   * 72 stacks of two, four walls of 18, broken where the book's dice put the
+   * break (see `breakFor`). Tiles are taken from `wallOrder`'s front, the
+   * open end, and replacements from its back.
+   */
+  buildWall(key, dealer = "E") {
+    const stacks = this.frames.map(() => []);
+    const tiles = new Map();
     for (let rel = 0; rel < 4; rel++) {
       for (let stack = 0; stack < WALL_STACKS; stack++) {
         const x = wallSlotX(stack);
-        const tiles = [0, 1].map((level) => {
+        const pair = [0, 1].map((level) => {
           const tile = poseFaceDown(makeTile(null), x, D / 2 + level * D, WALL_R);
           this.frames[rel].add(tile);
+          tiles.set(`${rel}:${stack}:${level}`, tile);
           return tile;
         });
-        stacks.push(tiles);
-        this.wallSides[rel].push(tiles);
+        this.wallSides[rel].push(pair);
+        stacks[rel].push(pair);
       }
     }
-    const breakAt = (seedOffset * 23 + 2 * WALL_STACKS + 7) % stacks.length;
-    const ordered = [...stacks.slice(breakAt), ...stacks.slice(0, breakAt)];
-    // The top tile of a stack is taken before the one beneath it.
-    this.wallOrder = ordered.flatMap(([bottom, top]) => [top, bottom]);
+    const { wallSeat, count } = breakFor(key);
+    const builder = SEATS[(SEATS.indexOf(dealer) + wallSeat) % 4];
+    this.wallOrder = wallDrawOrder(this.rel(builder), count).map(({ rel, slot, level }) =>
+      tiles.get(`${rel}:${slot}:${level}`),
+    );
     this.wallShown = this.wallOrder.length;
   }
 
-  /** Show `count` wall tiles; tiles taken since the last answer lift away. */
-  setWall(count, animated) {
-    const hideUpTo = this.wallOrder.length - Math.max(0, Math.min(count, this.wallOrder.length));
-    const shownFrom = this.wallOrder.length - this.wallShown;
+  /**
+   * Show the wall with `front` tiles gone from the open end and `back` from
+   * the replacement end. Tiles taken since the last answer lift away.
+   */
+  setWall(front, back, animated) {
+    const total = this.wallOrder.length;
+    const lastShown = total - Math.max(0, Math.min(back, total));
+    const firstShown = Math.max(0, Math.min(front, lastShown));
     const work = [];
-    for (let index = 0; index < this.wallOrder.length; index++) {
+    for (let index = 0; index < total; index++) {
       const tile = this.wallOrder[index];
-      const visible = index >= hideUpTo;
+      const visible = index >= firstShown && index < lastShown;
       if (tile.visible === visible) continue;
-      if (!visible && animated && index >= shownFrom && hideUpTo - shownFrom <= 4) {
+      const fresh = index < firstShown ? firstShown - (this.wallFront ?? 0) : lastShown < (this.wallBack ?? total) ? 1 : 0;
+      if (!visible && animated && fresh <= 4) {
         const restY = tile.position.y;
         work.push(
           tween(tile.position, { y: restY + 1.2 }, 180, easeOutCubic).then(() => {
@@ -151,16 +165,25 @@ export class Board {
         tile.visible = visible;
       }
     }
-    this.wallShown = Math.max(0, Math.min(count, this.wallOrder.length));
+    this.wallFront = firstShown;
+    this.wallBack = lastShown;
+    this.wallShown = lastShown - firstShown;
     // Each side's remaining stacks are pushed to that side's right end, as
-    // players push their wall, so the lane for melds grows at its left.
-    const willShow = new Set(this.wallOrder.slice(hideUpTo));
+    // players push their wall, so the lane for melds grows at its left. A
+    // wall with a gap in it (the break, where the draws leave) stays as it
+    // is, so the gap is seen moving along.
+    const willShow = new Set(this.wallOrder.slice(firstShown, lastShown));
     this.wallStacks = this.wallSides.map((side) => {
-      const standing = side.filter((tiles) => tiles.some((tile) => willShow.has(tile)));
-      standing.forEach((tiles, slot) => {
-        for (const tile of tiles) tile.position.x = wallSlotX(slot);
+      const slots = [];
+      side.forEach((tiles, slot) => {
+        if (tiles.some((tile) => willShow.has(tile))) slots.push(slot);
       });
-      return standing.length;
+      if (slots.length === 0) return 0;
+      const contiguous = slots[slots.length - 1] - slots[0] + 1 === slots.length;
+      slots.forEach((slot, rank) => {
+        for (const tile of side[slot]) tile.position.x = wallSlotX(contiguous ? rank : slot);
+      });
+      return contiguous ? slots.length : slots[slots.length - 1] + 1;
     });
     return work;
   }
@@ -176,7 +199,7 @@ export class Board {
     if (handId !== this.handId) {
       this.handId = handId;
       this.clear();
-      this.buildWall(payload.view.handNumber);
+      this.buildWall(`${payload.seed}:${payload.view.handNumber}`, payload.view.dealer);
       animated = false;
       sound.cue("deal");
     }
@@ -194,8 +217,12 @@ export class Board {
     }
 
     // The wall first: where it stands decides how much lane the melds have.
-    const wall = payload.wall.remaining + payload.wall.loose + payload.wall.dead;
-    work.push(...this.setWall(wall, animated));
+    // Ordinary draws leave the open end; what the loose end gave up is
+    // whatever else is gone (a Chinese set also lacks its eight bonus tiles).
+    const w = payload.wall;
+    const unused = w.remaining + w.loose + w.dead;
+    const back = this.wallOrder.length - w.size + Math.max(0, w.size - w.front - unused);
+    work.push(...this.setWall(w.front, back, animated));
     for (const entry of payload.table) {
       work.push(...this.reconcileDiscards(entry, meldsGrew, animated));
     }
