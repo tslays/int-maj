@@ -31,31 +31,80 @@ const FILLER = {
 };
 
 describe("A7 fishing payer", () => {
-  it("pays a fishing hand like a winner from all three, East double", () => {
+  // I p. 21 #24: the winner "does not pay anyone"; the other players "total
+  // their scores and settle the differences". I p. 24: intermediate scores and
+  // pays the winning and the fishing hands. I p. 32: the fishing figures, East
+  // paying or receiving double.
+  const FISH_WINNER_HAND = "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 b5";
+  const winBy = (seat: "E" | "S", fishing: GameState["fishing"], hands: Record<string, string>) => {
     const state = fixture({
-      hands: {
-        E: "b1 b2 b3 b4 b5 b6 b7 c1 c2 c3 o1 o2 o3",
-        S: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 b5",
-        W: "c1 c1 c1 c2 c2 c2 c3 c3 c3 c4 c4 c4 c5",
-        N: "o1 o1 o1 o2 o2 o2 o3 o3 o3 o4 o4 o4 o5",
-      },
+      hands: { [seat]: FISH_WINNER_HAND, ...hands } as Record<"E" | "S" | "W" | "N", string>,
       wall: ["o6"],
       phase: "discard",
-      turn: "S",
-      lastDraw: { seat: "S", tile: "b5", end: "front" },
-      fishing: [{ seat: "E", wait: ["b7"], tier: "half" }],
+      turn: seat,
+      lastDraw: { seat, tile: "b5", end: "front" },
+      fishing,
     });
-    const won = play(state, { type: "Win", seat: "S", kind: "self-drawn" });
-    const fishing = won.state.ledger.filter((entry) => entry.reason.startsWith("fishing"));
-    assert.deepEqual(
-      fishing.map((entry) => [entry.from, entry.to, entry.points]),
-      [
-        ["S", "E", 400],
-        ["W", "E", 400],
-        ["N", "E", 400],
-      ],
-    );
+    return play(state, { type: "Win", seat, kind: "self-drawn" });
+  };
+  const fishingOf = (state: GameState) =>
+    state.ledger
+      .filter((entry) => entry.reason.startsWith("fishing"))
+      .map((entry) => [entry.from, entry.to, entry.points]);
+
+  it("settles a fishing hand against the other two losers, the winner paying nothing, East double", () => {
+    const won = winBy("S", [{ seat: "E", wait: ["b7"], tier: "half" }], {
+      E: "b1 b2 b3 b4 b5 b6 b7 c1 c2 c3 o1 o2 o3",
+      W: FILLER.W,
+      N: FILLER.N,
+    });
+    assert.deepEqual(fishingOf(won.state), [
+      ["W", "E", 400],
+      ["N", "E", 400],
+    ]);
     zeroSum(won.state);
+  });
+
+  it("does not double a fishing hand when East is not involved", () => {
+    const won = winBy("E", [{ seat: "W", wait: ["b7"], tier: "limit" }], {
+      S: FILLER.S,
+      W: "b1 b2 b3 b4 b5 b6 b7 c1 c2 c3 o1 o2 o3",
+      N: FILLER.N,
+    });
+    assert.deepEqual(fishingOf(won.state), [
+      ["S", "W", 400],
+      ["N", "W", 400],
+    ]);
+    zeroSum(won.state);
+  });
+
+  it("settles two fishing hands by their difference", () => {
+    const won = winBy(
+      "E",
+      [
+        { seat: "W", wait: ["b7"], tier: "limit" },
+        { seat: "N", wait: ["b7"], tier: "half" },
+      ],
+      { S: FILLER.S, W: FILLER.W, N: FILLER.N },
+    );
+    assert.deepEqual(fishingOf(won.state), [
+      ["S", "W", 400],
+      ["S", "N", 200],
+      ["N", "W", 200],
+    ]);
+    zeroSum(won.state);
+  });
+
+  it("pays a fishing player a declared figure over the tier table", () => {
+    const won = winBy("E", [{ seat: "W", wait: ["b7"], tier: "double", value: 800 }], {
+      S: FILLER.S,
+      W: FILLER.W,
+      N: FILLER.N,
+    });
+    assert.deepEqual(fishingOf(won.state), [
+      ["S", "W", 800],
+      ["N", "W", 800],
+    ]);
   });
 });
 

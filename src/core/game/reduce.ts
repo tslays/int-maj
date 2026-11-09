@@ -26,7 +26,7 @@
 import { createHand, type Hand, type Meld } from "../hand.ts";
 import { matchesAny } from "../match.ts";
 import { DEFAULT_LIMIT, scoreHand, type ScoreResult } from "../score.ts";
-import { declareFishing, settleFishing } from "../fishing.ts";
+import { declareFishing } from "../fishing.ts";
 import { TIER_FISHING, TIER_POINTS, type Tier } from "../patterns/types.ts";
 import {
   isBonus,
@@ -680,38 +680,26 @@ function ledgerFor(
     }
   }
 
+  // The winner is paid first and pays nobody; "the other players expose their
+  // hands, total their scores and settle the differences" (I p. 21 #24). Which
+  // losing hands are scored is the settlement level (I p. 24, R94): beginners
+  // none, intermediate the fishing hands, advanced all of them.
   const settlement = draft.settlement ?? "intermediate";
-  if (settlement === "intermediate") {
-    // Fishing settles independently of the winner: all three pay the
-    // fishing hand, East double, exactly as a winning hand (R69-R70, R76).
-    const declarations = draft.fishing.map((entry) => ({
-      player: entry.seat,
-      wait: entry.wait,
-      tier: entry.tier,
-    }));
-    const awards = settleFishing(declarations, winner, TIER_FISHING);
-    for (const award of awards) {
-      for (const payer of SEATS) {
-        if (payer === award.player) continue;
-        const doubled = payer === draft.dealer || award.player === draft.dealer;
-        const amount =
-          award.points === null ? null : roundTo100(award.points * (doubled ? 2 : 1));
-        entries.push({
-          from: payer,
-          to: award.player,
-          points: amount,
-          reason:
-            award.points === null
-              ? `fishing ${award.tier} (calculate, unscored)`
-              : `fishing ${award.tier}${doubled ? " (dealer double)" : ""}`,
-        });
-      }
-    }
-  } else if (settlement === "advanced") {
-    // The winner is paid first and pays nobody. The losers then settle the
-    // differences between their own scores (R76, R94).
+  if (settlement !== "beginner") {
     const losers = others.filter((seat) => effectiveCount(playerOf(draft as GameState, seat)) <= 14);
-    const scores = new Map(losers.map((seat) => [seat, losingHandPoints(draft, seat)]));
+    const scores = new Map<Seat, number>();
+    for (const seat of losers) {
+      if (settlement === "advanced") {
+        scores.set(seat, losingHandPoints(draft, seat));
+        continue;
+      }
+      const declaration = draft.fishing.find((entry) => entry.seat === seat);
+      scores.set(
+        seat,
+        declaration === undefined ? 0 : (declaration.value ?? TIER_FISHING[declaration.tier] ?? 0),
+      );
+    }
+    const label = settlement === "advanced" ? "losing hand difference" : "fishing difference";
     for (let i = 0; i < losers.length; i++) {
       for (let j = i + 1; j < losers.length; j++) {
         const a = losers[i]!;
@@ -725,7 +713,7 @@ function ledgerFor(
           from: lower,
           to: higher,
           points: roundTo100(Math.abs(delta) * (doubled ? 2 : 1)),
-          reason: `losing hand difference${doubled ? " (dealer double)" : ""}`,
+          reason: `${label}${doubled ? " (dealer double)" : ""}`,
         });
       }
     }
