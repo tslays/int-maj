@@ -14,7 +14,7 @@
 
 import * as THREE from "three";
 import { D, H, W, TABLE, makeTile, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, tileOrder, jitter } from "./tiles.js";
-import { discardSlot, meldLayout, wallSlotX } from "./layout.js";
+import { HAND_LIFT, discardSlot, meldLayout, wallSlotX } from "./layout.js";
 import { sound } from "./sound.js";
 import {
   animate,
@@ -35,7 +35,6 @@ const SEATS = ["E", "S", "W", "N"];
 const { WALL_STACKS, WALL_R, HAND_Z, DISCARD_Z, DISCARD_SCALE } = TABLE;
 const GAP = 0.02;
 const HAND_TILT = -0.16;
-const LIFT = 0.32; // how far a selected hand tile rises
 
 /**
  * Lay a meld's tiles in a row; a kong is a pung with its fourth tile on top of
@@ -519,7 +518,7 @@ export class Board {
   lift(entry, up) {
     if (up) this.markCopies(entry.key);
     else this.clearMarks();
-    return this.glide(entry, { y: up ? LIFT : 0 }, 140);
+    return this.glide(entry, { y: up ? HAND_LIFT : 0 }, 140);
   }
 
   /** Move a hand tile; a newer move of the same tile replaces the one in flight. */
@@ -587,7 +586,7 @@ export class Board {
     const { places, total } = this.handPlaces();
     entry.glide += 1; // the pointer owns this tile now
     entry.tile.position.x = Math.max(-total / 2, Math.min(total / 2, x));
-    entry.tile.position.y = LIFT;
+    entry.tile.position.y = HAND_LIFT;
     let target = this.hand.indexOf(entry);
     let best = Infinity;
     this.hand.forEach((other, index) => {

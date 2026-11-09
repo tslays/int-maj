@@ -33,7 +33,10 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
 - `app/src/stage.js` holds the renderer, the felt, the centre console, the
   table camera (solved for any screen shape) and your hand's own long-lens
   pass, plus promise-based tweens with a timer fallback, so a hidden page
-  never stalls the game.
+  never stalls the game. `app/src/camera.js` does the framing: the hand strip
+  is only as tall as the tile row needs (plus headroom for a lifted tile), and
+  the table camera is solved down to the top of the standing hand tiles, so
+  no screen is spent on felt between your melds and your hand.
 - `app/src/board.js` compares each game answer with the table and animates
   only the difference: throws, claims flying to the claimer, melds, draws and
   the shrinking wall.

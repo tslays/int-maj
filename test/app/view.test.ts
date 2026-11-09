@@ -19,7 +19,7 @@ registerHooks({
 
 const THREE = await import(THREE_URL);
 // @ts-expect-error - a plain browser module without type declarations
-const { fitTableCamera } = await import("../../app/src/camera.js");
+const { fitHandCamera, fitTableCamera } = await import("../../app/src/camera.js");
 // @ts-expect-error - a plain browser module without type declarations
 const { discardRect, meldRects, TABLE, H } = await import("../../app/src/layout.js");
 
@@ -57,13 +57,15 @@ function seen(camera: unknown, rect: Rect) {
 
 describe("3D table camera", () => {
   for (const [name, width, height] of SHAPES) {
-    it(`shows every discard and lane tile, clear of the hand strip (${name})`, () => {
+    it(`shows every discard and lane tile, clear of the hand (${name})`, () => {
       const portrait = height > width;
-      const strip = Math.round(portrait ? height * 0.16 : height * 0.27);
+      // A full hand of 14 tiles and the drawn one, the widest row there is.
+      const { tileTop } = fitHandCamera(new THREE.PerspectiveCamera(5, 1, 1, 600), width, height, 15.5);
       const camera = new THREE.PerspectiveCamera(17, width / height, 0.5, 1200);
-      fitTableCamera(camera, portrait ? 62 : 46, strip / height);
+      fitTableCamera(camera, portrait ? 62 : 46, tileTop / height);
       camera.updateMatrixWorld();
-      const floor = -1 + (2 * strip) / height;
+      // The table reaches down to the top of the standing hand tiles, no further.
+      const floor = -1 + (2 * tileTop) / height;
 
       const things: { what: string; rect: Rect }[] = [];
       for (let rel = 0; rel < 4; rel++) {
@@ -80,7 +82,34 @@ describe("3D table camera", () => {
         assert.ok(box.top <= 1, `${what} is cut off at the top (${box.top.toFixed(2)})`);
         // The hand covers the middle of the strip; the corners beside it stay visible.
         const beside = box.left > 0.85 || box.right < -0.85;
-        assert.ok(beside || box.bottom >= floor, `${what} hides behind the hand strip (${box.bottom.toFixed(2)} < ${floor.toFixed(2)})`);
+        assert.ok(beside || box.bottom >= floor, `${what} hides behind the hand (${box.bottom.toFixed(2)} < ${floor.toFixed(2)})`);
+      }
+    });
+  }
+});
+
+describe("hand strip", () => {
+  for (const [name, width, height] of SHAPES) {
+    it(`is only as tall as its tiles and their lift, and shows them whole (${name})`, () => {
+      const camera = new THREE.PerspectiveCamera(5, 1, 1, 600);
+      const { strip, tileTop } = fitHandCamera(camera, width, height, 15.5);
+      const cap = height > width ? height * 0.16 : height * 0.27;
+      assert.ok(strip <= Math.max(56, Math.round(cap)), `strip ${strip}px is taller than its cap`);
+      // The row fills the width, and its tiles are as tall as that allows (a tile's
+      // top edge adds a little more in perspective); the strip holds that plus the lift.
+      const tile = (1.36 * width) / 15.5;
+      assert.ok(strip <= Math.max(56, tile * 1.45 + 4), `strip ${strip}px leaves dead space over a ${tile.toFixed(0)}px tile`);
+      assert.ok(tileTop > tile && tileTop < strip, `resting tile tops at ${tileTop}px of ${strip}px`);
+
+      // A resting tile, and the same tile lifted, both lie inside the strip.
+      for (const lift of [0, 0.32]) {
+        for (const x of [-7.5, 7.5]) {
+          for (const y of [-0.68, 0.68]) {
+            const p = new THREE.Vector3(x, y + lift, 0).project(camera);
+            assert.ok(Math.abs(p.x) <= 1.0001, `tile edge x=${x} leaves the strip sideways`);
+            assert.ok(p.y >= -1 && p.y <= 1, `tile edge y=${y + lift} leaves the strip (${p.y.toFixed(2)})`);
+          }
+        }
       }
     });
   }
