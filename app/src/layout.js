@@ -89,6 +89,7 @@ export const MELD_LANE_X0 = -(TABLE.TABLE_HALF - 0.35);
 export const LANE_OUT = 0.6;
 const NEAR_CORNER_INSET = 2.8;
 const LANE_FAR = TABLE.TABLE_HALF - 0.2;
+const LANE_END = TABLE.TABLE_HALF - 1.6;
 
 /**
  * Lay a seat's exposed groups along its wall's lane. With `bonusFirst` the
@@ -108,7 +109,10 @@ export function meldLayout(groupSizes, wallStacks, handCount, { bonusFirst = fal
   // The seat on your right starts in the corner beside your own hand, which
   // your hand strip covers, so its lane begins a little further along.
   const laneStart = rel === 1 ? MELD_LANE_X0 + NEAR_CORNER_INSET : MELD_LANE_X0;
-  const rowZero = wallStacks > 0 ? wallSlotX(wallStacks - 1) - W / 2 - 0.25 : wallSlotX(0) + W / 2;
+  // Your own lane lies by your wall and ends where the wall begins. The other
+  // three lie against the rail, outside their walls, so they run the rail's
+  // length, up to the corner where the next seat's lane begins.
+  const rowZero = rel !== 0 ? LANE_END : wallStacks > 0 ? wallSlotX(wallStacks - 1) - W / 2 - 0.25 : wallSlotX(0) + W / 2;
   // Always one single row, flowers and melds together: when the lane is short
   // the tiles shrink to fit rather than start a second row.
   for (let scale = 0.9; scale >= 0.1; scale -= 0.02) {
