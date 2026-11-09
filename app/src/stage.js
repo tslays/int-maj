@@ -330,7 +330,8 @@ function stepTweens(now) {
       finish(item);
       continue;
     }
-    item.step(t);
+    // A step that answers `false` is stale (its owner moved on): stop it now.
+    if (item.step(t) === false) finish(item);
   }
 }
 
