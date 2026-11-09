@@ -154,6 +154,11 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   named after the build's content hash. Once opened, the app starts in
   airplane mode; a new deploy replaces the cache and reloads the page once,
   which resumes the saved hand.
+- **Version label.** The menu shows `alpha.1 · <id>` small under the buttons.
+  `package.json` holds the version; the id is the short commit (`GITHUB_SHA`,
+  as in CI) or else the content hash. `src/build-info.js` exports `BUILD`
+  (`version`, `stage`, `id`) and `BUILD_LABEL`; import it to put the build in
+  a problem report. Unbuilt, the id reads `dev`.
 - **Install.** Safari > Share > Add to Home Screen gives a full-screen app
   with its own icon (`app/assets/icons/`). Service workers need https, so install
   from the deployed site, not from a `--lan` address.

@@ -84,6 +84,14 @@
         align-items: flex-start;
         gap: 8px;
       }
+      .build-label {
+        margin: 2px 0 0 4px;
+        font-size: 10px;
+        letter-spacing: 0.04em;
+        color: rgba(255, 255, 255, 0.38);
+        pointer-events: none;
+        user-select: none;
+      }
       /* The game's own slanted buttons, small, in the dark corner. */
       .ghost {
         position: relative;
@@ -712,7 +720,12 @@
       <button class="ghost on" id="sort" type="button" aria-pressed="true"><span>Sort</span></button>
       <button class="ghost on" id="hints" type="button" aria-pressed="true"><span>Hints</span></button>
       <button class="ghost on" id="sound" type="button" aria-pressed="true"><span>Sound</span></button>
+      <small class="build-label" id="build-label"></small>
     </nav>
+    <script type="module">
+      import { BUILD_LABEL } from "./src/build-info.js";
+      document.getElementById("build-label").textContent = BUILD_LABEL;
+    </script>
     <div class="actions" id="actions"></div>
     <aside class="closest" id="closest" aria-live="polite" hidden></aside>
     <div class="hand-detail" id="hand-detail" hidden></div>
