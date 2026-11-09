@@ -143,4 +143,16 @@ describe("3D table discard layout", () => {
     assert.ok(withBonus.tiles[2]!.x - withBonus.tiles[1]!.x > plain.tiles[2]!.x - plain.tiles[1]!.x, "a wider space after the bonus tiles");
     assert.ok(meldLayout([3, 3, 3, 3], 6, 1).scale >= 0.85, "four pungs stay large");
   });
+
+  it("lays a kong as a pung with the fourth tile on top of the middle one", () => {
+    const kong = meldLayout([4], 12, 10, { kongs: [0] }).tiles;
+    const pung = meldLayout([3], 12, 10).tiles;
+    assert.deepEqual(kong.map((t) => t.level), [0, 0, 0, 1]);
+    assert.equal(kong[3]!.x, kong[1]!.x, "the fourth tile lies over the middle tile");
+    assert.equal(kong[3]!.z, kong[1]!.z);
+    assert.deepEqual(kong.slice(0, 3).map(({ x, z }) => ({ x, z })), pung.map(({ x, z }) => ({ x, z })), "it takes the room of a pung");
+    const next = meldLayout([4, 3], 12, 7, { kongs: [0] }).tiles;
+    const afterPung = meldLayout([3, 3], 12, 7).tiles;
+    assert.equal(next[4]!.x, afterPung[3]!.x, "the next meld follows as after a pung");
+  });
 });
