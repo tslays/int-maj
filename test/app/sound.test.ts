@@ -77,9 +77,14 @@ class FakeContext {
   createOscillator = () => this.node(true);
   createBufferSource = () => this.node(true);
   createBuffer = (_channels: number, length: number) => ({ getChannelData: () => new Float32Array(length) });
+  suspended = 0;
   async resume() {
     this.resumed++;
     this.state = "running";
+  }
+  async suspend() {
+    this.suspended++;
+    this.state = "suspended";
   }
 }
 
@@ -198,6 +203,38 @@ describe("sound engine", () => {
     engine.cue("clack", { delay: 0.36 });
     const later = Math.min(...ctx.sources.slice(before).map((source) => source.starts[0]));
     assert.ok(later - first > 0.3 && later - first < 0.4);
+  });
+
+  it("asks iOS for the ambient audio session, so no speaker symbol shows", async () => {
+    const nav = (globalThis as { navigator?: unknown }).navigator;
+    const session = { type: "auto" };
+    Object.defineProperty(globalThis, "navigator", { value: { audioSession: session }, configurable: true });
+    try {
+      await running();
+      assert.equal(session.type, "ambient");
+    } finally {
+      Object.defineProperty(globalThis, "navigator", { value: nav, configurable: true });
+    }
+  });
+
+  it("suspends when idle and the first cue after idle still plays on time", async () => {
+    const timers: { fn: () => void; ms: number }[] = [];
+    const { engine, ctx } = await running({
+      setTimer: (fn: () => void, ms: number) => timers.push({ fn, ms }) - 1,
+      clearTimer: (id: number) => void (timers[id] = { fn: () => {}, ms: 0 }),
+    });
+    assert.equal(engine.cue("clack"), true);
+    timers.at(-1)!.fn(); // the idle timer fires
+    assert.equal(ctx.state, "suspended");
+    assert.equal(ctx.suspended, 1);
+    const resumedBefore = ctx.resumed;
+    const sources = ctx.sources.length;
+    assert.equal(engine.cue("clack"), true, "a cue after idle is not dropped");
+    assert.equal(ctx.resumed, resumedBefore + 1, "the context resumes for it");
+    const starts = ctx.sources.slice(sources).map((source) => source.starts[0]);
+    assert.ok(Math.min(...starts) >= ctx.currentTime && Math.min(...starts) < ctx.currentTime + 0.05);
+    await Promise.resolve();
+    assert.equal(engine.running, true);
   });
 
   it("mutes, and remembers the choice", async () => {
