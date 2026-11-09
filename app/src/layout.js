@@ -116,6 +116,19 @@ export function discardRect(rel, index) {
 /** The inner edge of the walls: discards must stay inside this square. */
 export const WALL_INNER = WALL_R - H / 2;
 
+/** How far to the right of its place a newly drawn hand tile starts, to slide in from. */
+export const DRAWN_SLIDE = 1.4;
+
+/**
+ * Where a hand tile that has just appeared starts: a drawn tile slides in from
+ * the right and drops from above, but when nothing is animated (a game just
+ * dealt, a hand resumed, an undo) it goes straight to its own place, never to
+ * the slide's start, which lies past the screen's edge.
+ */
+export function handTileStart(x, drawn, animated) {
+  return { x: animated && drawn ? x + DRAWN_SLIDE : x, y: animated ? 0.9 : 0 };
+}
+
 /** Where wall stack `slot` lies in its seat's frame: slot 0 is the seat's right end. */
 export function wallSlotX(slot) {
   return (WALL_STACKS / 2 - 0.5 - slot) * W - H / 2 + W / 2;
