@@ -56,7 +56,9 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   no screen is spent on felt between your melds and your hand.
 - The turn light (`stage.js`, `updateConsole`): the console is painted in three
   layers (panel, light, lettering) so the light can move under the text. The
-  seat whose turn it is glows along its edge with a soft, edgeless light that
+  seat whose turn it is glows along its edge with a soft, edgeless light, wide
+  (it spans most of the edge) and weak (peak about 0.4 of the cyan, so the
+  lit seat's score keeps its contrast at phone size), that
   breathes very slowly (about 5 s a cycle, drawn at roughly 16 frames a second
   only while the light is lit and the page visible); when the turn passes the
   light travels round the corner to the next seat in about a quarter of a
