@@ -1,26 +1,32 @@
 # Workflow
 
-How the project is worked on from any device - the owner's Mac, or a Claude
-cloud session started from an iPhone - without anything getting out of sync.
+How the project is worked on: entirely in Claude Code cloud sessions (from
+claude.ai/code, the desktop app or the iPhone), in the `int-maj` cloud
+environment. There is no local copy on any machine (since 2026-11-09).
 
 ## One source of truth
 
-GitHub's `main` branch is the only place the project is shared. Devices never
-sync with each other directly:
+GitHub's `main` branch is the only copy of the project. Each cloud session
+clones it fresh, works on its own `claude/...` branch and delivers through a
+pull request:
 
 ```
- Mac session (~/Documents/int-maj)  --push-->            --push-->  cloud session (from the iPhone)
-                                    <--pull--   main     <--clone--
-                                                 |
+ prompt -> cloud session (fresh clone) -> claude/... branch -> pull request
+                                                                   |
                                           GitHub Actions: tests, build
-                                                 |  (green push to main)
-                                                 v
-                                   https://int.mah-jong.workers.dev
+                                                                   | green: squash-merge
+                                                                   v
+                       main -> tests, build -> Deploy to Cloudflare -> https://int.mah-jong.workers.dev
 ```
 
 Everything a session needs is in the repository: the code, the rules
-(`rules/RULES.md`), the book pages to check them against (`rules/pages/`) and
-the deploy (`.github/workflows/test.yml`). No session needs the Mac to be on.
+(`rules/RULES.md`), the book pages and their OCR text to check them against
+(`rules/pages/`) and the deploy (`.github/workflows/test.yml`).
+
+The `int-maj` cloud environment (personal, linked to this repository) allows
+the package registries and the live site, so a session can confirm a deploy.
+It needs no setup script: there are no dependencies, and the SessionStart hook
+picks Node 24.
 
 ## A session, start to finish
 
@@ -76,16 +82,24 @@ deleting branches or history, changing the Cloudflare token or secrets).
   has given this permission in advance; it covers ordinary merges, which
   deploy on green CI, and not force-pushes or rewriting shared history.
 - `npm run deploy` publishes by hand from a machine logged in with
-  `npx wrangler login`; it is rarely needed now.
+  `npx wrangler login`; with no local copy it is not used.
 
-## What deliberately stays on one device
+## What is not in the repository
 
 | What | Where | Why |
 | --- | --- | --- |
-| The book PDFs | the Mac, `scans/` | masters; the page images in `rules/pages/` are enough for any session |
+| The book PDFs | the owner's own offline backup | masters; sessions read the page images and OCR text in `rules/pages/` |
 | Saved games | each device's browser | a game belongs to the device it is played on |
-| Claude's memory notes | the Mac | anything every session must know is in `AGENTS.md` instead |
+| Anything a session must remember | `AGENTS.md`, not Claude's memory | memory notes stay on one machine; a cloud session never sees them |
 | `dist/`, `.wrangler/` | wherever they are built | generated; never committed |
+
+## Later, when wanted
+
+- **Preview deploys:** each pull request gets its own temporary Cloudflare
+  link (`wrangler versions upload`), so a change can be tried on a phone before
+  it merges. Not set up yet: for now every green pull request merges and
+  deploys without the owner approving anything, and the owner wants to keep it
+  that way until they say otherwise.
 
 ## The Cloudflare token
 

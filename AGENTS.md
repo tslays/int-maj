@@ -17,8 +17,9 @@ Two printed sources form the rules framework, in this order:
 
 The pages of both books are in the repository: `rules/pages/illustrated/pNN.jpg`
 and `rules/pages/companion/pNN.jpg` (open-book spreads, see
-`rules/pages/README.md`), so any session can read them. The PDF masters stay
-local under `scans/`.
+`rules/pages/README.md`), with OCR text beside them, so any session can read
+them. The PDF masters are the owner's offline backup, not on any machine
+that works on the code; `scans/` paths in older documents name them.
 
 `rules/RULES.md` is the single normative framework that records both, with a
 provenance tag on every rule (`[I p.N]` primary, `[C p.N]` supplement,
