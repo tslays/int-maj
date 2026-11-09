@@ -1040,3 +1040,20 @@ window.mahjong = {
 };
 
 void boot();
+
+/* --------------------------------------------------------- help sheet */
+
+function closeHelp() {
+  $("#help-sheet").hidden = true;
+}
+$("#help").addEventListener("click", () => {
+  $("#help-sheet").hidden = false;
+  $("#help-close").focus();
+});
+$("#help-close").addEventListener("click", closeHelp);
+$("#help-sheet").addEventListener("click", (event) => {
+  if (event.target === event.currentTarget) closeHelp();
+});
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeHelp();
+});

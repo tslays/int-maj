@@ -625,6 +625,17 @@
         width: 22px;
         height: 30px;
       }
+      .help-card {
+        width: min(520px, 100%);
+      }
+      .help-card ul {
+        margin: 0;
+        padding-left: 18px;
+        line-height: 1.4;
+      }
+      .help-card li + li {
+        margin-top: 3px;
+      }
       .closest-empty {
         margin: 0;
         color: var(--muted);
@@ -712,10 +723,57 @@
       <button class="ghost on" id="sort" type="button" aria-pressed="true"><span>Sort</span></button>
       <button class="ghost on" id="hints" type="button" aria-pressed="true"><span>Hints</span></button>
       <button class="ghost on" id="sound" type="button" aria-pressed="true"><span>Sound</span></button>
+      <button class="ghost" id="help" type="button"><span>Help</span></button>
     </nav>
     <div class="actions" id="actions"></div>
     <aside class="closest" id="closest" aria-live="polite" hidden></aside>
     <div class="hand-detail" id="hand-detail" hidden></div>
+    <div class="hand-detail" id="help-sheet" hidden>
+      <div class="detail-card help-card" role="dialog" aria-modal="true" aria-label="How to play">
+        <button class="detail-close" id="help-close" type="button" aria-label="Close">&times;</button>
+        <h2>How to play</h2>
+        <div class="detail-line">
+          <h3>Discard</h3>
+          <p>Tap a tile in your hand, then tap it again to throw it. Or hold a tile and swipe up.</p>
+        </div>
+        <div class="detail-line">
+          <h3>Calling and winning</h3>
+          <p>
+            When you can claim a discard, make a kong, go fishing or declare Mah Jong, a button appears above
+            your hand. Tap it, or let it pass.
+          </p>
+        </div>
+        <div class="detail-line">
+          <h3>Hints</h3>
+          <p>
+            The Hints panel lists the hands you are closest to. Tap a row to open that hand's sheet: what it is,
+            what it pays and which tiles you still need.
+          </p>
+        </div>
+        <div class="detail-line">
+          <h3>Menu</h3>
+          <ul>
+            <li><b>New game</b> starts a fresh deal.</li>
+            <li><b>Calls</b> off: you are no longer asked about discards.</li>
+            <li><b>Sort</b> keeps your hand in order.</li>
+            <li><b>Hints</b> shows or hides the closest-hands panel.</li>
+            <li><b>Sound</b> turns the sound on or off.</li>
+          </ul>
+        </div>
+        <div class="detail-line">
+          <h3>Saving</h3>
+          <p>The game saves after every move and picks up where you left off when you come back.</p>
+        </div>
+        <div class="detail-line">
+          <h3>Install on iPhone</h3>
+          <p>In Safari tap Share, then Add to Home Screen. Play with the phone on its side.</p>
+        </div>
+        <div class="detail-line" id="help-report">
+          <h3>Report a problem</h3>
+          <p>Send a report from the menu's Report a problem button.</p>
+        </div>
+      </div>
+    </div>
     <section class="result" id="result" hidden></section>
     <p class="toast" id="toast" role="status" hidden></p>
     <script type="module" src="src/main.js"></script>
