@@ -263,10 +263,6 @@ export function wallPlan(builderRel, count) {
   };
 }
 
-/** Marker slots on the broken wall: the 2nd and 7th stack right of the break (I p. 18, rule 6). */
-const NEAR_MARKER = 2;
-const FAR_MARKER = 7;
-
 /**
  * What the wall shows at one moment, from the engine's counts: `front` tiles
  * drawn from the open end, `used` loose tiles consumed by replacements, and
@@ -276,14 +272,18 @@ const FAR_MARKER = 7;
  * Ordinary draws leave the front of `plan.ordinary` and, once that is gone,
  * carry on into the block. Replacements take two more from the block's far
  * end for each two used; if they ever outrun the block (many kongs and
- * flowers) they go on at the far end of the ordinary run, so no tile is ever
- * left over. Nothing else moves: the answer is only how many tiles are gone
- * from each list, and where the held loose tiles lie.
+ * flowers) they go on past the wall's corner, at the far end of the ordinary
+ * run, so no tile is ever left over. Nothing else moves: the answer is only
+ * how many tiles are gone from each list, and where the held loose tiles lie.
  *
- * The held tiles lie on the 2nd and 7th stack right of the break, the 7th
- * first to be used. Where the far end has been used up to or past a marker
- * the tile lies on the nearest stack that is left (the book is silent; this
- * is the narrowest reading), which is what makes a stack 4 high.
+ * The marker (owner's ruling on presentation, issue #56; the book's detail
+ * diagram, I p. 19, shows the 2nd and 7th stacks instead, with the same
+ * tiles, count and order): both loose tiles lie on the END column, the first
+ * stack still standing in the order the replacements take them. With `used`
+ * replacements the end column is `floor(used / 2)` columns in and carries
+ * 2 - (used mod 2) loose tiles: 4 high, then 3 high, then the plain two-tile
+ * column is lifted onto its neighbour, which is 4 high, and so on. Only that
+ * one column is ever 3 or 4 high.
  *
  * Returns { goneOrdinary, goneTail, goneBlock, markers: [{ which, rel, slot, level }] }:
  * `goneOrdinary` tiles gone from the head of `plan.ordinary`, `goneTail` from
@@ -295,19 +295,19 @@ export function wallLook(plan, front, used, held) {
   const taken = Math.max(0, used + held - 2);
   const goneBlock = Math.min(plan.block.length, taken + overflow);
   const goneTail = Math.max(0, taken + overflow - plan.block.length);
-  const left = plan.block.slice(goneBlock);
-  const nearest = plan.count - 2;
-  const first = left.length > 0 ? left[0].slot : nearest;
-  const pick = (stack) => Math.min(nearest, Math.max(first, stack));
+  const leftBlock = plan.block.slice(goneBlock);
+  const leftOrdinary = plan.ordinary.slice(goneOrdinary, plan.ordinary.length - goneTail);
+  // The end column: the block's far stack, or, once the block is used up, the
+  // stack past the corner where the replacements go on; the nearest block
+  // stack when nothing at all is left to lie on.
+  const end =
+    leftBlock[0] ??
+    leftOrdinary.at(-1) ??
+    (plan.block.length > 0 ? plan.block.at(-1) : { rel: plan.rel, slot: plan.count - 2 });
+  const standing = [...leftBlock, ...leftOrdinary].filter((tile) => tile.rel === end.rel && tile.slot === end.slot).length;
   const wanted = [];
-  if (held >= 2) wanted.push({ which: "far", slot: pick(plan.count - 1 - FAR_MARKER) });
-  if (held >= 1) wanted.push({ which: "near", slot: pick(plan.count - 1 - NEAR_MARKER) });
-  const height = new Map();
-  for (const tile of left) height.set(tile.slot, (height.get(tile.slot) ?? 0) + 1);
-  const markers = wanted.map(({ which, slot }) => {
-    const level = height.get(slot) ?? 0;
-    height.set(slot, level + 1);
-    return { which, rel: plan.rel, slot, level: level };
-  });
+  if (held >= 2) wanted.push("far");
+  if (held >= 1) wanted.push("near");
+  const markers = wanted.map((which, index) => ({ which, rel: end.rel, slot: end.slot, level: standing + index }));
   return { goneOrdinary, goneTail, goneBlock, markers };
 }
