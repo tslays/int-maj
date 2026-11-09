@@ -37,18 +37,14 @@ tiles. `Haku.svg` is blank; the prototype draws the white dragon's frame.
 The upstream set has no flowers or seasons. `f1.svg`-`f4.svg` (plum, orchid,
 chrysanthemum, bamboo) and `s1.svg`-`s4.svg` (spring, summer, autumn, winter)
 are original faces drawn for this project by `scripts/art/bonus-faces.py`: one
-large brush kanji (梅 兰 菊 竹, 春 夏 秋 冬) with the English name in capitals
-along the bottom, flowers in red and seasons in blue. The table prints the
-number in the top-left corner.
+large brush kanji (梅 兰 菊 竹, 春 夏 秋 冬), flowers in red and seasons in
+blue. The table prints the number in the top-left corner.
 
-The kanji and letters are glyph outlines (paths, not text), taken by
-`scripts/art/bonus-glyphs.py` into `scripts/art/bonus-glyphs.json` from two
-fonts under the [SIL Open Font License 1.1](https://openfontlicense.org/):
-
-- **Ma Shan Zheng**, Copyright 2018 The MaShanZheng Project Authors
-  (<https://github.com/googlefonts/mashanzheng>), for the kanji.
-- **Oswald**, Copyright 2016 The Oswald Project Authors
-  (<https://github.com/googlefonts/OswaldFont>), weight 600, for the capitals.
+The kanji are glyph outlines (paths, not text), taken by
+`scripts/art/bonus-glyphs.py` into `scripts/art/bonus-glyphs.json` from
+**Ma Shan Zheng**, Copyright 2018 The MaShanZheng Project Authors
+(<https://github.com/googlefonts/mashanzheng>), under the
+[SIL Open Font License 1.1](https://openfontlicense.org/).
 
 Rerun the script to change the faces:
 
