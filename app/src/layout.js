@@ -19,6 +19,8 @@
 export const W = 1;
 export const H = 1.36;
 export const D = 0.78;
+/** How far a selected hand tile rises above the rest of the row. */
+export const HAND_LIFT = 0.32;
 
 const GAP = 0.03;
 const ROW = 6;

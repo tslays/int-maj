@@ -10,7 +10,7 @@
 
 import * as THREE from "three";
 import { RoomEnvironment } from "../vendor/three/RoomEnvironment.js";
-import { fitTableCamera } from "./camera.js";
+import { HAND_FOV, fitHandCamera, fitTableCamera } from "./camera.js";
 import { D, H, TABLE } from "./tiles.js";
 
 const { TABLE_HALF, WALL_R, HAND_Z, CENTER_HALF } = TABLE;
@@ -41,7 +41,7 @@ handScene.environmentIntensity = 0.32;
 export const tableCamera = new THREE.PerspectiveCamera(17, 1, 0.5, 1200);
 // A long lens: the hand strip is about eight times wider than tall, and a wide
 // lens would stretch the tiles at its ends.
-export const handCamera = new THREE.PerspectiveCamera(5, 1, 1, 600);
+export const handCamera = new THREE.PerspectiveCamera(HAND_FOV, 1, 1, 600);
 
 const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
 
@@ -232,44 +232,33 @@ export function setHandRowWidth(width) {
   const next = Math.max(15.5, width * 1.04 + 0.5);
   if (Math.abs(next - handRowWidth) < 0.01) return;
   handRowWidth = next;
-  frameHand();
+  // The strip is sized to the tiles, so a wider row can move the table's floor too.
+  fit();
 }
 
-function frameHand() {
-  const { width, strip } = viewport;
-  handCamera.aspect = width / strip;
-  const vertical = THREE.MathUtils.degToRad(handCamera.fov);
-  const byWidth = handRowWidth / 2 / Math.tan(vertical / 2) / handCamera.aspect;
-  const byHeight = (H * 1.18) / 2 / Math.tan(vertical / 2);
-  const distance = Math.max(byWidth, byHeight);
-  // Seen from a little above, so the tiles show their top edge.
-  handCamera.position.set(0, 0.1 + distance * Math.tan(THREE.MathUtils.degToRad(7)), distance);
-  handCamera.lookAt(0, 0.1, 0);
-  handCamera.updateProjectionMatrix();
-  handCamera.updateMatrixWorld();
-  // Where the tops of the hand tiles stand in the strip, so the decision
-  // buttons sit right above them rather than above the strip's empty margin.
-  const top = new THREE.Vector3(0, 0.1 + H / 2, 0).project(handCamera);
-  const tileTop = Math.round(((top.y + 1) / 2) * strip);
-  document.documentElement.style.setProperty("--hand-top", `${Math.min(strip, tileTop)}px`);
-  requestRender();
-}
-
-export function frame() {
+/** Fit both cameras to the canvas's size and the hand's width. */
+function fit() {
   // The canvas fills its container: the window, or the `?phone` frame.
   const host = renderer.domElement.parentElement ?? document.body;
   const width = Math.max(1, host.clientWidth || window.innerWidth);
   const height = Math.max(1, host.clientHeight || window.innerHeight);
   renderer.setSize(width, height, false);
   const portrait = height > width;
+  const { strip, tileTop } = fitHandCamera(handCamera, width, height, handRowWidth);
   viewport.width = width;
   viewport.height = height;
-  viewport.strip = Math.round(portrait ? height * 0.16 : height * 0.27);
-  document.documentElement.style.setProperty("--strip", `${viewport.strip}px`);
+  viewport.strip = strip;
+  const style = document.documentElement.style;
+  style.setProperty("--strip", `${strip}px`);
+  // Where the tops of the standing hand tiles are, so the decision buttons
+  // sit right above them rather than above the strip's headroom.
+  style.setProperty("--hand-top", `${tileTop}px`);
   tableCamera.aspect = width / height;
-  fitTableCamera(tableCamera, portrait ? 62 : 46, viewport.strip / height);
-  frameHand();
+  fitTableCamera(tableCamera, portrait ? 62 : 46, tileTop / height);
+  requestRender();
 }
+
+export const frame = fit;
 
 /** Where a table point appears on screen, in CSS pixels from the top left. */
 export function screenPoint(point) {
