@@ -44,8 +44,10 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   draws and passes), the decision buttons, call-outs and the result card.
 - `app/src/settlement.js` words the result card's account of the points from
   the ledger (every entry is tagged with its kind in `src/core/game/state.ts`).
-  The card shows only the result: each seat's change and, under it, who it paid
-  or was paid by and how much. Tapping a payment opens its reason (winning
+  The card shows only the result: each seat's change and, under it, tags of who
+  it paid or was paid by and how much ("To South 1,200", "From West 600"), laid
+  side by side so the whole card fits a phone held sideways without scrolling
+  (checked down to 667x375). Tapping a tag opens its reason (winning
   hand, East's double, fishing, careless discard, penalties; or why nothing
   moved on a drawn hand). Pure, so it is tested in
   `test/app/settlement.test.ts` on real engine hands.

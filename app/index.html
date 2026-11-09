@@ -356,63 +356,70 @@
         text-align: right;
         color: var(--muted);
       }
-      /* Each seat's payments, short; tapping one opens the reason. */
+      /* Each seat's payments as tags in a row; tapping one opens the reason. */
       .result-seat {
         display: grid;
-        gap: 2px;
+        gap: 4px;
+        padding-bottom: 4px;
       }
       .result-why {
-        display: grid;
-        gap: 1px;
-        margin: 0;
-        padding: 0 10px 4px 14px;
-        list-style: none;
-        font-size: 13px;
-        line-height: 1.35;
-      }
-      .result-why li {
-        padding-left: 10px;
-        border-left: 2px solid rgba(233, 228, 214, 0.16);
-      }
-      .result-why .why-pay {
-        border-left-color: #ff8b80;
-      }
-      .result-why .why-get {
-        border-left-color: #7ee2a8;
-      }
-      .result-why .why-text {
-        color: var(--ink);
-      }
-      .result-why .why-toggle {
         display: flex;
+        flex-wrap: wrap;
+        gap: 4px 6px;
+        margin: 0;
+        padding: 0 2px;
+        list-style: none;
+        font-size: 12.5px;
+        line-height: 1.2;
+      }
+      .why-chip {
+        display: inline-flex;
         align-items: center;
-        gap: 6px;
-        width: 100%;
-        padding: 3px 0;
-        border: 0;
-        background: none;
+        gap: 5px;
+        padding: 4px 9px;
+        border: 1px solid rgba(233, 228, 214, 0.2);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--ink);
         font: inherit;
-        text-align: left;
+        font-variant-numeric: tabular-nums;
+      }
+      .why-chip.why-pay {
+        border-color: rgba(255, 139, 128, 0.5);
+        background: rgba(255, 139, 128, 0.08);
+      }
+      .why-chip.why-get {
+        border-color: rgba(126, 226, 168, 0.5);
+        background: rgba(126, 226, 168, 0.08);
+      }
+      button.why-chip {
         cursor: pointer;
       }
-      /* A small chevron says the line opens; it turns when it has. */
-      .result-why .why-toggle::after {
+      /* A small chevron says the tag opens; it turns when it has. */
+      button.why-chip::after {
         content: "›";
         color: var(--muted);
         transition: transform 120ms ease-out;
       }
-      .result-why .why-toggle[aria-expanded="true"]::after {
+      button.why-chip[aria-expanded="true"] {
+        background: rgba(255, 255, 255, 0.14);
+      }
+      button.why-chip[aria-expanded="true"]::after {
         transform: rotate(90deg);
       }
-      .result-why .why-toggle:hover,
-      .result-why .why-toggle:focus-visible {
-        text-decoration: underline;
+      button.why-chip:hover,
+      button.why-chip:focus-visible {
+        border-color: var(--ink);
       }
-      .result-why .why-reason {
-        margin: 0 0 4px;
+      .why-reason {
+        margin: 0;
+        padding: 0 6px;
         font-size: 12px;
         line-height: 1.4;
         color: var(--muted);
+      }
+      .why-reason[hidden] {
+        display: none;
       }
       .result-side {
         display: grid;
@@ -428,6 +435,53 @@
         /* Stays in reach while a long account of the payments scrolls. */
         position: sticky;
         bottom: 0;
+      }
+      /* A phone held sideways is short: tighten the card so the whole result
+         shows without scrolling. */
+      @media (max-height: 460px) {
+        .result-card {
+          gap: 4px 18px;
+          padding: 8px 16px 8px;
+        }
+        .result-card h2 {
+          margin: 0 0 4px;
+          font-size: 21px;
+        }
+        .result-description {
+          margin-bottom: 6px;
+          font-size: 12px;
+          line-height: 1.3;
+        }
+        .result-tiles {
+          gap: 6px;
+          margin-bottom: 6px;
+        }
+        .result-tiles .chip {
+          width: 22px;
+          height: 30px;
+        }
+        .result-sums {
+          margin-bottom: 4px;
+          font-size: 12px;
+        }
+        .result-side {
+          gap: 6px;
+          padding-top: 0;
+        }
+        .result-scores {
+          gap: 2px;
+        }
+        .result-row {
+          padding: 4px 10px;
+          font-size: 13px;
+        }
+        .result-seat {
+          gap: 3px;
+          padding-bottom: 2px;
+        }
+        .why-chip {
+          padding: 3px 8px;
+        }
       }
       /* Narrow screens stack the two columns. */
       @media (max-width: 640px) {

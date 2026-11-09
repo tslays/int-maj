@@ -34,11 +34,13 @@ function account(state: GameState, you = "E") {
     dealer: state.dealer,
     name: (seat: string) => NAMES[seat],
     fishing: state.fishing.map((entry) => entry.seat),
-  }) as Record<string, { dir: string; text: string; why: string }[]>;
+  }) as Record<string, { dir: string; text: string; full: string; why: string }[]>;
 }
 
 /** What the card shows by default: the payments, no reasons. */
 const shown = (seats: ReturnType<typeof account>, seat: string) => seats[seat]!.map((line) => line.text);
+/** The same lines in full, as a screen reader hears them. */
+const spoken = (seats: ReturnType<typeof account>, seat: string) => seats[seat]!.map((line) => line.full);
 /** What opens when a line is tapped. */
 const reasons = (seats: ReturnType<typeof account>, seat: string) => seats[seat]!.map((line) => line.why);
 
@@ -61,16 +63,13 @@ describe("the result card's account of the points", () => {
     const seats = account(won, "W");
 
     // By default only who pays whom how much.
-    assert.deepEqual(shown(seats, "E"), [
+    assert.deepEqual(shown(seats, "E"), ["To South 2,000", "From you 400", "From North 400"]);
+    assert.deepEqual(shown(seats, "W"), ["To South 1,000", "To East 400"]);
+    assert.deepEqual(shown(seats, "S"), ["From East 2,000", "From you 1,000", "From North 1,000"]);
+    assert.deepEqual(spoken(seats, "E"), [
       "Pays South 2,000",
       "Receives 400 from you",
       "Receives 400 from North",
-    ]);
-    assert.deepEqual(shown(seats, "W"), ["Pays South 1,000", "Pays East 400"]);
-    assert.deepEqual(shown(seats, "S"), [
-      "Receives 2,000 from East",
-      "Receives 1,000 from you",
-      "Receives 1,000 from North",
     ]);
 
     // Tapping a line gives the reason: the winning hand, East's double, fishing.
@@ -87,7 +86,7 @@ describe("the result card's account of the points", () => {
     const totals = ledgerTotals(won).totals;
     for (const seat of ["E", "S", "W", "N"]) {
       const net = seats[seat]!.reduce((sum, line) => {
-        const amount = Number(line.text.match(/[\d,]+$|[\d,]+(?= from)/)?.[0].replace(/,/g, "") ?? 0);
+        const amount = Number(line.text.match(/[\d,]+$/)?.[0].replace(/,/g, "") ?? 0);
         return sum + (line.dir === "get" ? amount : line.dir === "pay" ? -amount : 0);
       }, 0);
       assert.equal(net, totals[seat as "E"], `${seat}: the lines add up to the net change`);
@@ -141,10 +140,10 @@ describe("the result card's account of the points", () => {
     const discarded = play(state, { type: "Discard", seat: "E", tile: "b5" });
     const won = play(discarded.state, { type: "Claim", seat: "S", kind: "mahjong", tiles: ["b5"] }).state;
     const seats = account(won, "E");
-    assert.ok(shown(seats, "E").every((line) => line.startsWith("Pays ")));
+    assert.ok(shown(seats, "E").every((line) => line.startsWith("To ")));
     const careless = seats.E!.filter((line) => line.why.startsWith("Careless discard"));
     assert.equal(careless.length, 2);
-    assert.deepEqual(careless.map((line) => line.text).sort(), ["Pays South 1,000", "Pays South 1,000"]);
+    assert.deepEqual(careless.map((line) => line.text).sort(), ["To South 1,000", "To South 1,000"]);
     assert.ok(careless.some((line) => line.why.includes("you also pay West's share (p. 22)")));
     assert.ok(careless.some((line) => line.why.includes("you also pay North's share (p. 22)")));
     assert.ok(careless.every((line) => line.why.includes("South's exposed sets showed was needed")));
@@ -164,7 +163,7 @@ describe("the result card's account of the points", () => {
     });
     const won = play(state, { type: "Win", seat: "E", kind: "self-drawn" }).state;
     const seats = account(won, "S");
-    assert.ok(seats.E!.every((line) => line.text.startsWith("Receives ") && line.why.includes("East receives double")));
-    assert.ok(seats.S!.every((line) => line.text.startsWith("Pays East ") && line.why.includes("East receives double")));
+    assert.ok(seats.E!.every((line) => line.text.startsWith("From ") && line.why.includes("East receives double")));
+    assert.ok(seats.S!.every((line) => line.text.startsWith("To East ") && line.why.includes("East receives double")));
   });
 });
