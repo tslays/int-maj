@@ -34,14 +34,13 @@ function account(state: GameState, you = "E") {
     dealer: state.dealer,
     name: (seat: string) => NAMES[seat],
     fishing: state.fishing.map((entry) => entry.seat),
-  }) as {
-    summary: string[];
-    seats: Record<string, { lines: { dir: string; text: string; why: string }[] }>;
-  };
+  }) as Record<string, { dir: string; text: string; why: string }[]>;
 }
 
-const linesOf = (seats: ReturnType<typeof account>["seats"], seat: string) =>
-  seats[seat].lines.map((line) => `${line.text} | ${line.why}`);
+/** What the card shows by default: the payments, no reasons. */
+const shown = (seats: ReturnType<typeof account>, seat: string) => seats[seat]!.map((line) => line.text);
+/** What opens when a line is tapped. */
+const reasons = (seats: ReturnType<typeof account>, seat: string) => seats[seat]!.map((line) => line.why);
 
 describe("the result card's account of the points", () => {
   it("explains a win, East's double, and a fishing hand paid by the losers", () => {
@@ -59,29 +58,35 @@ describe("the result card's account of the points", () => {
       fishing: [{ seat: "E", wait: ["b7"], tier: "half" }],
     });
     const won = play(state, { type: "Win", seat: "S", kind: "self-drawn" }).state;
-    const { summary, seats } = account(won, "W");
+    const seats = account(won, "W");
 
-    assert.match(summary[0]!, /^South won by drawing the winning tile\./);
-    assert.match(summary[0]!, /pays the winner 1,000, except East, who pays double: 2,000\./);
-    assert.match(summary[1]!, /fishing hand is paid by the other losing players.*the winner pays nothing/);
+    // By default only who pays whom how much.
+    assert.deepEqual(shown(seats, "E"), [
+      "Pays South 2,000",
+      "Receives 400 from you",
+      "Receives 400 from North",
+    ]);
+    assert.deepEqual(shown(seats, "W"), ["Pays South 1,000", "Pays East 400"]);
+    assert.deepEqual(shown(seats, "S"), [
+      "Receives 2,000 from East",
+      "Receives 1,000 from you",
+      "Receives 1,000 from North",
+    ]);
 
-    // East pays double as dealer, and is also the fishing player paid by W and N.
-    assert.deepEqual(linesOf(seats, "E"), [
-      "Pays South 2,000 | winning hand · East pays double",
-      "Receives 400 from you | fishing: East was one tile short of a half-limit hand · East receives double",
-      "Receives 400 from North | fishing: East was one tile short of a half-limit hand · East receives double",
+    // Tapping a line gives the reason: the winning hand, East's double, fishing.
+    assert.deepEqual(reasons(seats, "E"), [
+      "Winning hand: every other player pays the winner. East pays double (p. 21).",
+      "Fishing: East was one tile short of a half-limit hand. A fishing hand is paid by the other losing players, not by the winner (p. 21, 32). East receives double (p. 21).",
+      "Fishing: East was one tile short of a half-limit hand. A fishing hand is paid by the other losing players, not by the winner (p. 21, 32). East receives double (p. 21).",
     ]);
-    // The viewer is West: "you", and the winner never appears as a fishing payer.
-    assert.deepEqual(linesOf(seats, "W"), [
-      "Pays South 1,000 | winning hand",
-      "Pays East 400 | fishing: East was one tile short of a half-limit hand · East receives double",
-    ]);
-    assert.ok(!linesOf(seats, "S").some((line) => line.includes("fishing")));
+    assert.equal(reasons(seats, "W")[0], "Winning hand: every other player pays the winner.");
+    // The winner never appears as a fishing payer or payee.
+    assert.ok(!shown(seats, "S").some((line) => line.includes("400")));
 
     // The lines add up to the net change the card shows for every seat.
     const totals = ledgerTotals(won).totals;
     for (const seat of ["E", "S", "W", "N"]) {
-      const net = seats[seat]!.lines.reduce((sum, line) => {
+      const net = seats[seat]!.reduce((sum, line) => {
         const amount = Number(line.text.match(/[\d,]+$|[\d,]+(?= from)/)?.[0].replace(/,/g, "") ?? 0);
         return sum + (line.dir === "get" ? amount : line.dir === "pay" ? -amount : 0);
       }, 0);
@@ -101,19 +106,18 @@ describe("the result card's account of the points", () => {
       fishing: [{ seat: "E", wait: ["b7"], tier: "limit" }],
     });
     const drawn = play(state, { type: "Draw", seat: "S" }).state;
-    const { summary, seats } = account(drawn, "E");
+    const seats = account(drawn, "E");
+    assert.deepEqual(shown(seats, "E"), ["Nothing paid or received"]);
+    assert.deepEqual(shown(seats, "S"), ["Nothing paid or received"]);
     assert.equal(
-      summary[0],
+      reasons(seats, "S")[0],
       "Nobody went Mah Jong before the wall ran out, so nobody pays and nobody scores (p. 21).",
     );
+    // The fishing player is told why fishing paid nothing.
     assert.equal(
-      summary[1],
-      "You were fishing, but fishing only pays when another player goes Mah Jong (p. 21, 32).",
+      reasons(seats, "E")[0],
+      "Nobody went Mah Jong before the wall ran out, so nobody pays and nobody scores (p. 21). You were fishing, but fishing only pays when another player goes Mah Jong (p. 21, 32).",
     );
-    assert.deepEqual(linesOf(seats, "E"), [
-      "Nothing paid or received | you were fishing, but a drawn hand pays no fishing (p. 21)",
-    ]);
-    assert.deepEqual(linesOf(seats, "S"), ["Nothing paid or received | "]);
   });
 
   it("explains a careless discard that makes the discarder pay the other losers' shares", () => {
@@ -136,12 +140,15 @@ describe("the result card's account of the points", () => {
     });
     const discarded = play(state, { type: "Discard", seat: "E", tile: "b5" });
     const won = play(discarded.state, { type: "Claim", seat: "S", kind: "mahjong", tiles: ["b5"] }).state;
-    const { summary, seats } = account(won, "E");
-    assert.match(summary[0]!, /^South won on your discard\./);
-    const east = linesOf(seats, "E");
-    assert.ok(east.some((line) => line.includes("careless discard, also paying West's share (p. 22)")));
-    assert.ok(east.some((line) => line.includes("careless discard, also paying North's share (p. 22)")));
-    assert.ok(east.some((line) => line.startsWith("Pays South") && line.includes("winning hand")));
+    const seats = account(won, "E");
+    assert.ok(shown(seats, "E").every((line) => line.startsWith("Pays ")));
+    const careless = seats.E!.filter((line) => line.why.startsWith("Careless discard"));
+    assert.equal(careless.length, 2);
+    assert.deepEqual(careless.map((line) => line.text).sort(), ["Pays South 1,000", "Pays South 1,000"]);
+    assert.ok(careless.some((line) => line.why.includes("you also pay West's share (p. 22)")));
+    assert.ok(careless.some((line) => line.why.includes("you also pay North's share (p. 22)")));
+    assert.ok(careless.every((line) => line.why.includes("South's exposed sets showed was needed")));
+    assert.ok(seats.E!.some((line) => line.why.startsWith("Winning hand")));
   });
 
   it("says East won, so every loser pays double", () => {
@@ -156,8 +163,8 @@ describe("the result card's account of the points", () => {
       lastDraw: { seat: "E", tile: "b5", end: "front" },
     });
     const won = play(state, { type: "Win", seat: "E", kind: "self-drawn" }).state;
-    const { summary, seats } = account(won, "S");
-    assert.match(summary[0]!, /^East won by drawing the winning tile\. East won, so each of the other players pays double: /);
-    assert.ok(linesOf(seats, "E").every((line) => line.startsWith("Receives") && line.includes("East receives double")));
+    const seats = account(won, "S");
+    assert.ok(seats.E!.every((line) => line.text.startsWith("Receives ") && line.why.includes("East receives double")));
+    assert.ok(seats.S!.every((line) => line.text.startsWith("Pays East ") && line.why.includes("East receives double")));
   });
 });
