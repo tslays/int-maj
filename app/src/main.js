@@ -398,6 +398,13 @@ renderer.domElement.addEventListener("pointerdown", (event) => {
 });
 
 const DRAG_SLOP = 6;
+/** A carried tile swiped this far up (css px), more up than sideways, is thrown on release. */
+const THROW_RISE = 56;
+
+function throwing(event) {
+  const rise = press.y - event.clientY;
+  return rise >= THROW_RISE && rise >= Math.abs(event.clientX - press.x);
+}
 
 /** With a mouse (or pen) the tile under the pointer is pre-selected: click discards. */
 function hover(event) {
@@ -428,14 +435,28 @@ renderer.domElement.addEventListener("pointermove", (event) => {
     if (selected !== null && selected !== press.entry) void board.lift(selected, false);
     selected = press.entry;
   }
+  const armed = throwing(event);
+  if (armed !== press.armed) {
+    press.armed = armed;
+    if (board.armThrow(press.entry, armed) && armed) tickFor(press.entry);
+  }
   board.dragTo(press.entry, event);
 });
 
 function endPress(event, cancelled) {
   if (press === null || event.pointerId !== press.id) return;
-  const { entry, wasSelected, dragging } = press;
+  const { entry, wasSelected, dragging, armed } = press;
   press = null;
   renderer.domElement.releasePointerCapture?.(event.pointerId);
+  if (dragging) board.armThrow(entry, false);
+  if (dragging && armed && !cancelled && legalDiscard(entry.key) !== null) {
+    // Swiped up and let go: the tile is thrown onto the table.
+    selected = null;
+    board.noteThrow(entry);
+    sound.cue("lift");
+    void act(legalDiscard(entry.key));
+    return;
+  }
   if (dragging) {
     // Dropped: it settles where it was carried; nothing is thrown.
     selected = null;
