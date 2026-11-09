@@ -15,6 +15,7 @@
 import * as THREE from "three";
 import { D, H, W, TABLE, makeTile, markTile, markMaterial, markFillMaterial, poseFaceUp, poseFaceDown, tileOrder, jitter } from "./tiles.js";
 import { discardSlot, meldLayout, wallSlotX } from "./layout.js";
+import { sound } from "./sound.js";
 import {
   animate,
   easeInOutCubic,
@@ -73,6 +74,12 @@ export class Board {
 
   frameOf(seat) {
     return this.frames[this.rel(seat)];
+  }
+
+  /** Where a seat sounds from: the side you hear it on, and how far off it is. */
+  ear(seat) {
+    const rel = this.rel(seat);
+    return { pan: rel === 1 ? 0.55 : rel === 3 ? -0.55 : 0, far: rel === 0 ? 0 : rel === 2 ? 1 : 0.5 };
   }
 
   /* ------------------------------------------------------- whole table */
@@ -169,6 +176,7 @@ export class Board {
       this.clear();
       this.buildWall(payload.view.handNumber);
       animated = false;
+      sound.cue("deal");
     }
     const calls = [];
     const work = [];
@@ -242,6 +250,8 @@ export class Board {
     const from = new THREE.Vector3(fromX, 1.4, HAND_Z - (seat === this.me ? -0.5 : 0.8));
     tile.position.copy(from);
     tile.rotation.set(seat === this.me ? -0.35 : 0.2, 0, 0);
+    // The arc touches down at about 0.36 of its 0.4 s: that is when it clacks.
+    sound.cue("clack", { delay: 0.36, intensity: seat === this.me ? 1 : 0.85, ...this.ear(seat) });
     const startRotation = tile.rotation.clone();
     return animate(400, (t) => {
       const k = easeOutCubic(t);
@@ -260,6 +270,7 @@ export class Board {
     tableScene.attach(tile);
     const target = this.meldTarget(claimer);
     const from = tile.position.clone();
+    sound.cue("clack", { delay: 0.33, intensity: 0.7, ...this.ear(claimer) });
     return animate(360, (t) => {
       const k = easeInOutCubic(t);
       tile.position.lerpVectors(from, target, k);
@@ -287,6 +298,7 @@ export class Board {
       if (animated && grewBy === 1 && index === entry.handCount - 1) {
         tile.position.y += 0.9;
         work.push(tween(tile.position, { y: H / 2 }, 220, easeOutCubic));
+        sound.cue("draw", { delay: 0.03, ...this.ear(entry.seat) });
       }
     }
     return work;
@@ -331,6 +343,8 @@ export class Board {
         work.push(tween(tile.position, { y }, 300, easeOutBack));
       }
     }
+    // The dropping tiles first meet the felt at about 0.45 of their 0.3 s.
+    if (fresh) sound.cue("meld", { delay: 0.135, count: groups.at(-1).length, ...this.ear(entry.seat) });
     return work;
   }
 
@@ -432,7 +446,10 @@ export class Board {
       const x = places.get(entry);
       if (fresh.has(entry)) {
         entry.tile.position.set(x + (entry.drawn ? 1.4 : 0), animated ? 0.9 : 0, 0);
-        if (animated) work.push(tween(entry.tile.position, { x, y: 0 }, 260, easeOutCubic));
+        if (animated) {
+          work.push(tween(entry.tile.position, { x, y: 0 }, 260, easeOutCubic));
+          if (entry.drawn) sound.cue("draw", { own: true, delay: 0.17 });
+        }
         continue;
       }
       const position = entry.tile.position;
@@ -537,6 +554,7 @@ export class Board {
     this.hand[j] = a;
     [a.drawn, b.drawn] = [b.drawn, a.drawn];
     this.setCustom(true);
+    sound.cue("swap");
   }
 
   /** Note (and announce) whether the hand is in your own order. */

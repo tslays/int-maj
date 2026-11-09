@@ -68,7 +68,9 @@ Live at https://int.mah-jong.workers.dev.
 - A game-end screen (final scores after the North round), the book's
   beginner/intermediate/advanced settlement as a setting, a version label
   and a short tester guide.
-- A deal animation and sound.
+- A deal animation. Sound is done (2026-11-09, see `docs/APP.md` "Sound"):
+  tile clacks, hover ticks, a call chime and the hand's rhythm, all synthesised
+  in the page.
 
 ## Known follow-ups
 

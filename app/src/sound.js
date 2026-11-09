@@ -1,0 +1,419 @@
+/**
+ * The table's sound: every effect is synthesised live with Web Audio, so there
+ * are no audio files to ship, cache or license, and the game stays offline.
+ *
+ * The rhythm of a game, in the order you hear it:
+ *
+ *   draw       a soft lift of a tile from the wall (a bot's, or yours settling)
+ *   clack      a plastic tile landing on felt: the click of the tile, a short
+ *              body knock and the dull felt thud under it
+ *   meld       the tiles of a call set down together
+ *   tick       the very quiet click of a hand tile under your pointer / finger
+ *   alert      the bright two-note chime when the game asks you to decide
+ *
+ * Sounds are cued by name (`sound.cue("clack", { delay, pan, far })`) and
+ * scheduled on the audio clock, so a clack lands exactly with the tile it
+ * belongs to. The browser only lets a page play after a user gesture, so the
+ * engine unlocks on the first tap, key or click; cues before that are dropped.
+ *
+ * `createVoices` is separate from the engine so it can be driven with any
+ * `BaseAudioContext`, including an `OfflineAudioContext` that renders a cue to
+ * a buffer.
+ */
+
+const MUTE_KEY = "int-maj.sound";
+const LEAD = 0.004; // seconds between "now" and the earliest sound
+const FLOOR = 0.0001; // exponential ramps cannot reach zero
+
+/** Cues that may not repeat faster than this many milliseconds. */
+const MIN_GAP = { tick: 22, swap: 45, draw: 30, press: 40 };
+
+const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
+
+/* --------------------------------------------------------- building blocks */
+
+const noiseBuffers = new WeakMap();
+
+/** Two seconds of white noise, made once per context. */
+function noiseBuffer(ctx, random) {
+  let buffer = noiseBuffers.get(ctx);
+  if (!buffer) {
+    buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 2), ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let index = 0; index < data.length; index++) data[index] = random() * 2 - 1;
+    noiseBuffers.set(ctx, buffer);
+  }
+  return buffer;
+}
+
+function envelope(param, t, peak, attack, decay) {
+  param.setValueAtTime(FLOOR, t);
+  param.linearRampToValueAtTime(Math.max(peak, FLOOR * 2), t + attack);
+  param.exponentialRampToValueAtTime(FLOOR, t + attack + decay);
+}
+
+export function createVoices(ctx, out, random = Math.random) {
+  /** A short filtered noise burst. */
+  function burst(bus, t, { type = "bandpass", freq, q = 1, gain, attack = 0.001, decay }) {
+    const source = ctx.createBufferSource();
+    source.buffer = noiseBuffer(ctx, random);
+    const filter = ctx.createBiquadFilter();
+    filter.type = type;
+    filter.frequency.value = freq;
+    filter.Q.value = q;
+    const amp = ctx.createGain();
+    envelope(amp.gain, t, gain, attack, decay);
+    source.connect(filter);
+    filter.connect(amp);
+    amp.connect(bus);
+    source.start(t, random() * 1.5);
+    source.stop(t + attack + decay + 0.03);
+  }
+
+  /** A short pitched tone, optionally sweeping down (or up) to `to`. */
+  function tone(bus, t, { freq, to = null, sweep = 0.05, gain, attack = 0.001, decay, type = "sine" }) {
+    if (freq > 14000) return;
+    const osc = ctx.createOscillator();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    if (to !== null) osc.frequency.exponentialRampToValueAtTime(to, t + sweep);
+    const amp = ctx.createGain();
+    envelope(amp.gain, t, gain, attack, decay);
+    osc.connect(amp);
+    amp.connect(bus);
+    osc.start(t);
+    osc.stop(t + attack + decay + 0.03);
+  }
+
+  /**
+   * One sound's own signal path: level, a lowpass that darkens it with
+   * distance (`far`, 0..1) and a pan. Returns the node to connect sources to.
+   */
+  function lane({ pan = 0, far = 0, gain = 1 } = {}) {
+    const input = ctx.createGain();
+    input.gain.value = gain * (1 - 0.25 * far);
+    const dark = ctx.createBiquadFilter();
+    dark.type = "lowpass";
+    dark.frequency.value = 11000 - far * 6000;
+    dark.Q.value = 0.5;
+    input.connect(dark);
+    let tail = dark;
+    if (pan !== 0 && typeof ctx.createStereoPanner === "function") {
+      const panner = ctx.createStereoPanner();
+      panner.pan.value = clamp(pan, -1, 1);
+      dark.connect(panner);
+      tail = panner;
+    }
+    tail.connect(out);
+    return input;
+  }
+
+  /** A struck-bell tone: inharmonic partials that fade faster the higher they are. */
+  function bell(bus, t, freq, { gain = 0.3, decay = 0.5 } = {}) {
+    const partials = [
+      [1, 1, 1],
+      [2.01, 0.28, 0.55],
+      [2.76, 0.22, 0.35],
+      [4.2, 0.08, 0.2],
+      [5.4, 0.05, 0.14],
+    ];
+    for (const [ratio, level, life] of partials) {
+      tone(bus, t, { freq: freq * ratio, gain: gain * level, attack: 0.002, decay: decay * life });
+    }
+  }
+
+  /* ----------------------------------------------------- the tile on felt */
+
+  /**
+   * A plastic tile landing on felt. Three layers: a bright click from the
+   * tile's edge (kept short and a little rounded, as felt takes the sting out),
+   * the knock of the plastic body with two quick overtones, and the dull thud
+   * of the felt and the table under it. Every hit is a little different.
+   */
+  function clack(t, { intensity = 1, pan = 0, far = 0 } = {}) {
+    const v = 0.55 + 0.45 * clamp(intensity, 0, 1.2);
+    const k = 1 + (random() - 0.5) * 0.14;
+    const bus = lane({ pan, far, gain: 0.95 * (0.92 + random() * 0.16) });
+    burst(bus, t, { freq: 3300 * k, q: 0.9, gain: 0.6 * v, attack: 0.0005, decay: 0.012 });
+    burst(bus, t, { type: "highpass", freq: 6500, q: 0.7, gain: 0.07 * v, attack: 0.0004, decay: 0.006 });
+    tone(bus, t, { freq: 640 * k, to: 300 * k, sweep: 0.045, gain: 0.55 * v, decay: 0.075 });
+    tone(bus, t, { freq: 1320 * k, gain: 0.15 * v, decay: 0.035 });
+    tone(bus, t, { freq: 2150 * k, gain: 0.06 * v, decay: 0.02, type: "triangle" });
+    burst(bus, t, { type: "lowpass", freq: 420, q: 0.7, gain: 0.4 * v, attack: 0.001, decay: 0.06 });
+    tone(bus, t, { freq: 125 * k, to: 62, sweep: 0.08, gain: 0.32 * v, decay: 0.09 });
+  }
+
+  /** Tiles set down together: a call's tiles landing a hair apart. */
+  function meld(t, { count = 3, intensity = 0.9, pan = 0, far = 0 } = {}) {
+    for (let index = 0; index < count; index++) {
+      const last = index === count - 1;
+      clack(t + index * 0.021 + random() * 0.008, {
+        intensity: intensity * (last ? 1 : 0.78),
+        pan: pan + (index - (count - 1) / 2) * 0.05,
+        far,
+      });
+    }
+  }
+
+  /** The wall dealt out and washed: a quick rattle of tiles, ending in two firm knocks. */
+  function deal(t) {
+    for (let index = 0; index < 13; index++) {
+      clack(t + index * 0.047 + random() * 0.03, {
+        intensity: 0.1 + random() * 0.25,
+        pan: (random() - 0.5) * 1.4,
+        far: 0.35,
+      });
+    }
+    clack(t + 0.7, { intensity: 0.55, pan: -0.15, far: 0.1 });
+    clack(t + 0.77, { intensity: 0.6, pan: 0.15, far: 0.1 });
+  }
+
+  /** A tile lifted off the wall, or sliding into your rack: a soft, short brush and tap. */
+  function draw(t, { own = false, pan = 0, far = 0 } = {}) {
+    const bus = lane({ pan, far, gain: own ? 0.9 : 0.6 });
+    burst(bus, t, { freq: own ? 2400 : 1900, q: 0.8, gain: 0.3, attack: 0.002, decay: own ? 0.03 : 0.022 });
+    tone(bus, t, { freq: own ? 980 : 760, to: own ? 520 : 420, sweep: 0.03, gain: 0.22, decay: 0.04 });
+    burst(bus, t, { type: "lowpass", freq: 360, gain: 0.25, attack: 0.002, decay: 0.035 });
+  }
+
+  /* ----------------------------------------------------- the hand and buttons */
+
+  /**
+   * The very quiet click of a tile under the pointer. `pitch` (0..1, left to
+   * right along the hand) moves it a little, so sweeping the hand ripples.
+   */
+  function tick(t, { pitch = 0.5, level = 1 } = {}) {
+    const p = clamp(pitch, 0, 1);
+    const bus = lane({ gain: 1.0 * level });
+    burst(bus, t, { freq: 3600 + p * 1600, q: 2.2, gain: 0.4, attack: 0.0003, decay: 0.007 });
+    tone(bus, t, { freq: 2300 + p * 700, to: 1900 + p * 500, sweep: 0.008, gain: 0.06, decay: 0.012 });
+  }
+
+  /** Two tiles trading places: a slightly lower, woodier double click. */
+  function swap(t) {
+    const bus = lane({ gain: 1.0 });
+    burst(bus, t, { freq: 2500, q: 1.6, gain: 0.3, attack: 0.0004, decay: 0.01 });
+    tone(bus, t, { freq: 1500, to: 1100, sweep: 0.012, gain: 0.1, decay: 0.022 });
+    burst(bus, t + 0.026, { freq: 3000, q: 1.6, gain: 0.22, attack: 0.0004, decay: 0.008 });
+  }
+
+  /** A tile leaving your rack as you throw it: a short, low pluck. */
+  function lift(t) {
+    const bus = lane({ gain: 1.0 });
+    burst(bus, t, { freq: 2100, q: 1.2, gain: 0.26, attack: 0.001, decay: 0.014 });
+    tone(bus, t, { freq: 700, to: 380, sweep: 0.025, gain: 0.2, decay: 0.035 });
+  }
+
+  /** A button press: a firm but small tap. */
+  function press(t) {
+    const bus = lane({ gain: 1.0 });
+    burst(bus, t, { freq: 2800, q: 1.4, gain: 0.32, attack: 0.0005, decay: 0.01 });
+    tone(bus, t, { freq: 1100, to: 700, sweep: 0.02, gain: 0.18, decay: 0.04 });
+  }
+
+  /* ----------------------------------------------------- being asked, and results */
+
+  /**
+   * "Be aware": two quick rising bell notes, a fifth apart, bright and clear
+   * so that it carries over the clacking. Every call you can make plays it.
+   */
+  function alert(t) {
+    const bus = lane({ gain: 0.85 });
+    bell(bus, t, 1568, { gain: 0.3, decay: 0.42 });
+    bell(bus, t + 0.095, 2349, { gain: 0.34, decay: 0.55 });
+  }
+
+  /** Mah Jong is on offer: the same chime, climbing one note further with a shimmer. */
+  function alertWin(t) {
+    const bus = lane({ gain: 0.85 });
+    bell(bus, t, 1568, { gain: 0.28, decay: 0.42 });
+    bell(bus, t + 0.085, 2093, { gain: 0.3, decay: 0.5 });
+    bell(bus, t + 0.17, 2637, { gain: 0.34, decay: 0.8 });
+    bell(bus, t + 0.17, 3136, { gain: 0.14, decay: 0.9 });
+  }
+
+  /** An opponent called: a soft, low bell to go with the call-out. */
+  function notice(t, { pan = 0 } = {}) {
+    const bus = lane({ pan, far: 0.2, gain: 0.55 });
+    bell(bus, t, 784, { gain: 0.2, decay: 0.3 });
+    bell(bus, t + 0.07, 1047, { gain: 0.2, decay: 0.38 });
+  }
+
+  /** Someone declared fishing: a quiet rising pair. */
+  function fishing(t, { pan = 0 } = {}) {
+    const bus = lane({ pan, far: 0.15, gain: 0.55 });
+    bell(bus, t, 1175, { gain: 0.2, decay: 0.3 });
+    bell(bus, t + 0.08, 1760, { gain: 0.22, decay: 0.4 });
+  }
+
+  /** You win: the hand is flipped over (a clatter of tiles), then a rising chime. */
+  function win(t) {
+    for (let index = 0; index < 7; index++) {
+      clack(t + index * 0.042 + random() * 0.02, { intensity: 0.5 + random() * 0.3, pan: (random() - 0.5) * 0.8 });
+    }
+    const bus = lane({ gain: 0.9 });
+    const notes = [1047, 1319, 1568, 2093, 2637];
+    notes.forEach((freq, index) => bell(bus, t + 0.32 + index * 0.085, freq, { gain: 0.26, decay: 0.7 + index * 0.1 }));
+    const finish = t + 0.32 + notes.length * 0.085;
+    for (const freq of [1047, 1568, 2093]) bell(bus, finish, freq, { gain: 0.16, decay: 1.6 });
+  }
+
+  /** An opponent wins: the clatter, then two gentle falling notes. */
+  function lose(t) {
+    for (let index = 0; index < 5; index++) {
+      clack(t + index * 0.045 + random() * 0.02, { intensity: 0.4 + random() * 0.25, pan: (random() - 0.5) * 0.8, far: 0.2 });
+    }
+    const bus = lane({ gain: 0.7 });
+    bell(bus, t + 0.28, 988, { gain: 0.2, decay: 0.55 });
+    bell(bus, t + 0.4, 740, { gain: 0.2, decay: 0.75 });
+  }
+
+  /** A drawn hand: two soft falling notes, no clatter. */
+  function drawn(t) {
+    const bus = lane({ gain: 0.6 });
+    bell(bus, t, 880, { gain: 0.2, decay: 0.5 });
+    bell(bus, t + 0.16, 659, { gain: 0.2, decay: 0.8 });
+  }
+
+  return { clack, meld, deal, draw, tick, swap, lift, press, alert, alertWin, notice, fishing, win, lose, drawn };
+}
+
+/* --------------------------------------------------------- the engine */
+
+function browserStorage() {
+  try {
+    return globalThis.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The sound engine: unlocks audio on the first gesture, keeps the on / off
+ * choice, and plays named cues. Everything is injectable for tests.
+ */
+export function createSound({
+  storage = browserStorage,
+  AudioContextClass = globalThis.AudioContext ?? globalThis.webkitAudioContext ?? null,
+  now = () => (globalThis.performance ? globalThis.performance.now() : Date.now()),
+  random = Math.random,
+  doc = globalThis.document ?? null,
+} = {}) {
+  let ctx = null;
+  let voices = null;
+  const lastPlayed = new Map();
+
+  const store = () => (typeof storage === "function" ? storage() : storage);
+
+  let muted = false;
+  try {
+    muted = store()?.getItem(MUTE_KEY) === "off";
+  } catch {
+    // Storage blocked: sound stays on for this visit.
+  }
+
+  function build() {
+    if (ctx !== null || AudioContextClass === null) return;
+    try {
+      ctx = new AudioContextClass({ latencyHint: "interactive" });
+    } catch {
+      ctx = null;
+      return;
+    }
+    const master = ctx.createGain();
+    master.gain.value = 0.9;
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = -14;
+    limiter.knee.value = 20;
+    limiter.ratio.value = 4;
+    limiter.attack.value = 0.003;
+    limiter.release.value = 0.12;
+    master.connect(limiter);
+    limiter.connect(ctx.destination);
+    voices = createVoices(ctx, master, random);
+  }
+
+  /** Called from a user gesture: create / resume the context so sound can play. */
+  function unlock() {
+    if (AudioContextClass === null) return;
+    try {
+      // iOS: play through the media channel, so the silent switch does not mute the game.
+      if (globalThis.navigator?.audioSession) globalThis.navigator.audioSession.type = "playback";
+    } catch {
+      // Not supported: Web Audio still plays with the switch up.
+    }
+    build();
+    if (ctx === null || ctx.state === "running") return;
+    try {
+      void ctx.resume()?.catch?.(() => {});
+      // Older iOS only counts a sound started inside the gesture.
+      const silent = ctx.createBufferSource();
+      silent.buffer = ctx.createBuffer(1, 1, 22050);
+      silent.connect(ctx.destination);
+      silent.start(0);
+    } catch {
+      // Try again on the next gesture.
+    }
+  }
+
+  const engine = {
+    /** Set to an array to record every cue asked for (tests, debugging); a page may predefine `__soundTrace`. */
+    trace: globalThis.__soundTrace ?? null,
+
+    get muted() {
+      return muted;
+    },
+
+    get running() {
+      return ctx !== null && ctx.state === "running";
+    },
+
+    /** Watch the page's gestures so the first tap, click or key unlocks audio. */
+    install(target = globalThis.window) {
+      if (!target?.addEventListener) return;
+      for (const type of ["pointerdown", "touchend", "click", "keydown"]) {
+        target.addEventListener(type, unlock, { capture: true, passive: true });
+      }
+      doc?.addEventListener?.("visibilitychange", () => {
+        if (doc.hidden || ctx === null || ctx.state === "running") return;
+        void ctx.resume()?.catch?.(() => {});
+      });
+    },
+
+    unlock,
+
+    setMuted(value) {
+      muted = Boolean(value);
+      try {
+        store()?.setItem(MUTE_KEY, muted ? "off" : "on");
+      } catch {
+        // Private mode: the choice lasts for this visit.
+      }
+    },
+
+    /**
+     * Play a cue. `delay` (seconds) schedules it ahead on the audio clock, so
+     * it can be asked for when an animation starts and land when it ends.
+     * Returns whether anything was scheduled.
+     */
+    cue(name, options = {}) {
+      if (engine.trace) engine.trace.push({ name, ...options });
+      if (muted || ctx === null || voices === null || ctx.state !== "running") return false;
+      if (doc?.hidden) return false;
+      const voice = voices[name];
+      if (typeof voice !== "function") return false;
+      const gap = MIN_GAP[name];
+      if (gap !== undefined) {
+        const at = now();
+        if (at - (lastPlayed.get(name) ?? -Infinity) < gap) return false;
+        lastPlayed.set(name, at);
+      }
+      voice(ctx.currentTime + LEAD + Math.max(0, options.delay ?? 0), options);
+      return true;
+    },
+  };
+  return engine;
+}
+
+/** The page's one engine. */
+export const sound = createSound();

@@ -9,6 +9,7 @@
 
 import { createLocalApi } from "../engine/table/local.js";
 import { Board } from "./board.js";
+import { sound } from "./sound.js";
 import { ALL_FACES, initTiles, preloadFaces, tileOrder } from "./tiles.js";
 import { mountStage, renderer, requestRender, screenPoint, sleep, updateConsole, viewport } from "./stage.js";
 
@@ -129,10 +130,16 @@ async function apply(next, { animated = true } = {}) {
   const calls = await board.reconcile(next, { animated });
   refreshConsole();
   const announcements = [];
-  for (const call of calls) announcements.push(callOut(call.seat, CALL_WORD[call.kind] ?? call.kind));
+  for (const call of calls) {
+    announcements.push(callOut(call.seat, CALL_WORD[call.kind] ?? call.kind));
+    if (call.seat !== next.seat) sound.cue("notice", board.ear(call.seat));
+  }
   const fishing = new Set(next.view.fishing.map((entry) => entry.seat));
   for (const seat of fishing) {
-    if (!previousFishing.has(seat) && before !== null) announcements.push(callOut(seat, "Fishing"));
+    if (!previousFishing.has(seat) && before !== null) {
+      announcements.push(callOut(seat, "Fishing"));
+      sound.cue("fishing", board.ear(seat));
+    }
   }
   previousFishing = fishing;
   void refreshHints();
@@ -252,13 +259,33 @@ function button(label, kind, onClick, tiles = []) {
   return element;
 }
 
-function showChoices() {
+/** The payload whose prompt has already chimed, so re-showing it stays quiet. */
+let alertedFor = null;
+
+/** Chime once per prompt that offers more than a discard or a pass. */
+function alertFor(legal) {
+  if (alertedFor === payload) return;
+  const canWin = legal.some((a) => a.type === "Win" || (a.type === "Claim" && a.kind === "mahjong"));
+  const canCall = legal.some(
+    (a) =>
+      (a.type === "Claim" && a.kind !== "mahjong" && !callsOff) ||
+      ((a.type === "ConcealedKong" || a.type === "AddedKong") && !callsOff) ||
+      a.type === "DeclareFishing" ||
+      a.type === "GoulashExchange",
+  );
+  if (!canWin && !canCall) return;
+  alertedFor = payload;
+  sound.cue(canWin ? "alertWin" : "alert");
+}
+
+function showChoices({ chime = true } = {}) {
   const legal = payload.legalActions;
   const view = payload.view;
   const bar = $("#actions");
   bar.replaceChildren();
   selected = null;
   void refreshHints(true);
+  if (chime) alertFor(legal);
 
   if (legal.some((action) => action.type === "GoulashExchange")) {
     goulashPicks = [];
@@ -294,7 +321,7 @@ function showChoices() {
     bar.append(
       button("Chow", "claim", () => {
         bar.replaceChildren(
-          button("Back", "pass", () => showChoices()),
+          button("Back", "pass", () => showChoices({ chime: false })),
           ...chows.map((claim) => button("", "claim", () => void act(claim), sortTiles(claim.tiles))),
         );
       }),
@@ -325,6 +352,12 @@ function legalDiscard(key) {
   return payload?.legalActions.find((action) => action.type === "Discard" && action.tile === key) ?? null;
 }
 
+/** The quiet click of a hand tile, pitched by where it sits along the hand. */
+function tickFor(entry) {
+  const at = board.hand.indexOf(entry);
+  sound.cue("tick", { pitch: board.hand.length > 1 ? at / (board.hand.length - 1) : 0.5 });
+}
+
 renderer.domElement.addEventListener("pointerdown", (event) => {
   if (busy || payload === null) return;
   const entry = board.pick(event);
@@ -336,9 +369,11 @@ renderer.domElement.addEventListener("pointerdown", (event) => {
     if (index >= 0) {
       goulashPicks.splice(index, 1);
       void board.lift(entry, false);
+      tickFor(entry);
     } else if (goulashPicks.length < 3) {
       goulashPicks.push(entry);
       void board.lift(entry, true);
+      tickFor(entry);
     }
     const confirm = $("#goulash-confirm");
     if (confirm) confirm.disabled = goulashPicks.length !== 3;
@@ -355,6 +390,7 @@ renderer.domElement.addEventListener("pointerdown", (event) => {
   if (selected === null) {
     selected = entry;
     void board.lift(entry, true);
+    tickFor(entry); // the first tap on a tile: it clicks up
   }
   press = { entry, wasSelected, x: event.clientX, y: event.clientY, dragging: false, id: event.pointerId };
   renderer.domElement.setPointerCapture?.(event.pointerId);
@@ -370,7 +406,10 @@ function hover(event) {
   if (entry === selected) return;
   if (selected !== null) void board.lift(selected, false);
   selected = entry;
-  if (entry !== null) void board.lift(entry, true);
+  if (entry !== null) {
+    void board.lift(entry, true);
+    tickFor(entry);
+  }
 }
 
 renderer.domElement.addEventListener("pointerleave", (event) => {
@@ -416,6 +455,7 @@ function endPress(event, cancelled) {
       return;
     }
     board.noteThrow(entry);
+    sound.cue("lift");
     void act(discard);
     return;
   }
@@ -537,8 +577,10 @@ async function showOutcome() {
   $("#result").dataset.hand = board.handId;
   hideChoices();
   if (outcome.kind === "win" && outcome.winner !== null) {
+    sound.cue(outcome.winner === payload.seat ? "win" : "lose");
     await callOut(outcome.winner, "Mah Jong", 1100);
   } else {
+    sound.cue("drawn");
     await callOut(payload.view.dealer, "Drawn", 900);
   }
   renderOutcome(outcome);
@@ -735,11 +777,36 @@ $("#sort").addEventListener("click", () => {
   else board.setCustom(true);
 });
 
+/* Sound: on by default; the choice is remembered on the device. */
+function showSound() {
+  const button = $("#sound");
+  button.classList.toggle("on", sound.muted);
+  button.setAttribute("aria-pressed", String(!sound.muted));
+  button.firstElementChild.textContent = sound.muted ? "Sound off" : "Sound on";
+}
+showSound();
+
+$("#sound").addEventListener("click", () => {
+  sound.setMuted(!sound.muted);
+  showSound();
+  sound.cue("press"); // heard only when sound has just been turned on
+});
+
 $("#new-game").addEventListener("click", () => void newGame());
 
 /* --------------------------------------------------------- start */
 
 async function boot() {
+  sound.install(window);
+  // Every button taps (the sound toggle makes its own, after it has switched).
+  document.addEventListener(
+    "click",
+    (event) => {
+      const target = event.target instanceof Element ? event.target.closest("button") : null;
+      if (target !== null && target.id !== "sound") sound.cue("press");
+    },
+    true,
+  );
   mountStage(document.body);
   initTiles(renderer, requestRender);
   preloadFaces(ALL_FACES);
@@ -771,6 +838,7 @@ window.mahjong = {
   busy: () => busy,
   act: (action) => act(action),
   next: () => $("#result .result-next")?.click(),
+  sound,
 };
 
 void boot();
