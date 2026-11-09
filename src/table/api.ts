@@ -8,6 +8,7 @@
  *
  *   GET  /api/state?game=     one seat's view, legal actions and wait panel
  *   GET  /api/closest?game=   the catalogue hands your tiles are nearest to
+ *   GET  /api/hand?pattern=   one catalogue hand's conditions (concealed or open)
  *   GET  /api/scenario?state= a fixed review board (turn, claim, win, ...)
  *   POST /api/new             deal a game from `{ seed }`
  *   POST /api/move            apply `{ game, action }`, return events as text
@@ -16,6 +17,7 @@
  *   POST /api/next            deal the next hand after a finished one
  */
 
+import { handDetail } from "../core/game/closest.ts";
 import { describeEventFor } from "../core/game/describe.ts";
 import type { Action } from "../core/game/actions.ts";
 import {
@@ -140,6 +142,14 @@ function routeGet(context: ApiContext, request: ApiRequest): ApiResponse | null 
     const session = store.get(id);
     if (session === undefined) return fail(404, `unknown game: ${id}`);
     return ok(closestPayload(session), request.query.has("pretty"));
+  }
+
+  if (request.path === "/api/hand") {
+    const id = request.query.get("pattern");
+    if (id === null || id.length === 0) return fail(400, "pattern is required");
+    const detail = handDetail(id);
+    if (detail === null) return fail(404, `unknown hand: ${id}`);
+    return ok(detail, request.query.has("pretty"));
   }
 
   return null;

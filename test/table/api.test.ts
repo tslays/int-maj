@@ -144,6 +144,23 @@ describe("table API", () => {
     assert.equal(call<ApiError>("GET", "/api/closest?game=missing").status, 404);
   });
 
+  it("tells a player whether a hand is concealed only, and explains it", () => {
+    const snake = call<Record<string, unknown>>("GET", "/api/hand?pattern=wriggly-snake");
+    assert.equal(snake.status, 200);
+    assert.equal(snake.body.concealedOnly, true);
+    assert.equal(snake.body.exposedTier, null);
+    assert.equal(snake.body.exposedPoints, null);
+    assert.equal(snake.body.concealedPoints, 1000);
+    assert.equal(typeof snake.body.description, "string");
+
+    const open = call<Record<string, unknown>>("GET", "/api/hand?pattern=three-great-scholars");
+    assert.equal(open.body.concealedOnly, false);
+    assert.equal(open.body.exposedPoints, 1000);
+
+    assert.equal(call<ApiError>("GET", "/api/hand").status, 400);
+    assert.equal(call<ApiError>("GET", "/api/hand?pattern=nope").status, 404);
+  });
+
   it("never puts another seat's concealed tiles in a payload", async () => {
     const created = await post<ApiPayload>("/api/new", { seed: "api-hidden" });
     const game = created.body.game;

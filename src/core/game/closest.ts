@@ -30,6 +30,11 @@ export interface ClosestHand {
   readonly points: number | null;
   /** Book pages the hand is printed on. */
   readonly pages: readonly number[];
+  /**
+   * True when the hand exists only concealed: any exposed meld (a called
+   * pung, kong or chow) rules it out. Most special hands are like this.
+   */
+  readonly concealedOnly: boolean;
   /** Tiles still to collect; 0 means the hand in front of you is complete. */
   readonly away: number;
   /** The missing tiles, one key per copy, in canonical order. */
@@ -81,6 +86,7 @@ export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand
         tier,
         points: TIER_POINTS[tier],
         pages: pattern.pages,
+        concealedOnly: pattern.exposedTier === null,
         away: need.length,
         need,
         chance: Math.round(chance * 1000) / 1000,
@@ -92,4 +98,40 @@ export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand
     .sort((a, b) => a.hand.away - b.hand.away || b.rank - a.rank || a.hand.pattern.localeCompare(b.hand.pattern))
     .slice(0, limit)
     .map((entry) => entry.hand);
+}
+
+/** Everything the table can tell a player about one catalogue hand. */
+export interface HandDetail {
+  readonly pattern: string;
+  readonly name: string;
+  readonly pages: readonly number[];
+  /** What the hand is made of, in plain words. */
+  readonly description: string;
+  /** Concealed-only: no exposed meld is allowed at any point. */
+  readonly concealedOnly: boolean;
+  /** Every tile must come from the wall, the winning tile included. */
+  readonly requiresSelfDrawn: boolean;
+  readonly concealedTier: Tier;
+  readonly concealedPoints: number | null;
+  /** Null when the hand does not exist with exposed melds. */
+  readonly exposedTier: Tier | null;
+  readonly exposedPoints: number | null;
+}
+
+/** One hand by id, for the "explore this hand" view; null for an unknown id. */
+export function handDetail(id: string): HandDetail | null {
+  const pattern = PATTERN_BY_ID.get(id);
+  if (pattern === undefined) return null;
+  return {
+    pattern: pattern.id,
+    name: pattern.name,
+    pages: pattern.pages,
+    description: pattern.description,
+    concealedOnly: pattern.exposedTier === null,
+    requiresSelfDrawn: pattern.requiresSelfDrawn,
+    concealedTier: pattern.tier,
+    concealedPoints: TIER_POINTS[pattern.tier],
+    exposedTier: pattern.exposedTier,
+    exposedPoints: pattern.exposedTier === null ? null : TIER_POINTS[pattern.exposedTier],
+  };
 }
