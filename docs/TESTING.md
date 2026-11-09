@@ -16,7 +16,8 @@ The message to paste to the club, then the known limits. It stands alone.
 > hold it and swipe up). Claims, kongs, fishing and Mah Jong appear as buttons.
 > The Hints panel lists the hands you are closest to; tap a row to see that
 > hand. The menu has New game, Calls, Sort, Hints, Sound and Help. The game
-> saves after every move and resumes where you left off.
+> saves after every move and resumes where you left off. On an iPhone the
+> silent switch mutes the game; flip it off (or use the menu's Sound button).
 >
 > **What we would like to hear:** Is it clear what to do and whose turn it is?
 > Do the buttons and the swipe feel right on your phone? Does any score or

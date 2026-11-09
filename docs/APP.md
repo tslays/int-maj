@@ -93,9 +93,14 @@ shut:
 | `press` | any button | small tap |
 
 Browsers play nothing until the page has had a gesture, so cues before your
-first tap or key press are dropped, and iOS is switched to the media channel so
-the silent switch does not mute the game. The menu's Sound button turns all of
-it off (remembered on the device). A hidden page is silent. `test/app/sound.test.ts`
+first tap or key press are dropped. On iOS the page asks for the "ambient"
+audio session (`navigator.audioSession.type`), so the game no longer shows a
+speaker symbol in the Dynamic Island (issue #49); the price is that the phone's
+silent switch mutes the game. After 5 seconds with no cue the audio context is
+suspended (so iOS sees no audio activity) and the next cue resumes it; that cue
+is scheduled at once and starts when the clock runs again. The menu's Sound
+button turns all of it off (remembered on the device), and is the control for
+desktop and Android, which have no silent switch. A hidden page is silent. `test/app/sound.test.ts`
 checks the scheduling with a fake audio context; to hear a cue, render it with an
 `OfflineAudioContext` through `createVoices` (it takes any context).
 
