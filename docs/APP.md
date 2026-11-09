@@ -40,6 +40,9 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
 - `app/src/main.js` runs the turn loop (bots one decision per beat, automatic
   draws and passes), the decision buttons, call-outs and the result card.
 
+- `app/src/sound.js` is the sound, synthesised live with Web Audio: no audio
+  files, so nothing to license, ship or cache. See "Sound" below.
+
 Tap a tile to lift it and tap it again to discard. Tap a second tile while one is lifted and the two swap places; drag a tile along the hand and it trades places with every tile it passes, so you can arrange the hand your own way (it stays arranged for the hand). Claims, kongs, fishing,
 Mah Jong, reshuffle and the Goulash exchange appear as buttons when the engine
 offers them. The table is landscape only.
@@ -49,6 +52,32 @@ hands your tiles are nearest to, with how many tiles each still needs, its
 value and the missing tiles. It is asked for when your own tiles change and at
 each of your decisions, and hides on the result card. The menu's Hints button
 turns it off (remembered on the device).
+
+## Sound
+
+`app/src/sound.js` plays named cues (`sound.cue("clack", { delay, pan, far })`)
+on the audio clock, so `board.js` can ask for a clack when a throw starts and
+have it land with the tile. The table has a rhythm you can follow with your eyes
+shut:
+
+| Cue | When | Character |
+| --- | --- | --- |
+| `draw` | a bot takes from the wall; your drawn tile slides in | soft, low brush and tap (centroid about 330 Hz) |
+| `clack` | a discard lands (yours, then each bot's, panned to its side; the opposite seat is darker and quieter) | the base beat: a weighty plastic tile on smooth felt, a low round thump (centroid about 300 Hz, top end rolled off), nearly the same each time, never sharp; the chimes and ticks are the bright sounds, so the two kinds stay apart |
+| `meld` | a call's tiles drop together; a claimed discard arrives with its own clack | 3-4 clacks a hair apart |
+| `tick` | a hand tile under the mouse, or your first tap on it (pitch follows its place in the hand); `swap` when two tiles trade places | very quiet click |
+| `lift` | the moment you throw a tile | short low pluck, before the clack |
+| `alert` / `alertWin` | the game asks you to decide: chow, pung, kong, fishing, the Goulash exchange / Mah Jong is on offer | bright rising two- or three-note bell |
+| `notice`, `fishing` | an opponent calls / declares fishing | soft bell |
+| `deal`, `win`, `lose`, `drawn` | a new hand; the hand ends | tile rattle; clatter and a rising chime; clatter and falling notes; falling pair |
+| `press` | any button | small tap |
+
+Browsers play nothing until the page has had a gesture, so cues before your
+first tap or key press are dropped, and iOS is switched to the media channel so
+the silent switch does not mute the game. The menu's Sound button turns all of
+it off (remembered on the device). A hidden page is silent. `test/app/sound.test.ts`
+checks the scheduling with a fake audio context; to hear a cue, render it with an
+`OfflineAudioContext` through `createVoices` (it takes any context).
 
 Two URL options help when testing:
 
