@@ -50,6 +50,12 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   the shrinking wall.
 - `app/src/main.js` runs the turn loop (bots one decision per beat, automatic
   draws and passes), the decision buttons, call-outs and the result card.
+- `app/src/standings.js` ranks the seats by total score for the final standings
+  shown after the last hand's result card (its button reads "Final standings",
+  the standings carry "New game"). Seats with equal totals share a rank and a
+  tie for first names every tied seat a winner: the book says only that the
+  highest score wins the game (Illustrated p. 16) and gives no tie-break. The
+  open standings are kept in storage, so a reload resumes them.
 - `app/src/settlement.js` words the result card's account of the points from
   the ledger (every entry is tagged with its kind in `src/core/game/state.ts`).
   The card shows only the result: each seat's change in green or red and its
