@@ -8,13 +8,18 @@ tiles, characters or sounds.
 **First milestone:** an alpha the owner's mahjong group can test - each tester
 on their own phone (an iPhone is the reference), alone against three bots,
 offline, no house rules, no accounts or multiplayer (agreed 2026-11-07).
+That is **alpha-1 (`v0.1.0-alpha.1`)**; its scope, order and tracking are in
+`docs/ALPHA-1.md`, and progress is the GitHub milestone of the same name. The
+"Alpha 2" to "Alpha 4" headings below are older groupings: what they hold is
+sorted into alpha-1 or after it by that document.
 
 Every piece of work is judged by one question: does it bring that test
 closer? Visual polish waits until a tester asks for something specific.
 
 ## Done
 
-**Alpha 1 - plays offline on any phone (2026-11-07).** The engine, bots and
+**Prototype - plays offline on any phone (2026-11-07).** (Once called "Alpha 1";
+that name now belongs to the tester release.) The engine, bots and
 table service run in the browser from a static build; the game saves after
 every move with a checkpoint per hand; the app installs from Safari and plays
 in airplane mode; scores come from the engine. On the way the Wind of the

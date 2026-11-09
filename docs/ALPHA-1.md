@@ -61,6 +61,9 @@ To see status: open the milestone, or ask a session "status of milestone
 Size is relative cost: **S** a short session, **M** a normal one. Nothing is
 larger; if a chunk grows past M, split it before starting.
 
+Chunk numbers below map to GitHub issues (milestone `v0.1.0-alpha.1`):
+#1 = issue 38, #2 = 39, #3 = 40, #4 = 41, #5 = 42, #6 = 43, #7 = 44, #8 = 45.
+
 ### Must (alpha-1 does not ship without these)
 
 | # | Chunk | Size | Notes |
