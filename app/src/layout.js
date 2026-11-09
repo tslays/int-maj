@@ -233,16 +233,21 @@ export function breakFor(key) {
  * (0 near, 1 right, 2 far, 3 left); `count` the dice total, which is the
  * number of the stack lifted, counted from the wall's right-hand end (slot 0).
  *
- * - `lifted`: the break stack ("10" in the book's detail), taken off the wall.
- * - `ordinary`: the tiles drawn from the open end, the left of the break
- *   ("from the left side of the opening"): the stack just left of the break,
- *   its top tile first and then the one beneath it (p. 19, "the next tile
- *   from the top row"), then the next stack to the left, on round the corner
- *   into the wall at the builder's left, until the stacks right of the break.
- * - `block`: the replacement block, the broken wall's stacks to the right of
- *   the break, in the order they are used: from the far end (the corner,
- *   slot 0) towards the break. It never moves; tiles only leave it.
+ * The wall is a closed ring of 72 stacks. `tiles` is that ring with the
+ * break stack lifted out, read from the open end: the stack just left of the
+ * break first (its top tile, then the one beneath, p. 19 "the next tile from
+ * the top row"), then on to the left, round the corner into the wall at the
+ * builder's left, and so on right round to the stack just right of the break,
+ * the last of the list. Both ends of the list are used and nothing moves:
  *
+ * - ordinary draws leave the HEAD of the list (the open end, "from the left
+ *   side of the opening");
+ * - replacements leave the TAIL: the dead wall's column that touches the
+ *   break, then the next away from it, along the wall, round the corner and
+ *   on (owner's reading of "the end of the wall to the right of the break",
+ *   issue #60).
+ *
+ * `lifted` is the break stack ("10" in the book's detail), taken off the wall.
  * Entries are { rel, slot, level }; level 1 is a stack's top tile.
  */
 export function wallPlan(builderRel, count) {
@@ -253,61 +258,49 @@ export function wallPlan(builderRel, count) {
     const rel = (builderRel + 3 * step) % 4;
     for (let slot = 0; slot < TABLE.WALL_STACKS; slot++) ring.push({ rel, slot });
   }
-  const tilesOf = (stacks) => stacks.flatMap(({ rel, slot }) => [{ rel, slot, level: 1 }, { rel, slot, level: 0 }]);
+  const stacks = [...ring.slice(at), ...ring.slice(0, at - 1)];
   return {
     count: at,
     rel: builderRel,
     lifted: ring[at - 1],
-    ordinary: tilesOf(ring.slice(at)),
-    block: tilesOf(ring.slice(0, at - 1)),
+    tiles: stacks.flatMap(({ rel, slot }) => [{ rel, slot, level: 1 }, { rel, slot, level: 0 }]),
   };
 }
 
 /**
  * What the wall shows at one moment, from the engine's counts: `front` tiles
  * drawn from the open end, `used` loose tiles consumed by replacements, and
- * `held` loose tiles currently lying on top of the block (two, as the book
+ * `held` loose tiles currently lying on top of the dead wall (two, as the book
  * has it: "as the two loose tiles are used they are replaced", p. 62).
  *
- * Ordinary draws leave the front of `plan.ordinary` and, once that is gone,
- * carry on into the block. Replacements take two more from the block's far
- * end for each two used; if they ever outrun the block (many kongs and
- * flowers) they go on past the wall's corner, at the far end of the ordinary
- * run, so no tile is ever left over. Nothing else moves: the answer is only
- * how many tiles are gone from each list, and where the held loose tiles lie.
+ * Ordinary draws take the head of `plan.tiles`; replacements, and the pair
+ * that refills the loose tiles for each two used, take whole columns off its
+ * tail. The two meet in the end, so every tile is used. Nothing else moves.
  *
- * The marker (owner's ruling on presentation, issue #56; the book's detail
- * diagram, I p. 19, shows the 2nd and 7th stacks instead, with the same
- * tiles, count and order): both loose tiles lie on the END column, the first
- * stack still standing in the order the replacements take them. With `used`
- * replacements the end column is `floor(used / 2)` columns in and carries
- * 2 - (used mod 2) loose tiles: 4 high, then 3 high, then the plain two-tile
- * column is lifted onto its neighbour, which is 4 high, and so on. Only that
- * one column is ever 3 or 4 high.
+ * The marker (owner's rulings on presentation, issues #56 and #60; the book's
+ * detail diagram, I p. 19, shows the 2nd and 7th stacks instead, with the same
+ * tiles, count and order): both loose tiles lie on the dead wall's end column,
+ * the one touching the break. With `used` replacements it is `floor(used / 2)`
+ * columns away from the break (round the corner onto the next wall when the
+ * break is near it) and carries 2 - (used mod 2) loose tiles: 4 high, then 3
+ * high, then the plain two-tile column is lifted onto its neighbour, which is
+ * 4 high, and so on. Only that one column is ever 3 or 4 high.
  *
- * Returns { goneOrdinary, goneTail, goneBlock, markers: [{ which, rel, slot, level }] }:
- * `goneOrdinary` tiles gone from the head of `plan.ordinary`, `goneTail` from
- * its end, `goneBlock` from the head of `plan.block`.
+ * Returns { goneHead, goneTail, markers: [{ which, rel, slot, level }] }:
+ * tiles gone from the head and from the tail of `plan.tiles`.
  */
 export function wallLook(plan, front, used, held) {
-  const overflow = Math.max(0, front - plan.ordinary.length);
-  const goneOrdinary = Math.min(front, plan.ordinary.length);
-  const taken = Math.max(0, used + held - 2);
-  const goneBlock = Math.min(plan.block.length, taken + overflow);
-  const goneTail = Math.max(0, taken + overflow - plan.block.length);
-  const leftBlock = plan.block.slice(goneBlock);
-  const leftOrdinary = plan.ordinary.slice(goneOrdinary, plan.ordinary.length - goneTail);
-  // The end column: the block's far stack, or, once the block is used up, the
-  // stack past the corner where the replacements go on; the nearest block
-  // stack when nothing at all is left to lie on.
-  const end =
-    leftBlock[0] ??
-    leftOrdinary.at(-1) ??
-    (plan.block.length > 0 ? plan.block.at(-1) : { rel: plan.rel, slot: plan.count - 2 });
-  const standing = [...leftBlock, ...leftOrdinary].filter((tile) => tile.rel === end.rel && tile.slot === end.slot).length;
+  const total = plan.tiles.length;
+  const goneHead = Math.max(0, Math.min(front, total));
+  const goneTail = Math.max(0, Math.min(used + held - 2, total - goneHead));
+  const standing = plan.tiles.slice(goneHead, total - goneTail);
+  // The end column: the stack of the last tile still standing at the tail;
+  // with nothing left, where the last column was, so the loose tiles still lie.
+  const end = standing.at(-1) ?? plan.tiles.at(-1);
+  const base = standing.filter((tile) => tile.rel === end.rel && tile.slot === end.slot).length;
   const wanted = [];
   if (held >= 2) wanted.push("far");
   if (held >= 1) wanted.push("near");
-  const markers = wanted.map((which, index) => ({ which, rel: end.rel, slot: end.slot, level: standing + index }));
-  return { goneOrdinary, goneTail, goneBlock, markers };
+  const markers = wanted.map((which, index) => ({ which, rel: end.rel, slot: end.slot, level: base + index }));
+  return { goneHead, goneTail, markers };
 }

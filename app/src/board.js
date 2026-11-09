@@ -126,8 +126,8 @@ export class Board {
   /**
    * 72 stacks of two, four walls of 18, broken where the book's dice put the
    * break (see `breakFor`, `wallPlan`). The break stack is lifted off; its two
-   * tiles are the loose tiles, which lie on top of the block to the right of
-   * the break (two more meshes, `markers`). Nothing on the wall ever moves.
+   * tiles are the loose tiles, which lie on the dead wall's end column, the one
+   * touching the break (two more meshes, `markers`). Nothing on the wall ever moves.
    */
   buildWall(key, dealer = "E") {
     const tiles = new Map();
@@ -153,12 +153,10 @@ export class Board {
     for (const level of [0, 1]) at({ ...plan.lifted, level }).visible = false; // the break stack is lifted off
     this.wall = {
       plan,
-      ordinary: plan.ordinary.map(at),
-      block: plan.block.map(at),
+      tiles: plan.tiles.map(at),
       markers,
-      goneOrdinary: 0,
+      goneHead: 0,
       goneTail: 0,
-      goneBlock: 0,
       held: 0,
       used: 0,
       extent: [WALL_STACKS, WALL_STACKS, WALL_STACKS, WALL_STACKS],
@@ -176,10 +174,7 @@ export class Board {
     const look = wallLook(wall.plan, front, used, held);
     const work = [];
     const changed =
-      look.goneOrdinary - wall.goneOrdinary +
-      (look.goneTail - wall.goneTail) +
-      (look.goneBlock - wall.goneBlock) +
-      Math.abs(held - wall.held);
+      look.goneHead - wall.goneHead + (look.goneTail - wall.goneTail) + Math.abs(held - wall.held);
     const lift = (tile) => {
       const restY = tile.position.y;
       work.push(
@@ -197,8 +192,7 @@ export class Board {
         else tile.visible = visible;
       });
     };
-    apply(wall.ordinary, look.goneOrdinary, look.goneTail);
-    apply(wall.block, look.goneBlock, 0);
+    apply(wall.tiles, look.goneHead, look.goneTail);
     // Loose tiles: new ones are set down on top; one used lifts away.
     const arrived = held - (wall.held - (used - wall.used));
     for (const which of ["far", "near"]) {
@@ -227,15 +221,14 @@ export class Board {
         work.push(tween(tile.position, { y: restY }, 220, easeOutCubic));
       }
     }
-    Object.assign(wall, { goneOrdinary: look.goneOrdinary, goneTail: look.goneTail, goneBlock: look.goneBlock, held, used });
+    Object.assign(wall, { goneHead: look.goneHead, goneTail: look.goneTail, held, used });
     // The lane for melds is whatever is free at a wall's left end: one more
     // than the highest slot with anything standing on it.
     const extent = [0, 0, 0, 0];
     const note = (rel, slot) => {
       extent[rel] = Math.max(extent[rel], slot + 1);
     };
-    wall.plan.ordinary.slice(look.goneOrdinary, wall.plan.ordinary.length - look.goneTail).forEach((entry) => note(entry.rel, entry.slot));
-    wall.plan.block.slice(look.goneBlock).forEach((entry) => note(entry.rel, entry.slot));
+    wall.plan.tiles.slice(look.goneHead, wall.plan.tiles.length - look.goneTail).forEach((entry) => note(entry.rel, entry.slot));
     for (const place of look.markers) note(place.rel, place.slot);
     wall.extent = extent;
     return work;
@@ -270,8 +263,8 @@ export class Board {
     }
 
     // The wall first: where it stands decides how much lane the melds have.
-    // Ordinary draws leave the open end; replacements leave the far end of
-    // the block. `used` is what the loose end has given up (a Chinese set
+    // Ordinary draws leave the open end; replacements leave the dead wall's
+    // end column, the one touching the break, and go on away from it. `used` is what the loose end has given up (a Chinese set
     // also lacks its eight bonus tiles, and keeps a dead wall instead).
     const w = payload.wall;
     const used = Math.max(0, w.size - w.front - (w.remaining + w.loose + w.dead)) + (144 - w.size);
