@@ -832,8 +832,12 @@ function renderOutcome(outcome) {
   for (const entry of payload.table) {
     const seatBox = document.createElement("div");
     seatBox.className = "result-seat";
-    const row = document.createElement("div");
+    // By default only the result: the change in green or red, and the total.
+    // Tapping a seat opens its payments, each with the reason for it.
+    const row = document.createElement("button");
+    row.type = "button";
     row.className = "result-row";
+    row.setAttribute("aria-expanded", "false");
     const delta = outcome.totals[entry.seat] ?? 0;
     const name = document.createElement("span");
     name.textContent = `${WIND_NAME[entry.wind]}${entry.seat === payload.seat ? " (you)" : ""}`;
@@ -845,42 +849,33 @@ function renderOutcome(outcome) {
     total.textContent = totals[entry.seat].toLocaleString("en");
     row.append(name, change, total);
     if (outcome.winner === entry.seat) row.classList.add("is-winner");
-    seatBox.append(row);
 
-    // The payments sit side by side, so the card stays short enough to read
-    // without scrolling. Tapping one opens its reason under the seat.
     const why = document.createElement("ul");
     why.className = "result-why";
-    const detail = document.createElement("p");
-    detail.className = "why-reason";
-    detail.hidden = true;
+    why.hidden = true;
     for (const line of account[entry.seat]) {
       const item = document.createElement("li");
+      item.className = `why-${line.dir}`;
+      const text = document.createElement("span");
+      text.className = "why-text";
+      text.textContent = line.text;
+      item.append(text);
       if (line.why) {
-        const toggle = document.createElement("button");
-        toggle.type = "button";
-        toggle.className = `why-chip why-${line.dir}`;
-        toggle.setAttribute("aria-expanded", "false");
-        toggle.textContent = line.text;
-        toggle.setAttribute("aria-label", line.full);
-        toggle.title = line.full;
-        toggle.addEventListener("click", () => {
-          const open = toggle.getAttribute("aria-expanded") === "true";
-          for (const other of why.querySelectorAll(".why-chip")) other.setAttribute("aria-expanded", "false");
-          detail.hidden = open;
-          if (!open) {
-            detail.textContent = line.why;
-            toggle.setAttribute("aria-expanded", "true");
-          }
-        });
-        item.append(toggle);
-      } else {
-        item.className = `why-chip why-${line.dir}`;
-        item.textContent = line.text;
+        const reason = document.createElement("span");
+        reason.className = "why-reason";
+        reason.textContent = line.why;
+        item.append(reason);
       }
       why.append(item);
     }
-    seatBox.append(why, detail);
+    row.addEventListener("click", () => {
+      const open = why.hidden;
+      for (const other of table.querySelectorAll(".result-row")) other.setAttribute("aria-expanded", "false");
+      for (const other of table.querySelectorAll(".result-why")) other.hidden = true;
+      why.hidden = !open;
+      row.setAttribute("aria-expanded", String(open));
+    });
+    seatBox.append(row, why);
     table.append(seatBox);
   }
   side.append(table);
