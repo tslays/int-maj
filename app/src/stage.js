@@ -166,59 +166,206 @@ function buildConsole() {
 }
 
 const WIND_WORD = { E: "EAST", S: "SOUTH", W: "WEST", N: "NORTH" };
+const CONSOLE_SIZE = 512;
+
+/* The console is painted in three layers so the turn light can move under the
+   lettering: the panel, the light, then the wind, score and wall count. */
+function layerCanvas() {
+  const canvas = document.createElement("canvas");
+  canvas.width = CONSOLE_SIZE;
+  canvas.height = CONSOLE_SIZE;
+  return canvas;
+}
+const panelLayer = layerCanvas();
+const textLayer = layerCanvas();
+
+const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)") ?? { matches: false };
+
+/**
+ * The turn light. `theta` is where it sits, in seats counted from you (a whole
+ * number is a seat's edge; between two is the light on its way round a corner),
+ * and `level` how bright it is. Several lights exist only while one fades out
+ * under reduced motion, which cross-fades instead of travelling.
+ */
+let lights = [];
+let lightTurn = null; // rel of the seat whose turn it is, or null
+let lightToken = 0;
+const TRAVEL_MS = 260;
+const FADE_MS = 220;
+const PULSE_MS = 4800;
+
+const wrapTurns = (value) => ((value % 4) + 4) % 4;
+/** The shortest signed way round the four edges from `a` to `b`. */
+const turnsBetween = (a, b) => {
+  const d = wrapTurns(b - a);
+  return d > 2 ? d - 4 : d;
+};
+
+/** A soft, wide glow lying along the bottom edge of the current frame, `offset` along it. */
+function paintGlow(context, offset, alpha) {
+  const size = CONSOLE_SIZE;
+  context.save();
+  context.translate(offset, size / 2 - 26);
+  context.scale(1, 0.3);
+  const radius = 260;
+  const glow = context.createRadialGradient(0, 0, 0, 0, 0, radius);
+  // Eased stops, so there is no visible edge anywhere on the light.
+  glow.addColorStop(0, `rgba(98, 242, 234, ${alpha})`);
+  glow.addColorStop(0.3, `rgba(98, 242, 234, ${alpha * 0.62})`);
+  glow.addColorStop(0.62, `rgba(98, 242, 234, ${alpha * 0.2})`);
+  glow.addColorStop(1, "rgba(98, 242, 234, 0)");
+  context.fillStyle = glow;
+  context.fillRect(-radius, -radius, radius * 2, radius * 2);
+  context.restore();
+}
+
+function paintConsole(now = performance.now()) {
+  const context = consoleCanvas.getContext("2d");
+  context.clearRect(0, 0, CONSOLE_SIZE, CONSOLE_SIZE);
+  context.drawImage(panelLayer, 0, 0);
+  // Very slow breathing: between 0.78 and 1 of the light's strength.
+  const breath = reducedMotion.matches ? 1 : 0.89 + 0.11 * Math.cos((now / PULSE_MS) * Math.PI * 2);
+  const reach = CONSOLE_SIZE / 2 - 70;
+  context.save();
+  context.beginPath();
+  context.roundRect(16, 16, CONSOLE_SIZE - 32, CONSOLE_SIZE - 32, 34);
+  context.clip();
+  for (const light of lights) {
+    for (let edge = 0; edge < 4; edge++) {
+      const away = turnsBetween(edge, light.theta);
+      if (Math.abs(away) >= 1) continue;
+      const near = 1 - Math.abs(away);
+      context.save();
+      context.translate(CONSOLE_SIZE / 2, CONSOLE_SIZE / 2);
+      context.rotate((-edge * Math.PI) / 2);
+      // Leaving an edge it slides on towards the corner; it enters the next from the corner.
+      paintGlow(context, away * reach, 0.85 * light.level * breath * near * near * (3 - 2 * near));
+      context.restore();
+    }
+  }
+  context.restore();
+  context.drawImage(textLayer, 0, 0);
+  consoleTexture.needsUpdate = true;
+}
+
+/** Move the light to the seat whose turn it is (`null`: nobody's). */
+function moveLight(rel) {
+  if (rel === lightTurn) return;
+  lightTurn = rel;
+  const token = ++lightToken;
+  const live = lights[lights.length - 1] ?? null;
+  const set = () => {
+    paintConsole();
+    requestRender();
+  };
+  if (rel === null) {
+    const from = lights.map((light) => light.level);
+    animate(FADE_MS, (t) => {
+      if (token !== lightToken) return false;
+      lights.forEach((light, i) => (light.level = from[i] * (1 - t)));
+      if (t >= 1) lights = [];
+      set();
+    });
+    return;
+  }
+  if (live === null || live.level < 0.05) {
+    lights = [{ theta: rel, level: live?.level ?? 0 }];
+    const start = lights[0].level;
+    animate(FADE_MS, (t) => {
+      if (token !== lightToken) return false;
+      lights[0].level = start + (1 - start) * t;
+      set();
+    });
+    return;
+  }
+  if (reducedMotion.matches) {
+    // A plain fade: the old edge dims while the new one comes up.
+    const arriving = { theta: rel, level: 0 };
+    const leaving = lights.map((light) => ({ ...light, from: light.level }));
+    lights = [...leaving, arriving];
+    animate(FADE_MS, (t) => {
+      if (token !== lightToken) return false;
+      for (const light of leaving) light.level = light.from * (1 - t);
+      arriving.level = t;
+      if (t >= 1) lights = [arriving];
+      set();
+    });
+    return;
+  }
+  // Slide the light round the corner: the shortest way, a quick ease.
+  const from = live.theta;
+  const by = turnsBetween(from, rel);
+  const start = live.level;
+  lights = [live];
+  animate(TRAVEL_MS, (t) => {
+    if (token !== lightToken) return false;
+    const k = easeInOutCubic(t);
+    live.theta = wrapTurns(from + by * k);
+    live.level = start + (1 - start) * k;
+    set();
+  });
+}
+
+/** True while the light is lit and still, so the slow breathing needs frames. */
+const breathing = () => lightTurn !== null && !reducedMotion.matches;
+// The breath is slow, so a modest rate is smooth and spares the battery.
+setInterval(() => {
+  if (!breathing() || document.hidden) return;
+  paintConsole();
+  requestRender();
+}, 60);
 
 /**
  * Redraw the console: the round, the wall count, and each seat's wind and
  * score along its own edge, reading the right way up for that seat. The seat
- * whose turn it is glows along its edge.
+ * whose turn it is glows along its edge, softly, breathing slowly; when the
+ * turn passes, the light travels to the next seat.
  *
  * `info.seats` is [{ rel, wind, score, dealer, turn }] with rel 0 = you.
  */
 export function updateConsole(info) {
-  const key = JSON.stringify(info);
-  if (key === consoleKey) return;
-  consoleKey = key;
-  const size = 512;
-  const context = consoleCanvas.getContext("2d");
-  context.clearRect(0, 0, size, size);
-  context.fillStyle = "#1b2326";
-  context.beginPath();
-  context.roundRect(0, 0, size, size, 46);
-  context.fill();
-  context.strokeStyle = "rgba(120, 140, 150, 0.5)";
-  context.lineWidth = 4;
-  context.beginPath();
-  context.roundRect(14, 14, size - 28, size - 28, 36);
-  context.stroke();
+  const turnSeat = info.seats.find((seat) => seat.turn);
+  const key = JSON.stringify({ ...info, seats: info.seats.map(({ turn, ...rest }) => rest) });
+  if (key !== consoleKey) {
+    consoleKey = key;
+    const size = CONSOLE_SIZE;
+    const under = panelLayer.getContext("2d");
+    under.clearRect(0, 0, size, size);
+    under.fillStyle = "#1b2326";
+    under.beginPath();
+    under.roundRect(0, 0, size, size, 46);
+    under.fill();
+    under.strokeStyle = "rgba(120, 140, 150, 0.5)";
+    under.lineWidth = 4;
+    under.beginPath();
+    under.roundRect(14, 14, size - 28, size - 28, 36);
+    under.stroke();
 
-  context.textAlign = "center";
-  context.fillStyle = "#e8e2cf";
-  context.font = `600 38px -apple-system, "Helvetica Neue", Arial, sans-serif`;
-  context.fillText(`${WIND_WORD[info.round]} ${info.hand}`, size / 2, size / 2 - 30);
-  context.fillStyle = "#62f2ea";
-  context.font = `700 104px -apple-system, "Helvetica Neue", Arial, sans-serif`;
-  context.fillText(String(info.wall), size / 2, size / 2 + 70);
+    const context = textLayer.getContext("2d");
+    context.clearRect(0, 0, size, size);
+    context.textAlign = "center";
+    context.fillStyle = "#e8e2cf";
+    context.font = `600 38px -apple-system, "Helvetica Neue", Arial, sans-serif`;
+    context.fillText(`${WIND_WORD[info.round]} ${info.hand}`, size / 2, size / 2 - 30);
+    context.fillStyle = "#62f2ea";
+    context.font = `700 104px -apple-system, "Helvetica Neue", Arial, sans-serif`;
+    context.fillText(String(info.wall), size / 2, size / 2 + 70);
 
-  for (const seat of info.seats) {
-    context.save();
-    context.translate(size / 2, size / 2);
-    context.rotate((-seat.rel * Math.PI) / 2);
-    if (seat.turn) {
-      const glow = context.createLinearGradient(0, size / 2 - 70, 0, size / 2 - 8);
-      glow.addColorStop(0, "rgba(98, 242, 234, 0)");
-      glow.addColorStop(1, "rgba(98, 242, 234, 0.55)");
-      context.fillStyle = glow;
-      context.fillRect(-size / 2 + 60, size / 2 - 70, size - 120, 56);
+    for (const seat of info.seats) {
+      context.save();
+      context.translate(size / 2, size / 2);
+      context.rotate((-seat.rel * Math.PI) / 2);
+      context.fillStyle = seat.dealer ? "#ff6b5e" : "#cfd6d8";
+      context.font = `700 64px -apple-system, "Helvetica Neue", Arial, sans-serif`;
+      context.fillText(seat.wind, -92, size / 2 - 34);
+      context.fillStyle = "#f2d36b";
+      context.font = `600 52px -apple-system, "Helvetica Neue", Arial, sans-serif`;
+      context.fillText(seat.score.toLocaleString("en"), 46, size / 2 - 36);
+      context.restore();
     }
-    context.fillStyle = seat.dealer ? "#ff6b5e" : "#cfd6d8";
-    context.font = `700 64px -apple-system, "Helvetica Neue", Arial, sans-serif`;
-    context.fillText(seat.wind, -92, size / 2 - 34);
-    context.fillStyle = "#f2d36b";
-    context.font = `600 52px -apple-system, "Helvetica Neue", Arial, sans-serif`;
-    context.fillText(seat.score.toLocaleString("en"), 46, size / 2 - 36);
-    context.restore();
   }
-  consoleTexture.needsUpdate = true;
+  paintConsole();
+  moveLight(turnSeat ? turnSeat.rel : null);
   requestRender();
 }
 

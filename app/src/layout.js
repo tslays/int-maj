@@ -58,6 +58,42 @@ export function discardSlot(index) {
   };
 }
 
+/**
+ * The pad under a seat's first three discard rows (the six-wide block that
+ * stands against the console). It tints the pond, so each seat's discards read
+ * as that seat's; the fourth row runs on beyond it. Inset a hair so the four
+ * pads, which meet at the corners, never touch. { x, z, width, depth } in the
+ * seat's frame, the centre and the size.
+ */
+export const POND_INSET = 0.12;
+export function pondPad() {
+  return {
+    x: 0,
+    z: TABLE.DISCARD_Z + (STEP_Z * FULL_ROWS) / 2,
+    width: ROW * STEP_X - POND_INSET * 2,
+    depth: FULL_ROWS * STEP_Z - POND_INSET * 2,
+  };
+}
+
+/** The plate under the latest discard: its tile's footprint and a margin all round. */
+export const LATEST_MARGIN = 0.12;
+export function latestPlate(index) {
+  const slot = discardSlot(index);
+  return {
+    x: slot.x,
+    z: slot.z,
+    width: W * DISCARD_SCALE + LATEST_MARGIN * 2,
+    depth: H * DISCARD_SCALE + LATEST_MARGIN * 2,
+  };
+}
+
+/** The table-space rectangle of a pad or plate `{ x, z, width, depth }` in seat `rel`'s frame. */
+export function frameRect(rel, box) {
+  const centre = toTable(rel, box.x, box.z);
+  const [halfX, halfZ] = rel % 2 === 0 ? [box.width / 2, box.depth / 2] : [box.depth / 2, box.width / 2];
+  return { minX: centre.x - halfX, maxX: centre.x + halfX, minZ: centre.z - halfZ, maxZ: centre.z + halfZ };
+}
+
 /** A seat-frame point turned into table coordinates for seat `rel`. */
 export function toTable(rel, x, z) {
   const angle = (rel * Math.PI) / 2;

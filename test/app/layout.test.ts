@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 // @ts-expect-error - a plain browser module without type declarations
-import { breakFor, wallDrawOrder, discardRect, discardSlot, handRects, meldLayout, meldRects, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
+import { breakFor, wallDrawOrder, discardRect, discardSlot, frameRect, handRects, latestPlate, pondPad, meldLayout, meldRects, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
 
 interface Rect {
   readonly minX: number;
@@ -157,6 +157,39 @@ describe("3D table discard layout", () => {
     const next = meldLayout([4, 3], 12, 7, { kongs: [0] }).tiles;
     const afterPung = meldLayout([3, 3], 12, 7).tiles;
     assert.equal(next[4]!.x, afterPung[3]!.x, "the next meld follows as after a pung");
+  });
+
+  it("keeps the pond pads apart, inside the walls and under the first three rows' tiles only", () => {
+    const pads = [0, 1, 2, 3].map((rel) => ({ rel, rect: frameRect(rel, pondPad()) }));
+    for (const pad of pads) {
+      assert.ok(Math.max(Math.abs(pad.rect.minX), Math.abs(pad.rect.maxX), Math.abs(pad.rect.minZ), Math.abs(pad.rect.maxZ)) <= WALL_INNER, `pad ${pad.rel} reaches a wall`);
+      for (const other of pads) if (other.rel > pad.rel) assert.equal(overlaps(pad.rect, other.rect), false, `pads ${pad.rel} and ${other.rel} touch`);
+      for (let index = 0; index < 18; index++) {
+        const tile = discardRect(pad.rel, index);
+        assert.ok(tile.minX >= pad.rect.minX - 0.2 && tile.maxX <= pad.rect.maxX + 0.2 && tile.minZ >= pad.rect.minZ - 0.2 && tile.maxZ <= pad.rect.maxZ + 0.2, `discard ${index + 1} of seat ${pad.rel} stands on its pad`);
+      }
+    }
+  });
+
+  it("lays the latest-discard plate round its tile, away from every other pond", () => {
+    for (let rel = 0; rel < 4; rel++) {
+      for (let index = 0; index < MOST; index++) {
+        const plate = frameRect(rel, latestPlate(index));
+        const tile = discardRect(rel, index);
+        assert.ok(plate.minX < tile.minX && plate.maxX > tile.maxX && plate.minZ < tile.minZ && plate.maxZ > tile.maxZ, "the plate frames its tile");
+        const edge = Math.max(Math.abs(plate.minX), Math.abs(plate.maxX), Math.abs(plate.minZ), Math.abs(plate.maxZ));
+        assert.ok(edge <= WALL_INNER + 0.2, `plate ${index + 1} of seat ${rel} stays on the felt inside the walls`);
+        const consoleSquare = { minX: -TABLE.CENTER_HALF, maxX: TABLE.CENTER_HALF, minZ: -TABLE.CENTER_HALF, maxZ: TABLE.CENTER_HALF };
+        assert.equal(overlaps(plate, consoleSquare), false, `plate ${index + 1} of seat ${rel} lies on the console`);
+        for (const other of all) {
+          if (other.rel === rel && other.index === index) continue;
+          if (other.rel === rel) continue;
+          // At a corner the margin may slide under a neighbour's tile (flat on the felt, hidden), no further.
+          const core = { minX: other.rect.minX + 0.13, maxX: other.rect.maxX - 0.13, minZ: other.rect.minZ + 0.13, maxZ: other.rect.maxZ - 0.13 };
+          assert.equal(overlaps(plate, core), false, `plate ${index + 1} of seat ${rel} reaches seat ${other.rel}'s discard ${other.index + 1}`);
+        }
+      }
+    }
   });
 });
 
