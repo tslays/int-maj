@@ -211,7 +211,11 @@ export class Board {
         }
         continue;
       }
-      const wasHere = tile.visible && tile.userData.slot === place.slot && tile.userData.level === place.level;
+      const wasHere =
+        tile.visible && tile.userData.rel === place.rel && tile.userData.slot === place.slot && tile.userData.level === place.level;
+      // Past the wall's corner the end column is on the neighbouring wall.
+      if (tile.parent !== this.frames[place.rel]) this.frames[place.rel].add(tile);
+      tile.userData.rel = place.rel;
       tile.position.set(wallSlotX(place.slot), D / 2 + place.level * D, WALL_R);
       tile.userData.slot = place.slot;
       tile.userData.level = place.level;

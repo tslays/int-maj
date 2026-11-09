@@ -286,10 +286,22 @@ its counts (`front`, `remaining`, `loose`) are what the picture follows.
 (2) Which end of the block the "two more tiles" come from: "the end of the wall
 to the right of the break" read as the far, corner end (owner rule 6), a stack
 (upper, lower) at a time, moving towards the break.
-(3) When the far end has been used up to or past a marker, or the block is
-shorter than 7 stacks (dice total under 9), a loose tile lies on the nearest
-stack still standing; two on one stack make it 4 high.
+(3) SUPERSEDED by the owner's ruling below: the loose tiles no longer lie on
+the 2nd and 7th stacks.
 (4) If replacements outrun the block, they go on at the far end of the
 ordinary run, so every tile is used.
-(5) Which stack of the block is where the loose pair is refilled onto: the
-same 2nd and 7th positions, the 7th first.
+(5) SUPERSEDED, see the ruling below.
+
+**Owner ruling on presentation (issue #56, 2026-11-09).** The book's detail
+diagram (I p. 19) and rule 6 put the two loose tiles on the 2nd and 7th stack
+right of the break. The owner's table practice puts both on the END column of
+the replacement block, the column the replacements take from: 4 high (2 + 2)
+at the start, 3 high after one replacement; after the second the plain
+two-tile end column is lifted onto its neighbour, which becomes 4 high (these
+two are the book's "two more tiles taken from the end of the wall and
+positioned on top", rule 7), and so on: marker column floor(r / 2) from the
+end, extra height 2 - (r mod 2), r = replacements taken. Only that column is
+3 or 4 high. The tiles drawn, their count and their order are the same, so
+this is presentation only; the printed rule is not changed. If the block is
+used up (many replacements, or a short block) the end column continues past
+the wall's corner, at the far end of the ordinary run, so no tile is left over.
