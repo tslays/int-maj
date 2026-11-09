@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 // @ts-expect-error - a plain browser module without type declarations
-import { breakFor, wallLook, wallPlan, discardRect, discardSlot, frameRect, handRects, latestPlate, pondPad, meldLayout, meldRects, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
+import { breakFor, DRAWN_SLIDE, handTileStart, wallLook, wallPlan, discardRect, discardSlot, frameRect, handRects, latestPlate, pondPad, meldLayout, meldRects, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
 
 interface Rect {
   readonly minX: number;
@@ -332,5 +332,19 @@ describe("wall draw (I p. 18-19 rules 6-8, p. 62)", () => {
       seats.set(b.wallSeat, (seats.get(b.wallSeat) ?? 0) + 1);
     }
     assert.equal(seats.size, 4);
+  });
+});
+
+describe("hand tile entrance", () => {
+  it("slides a drawn tile in from the right only when animating", () => {
+    assert.deepEqual(handTileStart(5, true, true), { x: 5 + DRAWN_SLIDE, y: 0.9 });
+    assert.deepEqual(handTileStart(5, false, true), { x: 5, y: 0.9 });
+  });
+
+  it("puts every tile straight in its place when nothing is animated, the drawn one too", () => {
+    // A dealt, resumed or undone hand must not leave the drawn tile at the
+    // slide's start, which is past the screen's right edge.
+    assert.deepEqual(handTileStart(5, true, false), { x: 5, y: 0 });
+    assert.deepEqual(handTileStart(5, false, false), { x: 5, y: 0 });
   });
 });
