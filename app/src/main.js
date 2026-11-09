@@ -945,9 +945,9 @@ $("#calls").addEventListener("click", () => {
 });
 showToggle("#calls", !callsOff);
 
-/* Sort: lit = the hand keeps itself sorted; swapping or dragging turns it off. */
+/* Sort: lit = the game sorts your tiles; off = you arrange them yourself (swapping or dragging). */
 function showSort(custom) {
-  showToggle("#sort", custom);
+  showToggle("#sort", !custom);
 }
 board.onCustomChange = showSort;
 showSort(board.custom);
