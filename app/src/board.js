@@ -37,10 +37,13 @@ const GAP = 0.02;
 const HAND_TILT = -0.16;
 const LIFT = 0.32; // how far a selected hand tile rises
 
-/** Lay a meld's tiles in a row; a concealed kong shows its ends face down. */
+/**
+ * Lay a meld's tiles in a row; a kong is a pung with its fourth tile on top of
+ * the middle one, and a concealed kong shows its two outer tiles face down.
+ */
 function meldTiles(meld, scale) {
   return meld.tiles.map((key, index) => {
-    const hidden = !meld.exposed && meld.kind === "kong" && (index === 0 || index === 3);
+    const hidden = !meld.exposed && meld.kind === "kong" && (index === 0 || index === 2);
     return { key: hidden ? null : key, faceUp: !hidden, scale };
   });
 }
@@ -325,17 +328,20 @@ export class Board {
     if (groups.length === 0) return [];
     const work = [];
     const bonusFirst = entry.flowers.length + entry.seasons.length > 0;
+    const offset = bonusFirst ? 1 : 0;
+    const kongs = entry.melds.flatMap((meld, index) => (meld.kind === "kong" ? [index + offset] : []));
     const { scale, tiles } = meldLayout(
       groups.map((group) => group.length),
       this.wallStacks?.[this.rel(entry.seat)] ?? WALL_STACKS,
       entry.handCount,
-      { bonusFirst, rel: this.rel(entry.seat) },
+      { bonusFirst, rel: this.rel(entry.seat), kongs },
     );
     for (const place of tiles) {
       const piece = groups[place.group][place.index];
       const tile = makeTile(piece.key);
       if (piece.faceUp) poseFaceUp(tile, place.x, place.z, place.group * 5 + place.index, scale);
       else poseFaceDown(tile, place.x, (D / 2) * scale, place.z, scale);
+      tile.position.y += place.level * D * scale; // the fourth tile of a kong rests on the middle one
       state.melds.add(tile);
       if (fresh && place.group === groups.length - 1) {
         const y = tile.position.y;

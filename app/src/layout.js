@@ -99,8 +99,12 @@ const LANE_FAR = TABLE.TABLE_HALF - 0.2;
  * Groups that do not fit go into further rows in the same corner, towards the
  * rail, never past the end of the seat's own hand. Tiles shrink only when a
  * hand is unusually full. Returns the scale and each tile's centre.
+ *
+ * A kong (its group index listed in `kongs`) is a pung with the fourth tile
+ * lying on top of the middle one: it takes the room of three tiles, and that
+ * tile comes back with `level: 1`.
  */
-export function meldLayout(groupSizes, wallStacks, handCount, { bonusFirst = false, rel = 0 } = {}) {
+export function meldLayout(groupSizes, wallStacks, handCount, { bonusFirst = false, rel = 0, kongs = [] } = {}) {
   // The seat on your right starts in the corner beside your own hand, which
   // your hand strip covers, so its lane begins a little further along.
   const laneStart = rel === 1 ? MELD_LANE_X0 + NEAR_CORNER_INSET : MELD_LANE_X0;
@@ -123,7 +127,9 @@ export function meldLayout(groupSizes, wallStacks, handCount, { bonusFirst = fal
     let x = laneStart;
     let fits = true;
     groupSizes.forEach((size, group) => {
-      const groupWidth = size * tileStep - GAP * scale;
+      const stacked = kongs.includes(group) && size === 4;
+      const footprint = stacked ? 3 : size;
+      const groupWidth = footprint * tileStep - GAP * scale;
       while (fits && x + groupWidth > limit(row)) {
         if (x === laneStart) {
           // Not even an empty row holds it: try the next row, or give up.
@@ -136,7 +142,9 @@ export function meldLayout(groupSizes, wallStacks, handCount, { bonusFirst = fal
         if (row >= maxRows || past) fits = false;
       }
       for (let index = 0; index < size; index++) {
-        tiles.push({ group, index, x: x + index * tileStep + (W * scale) / 2, z: rowZ(row) });
+        const level = stacked && index === 3 ? 1 : 0;
+        const column = level === 1 ? 1 : index;
+        tiles.push({ group, index, level, x: x + column * tileStep + (W * scale) / 2, z: rowZ(row) });
       }
       x += groupWidth + (bonusFirst && group === 0 ? 3 * groupGap : groupGap);
     });
