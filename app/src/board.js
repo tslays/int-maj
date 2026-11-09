@@ -14,7 +14,7 @@
 
 import * as THREE from "three";
 import { D, H, W, TABLE, makeTile, roundedRect, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, tileOrder, jitter } from "./tiles.js";
-import { HAND_LIFT, breakFor, discardSlot, latestPlate, meldLayout, pondPad, wallLook, wallPlan, wallSlotX } from "./layout.js";
+import { HAND_LIFT, breakFor, handTileStart, discardSlot, latestPlate, meldLayout, pondPad, wallLook, wallPlan, wallSlotX } from "./layout.js";
 import { sound } from "./sound.js";
 import {
   animate,
@@ -538,7 +538,8 @@ export class Board {
       if (entry === skip) continue;
       const x = places.get(entry);
       if (fresh.has(entry)) {
-        entry.tile.position.set(x + (entry.drawn ? 1.4 : 0), animated ? 0.9 : 0, 0);
+        const start = handTileStart(x, entry.drawn, animated);
+        entry.tile.position.set(start.x, start.y, 0);
         if (animated) {
           work.push(tween(entry.tile.position, { x, y: 0 }, 260, easeOutCubic));
           if (entry.drawn) sound.cue("draw", { own: true, delay: 0.17 });
