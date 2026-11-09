@@ -133,8 +133,9 @@ const LANE_END = TABLE.TABLE_HALF - 1.6;
  * Lay a seat's exposed groups along its wall's lane. With `bonusFirst` the
  * first group is its flowers and seasons: hard left in the table corner, with
  * a wider space before the melds. The melds follow in the order made, each
- * new one to the right of the last. The seat's remaining wall is pushed
- * to its right end (see `wallSlotX`), so the lane grows as the wall shrinks.
+ * new one to the right of the last. The wall never slides: stacks only vanish
+ * where they stand, so `wallExtent` is one more than the highest slot still
+ * standing, and the lane grows as the wall's left end is used up.
  * Everything lies in one single row; when the lane is short the tiles shrink
  * to fit, never wrapping into a second row. Returns the scale and each
  * tile's centre.
@@ -143,14 +144,14 @@ const LANE_END = TABLE.TABLE_HALF - 1.6;
  * lying on top of the middle one: it takes the room of three tiles, and that
  * tile comes back with `level: 1`.
  */
-export function meldLayout(groupSizes, wallStacks, handCount, { bonusFirst = false, rel = 0, kongs = [] } = {}) {
+export function meldLayout(groupSizes, wallExtent, handCount, { bonusFirst = false, rel = 0, kongs = [] } = {}) {
   // The seat on your right starts in the corner beside your own hand, which
   // your hand strip covers, so its lane begins a little further along.
   const laneStart = rel === 1 ? MELD_LANE_X0 + NEAR_CORNER_INSET : MELD_LANE_X0;
   // Your own lane lies by your wall and ends where the wall begins. The other
   // three lie against the rail, outside their walls, so they run the rail's
   // length, up to the corner where the next seat's lane begins.
-  const rowZero = rel !== 0 ? LANE_END : wallStacks > 0 ? wallSlotX(wallStacks - 1) - W / 2 - 0.25 : wallSlotX(0) + W / 2;
+  const rowZero = rel !== 0 ? LANE_END : wallExtent > 0 ? wallSlotX(wallExtent - 1) - W / 2 - 0.25 : wallSlotX(0) + W / 2;
   // Always one single row, flowers and melds together: when the lane is short
   // the tiles shrink to fit rather than start a second row.
   for (let scale = 0.9; scale >= 0.1; scale -= 0.02) {
@@ -178,14 +179,14 @@ export function meldLayout(groupSizes, wallStacks, handCount, { bonusFirst = fal
 }
 
 /** Table-space rectangles of a seat's meld tiles. */
-export function meldRects(rel, groupSizes, wallStacks, handCount, options = {}) {
-  const { scale, tiles } = meldLayout(groupSizes, wallStacks, handCount, { ...options, rel });
+export function meldRects(rel, groupSizes, wallExtent, handCount, options = {}) {
+  const { scale, tiles } = meldLayout(groupSizes, wallExtent, handCount, { ...options, rel });
   return tiles.map((tile) => tileRect(rel, tile.x, tile.z, W * scale, H * scale));
 }
 
-/** Table-space rectangles of a seat's remaining wall, pushed to its right end. */
-export function wallRects(rel, wallStacks) {
-  return Array.from({ length: wallStacks }, (_, slot) => tileRect(rel, wallSlotX(slot), WALL_R, W, H));
+/** Table-space rectangles of the wall stacks still standing, `slots` in the seat's frame. */
+export function wallRects(rel, slots) {
+  return slots.map((slot) => tileRect(rel, wallSlotX(slot), WALL_R, W, H));
 }
 
 /** Table-space rectangles of a seat's standing hand. */
@@ -227,32 +228,86 @@ export function breakFor(key) {
 }
 
 /**
- * Every tile of the wall in the order the book draws them: the open end is
- * the left of the break (I p. 18, "from the left side of the opening"), so
- * drawing starts at the stack just left of the break on the broken wall and
- * runs left, then on round the corner into the wall on that builder's left
- * (the previous seat in play order), and so on until it returns to the stacks
- * right of the break. Within a stack the top tile is taken before the one
- * beneath it (I p. 19: "the next tile from the top row").
+ * How the wall lies once broken (I p. 18-19, rules 6-8; p. 62), as plain
+ * data. `builderRel` is the broken wall's position seen from the viewer
+ * (0 near, 1 right, 2 far, 3 left); `count` the dice total, which is the
+ * number of the stack lifted, counted from the wall's right-hand end (slot 0).
  *
- * The other end of this list, the stack next to the break on its right, is
- * where the loose tiles and their replacements come from (I p. 18).
+ * - `lifted`: the break stack ("10" in the book's detail), taken off the wall.
+ * - `ordinary`: the tiles drawn from the open end, the left of the break
+ *   ("from the left side of the opening"): the stack just left of the break,
+ *   its top tile first and then the one beneath it (p. 19, "the next tile
+ *   from the top row"), then the next stack to the left, on round the corner
+ *   into the wall at the builder's left, until the stacks right of the break.
+ * - `block`: the replacement block, the broken wall's stacks to the right of
+ *   the break, in the order they are used: from the far end (the corner,
+ *   slot 0) towards the break. It never moves; tiles only leave it.
  *
- * `builderRel` is the broken wall's position seen from the viewer (0 near,
- * 1 right, 2 far, 3 left); `count` the stacks right of the break. Slot 0 of
- * a wall is its right-hand end. Entries are { rel, slot, level }.
+ * Entries are { rel, slot, level }; level 1 is a stack's top tile.
  */
-export function wallDrawOrder(builderRel, count) {
-  const stacks = [];
+export function wallPlan(builderRel, count) {
+  const at = Math.max(2, Math.min(count, TABLE.WALL_STACKS));
+  const ring = [];
   for (let step = 0; step < 4; step++) {
     // The wall to a builder's left is the one before it in play order.
     const rel = (builderRel + 3 * step) % 4;
-    for (let slot = 0; slot < TABLE.WALL_STACKS; slot++) stacks.push({ rel, slot });
+    for (let slot = 0; slot < TABLE.WALL_STACKS; slot++) ring.push({ rel, slot });
   }
-  const at = Math.max(0, Math.min(count, TABLE.WALL_STACKS));
-  const ordered = [...stacks.slice(at), ...stacks.slice(0, at)];
-  return ordered.flatMap(({ rel, slot }) => [
-    { rel, slot, level: 1 },
-    { rel, slot, level: 0 },
-  ]);
+  const tilesOf = (stacks) => stacks.flatMap(({ rel, slot }) => [{ rel, slot, level: 1 }, { rel, slot, level: 0 }]);
+  return {
+    count: at,
+    rel: builderRel,
+    lifted: ring[at - 1],
+    ordinary: tilesOf(ring.slice(at)),
+    block: tilesOf(ring.slice(0, at - 1)),
+  };
+}
+
+/** Marker slots on the broken wall: the 2nd and 7th stack right of the break (I p. 18, rule 6). */
+const NEAR_MARKER = 2;
+const FAR_MARKER = 7;
+
+/**
+ * What the wall shows at one moment, from the engine's counts: `front` tiles
+ * drawn from the open end, `used` loose tiles consumed by replacements, and
+ * `held` loose tiles currently lying on top of the block (two, as the book
+ * has it: "as the two loose tiles are used they are replaced", p. 62).
+ *
+ * Ordinary draws leave the front of `plan.ordinary` and, once that is gone,
+ * carry on into the block. Replacements take two more from the block's far
+ * end for each two used; if they ever outrun the block (many kongs and
+ * flowers) they go on at the far end of the ordinary run, so no tile is ever
+ * left over. Nothing else moves: the answer is only how many tiles are gone
+ * from each list, and where the held loose tiles lie.
+ *
+ * The held tiles lie on the 2nd and 7th stack right of the break, the 7th
+ * first to be used. Where the far end has been used up to or past a marker
+ * the tile lies on the nearest stack that is left (the book is silent; this
+ * is the narrowest reading), which is what makes a stack 4 high.
+ *
+ * Returns { goneOrdinary, goneTail, goneBlock, markers: [{ which, rel, slot, level }] }:
+ * `goneOrdinary` tiles gone from the head of `plan.ordinary`, `goneTail` from
+ * its end, `goneBlock` from the head of `plan.block`.
+ */
+export function wallLook(plan, front, used, held) {
+  const overflow = Math.max(0, front - plan.ordinary.length);
+  const goneOrdinary = Math.min(front, plan.ordinary.length);
+  const taken = Math.max(0, used + held - 2);
+  const goneBlock = Math.min(plan.block.length, taken + overflow);
+  const goneTail = Math.max(0, taken + overflow - plan.block.length);
+  const left = plan.block.slice(goneBlock);
+  const nearest = plan.count - 2;
+  const first = left.length > 0 ? left[0].slot : nearest;
+  const pick = (stack) => Math.min(nearest, Math.max(first, stack));
+  const wanted = [];
+  if (held >= 2) wanted.push({ which: "far", slot: pick(plan.count - 1 - FAR_MARKER) });
+  if (held >= 1) wanted.push({ which: "near", slot: pick(plan.count - 1 - NEAR_MARKER) });
+  const height = new Map();
+  for (const tile of left) height.set(tile.slot, (height.get(tile.slot) ?? 0) + 1);
+  const markers = wanted.map(({ which, slot }) => {
+    const level = height.get(slot) ?? 0;
+    height.set(slot, level + 1);
+    return { which, rel: plan.rel, slot, level: level };
+  });
+  return { goneOrdinary, goneTail, goneBlock, markers };
 }
