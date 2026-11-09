@@ -95,6 +95,26 @@ describe("A7 fishing payer", () => {
     zeroSum(won.state);
   });
 
+  it("records no payment for a difference that rounds to nothing", () => {
+    // I p. 21 #24 settles the difference between the two fishing hands; the
+    // payment is "to the nearest 100, 50 or less down", so a difference of 40
+    // is no payment at all, not a payment of 0 (found by the soak, soak-72).
+    const won = winBy(
+      "E",
+      [
+        { seat: "W", wait: ["b7"], tier: "double", value: 100 },
+        { seat: "N", wait: ["b7"], tier: "double", value: 60 },
+      ],
+      { S: FILLER.S, W: FILLER.W, N: FILLER.N },
+    );
+    assert.deepEqual(fishingOf(won.state), [
+      ["S", "W", 100],
+      ["S", "N", 100],
+    ]);
+    assert.ok(won.state.ledger.every((entry) => entry.points === null || entry.points > 0));
+    zeroSum(won.state);
+  });
+
   it("pays a fishing player a declared figure over the tier table", () => {
     const won = winBy("E", [{ seat: "W", wait: ["b7"], tier: "double", value: 800 }], {
       S: FILLER.S,
@@ -128,7 +148,11 @@ describe("A24/A27 settlement levels", () => {
     zeroSum(won.state);
   });
 
-  it("advanced settles the differences between the losers' hands", () => {
+  // The losers' ground scores are small (about 18 for a plain waiting hand), so
+  // most differences round to nothing under "nearest 100, 50 or less down"; this
+  // fixture settles none. The test used to pass only because the engine then
+  // wrote the zero-point payments into the ledger (found by the soak, soak-72).
+  it("advanced scores the losers' hands, ignores the fishing figure and records no zero payment", () => {
     const state = fixture({
       settlement: "advanced",
       fishing: [{ seat: "W", wait: ["b5"], tier: "half" }],
@@ -147,7 +171,9 @@ describe("A24/A27 settlement levels", () => {
     const differences = won.state.ledger.filter((entry) =>
       entry.reason.startsWith("losing hand difference"),
     );
-    assert.ok(differences.length > 0);
+    // Any difference that is paid is a positive multiple of 100.
+    assert.ok(differences.every((entry) => entry.points !== null && entry.points > 0 && entry.points % 100 === 0));
+    assert.ok(won.state.ledger.every((entry) => entry.points === null || entry.points > 0));
     assert.equal(won.state.ledger.some((entry) => entry.reason.startsWith("fishing")), false);
     zeroSum(won.state);
   });
