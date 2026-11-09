@@ -204,7 +204,8 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   as in CI) or else the content hash. `src/build-info.js` exports `BUILD`
   (`version`, `stage`, `id`) and `BUILD_LABEL`; import it to put the build in
   a problem report. Unbuilt, the id reads `dev`.
-- **Report a problem.** The menu button opens a sheet with an optional
+- **Report a problem.** The menu's Report button (accessible name "Report a
+  problem") opens a sheet of that title with an optional
   one-line note; Send report hands the text to `navigator.share` (the iOS
   share sheet) or, where that is missing or fails, to the clipboard with a
   toast. No server, account or network. `src/table/report.ts` builds it
