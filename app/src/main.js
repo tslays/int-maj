@@ -522,12 +522,29 @@ function worth(tier, points) {
   return points === null ? TIER_LABEL[tier] : `${TIER_LABEL[tier]} · ${points.toLocaleString("en")}`;
 }
 
-/** The at-a-glance tag: concealed-only is loud, open-allowed is quiet. */
-function playTag(concealedOnly, large = false) {
-  const tag = document.createElement("span");
-  tag.className = `play-tag ${concealedOnly ? "play-concealed" : "play-open"}${large ? " play-large" : ""}`;
-  tag.textContent = concealedOnly ? "Concealed only" : "Open allowed";
-  return tag;
+/**
+ * Open eye: exposed melds are fine. Closed eye: concealed only. Drawn in
+ * the text colour so it stays quiet; the words appear on the hand's sheet.
+ */
+function playIcon(concealedOnly) {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("class", "play-icon");
+  svg.setAttribute("aria-hidden", "true");
+  const shape = (name, attrs) => {
+    const node = document.createElementNS(ns, name);
+    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+    svg.append(node);
+  };
+  if (concealedOnly) {
+    shape("path", { d: "M3 10c2.4 4.4 5.4 6.5 9 6.5s6.6-2.1 9-6.5" });
+    shape("path", { d: "M6.5 14.6 4.5 17.5M12 16.5V20M17.5 14.6l2 2.9" });
+  } else {
+    shape("path", { d: "M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" });
+    shape("circle", { cx: "12", cy: "12", r: "3" });
+  }
+  return svg;
 }
 
 function renderHints(hands) {
@@ -548,10 +565,11 @@ function renderHints(hands) {
     const item = document.createElement("li");
     const row = document.createElement("button");
     row.type = "button";
-    row.className = `closest-item ${hand.concealedOnly ? "is-concealed" : "is-open"}`;
+    row.className = "closest-item";
+    row.title = hand.concealedOnly ? "Concealed only" : "Exposed melds allowed";
     row.setAttribute(
       "aria-label",
-      `${hand.name}, ${hand.concealedOnly ? "concealed only" : "open allowed"}. Tap for details.`,
+      `${hand.name}, ${hand.concealedOnly ? "concealed only" : "exposed melds allowed"}. Tap for details.`,
     );
     const name = document.createElement("span");
     name.className = "closest-name";
@@ -568,14 +586,8 @@ function renderHints(hands) {
     } else {
       progress.textContent = `${hand.away} to go · ${value}`;
     }
-    meta.append(progress, playTag(hand.concealedOnly));
+    meta.append(progress, playIcon(hand.concealedOnly));
     row.append(name, meta);
-    if (hand.need.length > 0) {
-      const need = document.createElement("span");
-      need.className = "closest-need";
-      for (const key of hand.need) need.append(faceChip(key));
-      row.append(need);
-    }
     row.addEventListener("click", () => void openHandDetail(hand));
     item.append(row);
     list.append(item);
@@ -629,16 +641,16 @@ async function openHandDetail(hand) {
   heading.textContent = detail.name;
 
   const banner = document.createElement("div");
-  banner.className = `detail-banner ${detail.concealedOnly ? "play-concealed" : "play-open"}`;
+  banner.className = "detail-banner";
   const bannerTitle = document.createElement("strong");
-  bannerTitle.textContent = detail.concealedOnly ? "Concealed only" : "Open or concealed";
+  bannerTitle.textContent = detail.concealedOnly ? "Concealed only" : "Exposed or concealed";
   const bannerText = document.createElement("span");
   bannerText.textContent = detail.concealedOnly
     ? "Build it entirely from your own tiles. Do not call Pung, Kong or Chow on a discard: " +
       "one exposed meld and this hand is gone. You may still win on a discard."
     : "You may call discards to make exposed melds and still win this hand, " +
       "though it pays less than playing it concealed.";
-  banner.append(bannerTitle, bannerText);
+  banner.append(playIcon(detail.concealedOnly), bannerTitle, bannerText);
 
   card.append(close, heading, banner, detailLine("What it is", detail.description));
   if (detail.requiresSelfDrawn) {
@@ -647,8 +659,8 @@ async function openHandDetail(hand) {
   const pays = [`Concealed: ${worth(detail.concealedTier, detail.concealedPoints)}`];
   pays.push(
     detail.exposedTier === null
-      ? "Open: not possible"
-      : `Open: ${worth(detail.exposedTier, detail.exposedPoints)}`,
+      ? "Exposed: not possible"
+      : `Exposed: ${worth(detail.exposedTier, detail.exposedPoints)}`,
   );
   const payLine = detailLine("What it pays", pays[0]);
   payLine.lastChild.append(document.createElement("br"), pays[1]);

@@ -63,14 +63,14 @@ value and the missing tiles. It is asked for when your own tiles change and at
 each of your decisions, and hides on the result card. The menu's Hints button
 turns it off (remembered on the device).
 
-Every row carries a tag that settles the playing style at a glance: a solid
-amber **CONCEALED ONLY** pill (and amber edge) when the hand exists only with
-no exposed meld, a quiet teal outline **OPEN ALLOWED** when calling is fine.
-Most special hands are concealed only, so the loud tag is the common one.
-Tapping a row opens the hand's sheet (`GET /api/hand`): the same tag as a full
-banner with what it means for calling discards, the hand's composition, what it
-pays concealed and open, whether it must be self-drawn, the tiles you still
-need and its book pages. Close it with the cross, the backdrop or Escape.
+The panel is deliberately small and quiet (148px, muted colours, no tile
+chips) so it never competes with the table, even on a phone. Each row is the
+hand's name and "n to go - value", with one icon: a closed eye when the hand is
+concealed only (any exposed meld rules it out; most special hands), an open eye
+when exposed melds are allowed. Tapping a row opens the hand's sheet
+(`GET /api/hand`): the same icon with the words, what it means for calling
+discards, the hand's composition, what it pays concealed and exposed, whether
+it must be self-drawn, the tiles you still need and its book pages. Close it with the cross, the backdrop or Escape.
 
 ## Sound
 
