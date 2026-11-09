@@ -190,6 +190,10 @@ export interface StatePayload {
     readonly remaining: number;
     readonly loose: number;
     readonly dead: number;
+    /** Tiles taken so far from the open end (the deal and ordinary draws). */
+    readonly front: number;
+    /** Tiles in the whole set this hand: 144, or 136 in the Chinese game. */
+    readonly size: number;
   };
   readonly checker: CheckerPayload;
   readonly outcome: OutcomePayload | null;
@@ -404,6 +408,8 @@ export function statePayload(session: WebSession): StatePayload {
       remaining: view.wallRemaining,
       loose: session.state.wall.loose.length,
       dead: session.state.wall.dead?.length ?? 0,
+      front: session.state.wall.front,
+      size: session.state.wall.tiles.length,
     },
     checker: checkerFor(view.player),
     outcome: outcomeFor(session, view),

@@ -200,3 +200,59 @@ function tileRect(rel, x, z, width, depth) {
   const [halfX, halfZ] = rel % 2 === 0 ? [width / 2, depth / 2] : [depth / 2, width / 2];
   return { minX: centre.x - halfX, maxX: centre.x + halfX, minZ: centre.z - halfZ, maxZ: centre.z + halfZ };
 }
+
+/* ------------------------------------------------------- wall draw order */
+
+/** The stacks in one wall (two tiles high each). */
+export const WALL_TILE_COUNT = 4 * TABLE.WALL_STACKS * 2;
+
+/**
+ * The break (I p. 18): two dice are thrown, the wall to break is counted
+ * anticlockwise from East's own wall as 1 (the printed table: 5 or 9 East,
+ * 2/6/10 South, 3/7/11 West, 4/8/12 North), and its builder counts the same
+ * number of stacks from the right-hand end of that wall. The engine does not
+ * throw these dice, so the app throws them from the hand's own key: any two
+ * dice, always the same for the same hand.
+ *
+ * Returns `total` (2..12), `wallSeat` (0 East, 1 South, 2 West, 3 North, the
+ * wall's builder counted from the dealer) and `count` (stacks right of the
+ * break).
+ */
+export function breakFor(key) {
+  let h = 2166136261;
+  for (const ch of String(key)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  const die = (n) => 1 + (Math.imul(h ^ (n * 40503), 2654435761) >>> 16) % 6;
+  const total = die(1) + die(2);
+  return { total, wallSeat: (total - 1) % 4, count: total };
+}
+
+/**
+ * Every tile of the wall in the order the book draws them: the open end is
+ * the left of the break (I p. 18, "from the left side of the opening"), so
+ * drawing starts at the stack just left of the break on the broken wall and
+ * runs left, then on round the corner into the wall on that builder's left
+ * (the previous seat in play order), and so on until it returns to the stacks
+ * right of the break. Within a stack the top tile is taken before the one
+ * beneath it (I p. 19: "the next tile from the top row").
+ *
+ * The other end of this list, the stack next to the break on its right, is
+ * where the loose tiles and their replacements come from (I p. 18).
+ *
+ * `builderRel` is the broken wall's position seen from the viewer (0 near,
+ * 1 right, 2 far, 3 left); `count` the stacks right of the break. Slot 0 of
+ * a wall is its right-hand end. Entries are { rel, slot, level }.
+ */
+export function wallDrawOrder(builderRel, count) {
+  const stacks = [];
+  for (let step = 0; step < 4; step++) {
+    // The wall to a builder's left is the one before it in play order.
+    const rel = (builderRel + 3 * step) % 4;
+    for (let slot = 0; slot < TABLE.WALL_STACKS; slot++) stacks.push({ rel, slot });
+  }
+  const at = Math.max(0, Math.min(count, TABLE.WALL_STACKS));
+  const ordered = [...stacks.slice(at), ...stacks.slice(0, at)];
+  return ordered.flatMap(({ rel, slot }) => [
+    { rel, slot, level: 1 },
+    { rel, slot, level: 0 },
+  ]);
+}

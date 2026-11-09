@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 // @ts-expect-error - a plain browser module without type declarations
-import { discardRect, discardSlot, frameRect, handRects, latestPlate, pondPad, meldLayout, meldRects, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
+import { breakFor, wallDrawOrder, discardRect, discardSlot, frameRect, handRects, latestPlate, pondPad, meldLayout, meldRects, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
 
 interface Rect {
   readonly minX: number;
@@ -190,5 +190,58 @@ describe("3D table discard layout", () => {
         }
       }
     }
+  });
+});
+
+describe("wall draw order (I p. 18-19)", () => {
+  interface Entry {
+    readonly rel: number;
+    readonly slot: number;
+    readonly level: number;
+  }
+  const order = (rel: number, count: number): Entry[] => wallDrawOrder(rel, count);
+
+  it("covers all 144 tiles exactly once", () => {
+    const keys = new Set(order(2, 7).map((t) => `${t.rel}:${t.slot}:${t.level}`));
+    assert.equal(keys.size, 144);
+  });
+
+  it("opens just left of the break, taking the top tile before the one beneath", () => {
+    // Ten stacks counted from the right: stacks 0-9 lie right of the break,
+    // so the first draw is stack 10 (the next one to its left), top first.
+    const first = order(0, 10).slice(0, 4);
+    assert.deepEqual(first, [
+      { rel: 0, slot: 10, level: 1 },
+      { rel: 0, slot: 10, level: 0 },
+      { rel: 0, slot: 11, level: 1 },
+      { rel: 0, slot: 11, level: 0 },
+    ]);
+  });
+
+  it("runs left to the wall's end, then into the wall on the builder's left", () => {
+    const list = order(0, 10);
+    // 8 stacks remain left of the break: 16 tiles, then the next wall at its right end.
+    assert.deepEqual(list[15], { rel: 0, slot: 17, level: 0 });
+    assert.deepEqual(list[16], { rel: 3, slot: 0, level: 1 });
+    // The left-hand neighbour of rel 1 is rel 0; of rel 0 it is rel 3 (play runs E,S,W,N anticlockwise).
+    assert.equal(order(1, 5)[26].rel, 0);
+  });
+
+  it("ends beside the break on its right, where replacements are taken", () => {
+    const list = order(0, 10);
+    assert.deepEqual(list.at(-1), { rel: 0, slot: 9, level: 0 });
+    assert.deepEqual(list.at(-2), { rel: 0, slot: 9, level: 1 });
+  });
+
+  it("breaks the wall the book's table names", () => {
+    const seats = new Map<number, number>();
+    for (let n = 0; n < 400; n++) {
+      const b = breakFor(`k${n}`);
+      assert.ok(b.total >= 2 && b.total <= 12 && b.count === b.total);
+      const named = [0, 1, 2, 3].map((w) => [[5, 9], [2, 6, 10], [3, 7, 11], [4, 8, 12]][w]!.includes(b.total));
+      assert.ok(named[b.wallSeat], `${b.total} -> ${b.wallSeat}`);
+      seats.set(b.wallSeat, (seats.get(b.wallSeat) ?? 0) + 1);
+    }
+    assert.equal(seats.size, 4);
   });
 });

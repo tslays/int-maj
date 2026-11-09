@@ -248,3 +248,24 @@ indicated tiles are that suit and the honours (only the honours when every
 exposed set is of honours). Fewer than three exposed sets, or exposed sets in
 two suits, indicate nothing. The engine previously keyed the penalty on an
 announced fishing wait; p. 22 speaks only of exposed tiles.
+
+## Wall draw animation: where the break lies and which tiles are loose (2026-11-09)
+
+*Illustrated* p. 18-19 ("Breaking the wall (plan)", "Detail of South wall",
+rules 6-8) and p. 62: the wall to break is found by the dice (5 or 9 East,
+2/6/10 South, 3/7/11 West, 4/8/12 North, counted anticlockwise from East); its
+builder counts the thrown number of stacks from the right-hand end and the break
+is there. The deal is taken "from the left side of the opening", so the open
+end is the left of the break and drawing runs left, on round the corner into
+the wall at the builder's left. The loose tiles lie to the right of the break;
+replacements are "taken from the end of the wall to the right of the break".
+The deal takes the "next tile from the top row" (p. 19).
+
+The book is silent on: (1) the engine throws no break dice, so the app throws
+two from the hand's key (`breakFor`, `app/src/layout.js`), purely for the
+look; the engine's draw order is unchanged; (2) which two tiles are lifted as
+loose tiles - the diagram sets them on the second and seventh stacks right of
+the break; the app does not lift them, it takes loose and replacement tiles
+from the stack nearest the break on its right, working away from the break,
+top tile first; (3) the order of the two tiles of a stack at the replacement
+end, which follows the open end's top-then-bottom order.
