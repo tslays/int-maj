@@ -37,6 +37,20 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   is only as tall as the tile row needs (plus headroom for a lifted tile), and
   the table camera is solved down to the top of the standing hand tiles, so
   no screen is spent on felt between your melds and your hand.
+- The turn light (`stage.js`, `updateConsole`): the console is painted in three
+  layers (panel, light, lettering) so the light can move under the text. The
+  seat whose turn it is glows along its edge with a soft, edgeless light that
+  breathes very slowly (about 5 s a cycle, drawn at roughly 16 frames a second
+  only while the light is lit and the page visible); when the turn passes the
+  light travels round the corner to the next seat in about a quarter of a
+  second. With `prefers-reduced-motion` it neither breathes nor travels: the
+  old edge fades out as the new one fades in. Nothing else is animated.
+- Who threw what (`board.js`, `layout.js` `pondPad` / `latestPlate`): a faint
+  pad tints each seat's pond (the dealer's in coral, as on the console) and the
+  latest discard (the view's `lastDiscard`) lies on a soft cyan plate, the
+  console light's colour. Both are still and flat on the felt;
+  `test/app/layout.test.ts` proves the pads never touch and the plates stay
+  clear of the console and other ponds.
 - `app/src/board.js` compares each game answer with the table and animates
   only the difference: throws, claims flying to the claimer, melds, draws and
   the shrinking wall.
