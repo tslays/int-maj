@@ -23,9 +23,11 @@ The message to paste to the club, then the known limits. It stands alone.
 > result surprise you? Do the bots play sensibly? Did anything break or look
 > wrong?
 >
-> **To send a report:** tap Report a problem in the menu and say what you
-> saw. (If you do not see the button yet, reply to this message with a
-> screenshot and what you were doing.)
+> **To send a report:** tap Report a problem in the menu, type a line about
+> what you saw (optional) and tap Send report. The share sheet opens; pick
+> Messages or Mail. If your device has no share sheet, the report is copied
+> and you paste it into your message. It holds the build, your device and
+> every move of the game so far, and no name or account.
 
 ## Known limits
 
