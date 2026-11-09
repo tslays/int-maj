@@ -13,8 +13,8 @@
  */
 
 import * as THREE from "three";
-import { D, H, W, TABLE, makeTile, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, tileOrder, jitter } from "./tiles.js";
-import { HAND_LIFT, breakFor, discardSlot, meldLayout, wallDrawOrder, wallSlotX } from "./layout.js";
+import { D, H, W, TABLE, makeTile, roundedRect, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, tileOrder, jitter } from "./tiles.js";
+import { HAND_LIFT, breakFor, discardSlot, latestPlate, meldLayout, pondPad, wallDrawOrder, wallSlotX } from "./layout.js";
 import { sound } from "./sound.js";
 import {
   animate,
@@ -45,6 +45,21 @@ function meldTiles(meld, scale) {
     const hidden = !meld.exposed && meld.kind === "kong" && (index === 0 || index === 2);
     return { key: hidden ? null : key, faceUp: !hidden, scale };
   });
+}
+
+/* Who threw what, at a glance: a faint pad tints each seat's pond (coral for the
+   dealer, as on the console), and the latest discard lies on a soft cyan plate,
+   the same light as the console's turn light. Both are still, flat on the felt. */
+const padMaterials = { dealer: new THREE.MeshBasicMaterial({ color: 0xff6b5e, transparent: true, opacity: 0.13, depthWrite: false }),
+  other: new THREE.MeshBasicMaterial({ color: 0xcfe8e6, transparent: true, opacity: 0.07, depthWrite: false }) };
+const plateMaterial = new THREE.MeshBasicMaterial({ color: 0x62f2ea, transparent: true, opacity: 0.55, depthWrite: false });
+
+function flatPlate(box, material, radius, y) {
+  const mesh = new THREE.Mesh(new THREE.ShapeGeometry(roundedRect(box.width, box.depth, radius), 6), material);
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.position.set(box.x, y, box.z);
+  mesh.renderOrder = 1;
+  return mesh;
 }
 
 export class Board {
@@ -101,8 +116,11 @@ export class Board {
         melds: new THREE.Group(),
         meldsKey: "",
       };
-      this.frameOf(seat).add(this.seats[seat].row, this.seats[seat].melds);
+      const pad = flatPlate(pondPad(), padMaterials.other, 0.35, 0.008);
+      this.seats[seat].pad = pad;
+      this.frameOf(seat).add(pad, this.seats[seat].row, this.seats[seat].melds);
     }
+    this.plate = null;
     this.wallOrder = [];
     this.wallShown = 0;
     this.wallFront = 0;
@@ -233,10 +251,25 @@ export class Board {
     work.push(...this.reconcileHand(payload, animated));
     requestRender();
     await Promise.all(work);
+    this.markThrower(payload);
     return calls;
   }
 
   /* ------------------------------------------------------- discards */
+
+  /** Tint each pond (the dealer's in coral) and lay the plate under the latest discard. */
+  markThrower(payload) {
+    for (const entry of payload.table) this.seats[entry.seat].pad.material = entry.dealer ? padMaterials.dealer : padMaterials.other;
+    this.plate?.removeFromParent();
+    this.plate = null;
+    const last = payload.view.lastDiscard;
+    const state = last ? this.seats[last.seat] : null;
+    if (state && state.discards.length > 0 && state.discards[state.discards.length - 1].key === last.tile) {
+      this.plate = flatPlate(latestPlate(state.discards.length - 1), plateMaterial, 0.2, 0.012);
+      this.frameOf(last.seat).add(this.plate);
+    }
+    requestRender();
+  }
 
   reconcileDiscards(entry, meldsGrew, animated) {
     const state = this.seats[entry.seat];

@@ -28,7 +28,7 @@ const lacquer = new THREE.MeshPhysicalMaterial({
   clearcoatRoughness: 0.18,
 });
 
-function roundedRect(width, height, radius) {
+export function roundedRect(width, height, radius) {
   const shape = new THREE.Shape();
   const x = -width / 2;
   const y = -height / 2;
