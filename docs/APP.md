@@ -26,6 +26,14 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   to the right as the wall in front of them is used up; each side's remaining
   wall is pushed to its right end. `test/app/layout.test.ts` proves no meld
   touches a wall, a hand, a discard or another player's melds.
+- The wall is broken and drawn as *Illustrated* p. 18-19 and p. 62 show: the
+  dice (`breakFor`) name the wall and the stack count from its right-hand
+  end; draws leave the open end, the left of the break, top tile first, and
+  run on into the wall at the builder's left (`wallDrawOrder`); replacement
+  tiles leave the other end, right of the break. A wall with a gap keeps its
+  stacks in place so the gap is seen moving; a wall without one is pushed to
+  its right end. What the book leaves open is in `rules/archive/ASSUMPTIONS.md`
+  ("Wall draw animation"); `test/app/layout.test.ts` pins the order.
 - `app/src/tiles.js` models a tile: a rounded off-white front, a sky-blue
   lacquered back, and the face printed on it with a small corner index. The
   faces are the public-domain riichi set in `app/assets/faces/` (see its
