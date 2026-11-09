@@ -206,8 +206,8 @@ function paintGlow(context, offset, alpha) {
   const size = CONSOLE_SIZE;
   context.save();
   context.translate(offset, size / 2 - 26);
-  context.scale(1, 0.3);
-  const radius = 260;
+  context.scale(1, 0.22);
+  const radius = 400;
   const glow = context.createRadialGradient(0, 0, 0, 0, 0, radius);
   // Eased stops, so there is no visible edge anywhere on the light.
   glow.addColorStop(0, `rgba(98, 242, 234, ${alpha})`);
@@ -239,7 +239,7 @@ function paintConsole(now = performance.now()) {
       context.translate(CONSOLE_SIZE / 2, CONSOLE_SIZE / 2);
       context.rotate((-edge * Math.PI) / 2);
       // Leaving an edge it slides on towards the corner; it enters the next from the corner.
-      paintGlow(context, away * reach, 0.85 * light.level * breath * near * near * (3 - 2 * near));
+      paintGlow(context, away * reach, 0.42 * light.level * breath * near * near * (3 - 2 * near));
       context.restore();
     }
   }
