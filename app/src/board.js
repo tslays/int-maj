@@ -13,7 +13,7 @@
  */
 
 import * as THREE from "three";
-import { D, H, W, TABLE, makeTile, markTile, markMaterial, markFillMaterial, poseFaceUp, poseFaceDown, tileOrder, jitter } from "./tiles.js";
+import { D, H, W, TABLE, makeTile, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, tileOrder, jitter } from "./tiles.js";
 import { discardSlot, meldLayout, wallSlotX } from "./layout.js";
 import { sound } from "./sound.js";
 import {
@@ -478,8 +478,8 @@ export class Board {
     return this.hand.find((entry) => entry.tile === object) ?? null;
   }
 
-  /** Gold-frame every identical tile already open on the table (discards, melds). */
-  markCopies(key) {
+  /** Gold-mark every identical tile already open on the table (discards, melds) or in your hand. */
+  markCopies(key, except = null) {
     this.clearMarks();
     const found = [];
     for (const seat of SEATS) {
@@ -487,19 +487,20 @@ export class Board {
       for (const item of state.discards) if (item.key === key) found.push(item.tile);
       for (const tile of state.melds.children) if (tile.userData.key === key) found.push(tile);
     }
+    for (const entry of this.hand) if (entry !== except && entry.key === key) found.push(entry.tile);
     if (found.length === 0) return;
     for (const tile of found) this.marked.push(markTile(tile));
     const id = ++this.markId;
-    animate(1500, (t) => {
-      if (this.markId !== id) return;
-      const pulse = t < 0.2 ? t / 0.2 : 0.8 + 0.2 * Math.cos(((t - 0.2) / 0.8) * Math.PI * 3);
-      markMaterial.opacity = Math.min(1, pulse);
-      markFillMaterial.opacity = 0.28 * Math.min(1, pulse);
-    }).then(() => {
-      if (this.markId !== id) return;
-      markMaterial.opacity = 0.85;
-      markFillMaterial.opacity = 0.22;
-      requestRender();
+    // Flash in, then keep breathing for as long as the tile stays selected.
+    const SPAN = 600000;
+    animate(SPAN, (t) => {
+      if (this.markId !== id) return false;
+      const ms = t * SPAN;
+      const intro = Math.min(1, ms / 160);
+      const breath = 0.5 + 0.5 * Math.cos((ms / 900) * Math.PI * 2);
+      markMaterial.opacity = intro * (0.85 + 0.15 * breath);
+      markFillMaterial.opacity = intro * (0.3 + 0.16 * breath);
+      markHaloMaterial.opacity = intro * (0.35 + 0.45 * breath);
     });
   }
 
@@ -511,7 +512,7 @@ export class Board {
   }
 
   lift(entry, up) {
-    if (up) this.markCopies(entry.key);
+    if (up) this.markCopies(entry.key, entry);
     else this.clearMarks();
     return this.glide(entry, { y: up ? LIFT : 0 }, 140);
   }
