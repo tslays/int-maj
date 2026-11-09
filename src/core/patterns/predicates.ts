@@ -110,28 +110,26 @@ export function matchesStandard(
 /** Counts per canonical key for the shape; missing keys are absent. */
 export type Pool = Readonly<Record<string, number>>;
 
-function poolFromShape(shape: HandShape): Pool {
+/**
+ * One working pool per shape. A pattern may call `matchesGroups` hundreds of
+ * times on the same hand, and `consume` always hands the pool back exactly
+ * as it found it, so the pool is built once and reused.
+ */
+const POOLS = new WeakMap<HandShape, Record<string, number>>();
+
+function poolFromShape(shape: HandShape): Record<string, number> {
+  const cached = POOLS.get(shape);
+  if (cached !== undefined) return cached;
   const pool: Record<string, number> = {};
   for (const [key, count] of Object.entries(shape.counts)) {
     if (count > 0) pool[key] = count;
   }
+  POOLS.set(shape, pool);
   return pool;
 }
 
 export interface Group {
   readonly options: (pool: Pool) => readonly (readonly string[])[];
-}
-
-function hasTiles(pool: Pool, keys: readonly string[]): boolean {
-  const need: Record<string, number> = {};
-  for (const key of keys) need[key] = (need[key] ?? 0) + 1;
-  return Object.entries(need).every(([key, count]) => (pool[key] ?? 0) >= count);
-}
-
-function removeTiles(pool: Pool, keys: readonly string[]): Pool {
-  const next: Record<string, number> = { ...pool };
-  for (const key of keys) next[key] = (next[key] ?? 0) - 1;
-  return next;
 }
 
 /**
@@ -143,16 +141,44 @@ export function matchesGroups(shape: HandShape, groups: readonly Group[]): boole
   return consume(poolFromShape(shape), groups, 0);
 }
 
-function consume(pool: Pool, groups: readonly Group[], index: number): boolean {
+/**
+ * Backtracking over one working pool: an option's tiles are taken out before
+ * the next group is tried and put back afterwards. This is the matcher's
+ * innermost loop (every wait check runs it), so it neither copies the pool
+ * nor allocates per option. Group options are computed from the pool before
+ * it changes and never keep a reference to it.
+ */
+function consume(pool: Record<string, number>, groups: readonly Group[], index: number): boolean {
   if (index === groups.length) {
-    return Object.values(pool).every((count) => count === 0);
+    for (const key in pool) if (pool[key] !== 0) return false;
+    return true;
   }
   const group = groups[index]!;
   for (const option of group.options(pool)) {
-    if (!hasTiles(pool, option)) continue;
-    if (consume(removeTiles(pool, option), groups, index + 1)) return true;
+    if (!take(pool, option)) continue;
+    const matched = consume(pool, groups, index + 1);
+    putBack(pool, option);
+    if (matched) return true;
   }
   return false;
+}
+
+/** Takes the option's tiles out of the pool, or leaves it unchanged and says no. */
+function take(pool: Record<string, number>, keys: readonly string[]): boolean {
+  let taken = 0;
+  for (; taken < keys.length; taken++) {
+    const key = keys[taken]!;
+    const count = pool[key];
+    if (count === undefined || count <= 0) break;
+    pool[key] = count - 1;
+  }
+  if (taken === keys.length) return true;
+  for (let index = 0; index < taken; index++) pool[keys[index]!]! += 1;
+  return false;
+}
+
+function putBack(pool: Record<string, number>, keys: readonly string[]): void {
+  for (const key of keys) pool[key]! += 1;
 }
 
 function suitsOf(value: Suit | "any"): readonly Suit[] {
@@ -164,27 +190,34 @@ function startsOf(start: number | "any", length: number): number[] {
   return Array.from({ length: 10 - length }, (_, index) => index + 1);
 }
 
+/** Run groups are constant per suit, start and length, so each is built once. */
+const RUN_GROUPS = new Map<number, Group>();
+
 export function runGroup(
   suit: Suit | "any",
   start: number | "any",
   length: number,
 ): Group {
-  return {
-    options: () => {
-      const options: string[][] = [];
-      for (const currentSuit of suitsOf(suit)) {
-        for (const currentStart of startsOf(start, length)) {
-          options.push(
-            Array.from(
-              { length },
-              (_, offset) => suitTileKey(currentSuit, currentStart + offset),
-            ),
-          );
-        }
-      }
-      return options;
-    },
-  };
+  const id =
+    (suit === "any" ? SUITS.length : SUITS.indexOf(suit)) * 100 +
+    (start === "any" ? 0 : start) * 10 +
+    length;
+  const cached = RUN_GROUPS.get(id);
+  if (cached !== undefined) return cached;
+  const options: string[][] = [];
+  for (const currentSuit of suitsOf(suit)) {
+    for (const currentStart of startsOf(start, length)) {
+      options.push(
+        Array.from(
+          { length },
+          (_, offset) => suitTileKey(currentSuit, currentStart + offset),
+        ),
+      );
+    }
+  }
+  const group: Group = { options: () => options };
+  RUN_GROUPS.set(id, group);
+  return group;
 }
 
 /**
@@ -224,7 +257,7 @@ function permutations<T>(items: readonly T[]): T[][] {
 }
 
 /** Three consecutive numbers, one tile in each of the three suits. */
-export function mixedChowGroup(): Group {
+const MIXED_CHOW: Group = (() => {
   const options: string[][] = [];
   for (let start = 1; start <= 7; start++) {
     for (const order of permutations(SUITS)) {
@@ -234,10 +267,14 @@ export function mixedChowGroup(): Group {
     }
   }
   return { options: () => options };
+})();
+
+export function mixedChowGroup(): Group {
+  return MIXED_CHOW;
 }
 
 /** A pair made of the same number in two different suits ("mixed pair"). */
-export function mixedPairGroup(): Group {
+const MIXED_PAIR: Group = (() => {
   const options: string[][] = [];
   for (let rank = 1; rank <= 9; rank++) {
     for (let first = 0; first < SUITS.length; first++) {
@@ -250,15 +287,27 @@ export function mixedPairGroup(): Group {
     }
   }
   return { options: () => options };
+})();
+
+export function mixedPairGroup(): Group {
+  return MIXED_PAIR;
+}
+
+/** Pool keys, in pool order, with at least `least` tiles that pass `predicate`. */
+function keysWith(pool: Pool, least: number, predicate: KeyPredicate): string[] {
+  const keys: string[] = [];
+  for (const key in pool) if (pool[key]! >= least && predicate(key)) keys.push(key);
+  return keys;
 }
 
 export function pungGroup(predicate: KeyPredicate): Group {
   return {
     options: (pool) => {
       const options: string[][] = [];
-      for (const [key, count] of Object.entries(pool)) {
-        if (!predicate(key)) continue;
-        if (count >= 3) options.push([key, key, key]);
+      for (const key in pool) {
+        const count = pool[key]!;
+        if (count < 3 || !predicate(key)) continue;
+        options.push([key, key, key]);
         if (count >= 4) options.push([key, key, key, key]);
       }
       return options;
@@ -269,10 +318,7 @@ export function pungGroup(predicate: KeyPredicate): Group {
 /** Pung-only group: a kong does not satisfy a printed "Pung". */
 export function pungOnlyGroup(predicate: KeyPredicate): Group {
   return {
-    options: (pool) =>
-      Object.entries(pool)
-        .filter(([key, count]) => count >= 3 && predicate(key))
-        .map(([key]) => [key, key, key]),
+    options: (pool) => keysWith(pool, 3, predicate).map((key) => [key, key, key]),
   };
 }
 
@@ -290,19 +336,13 @@ export function pungOnlySuit(
 
 export function pairGroup(predicate: KeyPredicate): Group {
   return {
-    options: (pool) =>
-      Object.entries(pool)
-        .filter(([key, count]) => count >= 2 && predicate(key))
-        .map(([key]) => [key, key]),
+    options: (pool) => keysWith(pool, 2, predicate).map((key) => [key, key]),
   };
 }
 
 export function singleGroup(predicate: KeyPredicate): Group {
   return {
-    options: (pool) =>
-      Object.entries(pool)
-        .filter(([key, count]) => count >= 1 && predicate(key))
-        .map(([key]) => [key]),
+    options: (pool) => keysWith(pool, 1, predicate).map((key) => [key]),
   };
 }
 
@@ -350,9 +390,7 @@ export function pairsInSuitGroup(suit: Suit, units: number): Group {
 export function distinctPairsGroup(count: number, predicate: KeyPredicate): Group {
   return {
     options: (pool) => {
-      const keys = Object.entries(pool)
-        .filter(([key, value]) => value >= 2 && predicate(key))
-        .map(([key]) => key);
+      const keys = keysWith(pool, 2, predicate);
       const options: string[][] = [];
       const choose = (index: number, chosen: string[]): void => {
         if (chosen.length === count * 2) {

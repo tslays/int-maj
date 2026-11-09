@@ -32,14 +32,27 @@ interface ScenarioPayload extends StatePayload {
   readonly events: readonly string[];
 }
 
+// Building a board replays a whole hand with the bots, so each test shares
+// one build per scenario; the determinism test builds a second, fresh one.
+const built = new Map<ScenarioName, ReturnType<typeof buildScenario>>();
+
+function scenario(name: ScenarioName): ReturnType<typeof buildScenario> {
+  let session = built.get(name);
+  if (session === undefined) {
+    session = buildScenario(name);
+    built.set(name, session);
+  }
+  return session;
+}
+
 function payloadFor(name: ScenarioName): StatePayload {
-  return statePayload({ ...buildScenario(name), id: name });
+  return statePayload({ ...scenario(name), id: name });
 }
 
 describe("review states", () => {
   it("replays every scenario to exactly its own board", () => {
     for (const name of SCENARIO_NAMES) {
-      const session = buildScenario(name);
+      const session = scenario(name);
       const view = viewFor(session.state, session.seat);
       assert.ok(
         SCENARIOS[name].at(view, session.state),
@@ -53,7 +66,7 @@ describe("review states", () => {
   it("builds the same board every time", () => {
     for (const name of SCENARIO_NAMES) {
       const first = payloadFor(name);
-      const second = payloadFor(name);
+      const second = statePayload({ ...buildScenario(name), id: name });
       assert.deepEqual(
         { ...second, game: "" },
         { ...first, game: "" },
@@ -116,7 +129,7 @@ describe("review states", () => {
   });
 
   it("explains the winning combination in the book's own words", () => {
-    const win = buildScenario("win");
+    const win = scenario("win");
     const payload = statePayload({ ...win, id: "win" });
     const outcome = payload.outcome;
     assert.ok(outcome !== null && outcome.kind === "win");
@@ -135,7 +148,7 @@ describe("review states", () => {
     assert.ok((outcome.hand?.length ?? 0) > 0);
 
     // A bot's win explains itself the same way, and pays the same way.
-    const result = buildScenario("result");
+    const result = scenario("result");
     const resultPayload = statePayload({ ...result, id: "result" });
     const botWin = resultPayload.outcome;
     assert.ok(botWin !== null && botWin.kind === "win");
