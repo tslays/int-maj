@@ -166,6 +166,27 @@ export function preloadFaces(keys) {
 
 /* --------------------------------------------------------- tiles */
 
+/* A gold frame laid over a tile's face: "an identical tile is out here". */
+const markOutline = roundedRect(W * 0.98, H * 0.98, RADIUS);
+markOutline.holes.push(new THREE.Path(roundedRect(W * 0.84, H * 0.86, RADIUS * 0.7).getPoints(12).reverse()));
+const markGeometry = new THREE.ShapeGeometry(markOutline, 8);
+const markFillGeometry = new THREE.ShapeGeometry(roundedRect(W * 0.98, H * 0.98, RADIUS), 8);
+export const markMaterial = new THREE.MeshBasicMaterial({ color: 0xffc83d, transparent: true, depthWrite: false, opacity: 0 });
+export const markFillMaterial = new THREE.MeshBasicMaterial({ color: 0xffd45e, transparent: true, depthWrite: false, opacity: 0 });
+
+/** Put the gold frame on a tile (child named "mark"); it keeps the face visible. */
+export function markTile(tile) {
+  const frame = new THREE.Group();
+  frame.name = "mark";
+  const ring = new THREE.Mesh(markGeometry, markMaterial);
+  const fill = new THREE.Mesh(markFillGeometry, markFillMaterial);
+  ring.position.z = fill.position.z = D / 2 + 0.03;
+  ring.renderOrder = fill.renderOrder = 5;
+  frame.add(fill, ring);
+  tile.add(frame);
+  return frame;
+}
+
 /** A tile; `key` null is a tile seen only from the back. */
 export function makeTile(key, { shadows = true } = {}) {
   const tile = new THREE.Group();
