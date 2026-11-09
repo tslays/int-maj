@@ -249,23 +249,47 @@ exposed set is of honours). Fewer than three exposed sets, or exposed sets in
 two suits, indicate nothing. The engine previously keyed the penalty on an
 announced fishing wait; p. 22 speaks only of exposed tiles.
 
-## Wall draw animation: where the break lies and which tiles are loose (2026-11-09)
+## Wall draw animation: the break, the loose tiles and the replacement block (2026-11-09, redone)
 
-*Illustrated* p. 18-19 ("Breaking the wall (plan)", "Detail of South wall",
-rules 6-8) and p. 62: the wall to break is found by the dice (5 or 9 East,
-2/6/10 South, 3/7/11 West, 4/8/12 North, counted anticlockwise from East); its
-builder counts the thrown number of stacks from the right-hand end and the break
-is there. The deal is taken "from the left side of the opening", so the open
-end is the left of the break and drawing runs left, on round the corner into
-the wall at the builder's left. The loose tiles lie to the right of the break;
-replacements are "taken from the end of the wall to the right of the break".
-The deal takes the "next tile from the top row" (p. 19).
+Read on the page (*Illustrated* printed pp. 18-19 = `rules/pages/illustrated/p10.jpg`,
+the "Detail of South wall" diagram zoomed; p. 62 = `p32.jpg`):
 
-The book is silent on: (1) the engine throws no break dice, so the app throws
-two from the hand's key (`breakFor`, `app/src/layout.js`), purely for the
-look; the engine's draw order is unchanged; (2) which two tiles are lifted as
-loose tiles - the diagram sets them on the second and seventh stacks right of
-the break; the app does not lift them, it takes loose and replacement tiles
-from the stack nearest the break on its right, working away from the break,
-top tile first; (3) the order of the two tiles of a stack at the replacement
-end, which follows the open end's top-then-bottom order.
+- Diagram: right of the lifted stack ("10", crossed box) the bottom row is
+  numbered 9..1 from the break to the far right end ("COUNT TEN"); the top
+  row is numbered 1..7 counted from the break; the two loose tiles are drawn
+  on top of the 2nd and the 7th of the top row. So the two lifted tiles lie on
+  the 2nd and 7th stacks right of the break: those stacks are 3 high.
+- Rules 5-6 (p. 19 table): the wall to break is 5 or 9 East, 2/6/10 South,
+  3/7/11 West, 4/8/12 North, counted anticlockwise from East.
+- Rule 6: the builder "counts the tiles from the right-hand side until the
+  same number ... is reached - these two tiles are removed and placed face
+  downwards on top of the second and seventh tiles on the right side of the
+  break. They are now known as the loose tiles."
+- Rule 7: loose tiles replace tiles taken for Kongs, Flowers and Seasons.
+  "When each two are used, starting with the tile further from the break, two
+  more tiles are taken from the end of the wall to the right of the break, and
+  positioned on top of the wall as replacements." p. 62: "As the two loose
+  tiles are used they are replaced."
+- Rule 8 / p. 62: the deal is taken "from the left side of the opening"; p. 19
+  "the next tile from the top row". So the open end is left of the break, the
+  upper tile of a stack goes before the lower.
+
+This agrees with the owner's six rules (issue #48, confirmed 2026-11-09): the
+block right of the break never moves; replacements come from its far (corner)
+end; ordinary draws run left, stacks vanish in place; no tiles are left over
+(Illustrated p. 62: the last-14 rule is the Chinese game only).
+
+The book is silent on, and the app assumes (narrowest reading):
+(1) the engine throws no break dice, so the app throws two from the hand's key
+(`breakFor`), purely for the look; the engine's draw order is unchanged and
+its counts (`front`, `remaining`, `loose`) are what the picture follows.
+(2) Which end of the block the "two more tiles" come from: "the end of the wall
+to the right of the break" read as the far, corner end (owner rule 6), a stack
+(upper, lower) at a time, moving towards the break.
+(3) When the far end has been used up to or past a marker, or the block is
+shorter than 7 stacks (dice total under 9), a loose tile lies on the nearest
+stack still standing; two on one stack make it 4 high.
+(4) If replacements outrun the block, they go on at the far end of the
+ordinary run, so every tile is used.
+(5) Which stack of the block is where the loose pair is refilled onto: the
+same 2nd and 7th positions, the 7th first.

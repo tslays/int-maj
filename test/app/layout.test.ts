@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 // @ts-expect-error - a plain browser module without type declarations
-import { breakFor, wallDrawOrder, discardRect, discardSlot, frameRect, handRects, latestPlate, pondPad, meldLayout, meldRects, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
+import { breakFor, wallLook, wallPlan, discardRect, discardSlot, frameRect, handRects, latestPlate, pondPad, meldLayout, meldRects, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
 
 interface Rect {
   readonly minX: number;
@@ -95,15 +95,29 @@ describe("3D table discard layout", () => {
       { groups: [4, 3, 3, 3], bonusFirst: true, hand: 4 },
       { groups: [8, 4, 4, 4, 4], bonusFirst: true, hand: 1 },
     ];
-    for (const walls of [18, 12, 6, 0]) {
+    // The wall never slides: stacks vanish where they stand, so what is left
+    // can be the right end, a run in the middle or the left end alone. The
+    // lane is bounded by the highest slot still standing (`wallExtent`).
+    const range = (from: number, to: number) => Array.from({ length: Math.max(0, to - from) }, (_, i) => from + i);
+    const standing: { name: string; slots: number[] }[] = [
+      { name: "all 18", slots: range(0, 18) },
+      { name: "right 12", slots: range(0, 12) },
+      { name: "right 6", slots: range(0, 6) },
+      { name: "middle 3-9", slots: range(3, 9) },
+      { name: "left 12-18", slots: range(12, 18) },
+      { name: "gapped 0-2 and 8-10", slots: [0, 1, 2, 8, 9, 10] },
+      { name: "none", slots: [] },
+    ];
+    for (const { name, slots } of standing) {
+      const walls = slots.length === 0 ? 0 : Math.max(...slots) + 1;
       for (const { groups, bonusFirst, hand } of hands) {
         if (walls === 18 && groups.length > 4) continue; // twelve tiles are never laid before any wall is drawn
-        const label = `wall ${walls}, groups ${groups.join("+")}`;
+        const label = `wall ${name}, groups ${groups.join("+")}`;
         const melds: { rel: number; rect: Rect }[] = [];
         const solid: { what: string; rect: Rect }[] = [];
         for (let rel = 0; rel < 4; rel++) {
           for (const rect of meldRects(rel, groups, walls, hand, { bonusFirst })) melds.push({ rel, rect });
-          for (const rect of wallRects(rel, walls)) solid.push({ what: `seat ${rel} wall`, rect });
+          for (const rect of wallRects(rel, slots)) solid.push({ what: `seat ${rel} wall`, rect });
           for (const rect of handRects(rel, hand)) solid.push({ what: `seat ${rel} hand`, rect });
         }
         for (const discard of all) solid.push({ what: `seat ${discard.rel} discard ${discard.index + 1}`, rect: discard.rect });
@@ -193,24 +207,28 @@ describe("3D table discard layout", () => {
   });
 });
 
-describe("wall draw order (I p. 18-19)", () => {
-  interface Entry {
-    readonly rel: number;
-    readonly slot: number;
-    readonly level: number;
-  }
-  const order = (rel: number, count: number): Entry[] => wallDrawOrder(rel, count);
+describe("wall draw (I p. 18-19 rules 6-8, p. 62)", () => {
+  const key = (t: { rel: number; slot: number; level: number }) => `${t.rel}:${t.slot}:${t.level}`;
 
-  it("covers all 144 tiles exactly once", () => {
-    const keys = new Set(order(2, 7).map((t) => `${t.rel}:${t.slot}:${t.level}`));
-    assert.equal(keys.size, 144);
+  it("covers all 144 tiles exactly once: the lifted stack, the open run and the block", () => {
+    for (const count of [2, 7, 12]) {
+      const plan = wallPlan(2, count);
+      const keys = new Set([
+        ...plan.ordinary.map(key),
+        ...plan.block.map(key),
+        `${plan.lifted.rel}:${plan.lifted.slot}:0`,
+        `${plan.lifted.rel}:${plan.lifted.slot}:1`,
+      ]);
+      assert.equal(keys.size, 144, `count ${count}`);
+      assert.equal(plan.ordinary.length + plan.block.length, 142);
+    }
   });
 
-  it("opens just left of the break, taking the top tile before the one beneath", () => {
-    // Ten stacks counted from the right: stacks 0-9 lie right of the break,
-    // so the first draw is stack 10 (the next one to its left), top first.
-    const first = order(0, 10).slice(0, 4);
-    assert.deepEqual(first, [
+  it("lifts the stack counted from the right-hand end and draws from just left of it, top tile first", () => {
+    // Ten stacks counted from the right: slot 9 is the stack "10" of the book's detail.
+    const plan = wallPlan(0, 10);
+    assert.deepEqual(plan.lifted, { rel: 0, slot: 9 });
+    assert.deepEqual(plan.ordinary.slice(0, 4), [
       { rel: 0, slot: 10, level: 1 },
       { rel: 0, slot: 10, level: 0 },
       { rel: 0, slot: 11, level: 1 },
@@ -219,18 +237,83 @@ describe("wall draw order (I p. 18-19)", () => {
   });
 
   it("runs left to the wall's end, then into the wall on the builder's left", () => {
-    const list = order(0, 10);
+    const plan = wallPlan(0, 10);
     // 8 stacks remain left of the break: 16 tiles, then the next wall at its right end.
-    assert.deepEqual(list[15], { rel: 0, slot: 17, level: 0 });
-    assert.deepEqual(list[16], { rel: 3, slot: 0, level: 1 });
-    // The left-hand neighbour of rel 1 is rel 0; of rel 0 it is rel 3 (play runs E,S,W,N anticlockwise).
-    assert.equal(order(1, 5)[26].rel, 0);
+    assert.deepEqual(plan.ordinary[15], { rel: 0, slot: 17, level: 0 });
+    assert.deepEqual(plan.ordinary[16], { rel: 3, slot: 0, level: 1 });
+    // The left-hand neighbour of rel 1 is rel 0 (play runs E, S, W, N anticlockwise).
+    assert.equal(wallPlan(1, 5).ordinary[26]!.rel, 0);
+    // The run ends at the left-hand end (slot 17) of the wall on the builder's right,
+    // which meets the broken wall's right-hand corner, the block's far end.
+    assert.deepEqual(wallPlan(0, 10).ordinary.at(-1), { rel: 1, slot: 17, level: 0 });
   });
 
-  it("ends beside the break on its right, where replacements are taken", () => {
-    const list = order(0, 10);
-    assert.deepEqual(list.at(-1), { rel: 0, slot: 9, level: 0 });
-    assert.deepEqual(list.at(-2), { rel: 0, slot: 9, level: 1 });
+  it("keeps the replacement block on the broken wall, right of the break, used from its far end", () => {
+    const plan = wallPlan(0, 10);
+    assert.equal(plan.block.length, 18, "nine stacks right of the break");
+    assert.ok(plan.block.every((t) => t.rel === 0 && t.slot <= 8));
+    assert.deepEqual(plan.block.slice(0, 3), [
+      { rel: 0, slot: 0, level: 1 },
+      { rel: 0, slot: 0, level: 0 },
+      { rel: 0, slot: 1, level: 1 },
+    ]);
+  });
+
+  it("lays the two loose tiles on the 2nd and 7th stack right of the break: three high", () => {
+    // Book detail: the break is the 10th stack; the 2nd right of it is slot 7, the 7th is slot 2.
+    const look = wallLook(wallPlan(0, 10), 53, 0, 2);
+    assert.deepEqual(look.markers, [
+      { which: "far", rel: 0, slot: 2, level: 2 },
+      { which: "near", rel: 0, slot: 7, level: 2 },
+    ]);
+    assert.equal(look.goneBlock, 0, "the block has not been touched");
+  });
+
+  it("uses the 7th stack's tile first, then the 2nd's, and the block never moves", () => {
+    const plan = wallPlan(0, 10);
+    const one = wallLook(plan, 60, 1, 1);
+    assert.deepEqual(one.markers, [{ which: "near", rel: 0, slot: 7, level: 2 }]);
+    assert.equal(one.goneBlock, 0);
+    // Both used: two more come off the far end (slot 0) and lie on the same two stacks again.
+    const two = wallLook(plan, 60, 2, 2);
+    assert.equal(two.goneBlock, 2, "the far stack's two tiles");
+    assert.deepEqual(two.markers.map((m) => [m.which, m.slot, m.level]), [["far", 2, 2], ["near", 7, 2]]);
+    // Four used: the far end has moved on two stacks; the marker stacks are untouched.
+    const four = wallLook(plan, 60, 4, 2);
+    assert.equal(four.goneBlock, 4);
+  });
+
+  it("is 3 or 4 high at a marker, never 2, while the stack under it stands", () => {
+    for (let count = 2; count <= 12; count++) {
+      const plan = wallPlan(1, count);
+      for (let used = 0; used <= 22; used++) {
+        const look = wallLook(plan, 53, used, 2);
+        const left = plan.block.slice(look.goneBlock);
+        for (const m of look.markers) {
+          const base = left.filter((t) => t.slot === m.slot).length;
+          if (base === 2) assert.ok(m.level + 1 === 3 || m.level + 1 === 4, `count ${count} used ${used}: ${m.which} ${m.level + 1} high`);
+        }
+      }
+    }
+  });
+
+  it("stacks both loose tiles on one stack (4 high) once the far end has reached the marker", () => {
+    const plan = wallPlan(0, 2); // one stack right of the break
+    const look = wallLook(plan, 53, 0, 2);
+    assert.deepEqual(look.markers.map((m) => [m.slot, m.level]), [[0, 2], [0, 3]]);
+  });
+
+  it("leaves no tile over: every tile ends up gone, whichever way they were drawn", () => {
+    for (const count of [2, 6, 12]) {
+      const plan = wallPlan(3, count);
+      for (const used of [0, 10, 40, 140]) {
+        const front = 142 - used;
+        const look = wallLook(plan, front, used + 2, 0);
+        const visible =
+          plan.ordinary.length - look.goneOrdinary - look.goneTail + plan.block.length - look.goneBlock;
+        assert.equal(visible, 0, `count ${count} used ${used}`);
+      }
+    }
   });
 
   it("breaks the wall the book's table names", () => {
