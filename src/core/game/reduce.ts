@@ -24,7 +24,7 @@
  */
 
 import { createHand, type Hand, type Meld } from "../hand.ts";
-import { matchHand } from "../match.ts";
+import { matchesAny } from "../match.ts";
 import { DEFAULT_LIMIT, scoreHand, type ScoreResult } from "../score.ts";
 import { declareFishing, settleFishing } from "../fishing.ts";
 import { TIER_FISHING, TIER_POINTS, type Tier } from "../patterns/types.ts";
@@ -199,7 +199,7 @@ export function winsOnDiscard(state: GameState, seat: Seat, tile: string): boole
   const hand = buildHand(state, seat, { extra: tile, winningTile: tile, selfDrawn: false });
   return (
     hand !== null &&
-    matchHand(hand).some((match) => allowedPattern(state, match.pattern.id))
+    matchesAny(hand, (pattern) => allowedPattern(state, pattern.id))
   );
 }
 
@@ -233,7 +233,7 @@ export function waitsOf(state: GameState, seat: Seat): string[] {
     const hand = buildHand(state, seat, { extra: key, selfDrawn: true });
     if (
       hand !== null &&
-      matchHand(hand).some((match) => allowedPattern(state, match.pattern.id))
+      matchesAny(hand, (pattern) => allowedPattern(state, pattern.id))
     ) {
       waits.push(key);
     }
@@ -326,7 +326,7 @@ function completesAsChow(
     { kind: "chow", tiles: toPlayTiles(chow), exposed: true },
   ];
   const hand = buildHand(state, seat, { concealedOverride: concealed, meldOverride: melds });
-  return hand !== null && matchHand(hand).length > 0;
+  return hand !== null && matchesAny(hand, () => true);
 }
 
 /**

@@ -72,8 +72,13 @@ Live at https://int.mah-jong.workers.dev.
 
 ## Known follow-ups
 
-- `apply` costs about 3-4 ms per decision, so resuming late in a hand replays
-  for up to a second; worth profiling before the alpha.
+- Done (2026-11-09): `apply` was profiled. Its cost was the wait check after
+  every discard, which runs the hand matcher for every tile. The matcher now
+  backtracks over one pool without copying, builds constant groups once and
+  stops at the first allowed hand: `apply` is about 6x faster (23 ms to 4 ms
+  per step in a cloud container), so a late-hand resume takes well under a
+  second and `npm test` dropped from about 2.5 minutes to under one. Bot
+  play was checked hand by hand against the old engine: identical.
 
 ## History
 

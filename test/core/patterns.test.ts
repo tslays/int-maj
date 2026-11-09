@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { createHand, meld } from "../../src/core/hand.ts";
-import { matchHand } from "../../src/core/match.ts";
+import { matchesAny, matchHand } from "../../src/core/match.ts";
 import { PATTERNS } from "../../src/core/patterns/table.ts";
 
 function ids(...handArgs: Parameters<typeof createHand>): string[] {
@@ -278,5 +278,62 @@ describe("Chow Chow", () => {
       selfDrawn: true,
     });
     assert.equal(contains(idsFound, "chow-chow"), false);
+  });
+});
+
+describe("matchesAny", () => {
+  // The wait check asks matchesAny instead of building every match, so it
+  // must give exactly the answer matchHand(...).some(...) gives. Hands are
+  // drawn from a few tile kinds so that many of them complete a pattern.
+  const kinds = ["b1", "b2", "b3", "b4", "b5", "b6", "b7", "b8", "b9", "c1", "c5", "c9", "o1", "o9", "wE", "wN", "dR", "dG"];
+  let seed = 7;
+  const next = (bound: number): number => {
+    seed = (seed * 1103515245 + 12345) % 2147483648;
+    return seed % bound;
+  };
+  // Half the hands are four sets and a pair (many of them win), half are
+  // loose tiles; both kinds must agree.
+  const set = (): string[] => {
+    const key = kinds[next(kinds.length)]!;
+    const rank = Number(key.slice(1));
+    if (key.startsWith("b") && rank <= 7 && next(2) === 0) {
+      return [key, `b${rank + 1}`, `b${rank + 2}`];
+    }
+    return [key, key, key];
+  };
+  const fits = (tiles: readonly string[]): boolean =>
+    tiles.every((key) => tiles.filter((tile) => tile === key).length <= 4);
+  const hands = Array.from({ length: 400 }, (_, index) => {
+    let tiles: string[] = [];
+    if (index % 2 === 0) {
+      do {
+        const pair = kinds[next(kinds.length)]!;
+        tiles = [...set(), ...set(), ...set(), ...set(), pair, pair];
+      } while (!fits(tiles));
+    } else {
+      while (tiles.length < 14) {
+        const key = kinds[next(kinds.length)]!;
+        if (tiles.filter((tile) => tile === key).length < 4) tiles.push(key);
+      }
+    }
+    return createHand({ concealed: tiles.join(" "), selfDrawn: next(2) === 0 });
+  });
+
+  it("agrees with matchHand for every pattern filter", () => {
+    let matched = 0;
+    for (const hand of hands) {
+      const matches = matchHand(hand);
+      if (matches.length > 0) matched += 1;
+      assert.equal(matchesAny(hand, () => true), matches.length > 0);
+      for (const { pattern } of matches) {
+        const without = (other: { readonly id: string }) => other.id !== pattern.id;
+        assert.equal(
+          matchesAny(hand, without),
+          matches.some((match) => without(match.pattern)),
+          `${pattern.id} excluded`,
+        );
+      }
+    }
+    assert.ok(matched >= 50, `only ${matched} of the sample hands match a pattern`);
   });
 });

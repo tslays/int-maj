@@ -51,7 +51,7 @@ selects Node 24 by itself.
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | build the app and serve it on http://127.0.0.1:8091/ |
-| `npm test` | every test (a few minutes) |
+| `npm test` | every test (under a minute) |
 | `npm run play` | a console table against three bots |
 | `npm run check -- "dR dR dR dG dG dG dW dW dW b1 b2 b3 b5"` | what a hand makes or waits on |
 | `npm run replay -- examples/readme-hand.json` | replay a recorded hand |
