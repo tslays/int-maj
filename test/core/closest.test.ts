@@ -34,6 +34,7 @@ describe("closest hands", () => {
     assert.equal(snake.away, 1);
     assert.deepEqual(snake.need, ["wN"]);
     assert.equal(snake.tier, "limit");
+    assert.equal(snake.concealedOnly, true, "Wriggly Snake exists only concealed");
     assert.equal(snake.points, 1000);
     assert.ok(snake.chance > 0 && snake.chance <= 1);
     assert.equal(hands[0]!.away, 1, "nothing is nearer than one tile");

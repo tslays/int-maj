@@ -59,6 +59,15 @@ value and the missing tiles. It is asked for when your own tiles change and at
 each of your decisions, and hides on the result card. The menu's Hints button
 turns it off (remembered on the device).
 
+Every row carries a tag that settles the playing style at a glance: a solid
+amber **CONCEALED ONLY** pill (and amber edge) when the hand exists only with
+no exposed meld, a quiet teal outline **OPEN ALLOWED** when calling is fine.
+Most special hands are concealed only, so the loud tag is the common one.
+Tapping a row opens the hand's sheet (`GET /api/hand`): the same tag as a full
+banner with what it means for calling discards, the hand's composition, what it
+pays concealed and open, whether it must be self-drawn, the tiles you still
+need and its book pages. Close it with the cross, the backdrop or Escape.
+
 ## Sound
 
 `app/src/sound.js` plays named cues (`sound.cue("clack", { delay, pan, far })`)
@@ -105,6 +114,7 @@ tiles of the other seats, and their hand counts only.
 | --- | --- | --- |
 | `GET /api/state` | `game=<id>` | the view, legal actions, wall count, per-seat table, ledger, wait panel, result and `scoresBefore` |
 | `GET /api/closest` | `game=<id>` | the catalogue hands your tiles are nearest to (`closestHands`), at most three |
+| `GET /api/hand` | `pattern=<id>` | one catalogue hand's conditions: composition, concealed-only, self-drawn, concealed and open value (`handDetail`) |
 | `GET /api/scenario` | `state=<name>` | one fixed review board and its events |
 | `POST /api/new` | `{ "seed": "..." }` | a new game and its first state |
 | `POST /api/move` | `{ "game": "...", "action": {...} }` | the new state plus `events` as text lines |

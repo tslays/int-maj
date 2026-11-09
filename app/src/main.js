@@ -494,6 +494,7 @@ async function refreshHints(force = false) {
   const panel = $("#closest");
   if (!hintsOn || payload === null || payload.outcome !== null || payload.view.phase === "finished") {
     panel.hidden = true;
+    closeHandDetail();
     hintsFor = null;
     return;
   }
@@ -507,6 +508,26 @@ async function refreshHints(force = false) {
   } catch {
     panel.hidden = true;
   }
+}
+
+const TIER_LABEL = {
+  half: "Half limit",
+  limit: "Limit",
+  middle: "Middle limit",
+  double: "Double limit",
+  calculate: "Calculated score",
+};
+
+function worth(tier, points) {
+  return points === null ? TIER_LABEL[tier] : `${TIER_LABEL[tier]} · ${points.toLocaleString("en")}`;
+}
+
+/** The at-a-glance tag: concealed-only is loud, open-allowed is quiet. */
+function playTag(concealedOnly, large = false) {
+  const tag = document.createElement("span");
+  tag.className = `play-tag ${concealedOnly ? "play-concealed" : "play-open"}${large ? " play-large" : ""}`;
+  tag.textContent = concealedOnly ? "Concealed only" : "Open allowed";
+  return tag;
 }
 
 function renderHints(hands) {
@@ -525,6 +546,13 @@ function renderHints(hands) {
   const list = document.createElement("ol");
   for (const hand of hands) {
     const item = document.createElement("li");
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = `closest-item ${hand.concealedOnly ? "is-concealed" : "is-open"}`;
+    row.setAttribute(
+      "aria-label",
+      `${hand.name}, ${hand.concealedOnly ? "concealed only" : "open allowed"}. Tap for details.`,
+    );
     const name = document.createElement("span");
     name.className = "closest-name";
     name.textContent = hand.name;
@@ -539,18 +567,114 @@ function renderHints(hands) {
     } else {
       meta.textContent = `${hand.away} to go · ${value}`;
     }
-    item.append(name, meta);
+    row.append(name, playTag(hand.concealedOnly), meta);
     if (hand.need.length > 0) {
       const need = document.createElement("span");
       need.className = "closest-need";
       for (const key of hand.need) need.append(faceChip(key));
-      item.append(need);
+      row.append(need);
     }
+    row.addEventListener("click", () => void openHandDetail(hand));
+    item.append(row);
     list.append(item);
   }
   panel.replaceChildren(title, list);
   panel.hidden = false;
 }
+
+/* --------------------------------------------------------- hand detail */
+
+function closeHandDetail() {
+  const sheet = $("#hand-detail");
+  if (sheet.hidden) return;
+  sheet.hidden = true;
+  sheet.replaceChildren();
+}
+
+function detailLine(label, ...content) {
+  const line = document.createElement("div");
+  line.className = "detail-line";
+  const heading = document.createElement("h3");
+  heading.textContent = label;
+  const body = document.createElement("p");
+  body.append(...content);
+  line.append(heading, body);
+  return line;
+}
+
+async function openHandDetail(hand) {
+  let detail;
+  try {
+    detail = await request(`/api/hand?pattern=${encodeURIComponent(hand.pattern)}`);
+  } catch {
+    return;
+  }
+  const sheet = $("#hand-detail");
+  const card = document.createElement("div");
+  card.className = "detail-card";
+  card.setAttribute("role", "dialog");
+  card.setAttribute("aria-modal", "true");
+  card.setAttribute("aria-label", detail.name);
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "detail-close";
+  close.setAttribute("aria-label", "Close");
+  close.textContent = "\u00d7";
+  close.addEventListener("click", closeHandDetail);
+
+  const heading = document.createElement("h2");
+  heading.textContent = detail.name;
+
+  const banner = document.createElement("div");
+  banner.className = `detail-banner ${detail.concealedOnly ? "play-concealed" : "play-open"}`;
+  const bannerTitle = document.createElement("strong");
+  bannerTitle.textContent = detail.concealedOnly ? "Concealed only" : "Open or concealed";
+  const bannerText = document.createElement("span");
+  bannerText.textContent = detail.concealedOnly
+    ? "Build it entirely from your own tiles. Do not call Pung, Kong or Chow on a discard: " +
+      "one exposed meld and this hand is gone. You may still win on a discard."
+    : "You may call discards to make exposed melds and still win this hand, " +
+      "though it pays less than playing it concealed.";
+  banner.append(bannerTitle, bannerText);
+
+  card.append(close, heading, banner, detailLine("What it is", detail.description));
+  if (detail.requiresSelfDrawn) {
+    card.append(detailLine("Self-drawn", "Every tile, the winning one included, must come from the wall."));
+  }
+  const pays = [`Concealed: ${worth(detail.concealedTier, detail.concealedPoints)}`];
+  pays.push(
+    detail.exposedTier === null
+      ? "Open: not possible"
+      : `Open: ${worth(detail.exposedTier, detail.exposedPoints)}`,
+  );
+  const payLine = detailLine("What it pays", pays[0]);
+  payLine.lastChild.append(document.createElement("br"), pays[1]);
+  card.append(payLine);
+
+  const need = document.createElement("span");
+  need.className = "closest-need detail-need";
+  if (hand.away === 0) {
+    need.textContent = "Complete: you can declare it.";
+  } else {
+    for (const key of hand.need) need.append(faceChip(key));
+  }
+  card.append(
+    detailLine(hand.away === 0 ? "Your hand" : `You still need (${hand.away})`, need),
+    detailLine("In the book", detail.pages.length > 1 ? `pages ${detail.pages.join(", ")}` : `page ${detail.pages[0]}`),
+  );
+
+  sheet.replaceChildren(card);
+  sheet.hidden = false;
+  close.focus();
+}
+
+$("#hand-detail").addEventListener("click", (event) => {
+  if (event.target === event.currentTarget) closeHandDetail();
+});
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeHandDetail();
+});
 
 function showHintsButton() {
   const button = $("#hints");
