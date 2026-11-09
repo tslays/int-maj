@@ -62,8 +62,8 @@ shut:
 
 | Cue | When | Character |
 | --- | --- | --- |
-| `draw` | a bot takes from the wall; your drawn tile slides in | soft brush and tap |
-| `clack` | a discard lands (yours, then each bot's, panned to its side; the opposite seat is darker and quieter) | plastic on felt: edge click, body knock, felt thud, never twice the same |
+| `draw` | a bot takes from the wall; your drawn tile slides in | soft, low brush and tap (centroid about 330 Hz) |
+| `clack` | a discard lands (yours, then each bot's, panned to its side; the opposite seat is darker and quieter) | the base beat: a weighty plastic tile on smooth felt, a low round thump (centroid about 300 Hz, top end rolled off), nearly the same each time, never sharp; the chimes and ticks are the bright sounds, so the two kinds stay apart |
 | `meld` | a call's tiles drop together; a claimed discard arrives with its own clack | 3-4 clacks a hair apart |
 | `tick` | a hand tile under the mouse, or your first tap on it (pitch follows its place in the hand); `swap` when two tiles trade places | very quiet click |
 | `lift` | the moment you throw a tile | short low pluck, before the clack |
