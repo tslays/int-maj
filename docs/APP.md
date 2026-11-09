@@ -54,7 +54,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
 - `app/src/sound.js` is the sound, synthesised live with Web Audio: no audio
   files, so nothing to license, ship or cache. See "Sound" below.
 
-Tap a tile to lift it and tap it again to discard. Tap a second tile while one is lifted and the two swap places; drag a tile along the hand and it trades places with every tile it passes, so you can arrange the hand your own way (it stays arranged for the hand). Claims, kongs, fishing,
+Tap a tile to lift it and tap it again to discard; or hold it and swipe up (a mouse can drag it up the same way) and let go to throw it onto the table: it swells once the swipe is far enough, and sliding back down cancels. Tap a second tile while one is lifted and the two swap places; drag a tile along the hand and it trades places with every tile it passes, so you can arrange the hand your own way (it stays arranged for the hand). Claims, kongs, fishing,
 Mah Jong, reshuffle and the Goulash exchange appear as buttons when the engine
 offers them. The table is landscape only.
 

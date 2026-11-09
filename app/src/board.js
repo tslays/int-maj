@@ -539,7 +539,8 @@ export class Board {
   /** Hand-space x under a pointer event (on the hand's plane), or null. */
   handX(event) {
     const rect = renderer.domElement.getBoundingClientRect();
-    const fromBottom = rect.bottom - event.clientY;
+    // A tile swiped up out of the strip still tracks along the hand's row.
+    const fromBottom = Math.max(0, Math.min(viewport.strip, rect.bottom - event.clientY));
     const pointer = new THREE.Vector2(
       ((event.clientX - rect.left) / rect.width) * 2 - 1,
       (fromBottom / viewport.strip) * 2 - 1,
@@ -604,6 +605,15 @@ export class Board {
       at += step;
     }
     this.layoutHand(new Set(), true, entry);
+  }
+
+  /** Show (or clear) that releasing this carried tile will throw it: it swells a little. */
+  armThrow(entry, on) {
+    const k = on ? 1.12 : 1;
+    if (entry.tile.scale.x === k) return false;
+    entry.tile.scale.setScalar(k);
+    requestRender();
+    return true;
   }
 
   /** Settle every hand tile into its place (after a drag or a swap). */
