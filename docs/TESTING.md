@@ -24,7 +24,7 @@ The message to paste to the club, then the known limits. It stands alone.
 > result surprise you? Do the bots play sensibly? Did anything break or look
 > wrong?
 >
-> **To send a report:** tap Report a problem in the menu, type a line about
+> **To send a report:** tap Report in the menu, type a line about
 > what you saw (optional) and tap Send report. The share sheet opens; pick
 > Messages or Mail. If your device has no share sheet, the report is copied
 > and you paste it into your message. It holds the build, your device and
