@@ -167,6 +167,32 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   as in CI) or else the content hash. `src/build-info.js` exports `BUILD`
   (`version`, `stage`, `id`) and `BUILD_LABEL`; import it to put the build in
   a problem report. Unbuilt, the id reads `dev`.
+- **Report a problem.** The menu button opens a sheet with an optional
+  one-line note; Send report hands the text to `navigator.share` (the iOS
+  share sheet) or, where that is missing or fails, to the clipboard with a
+  toast. No server, account or network. `src/table/report.ts` builds it
+  (`LocalApi.report`), so `app/` only collects the note and delivers. The text:
+
+  ```
+  int-maj problem report
+  Version: 0.1.0-alpha.1
+  Build: <build id>
+  User agent: <navigator.userAgent>
+  Hand: <n> (<phase>)
+  Decisions: <all steps> (yours: <human steps>)
+  Note: <one line, 280 characters at most, or (none)>
+
+  -----BEGIN REPLAY-----
+  {"format":"int-maj-report/1","seed":...,"dealer":"E","steps":[...],"humanSteps":[...]}
+  -----END REPLAY-----
+  ```
+
+  The JSON is the seed, the first dealer and every decision in order, bots
+  included, as `ReplayStep`s (public actions: discards, claims, wins). It
+  carries no `GameState`, checkpoint or tile lists; the seed deals the wall, so
+  replay rebuilds the hands, which is all a replayable report must hold.
+  `npm run replay -- report.txt` replays a pasted report (`replayReport` in
+  code) to the same state.
 - **Install.** Safari > Share > Add to Home Screen gives a full-screen app
   with its own icon (`app/assets/icons/`). Service workers need https, so install
   from the deployed site, not from a `--lan` address.
