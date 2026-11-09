@@ -239,6 +239,16 @@ export function wallRemaining(state: GameState): number {
   return Math.max(0, state.wall.back - state.wall.front + 1);
 }
 
+/**
+ * Tiles still to be drawn by anyone. In the Western game the loose pair is
+ * part of the wall ("all tiles have been drawn", I p. 21), so it counts and is
+ * drawn last; the Chinese game never uses its dead wall for ordinary draws.
+ */
+export function tilesLeft(state: GameState): number {
+  const loose = state.variant === "chinese" ? 0 : state.wall.loose.length;
+  return wallRemaining(state) + loose;
+}
+
 /** Effective tile count: physical tiles minus one per declared kong. */
 export function effectiveCount(player: PlayerState): number {
   const physical =

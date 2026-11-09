@@ -118,6 +118,37 @@ describe("drawn hands", () => {
     assert.equal(play(second, { type: "Draw", seat: "S" }).state.result?.nextDealer, "S");
   });
 
+  // R-074 [I p. 21]: the hand is drawn only "before all tiles have been drawn
+  // from the wall" - the loose pair is drawn down too, nothing is left over.
+  it("draws the loose pair down before a Western hand is drawn", () => {
+    let state = fixture({
+      dealer: "E",
+      wall: [],
+      loose: ["b1", "b2"],
+      phase: "draw",
+      turn: "S",
+    });
+    state = play(state, { type: "Draw", seat: "S" }).state;
+    assert.equal(state.wall.loose.length, 1);
+    assert.equal(state.phase, "discard");
+    const thrown = state.players[1]!.hand.find((key) => key !== "b1")!;
+    state = play(state, { type: "Discard", seat: "S", tile: thrown }).state;
+    while (state.phase === "claim") {
+      state = play(state, { type: "Pass", seat: state.turn }).state;
+    }
+    state = play(state, { type: "Draw", seat: state.turn }).state;
+    assert.equal(state.wall.loose.length, 0);
+    assert.equal(state.result, null);
+    const discarder = state.turn;
+    const out = state.players[["E", "S", "W", "N"].indexOf(discarder)]!.hand[0]!;
+    state = play(state, { type: "Discard", seat: discarder, tile: out }).state;
+    while (state.phase === "claim") {
+      state = play(state, { type: "Pass", seat: state.turn }).state;
+    }
+    assert.equal(state.result?.kind, "drawn");
+    assert.equal(state.wall.loose.length, 0);
+  });
+
   it("marks the next Western hand as a Goulash", () => {
     const drawn = fixture({
       dealer: "E",

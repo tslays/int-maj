@@ -50,6 +50,7 @@ import {
   playerOf,
   seatIndex,
   seatWindOf,
+  tilesLeft,
   wallRemaining,
   type ClaimRecord,
   type ClaimWindow,
@@ -398,7 +399,12 @@ function refillLoose(draft: Draft): void {
 
 function drawFrom(draft: Draft, end: "front" | "loose"): string | null {
   if (end === "front") {
-    if (draft.wall.front > draft.wall.back) return null;
+    if (draft.wall.front > draft.wall.back) {
+      // The live wall is gone: the Western loose pair is drawn down last, so
+      // no tile is left over when the hand is drawn (I p. 21).
+      if (draft.variant === "chinese") return null;
+      return draft.wall.loose.shift() ?? null;
+    }
     const key = draft.wall.tiles[draft.wall.front]!;
     draft.wall.front += 1;
     return key;
@@ -513,7 +519,7 @@ function advanceTurn(draft: Draft, from: Seat, events: Event[], emit: Emit): voi
   draft.phase = "draw";
   draft.turn = nextSeat(from);
   draft.lastDraw = null;
-  if (wallRemaining(draft as GameState) === 0) {
+  if (tilesLeft(draft as GameState) === 0) {
     finishDrawn(draft, "wall exhausted with no winner", emit);
   }
 }
@@ -770,7 +776,7 @@ function finishWin(
     wonOnLastWallTile:
       selfDrawn &&
       draft.lastDraw?.end === "front" &&
-      wallRemaining(draft as GameState) === 0,
+      tilesLeft(draft as GameState) === 0,
   });
   const winning = score.winning;
   if (winning === null) {
