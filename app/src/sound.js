@@ -4,9 +4,9 @@
  *
  * The rhythm of a game, in the order you hear it:
  *
- *   draw       a soft lift of a tile from the wall (a bot's, or yours settling)
- *   clack      a plastic tile landing on felt: the click of the tile, a short
- *              body knock and the dull felt thud under it
+ *   draw       a soft, low lift of a tile from the wall (a bot's, or yours settling)
+ *   clack      a weighty plastic tile landing on felt: a round, low thump (a
+ *              little knock and the felt thud under it), the game's base beat
  *   meld       the tiles of a call set down together
  *   tick       the very quiet click of a hand tile under your pointer / finger
  *   alert      the bright two-note chime when the game asks you to decide
@@ -86,15 +86,16 @@ export function createVoices(ctx, out, random = Math.random) {
   }
 
   /**
-   * One sound's own signal path: level, a lowpass that darkens it with
-   * distance (`far`, 0..1) and a pan. Returns the node to connect sources to.
+   * One sound's own signal path: level, a lowpass (`top`, Hz) that darkens it
+   * further with distance (`far`, 0..1) and a pan. Returns the node to connect
+   * sources to.
    */
-  function lane({ pan = 0, far = 0, gain = 1 } = {}) {
+  function lane({ pan = 0, far = 0, gain = 1, top = 11000 } = {}) {
     const input = ctx.createGain();
     input.gain.value = gain * (1 - 0.25 * far);
     const dark = ctx.createBiquadFilter();
     dark.type = "lowpass";
-    dark.frequency.value = 11000 - far * 6000;
+    dark.frequency.value = top - far * top * 0.45;
     dark.Q.value = 0.5;
     input.connect(dark);
     let tail = dark;
@@ -125,22 +126,22 @@ export function createVoices(ctx, out, random = Math.random) {
   /* ----------------------------------------------------- the tile on felt */
 
   /**
-   * A plastic tile landing on felt. Three layers: a bright click from the
-   * tile's edge (kept short and a little rounded, as felt takes the sting out),
-   * the knock of the plastic body with two quick overtones, and the dull thud
-   * of the felt and the table under it. Every hit is a little different.
+   * A weighty plastic tile landing on smooth felt: the base beat of the game,
+   * so it sits low and round and never sharp. A soft mid "tok" from the tile's
+   * edge (felt takes the sting out), the knock of the plastic body falling in
+   * pitch, and the dull thud of the felt and table under it carrying most of
+   * the weight. The top end is rolled off, and every hit is nearly the same,
+   * a little different, like a drummer's.
    */
   function clack(t, { intensity = 1, pan = 0, far = 0 } = {}) {
     const v = 0.55 + 0.45 * clamp(intensity, 0, 1.2);
-    const k = 1 + (random() - 0.5) * 0.14;
-    const bus = lane({ pan, far, gain: 0.95 * (0.92 + random() * 0.16) });
-    burst(bus, t, { freq: 3300 * k, q: 0.9, gain: 0.6 * v, attack: 0.0005, decay: 0.012 });
-    burst(bus, t, { type: "highpass", freq: 6500, q: 0.7, gain: 0.07 * v, attack: 0.0004, decay: 0.006 });
-    tone(bus, t, { freq: 640 * k, to: 300 * k, sweep: 0.045, gain: 0.55 * v, decay: 0.075 });
-    tone(bus, t, { freq: 1320 * k, gain: 0.15 * v, decay: 0.035 });
-    tone(bus, t, { freq: 2150 * k, gain: 0.06 * v, decay: 0.02, type: "triangle" });
-    burst(bus, t, { type: "lowpass", freq: 420, q: 0.7, gain: 0.4 * v, attack: 0.001, decay: 0.06 });
-    tone(bus, t, { freq: 125 * k, to: 62, sweep: 0.08, gain: 0.32 * v, decay: 0.09 });
+    const k = 1 + (random() - 0.5) * 0.08;
+    const bus = lane({ pan, far, top: 3600, gain: 0.9 * (0.94 + random() * 0.12) });
+    burst(bus, t, { freq: 1400 * k, q: 0.8, gain: 0.3 * v, attack: 0.0008, decay: 0.014 });
+    tone(bus, t, { freq: 400 * k, to: 190 * k, sweep: 0.06, gain: 0.75 * v, decay: 0.09 });
+    tone(bus, t, { freq: 820 * k, gain: 0.1 * v, decay: 0.03 });
+    burst(bus, t, { type: "lowpass", freq: 300, q: 0.7, gain: 0.5 * v, attack: 0.001, decay: 0.07 });
+    tone(bus, t, { freq: 150 * k, to: 80, sweep: 0.09, gain: 0.36 * v, decay: 0.1 });
   }
 
   /** Tiles set down together: a call's tiles landing a hair apart. */
@@ -168,12 +169,12 @@ export function createVoices(ctx, out, random = Math.random) {
     clack(t + 0.77, { intensity: 0.6, pan: 0.15, far: 0.1 });
   }
 
-  /** A tile lifted off the wall, or sliding into your rack: a soft, short brush and tap. */
+  /** A tile lifted off the wall, or sliding into your rack: a soft, low brush and tap. */
   function draw(t, { own = false, pan = 0, far = 0 } = {}) {
-    const bus = lane({ pan, far, gain: own ? 0.9 : 0.6 });
-    burst(bus, t, { freq: own ? 2400 : 1900, q: 0.8, gain: 0.3, attack: 0.002, decay: own ? 0.03 : 0.022 });
-    tone(bus, t, { freq: own ? 980 : 760, to: own ? 520 : 420, sweep: 0.03, gain: 0.22, decay: 0.04 });
-    burst(bus, t, { type: "lowpass", freq: 360, gain: 0.25, attack: 0.002, decay: 0.035 });
+    const bus = lane({ pan, far, top: 3000, gain: own ? 1.0 : 0.7 });
+    burst(bus, t, { freq: own ? 1100 : 900, q: 0.8, gain: 0.22, attack: 0.002, decay: own ? 0.032 : 0.026 });
+    tone(bus, t, { freq: own ? 360 : 320, to: 200, sweep: 0.035, gain: 0.35, decay: 0.05 });
+    burst(bus, t, { type: "lowpass", freq: 280, gain: 0.3, attack: 0.002, decay: 0.04 });
   }
 
   /* ----------------------------------------------------- the hand and buttons */
