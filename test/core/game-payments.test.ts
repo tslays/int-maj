@@ -361,6 +361,29 @@ describe("dealer rotation", () => {
     assert.ok(drawn.events.some((event) => event.type === "DrawnHand"));
     assert.equal(nextHand(drawn.state).state.dealer, "E");
   });
+
+  it("pays nothing to a fishing player when the hand is drawn (I p. 21 #22, #26)", () => {
+    const state = fixture({
+      hands: {
+        E: "o5 o5 b1 b1 b2 b2 b3 b3 b4 b4 b5 b5 b7",
+        S: "b1 b1 b1 b3 b3 b3 b4 b4 b4 b6 b6 b6 b7",
+        W: "c1 c1 c1 c2 c2 c2 c3 c3 c3 c4 c4 c4 c5",
+        N: "o1 o1 o1 o2 o2 o2 o3 o3 o3 o4 o4 o4 o5",
+      },
+      wall: [],
+      phase: "draw",
+      turn: "S",
+      fishing: [{ seat: "E", wait: ["b7"], tier: "limit" }],
+    });
+    const drawn = play(state, { type: "Draw", seat: "S" });
+    assert.equal(drawn.state.result?.kind, "drawn");
+    assert.equal(drawn.state.fishing.length, 1, "E is still fishing when the wall runs out");
+    assert.deepEqual(
+      drawn.state.ledger.filter((entry) => entry.reason.startsWith("fishing")),
+      [],
+    );
+    assert.deepEqual(ledgerTotals(drawn.state).totals, { E: 0, S: 0, W: 0, N: 0 });
+  });
 });
 
 describe("fishing restrictions", () => {
