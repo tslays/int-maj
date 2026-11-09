@@ -246,6 +246,12 @@ function frameHand() {
   handCamera.position.set(0, 0.1 + distance * Math.tan(THREE.MathUtils.degToRad(7)), distance);
   handCamera.lookAt(0, 0.1, 0);
   handCamera.updateProjectionMatrix();
+  handCamera.updateMatrixWorld();
+  // Where the tops of the hand tiles stand in the strip, so the decision
+  // buttons sit right above them rather than above the strip's empty margin.
+  const top = new THREE.Vector3(0, 0.1 + H / 2, 0).project(handCamera);
+  const tileTop = Math.round(((top.y + 1) / 2) * strip);
+  document.documentElement.style.setProperty("--hand-top", `${Math.min(strip, tileTop)}px`);
   requestRender();
 }
 
