@@ -558,16 +558,18 @@ function renderHints(hands) {
     name.textContent = hand.name;
     const meta = document.createElement("span");
     meta.className = "closest-meta";
+    const progress = document.createElement("span");
     const value = hand.points === null ? "calculated" : hand.points.toLocaleString("en");
     if (hand.away === 0) {
       const done = document.createElement("span");
       done.className = "closest-done";
       done.textContent = "Complete";
-      meta.append(done, ` · ${value}`);
+      progress.append(done, ` · ${value}`);
     } else {
-      meta.textContent = `${hand.away} to go · ${value}`;
+      progress.textContent = `${hand.away} to go · ${value}`;
     }
-    row.append(name, playTag(hand.concealedOnly), meta);
+    meta.append(progress, playTag(hand.concealedOnly));
+    row.append(name, meta);
     if (hand.need.length > 0) {
       const need = document.createElement("span");
       need.className = "closest-need";
