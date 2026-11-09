@@ -11,7 +11,8 @@ phone - without the scans on a laptop.
 
 The images are JPEG copies of the page-edge-cropped renders that
 `rules/tools/primary-pages.swift` and `rules/tools/ocr-pages.swift` make from
-the owner's scans (the PDFs stay under `scans/`, local only). The OCR text is
+the owner's scans (the PDFs are the owner's offline backup and are not
+committed; the Swift tools need macOS and are only for a re-scan). The OCR text is
 a navigation aid, never authority: read the page itself (see
 `rules/SOURCE.md`).
 

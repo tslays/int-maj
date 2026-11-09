@@ -6,8 +6,6 @@ node_modules/
 rules/.generated/
 scans/
 
-# Local design references: the owner's screenshots.
-reference/
 
 # The offline build: `npm run build` regenerates it.
 dist/
