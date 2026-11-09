@@ -97,6 +97,7 @@ describe("3D table discard layout", () => {
     ];
     for (const walls of [18, 12, 6, 0]) {
       for (const { groups, bonusFirst, hand } of hands) {
+        if (walls === 18 && groups.length > 4) continue; // twelve tiles are never laid before any wall is drawn
         const label = `wall ${walls}, groups ${groups.join("+")}`;
         const melds: { rel: number; rect: Rect }[] = [];
         const solid: { what: string; rect: Rect }[] = [];
@@ -137,7 +138,9 @@ describe("3D table discard layout", () => {
     assert.deepEqual(two.slice(0, 3), one, "an earlier meld never moves when another is made");
     assert.ok(two[3]!.x > two[2]!.x, "the next meld goes to its right");
     const crowded = meldLayout([3, 3, 3], 18, 7).tiles;
-    assert.ok(crowded[6]!.z > crowded[0]!.z, "with the whole wall still there, it starts a row towards the rail");
+    assert.ok(crowded.every((t) => t.z === crowded[0]!.z), "flowers and melds always lie in one single row");
+    const all = meldLayout([8, 4, 4, 4, 4], 8, 1, { bonusFirst: true });
+    assert.equal(new Set(all.tiles.map((t) => t.z)).size, 1, "even a crowded lane never wraps; the tiles shrink instead");
     const withBonus = meldLayout([2, 3], 6, 10, { bonusFirst: true });
     const plain = meldLayout([2, 3], 6, 10);
     assert.ok(withBonus.tiles[2]!.x - withBonus.tiles[1]!.x > plain.tiles[2]!.x - plain.tiles[1]!.x, "a wider space after the bonus tiles");
