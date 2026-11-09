@@ -209,18 +209,18 @@ describe("3D table discard layout", () => {
 
 describe("wall draw (I p. 18-19 rules 6-8, p. 62)", () => {
   const key = (t: { rel: number; slot: number; level: number }) => `${t.rel}:${t.slot}:${t.level}`;
+  type Plan = ReturnType<typeof wallPlan>;
 
-  it("covers all 144 tiles exactly once: the lifted stack, the open run and the block", () => {
+  it("covers all 144 tiles exactly once: the lifted stack and the rest of the ring", () => {
     for (const count of [2, 7, 12]) {
       const plan = wallPlan(2, count);
       const keys = new Set([
-        ...plan.ordinary.map(key),
-        ...plan.block.map(key),
+        ...plan.tiles.map(key),
         `${plan.lifted.rel}:${plan.lifted.slot}:0`,
         `${plan.lifted.rel}:${plan.lifted.slot}:1`,
       ]);
       assert.equal(keys.size, 144, `count ${count}`);
-      assert.equal(plan.ordinary.length + plan.block.length, 142);
+      assert.equal(plan.tiles.length, 142);
     }
   });
 
@@ -228,7 +228,7 @@ describe("wall draw (I p. 18-19 rules 6-8, p. 62)", () => {
     // Ten stacks counted from the right: slot 9 is the stack "10" of the book's detail.
     const plan = wallPlan(0, 10);
     assert.deepEqual(plan.lifted, { rel: 0, slot: 9 });
-    assert.deepEqual(plan.ordinary.slice(0, 4), [
+    assert.deepEqual(plan.tiles.slice(0, 4), [
       { rel: 0, slot: 10, level: 1 },
       { rel: 0, slot: 10, level: 0 },
       { rel: 0, slot: 11, level: 1 },
@@ -239,90 +239,85 @@ describe("wall draw (I p. 18-19 rules 6-8, p. 62)", () => {
   it("runs left to the wall's end, then into the wall on the builder's left", () => {
     const plan = wallPlan(0, 10);
     // 8 stacks remain left of the break: 16 tiles, then the next wall at its right end.
-    assert.deepEqual(plan.ordinary[15], { rel: 0, slot: 17, level: 0 });
-    assert.deepEqual(plan.ordinary[16], { rel: 3, slot: 0, level: 1 });
+    assert.deepEqual(plan.tiles[15], { rel: 0, slot: 17, level: 0 });
+    assert.deepEqual(plan.tiles[16], { rel: 3, slot: 0, level: 1 });
     // The left-hand neighbour of rel 1 is rel 0 (play runs E, S, W, N anticlockwise).
-    assert.equal(wallPlan(1, 5).ordinary[26]!.rel, 0);
-    // The run ends at the left-hand end (slot 17) of the wall on the builder's right,
-    // which meets the broken wall's right-hand corner, the block's far end.
-    assert.deepEqual(wallPlan(0, 10).ordinary.at(-1), { rel: 1, slot: 17, level: 0 });
+    assert.equal(wallPlan(1, 5).tiles[26]!.rel, 0);
   });
 
-  it("keeps the replacement block on the broken wall, right of the break, used from its far end", () => {
+  it("ends beside the break on its right: that is where the replacements start", () => {
     const plan = wallPlan(0, 10);
-    assert.equal(plan.block.length, 18, "nine stacks right of the break");
-    assert.ok(plan.block.every((t) => t.rel === 0 && t.slot <= 8));
-    assert.deepEqual(plan.block.slice(0, 3), [
-      { rel: 0, slot: 0, level: 1 },
-      { rel: 0, slot: 0, level: 0 },
-      { rel: 0, slot: 1, level: 1 },
-    ]);
+    assert.deepEqual(plan.tiles.at(-1), { rel: 0, slot: 8, level: 0 });
+    assert.deepEqual(plan.tiles.at(-2), { rel: 0, slot: 8, level: 1 });
   });
 
-  // Heights of the marker column: how many tiles lie on each stack at the marker's slot.
-  const markerOf = (plan: ReturnType<typeof wallPlan>, used: number, front = 53) => {
-    const held = 2 - (used % 2);
-    const look = wallLook(plan, front, used, held);
-    const m = look.markers;
+  /** The marker column and the height the whole wall shows at `r` replacements taken. */
+  const look = (plan: Plan, r: number, front = 53) => {
+    const held = 2 - (r % 2);
+    const l = wallLook(plan, front, r, held);
+    const m = l.markers;
     assert.equal(m.length, held);
     assert.ok(m.every((t) => t.rel === m[0]!.rel && t.slot === m[0]!.slot), "both loose tiles share one column");
-    const left = [...plan.block.slice(look.goneBlock), ...plan.ordinary.slice(look.goneOrdinary, plan.ordinary.length - look.goneTail)];
-    const base = left.filter((t) => t.rel === m[0]!.rel && t.slot === m[0]!.slot).length;
-    return { rel: m[0]!.rel, slot: m[0]!.slot, high: base + m.length };
+    const standing = plan.tiles.slice(l.goneHead, plan.tiles.length - l.goneTail);
+    const heights = new Map<string, number>();
+    for (const t of standing) heights.set(`${t.rel}:${t.slot}`, (heights.get(`${t.rel}:${t.slot}`) ?? 0) + 1);
+    for (const t of m) heights.set(`${t.rel}:${t.slot}`, (heights.get(`${t.rel}:${t.slot}`) ?? 0) + 1);
+    return { rel: m[0]!.rel, slot: m[0]!.slot, high: heights.get(`${m[0]!.rel}:${m[0]!.slot}`)!, heights };
   };
 
-  it("puts both loose tiles on the end column of the block: 4 high at the start (owner's ruling, #56)", () => {
-    const plan = wallPlan(0, 10); // block = slots 0-8, the end column is slot 0
-    assert.deepEqual(markerOf(plan, 0), { rel: 0, slot: 0, high: 4 });
+  it("puts both loose tiles on the dead wall's column touching the break: 4 high at the start (#60)", () => {
+    const plan = wallPlan(0, 10); // break at slot 9: the column touching it is slot 8
+    const got = look(plan, 0);
+    assert.deepEqual([got.rel, got.slot, got.high], [0, 8, 4]);
     assert.deepEqual(wallLook(plan, 53, 0, 2).markers, [
-      { which: "far", rel: 0, slot: 0, level: 2 },
-      { which: "near", rel: 0, slot: 0, level: 3 },
+      { which: "far", rel: 0, slot: 8, level: 2 },
+      { which: "near", rel: 0, slot: 8, level: 3 },
     ]);
-    assert.equal(wallLook(plan, 53, 0, 2).goneBlock, 0, "the block has not been touched");
+    assert.equal(wallLook(plan, 53, 0, 2).goneTail, 0, "the dead wall has not been touched");
   });
 
-  it("advances the marker one column per two replacements, 4 high then 3 high, r = 0..10", () => {
-    const plan = wallPlan(0, 10);
-    for (let r = 0; r <= 10; r++) {
-      const got = markerOf(plan, r);
-      assert.equal(got.slot, Math.floor(r / 2), `r ${r}: column`);
-      assert.equal(got.high, r % 2 === 0 ? 4 : 3, `r ${r}: height`);
+  it("moves the marker away from the break one column per two replacements, r = 0..10, for several breaks", () => {
+    for (const [rel, count] of [[0, 10], [0, 7], [1, 12], [2, 4], [3, 9]] as const) {
+      const plan = wallPlan(rel, count);
+      for (let r = 0; r <= 10; r++) {
+        // The column floor(r / 2) away from the break, going away from it: slot count - 2 - k on the broken
+        // wall, and across the corner onto the wall at the builder's right (its slot 17 downwards).
+        const k = Math.floor(r / 2);
+        const onWall = count - 2 - k;
+        const want = onWall >= 0 ? { rel, slot: onWall } : { rel: (rel + 1) % 4, slot: 17 - (k - (count - 1)) };
+        const got = look(plan, r);
+        assert.deepEqual({ rel: got.rel, slot: got.slot }, want, `break ${count} on rel ${rel}, r ${r}`);
+        assert.equal(got.high, r % 2 === 0 ? 4 : 3, `break ${count}, r ${r}: height`);
+      }
     }
   });
 
-  it("lifts the plain end column away after two replacements; the rest of the block does not move", () => {
-    const plan = wallPlan(0, 10);
-    assert.equal(wallLook(plan, 60, 1, 1).goneBlock, 0);
-    assert.equal(wallLook(plan, 60, 2, 2).goneBlock, 2, "the end column's two tiles");
-    assert.equal(wallLook(plan, 60, 4, 2).goneBlock, 4);
-    // Only one column in the whole wall is ever above 2 high.
-    for (let r = 0; r <= 14; r++) {
-      const look = wallLook(plan, 53, r, 2 - (r % 2));
-      assert.equal(new Set(look.markers.map((t) => t.slot)).size, 1, `r ${r}`);
+  it("crosses the corner when the break is near it, still one marker column", () => {
+    const plan = wallPlan(0, 3); // columns right of the break: slots 1, 0, then the next wall
+    const slots = [0, 2, 4, 6].map((r) => look(plan, r)).map((g) => `${g.rel}:${g.slot}`);
+    assert.deepEqual(slots, ["0:1", "0:0", "1:17", "1:16"]);
+  });
+
+  it("never shows a column other than the marker above 2 high, and the rest does not move", () => {
+    for (const [rel, count] of [[0, 10], [0, 3], [2, 12]] as const) {
+      const plan = wallPlan(rel, count);
+      for (let r = 0; r <= 14; r++) {
+        const got = look(plan, r);
+        for (const [column, high] of got.heights) {
+          if (column !== `${got.rel}:${got.slot}`) assert.ok(high <= 2, `break ${count} r ${r}: ${column} is ${high} high`);
+        }
+        assert.equal(wallLook(plan, 53, r, 2 - (r % 2)).goneHead, 53, "ordinary draws are unaffected");
+      }
     }
   });
 
-  it("goes on past the wall's corner when the block is short, still 3 or 4 high on one column", () => {
-    const plan = wallPlan(0, 3); // two stacks right of the break: slots 0 and 1
-    for (let r = 0; r <= 10; r++) {
-      const got = markerOf(plan, r);
-      assert.equal(got.high, r % 2 === 0 ? 4 : 3, `r ${r}`);
-      if (r < 4) assert.deepEqual([got.rel, got.slot], [0, Math.floor(r / 2)], `r ${r}: on the block`);
-      else assert.equal(got.rel, 1, `r ${r}: past the corner, on the wall to the builder's right`);
-    }
-    assert.equal(markerOf(plan, 4).slot, 17, "the first stack past the corner is that wall's left-hand end");
-    assert.equal(markerOf(plan, 6).slot, 16);
-  });
-
-  it("leaves no tile over: every tile ends up gone, whichever way they were drawn", () => {
+  it("leaves no tile over: ordinary draws and replacements meet and every tile is gone", () => {
     for (const count of [2, 6, 12]) {
       const plan = wallPlan(3, count);
       for (const used of [0, 10, 40, 140]) {
         const front = 142 - used;
-        const look = wallLook(plan, front, used + 2, 0);
-        const visible =
-          plan.ordinary.length - look.goneOrdinary - look.goneTail + plan.block.length - look.goneBlock;
-        assert.equal(visible, 0, `count ${count} used ${used}`);
+        const l = wallLook(plan, front, used + 2, 0);
+        assert.equal(plan.tiles.length - l.goneHead - l.goneTail, 0, `count ${count} used ${used}`);
       }
     }
   });

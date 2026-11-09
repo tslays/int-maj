@@ -283,25 +283,35 @@ The book is silent on, and the app assumes (narrowest reading):
 (1) the engine throws no break dice, so the app throws two from the hand's key
 (`breakFor`), purely for the look; the engine's draw order is unchanged and
 its counts (`front`, `remaining`, `loose`) are what the picture follows.
-(2) Which end of the block the "two more tiles" come from: "the end of the wall
-to the right of the break" read as the far, corner end (owner rule 6), a stack
-(upper, lower) at a time, moving towards the break.
+(2) SUPERSEDED by ruling 2 below (#60): the replacements come from the end
+that touches the break, not the far corner end.
 (3) SUPERSEDED by the owner's ruling below: the loose tiles no longer lie on
 the 2nd and 7th stacks.
-(4) If replacements outrun the block, they go on at the far end of the
-ordinary run, so every tile is used.
+(4) SUPERSEDED: replacements and ordinary draws now meet in the ring. (Was: if
+replacements outrun the block, they go on at the far end of the
+ordinary run, so every tile is used.)
 (5) SUPERSEDED, see the ruling below.
 
-**Owner ruling on presentation (issue #56, 2026-11-09).** The book's detail
-diagram (I p. 19) and rule 6 put the two loose tiles on the 2nd and 7th stack
-right of the break. The owner's table practice puts both on the END column of
-the replacement block, the column the replacements take from: 4 high (2 + 2)
-at the start, 3 high after one replacement; after the second the plain
-two-tile end column is lifted onto its neighbour, which becomes 4 high (these
-two are the book's "two more tiles taken from the end of the wall and
-positioned on top", rule 7), and so on: marker column floor(r / 2) from the
-end, extra height 2 - (r mod 2), r = replacements taken. Only that column is
-3 or 4 high. The tiles drawn, their count and their order are the same, so
-this is presentation only; the printed rule is not changed. If the block is
-used up (many replacements, or a short block) the end column continues past
-the wall's corner, at the far end of the ordinary run, so no tile is left over.
+**Owner rulings on presentation (issues #56 and #60, 2026-11-09).** The book's
+detail diagram (I p. 19) and rule 6 put the two loose tiles on the 2nd and 7th
+stack right of the break; rule 7 says the two more tiles come "from the end of
+the wall to the right of the break". The owner's table practice differs, and
+the printed rule is not changed:
+
+1. Both loose tiles lie on ONE column of the dead wall (#56): 4 high (2 + 2)
+   at the start, 3 high after one replacement; after the second the plain
+   two-tile column is lifted onto its neighbour, which becomes 4 high (these
+   two are rule 7's "two more tiles ... positioned on top"), and so on: the
+   marker is the column floor(r / 2) in, extra height 2 - (r mod 2), r =
+   replacements taken. Only that column is 3 or 4 high.
+2. Which end (#60): the owner reads "the end of the wall to the right of the
+   break" as the end that TOUCHES the break. The marker therefore starts on
+   the dead-wall column next to the break and moves away from it, along the
+   wall, round the corner onto the next wall and on. Earlier (PR #55 and #59)
+   the owner had picked the far, corner end of the block; that was not what
+   they meant and is withdrawn. Ordinary draws are unchanged (open end, left of
+   the break, upper tile then lower) and arrive at the other end of the dead
+   wall, so every tile is used.
+
+The tiles drawn, their count and their order are the engine's and are the same
+either way, so this is presentation only.
