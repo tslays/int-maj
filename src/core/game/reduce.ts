@@ -715,10 +715,14 @@ function ledgerFor(
         const higher = delta > 0 ? a : b;
         const lower = delta > 0 ? b : a;
         const doubled = lower === draft.dealer || higher === draft.dealer;
+        const amount = roundTo100(Math.abs(delta) * (doubled ? 2 : 1));
+        // Payments go to the nearest 100, 50 or less down: a small difference
+        // is no payment, not a payment of 0.
+        if (amount === 0) continue;
         entries.push({
           from: lower,
           to: higher,
-          points: roundTo100(Math.abs(delta) * (doubled ? 2 : 1)),
+          points: amount,
           reason: `${label}${doubled ? " (dealer double)" : ""}`,
           kind: settlement === "advanced" ? "difference" : "fishing",
           doubled,
