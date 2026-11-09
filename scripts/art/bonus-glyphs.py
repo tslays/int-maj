@@ -1,16 +1,13 @@
 """Extract the glyph outlines the flower and season faces are drawn from.
 
-The faces print their kanji and English names as outlines, not live text, so
-they look the same on every device whatever fonts it has. This script reads two
-SIL Open Font License fonts from their npm (fontsource) packages and writes the
-outlines `bonus-faces.py` needs to `scripts/art/bonus-glyphs.json`:
-
-- Ma Shan Zheng (brush kanji): @fontsource/ma-shan-zheng
-- Oswald 600 (capitals):       @fontsource/oswald
+The faces print their kanji as outlines, not live text, so they look the same
+on every device whatever fonts it has. This script reads the brush font Ma Shan
+Zheng (SIL Open Font License) from its npm package @fontsource/ma-shan-zheng
+and writes the outlines `bonus-faces.py` needs to `scripts/art/bonus-glyphs.json`.
 
 Run from a scratch directory (needs `pip install fonttools brotli`):
 
-    npm pack @fontsource/ma-shan-zheng @fontsource/oswald
+    npm pack @fontsource/ma-shan-zheng
     for f in fontsource-*.tgz; do mkdir -p "${f%.tgz}"; tar xzf "$f" -C "${f%.tgz}"; done
     python3 <repo>/scripts/art/bonus-glyphs.py . <repo>/scripts/art/bonus-glyphs.json
 """
@@ -21,8 +18,6 @@ from fontTools.pens.boundsPen import BoundsPen
 
 ROOT, OUT = sys.argv[1], sys.argv[2]
 KANJI = "梅兰菊竹春夏秋冬"
-LABELS = ["PLUM", "ORCHID", "CHRYS.", "BAMBOO", "SPRING", "SUMMER", "AUTUMN", "WINTER"]
-LATIN = sorted(set("".join(LABELS)))
 
 def extract(pattern, chars):
     found = {}
@@ -45,7 +40,6 @@ def extract(pattern, chars):
 
 data = {
     "kanji": extract("fontsource-ma-shan-zheng-*/package/files/*-400-normal.woff2", KANJI),
-    "latin": extract("fontsource-oswald-*/package/files/oswald-latin-600-normal.woff2", LATIN),
 }
 json.dump(data, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=0)
-print("wrote", len(data["kanji"]), "kanji and", len(data["latin"]), "letters")
+print("wrote", len(data["kanji"]), "kanji")
