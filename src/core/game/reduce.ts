@@ -600,6 +600,7 @@ function overfullEntries(draft: Draft): LedgerEntry[] {
         to: other,
         points: roundTo100(penalty),
         reason: `too many tiles (${effectiveCount(player)})`,
+        kind: "too-many-tiles",
       });
     }
   }
@@ -653,6 +654,8 @@ function ledgerFor(
         points === null
           ? `${base} ${tier} (calculate, unscored)`
           : `${base} ${tier}${doubled ? " (dealer double)" : ""}`,
+      kind: "win",
+      doubled,
     };
     winnerEntries.push(entry);
     entries.push(entry);
@@ -675,6 +678,9 @@ function ledgerFor(
           to: winner,
           points: entry.points,
           reason: `careless discard for ${entry.from}`,
+          kind: "careless",
+          doubled: entry.doubled === true,
+          covers: entry.from,
         });
       }
     }
@@ -714,6 +720,11 @@ function ledgerFor(
           to: higher,
           points: roundTo100(Math.abs(delta) * (doubled ? 2 : 1)),
           reason: `${label}${doubled ? " (dealer double)" : ""}`,
+          kind: settlement === "advanced" ? "difference" : "fishing",
+          doubled,
+          ...(settlement === "advanced"
+            ? {}
+            : { tier: draft.fishing.find((declaration) => declaration.seat === higher)?.tier }),
         });
       }
     }
@@ -726,6 +737,7 @@ function ledgerFor(
         to: winner,
         points: draft.goulashPool!,
         reason: "goulash pool",
+        kind: "goulash",
       });
     }
   }
@@ -1119,6 +1131,7 @@ function applyFalseMahJong(draft: Draft, seat: Seat, emit: Emit): ApplyError | n
     to: other,
     points: amount,
     reason: "false Mah Jong (half limit)",
+    kind: "false-mahjong",
   }));
   draft.ledger.push(...entries);
   emit({ type: "Payments", entries });

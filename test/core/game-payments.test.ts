@@ -385,6 +385,39 @@ describe("dealer rotation", () => {
   });
 });
 
+describe("ledger entries say why", () => {
+  it("tags every payment with its kind, East's double and the fishing tier", () => {
+    const state = fixture({
+      hands: {
+        E: "b1 b2 b3 b4 b5 b6 b7 c1 c2 c3 o1 o2 o3",
+        S: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 b5",
+        W: "c1 c1 c1 c2 c2 c2 c3 c3 c3 c4 c4 c4 c5",
+        N: "o1 o1 o1 o2 o2 o2 o3 o3 o3 o4 o4 o4 o5",
+      },
+      wall: ["o6"],
+      phase: "discard",
+      turn: "S",
+      lastDraw: { seat: "S", tile: "b5", end: "front" },
+      fishing: [{ seat: "E", wait: ["b7"], tier: "half" }],
+    });
+    const won = play(state, { type: "Win", seat: "S", kind: "self-drawn" });
+    const summary = won.state.ledger.map((entry) => ({
+      from: entry.from,
+      to: entry.to,
+      kind: entry.kind,
+      doubled: entry.doubled,
+      tier: entry.tier,
+    }));
+    assert.deepEqual(summary, [
+      { from: "E", to: "S", kind: "win", doubled: true, tier: undefined },
+      { from: "W", to: "S", kind: "win", doubled: false, tier: undefined },
+      { from: "N", to: "S", kind: "win", doubled: false, tier: undefined },
+      { from: "W", to: "E", kind: "fishing", doubled: true, tier: "half" },
+      { from: "N", to: "E", kind: "fishing", doubled: true, tier: "half" },
+    ]);
+  });
+});
+
 describe("fishing restrictions", () => {
   const fishingState = () =>
     fixture({

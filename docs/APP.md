@@ -39,6 +39,12 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   the shrinking wall.
 - `app/src/main.js` runs the turn loop (bots one decision per beat, automatic
   draws and passes), the decision buttons, call-outs and the result card.
+- `app/src/settlement.js` words the result card's account of the points from
+  the ledger (every entry is tagged with its kind in `src/core/game/state.ts`):
+  a sentence on how the hand was paid, then under each seat who it paid or was
+  paid by and why (winning hand, East's double, fishing, careless discard,
+  penalties), and why nothing moved on a drawn hand. Pure, so it is tested in
+  `test/app/settlement.test.ts` on real engine hands.
 
 - `app/src/sound.js` is the sound, synthesised live with Web Audio: no audio
   files, so nothing to license, ship or cache. See "Sound" below.
