@@ -291,11 +291,30 @@ describe("matchesAny", () => {
     seed = (seed * 1103515245 + 12345) % 2147483648;
     return seed % bound;
   };
-  const hands = Array.from({ length: 400 }, () => {
-    const tiles: string[] = [];
-    while (tiles.length < 14) {
-      const key = kinds[next(kinds.length)]!;
-      if (tiles.filter((tile) => tile === key).length < 4) tiles.push(key);
+  // Half the hands are four sets and a pair (many of them win), half are
+  // loose tiles; both kinds must agree.
+  const set = (): string[] => {
+    const key = kinds[next(kinds.length)]!;
+    const rank = Number(key.slice(1));
+    if (key.startsWith("b") && rank <= 7 && next(2) === 0) {
+      return [key, `b${rank + 1}`, `b${rank + 2}`];
+    }
+    return [key, key, key];
+  };
+  const fits = (tiles: readonly string[]): boolean =>
+    tiles.every((key) => tiles.filter((tile) => tile === key).length <= 4);
+  const hands = Array.from({ length: 400 }, (_, index) => {
+    let tiles: string[] = [];
+    if (index % 2 === 0) {
+      do {
+        const pair = kinds[next(kinds.length)]!;
+        tiles = [...set(), ...set(), ...set(), ...set(), pair, pair];
+      } while (!fits(tiles));
+    } else {
+      while (tiles.length < 14) {
+        const key = kinds[next(kinds.length)]!;
+        if (tiles.filter((tile) => tile === key).length < 4) tiles.push(key);
+      }
     }
     return createHand({ concealed: tiles.join(" "), selfDrawn: next(2) === 0 });
   });
@@ -315,6 +334,6 @@ describe("matchesAny", () => {
         );
       }
     }
-    assert.ok(matched >= 20, `only ${matched} of the sample hands match a pattern`);
+    assert.ok(matched >= 50, `only ${matched} of the sample hands match a pattern`);
   });
 });
