@@ -444,7 +444,7 @@
         position: fixed;
         top: var(--safe-t);
         right: var(--safe-r);
-        width: 172px;
+        width: 206px;
         margin: 0;
         padding: 8px 10px 6px;
         border-radius: 10px;
@@ -480,7 +480,11 @@
         text-overflow: ellipsis;
       }
       .closest-meta {
-        display: block;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        margin-top: 1px;
         color: var(--muted);
         font-size: 11px;
         font-variant-numeric: tabular-nums;
@@ -525,12 +529,12 @@
       }
       .play-tag {
         display: inline-block;
-        margin: 2px 0;
+        margin: 0;
         padding: 1px 6px;
         border-radius: 999px;
         font-size: 9.5px;
         font-weight: 800;
-        letter-spacing: 0.07em;
+        letter-spacing: 0.05em;
         text-transform: uppercase;
         white-space: nowrap;
       }
