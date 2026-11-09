@@ -5,13 +5,13 @@
 table as the quality bar and the game's own look - never another app's art,
 tiles, characters or sounds.
 
-**First milestone:** an alpha the owner's mahjong group can test - each tester
-on their own phone (an iPhone is the reference), alone against three bots,
-offline, no house rules, no accounts or multiplayer (agreed 2026-11-07).
-That is **alpha-1 (`v0.1.0-alpha.1`)**; its scope, order and tracking are in
-`docs/ALPHA-1.md`, and progress is the GitHub milestone of the same name. The
-"Alpha 2" to "Alpha 4" headings below are older groupings: what they hold is
-sorted into alpha-1 or after it by that document.
+**First milestone: alpha-1 (`v0.1.0-alpha.1`), the tester release** - an
+alpha the owner's mahjong group can test: each tester on their own phone (an
+iPhone is the reference), alone against three bots, offline, no house rules,
+no accounts or multiplayer (agreed 2026-11-07). Its scope, order and tracking
+are in `docs/ALPHA-1.md` (kept as the record of the plan); progress is the
+GitHub milestone of the same name. The finished offline build once called
+"Alpha 1" is now the "Prototype" below.
 
 Every piece of work is judged by one question: does it bring that test
 closer? Visual polish waits until a tester asks for something specific.
@@ -41,41 +41,35 @@ through GitHub Actions, and the book pages are in the private repository, so
 a Claude cloud session started from the owner's iPhone can do any task
 without the Mac (`docs/WORKFLOW.md`).
 
+**Bots that plan (2026-11-08).** The bots aim at concrete target hands
+(`src/core/game/bot/plan.ts`) and call only when it raises the hand's value.
+`npm run bot-soak` over 400 bot-only hands: 35 % drawn, against about 80 %
+before; 98 % of wins are special hands. The same plan powers the "closest
+hands" helper (the Hints panel).
+
+**Alpha-1, the tester release (2026-11-09).** Version label (`alpha.1` plus the
+build id), tester guide and in-app help (`docs/TESTING.md`), Report a problem
+(build, device, seed and every move, shared from the menu and replayable with
+`bin/replay.ts`), final standings after the North round, whose turn it is and
+who threw each discard, the iPhone-pass fixes, sound, and a 300-hand soak on
+the engine. Tracked in milestone `v0.1.0-alpha.1`; release gate is #43.
+
 Live at https://int.mah-jong.workers.dev.
 
 ## Next
 
-- **Try it on a real iPhone** (smoothness, tap size, pace) and fix what that
-  shows.
+The alpha-1 testers decide this. Findings from testing become issues labelled
+`from-testing`; the list below is the backlog from the alpha-1 plan, offered as
+**candidates for alpha-2, not commitments**:
 
-## Alpha 2 - the table explains itself
-
-- Whose turn it is and who threw each discard, readable at a glance.
-- The hand catalogue in the app, every hand pictured, with its book page.
-- "Report a problem": export the seed and steps (the saved game already is
-  this) so any tester's hand can be replayed exactly.
-
-## Alpha 3 - bots worth playing against
-
-- Done (2026-11-08): the bots plan towards concrete target hands
-  (`src/core/game/bot/plan.ts`): calls are made only when they raise the
-  hand's value, and special hands appear in bot play. Measured with
-  `npm run bot-soak` over 400 bot-only hands: 35 % drawn, against about 80 %
-  before; 98 % of wins are special hands.
-- Done (2026-11-08): the "closest hands" helper. The same plan names the three
-  catalogue hands your tiles are nearest to, with the tiles each still needs,
-  in a panel at the top right (the menu's Hints button turns it off).
-- *Accept:* far fewer drawn hands in the soak, special hands appear - met.
-- Worth watching in testing: Crazy Chows is over a quarter of bot wins.
-
-## Alpha 4 - release to the group
-
-- A game-end screen (final scores after the North round), the book's
-  beginner/intermediate/advanced settlement as a setting, a version label
-  and a short tester guide.
-- A deal animation. Sound is done (2026-11-09, see `docs/APP.md` "Sound"):
-  tile clacks, hover ticks, a call chime and the hand's rhythm, all synthesised
-  in the page.
+- Hand catalogue browser in the app, every hand pictured, with its book page.
+- Deal animation.
+- Settlement tier (beginner/intermediate/advanced) as a setting; the engine
+  uses intermediate today.
+- Bot tuning, including Crazy Chows being a common way for the bots to win
+  (over a quarter of bot wins in the soak).
+- A separate, stable tester URL deployed on tag, so merges to `main` stop
+  moving the build under testers.
 
 ## Known follow-ups
 
