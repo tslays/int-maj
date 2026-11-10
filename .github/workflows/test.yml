@@ -30,14 +30,25 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
-      # No dependencies to install: Node runs the TypeScript directly.
+          cache: npm
+      # Only the type checker is installed; the tests and the game need
+      # nothing, because Node runs the TypeScript directly.
+      - run: npm ci
+      - run: npm run typecheck
       - run: npm test
-      # The app testers install is the static build: prove it still builds.
+      # The app testers install is the static build. It is built once, here,
+      # and the deploy jobs below publish exactly these files.
       - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
+          if-no-files-found: error
 
   # Every push to main that passes the tests goes to the development site
-  # (int-dev), so work done anywhere - a laptop or a cloud session from a
-  # phone - can be looked at by pushing. Testers are not on this site.
+  # (int-dev), so work done in any session can be looked at by pushing.
+  # Testers are not on this site.
   deploy-dev:
     name: Deploy dev (int-dev)
     needs: test
@@ -48,25 +59,16 @@ jobs:
     concurrency:
       group: deploy-dev
       cancel-in-progress: false
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     steps:
-      - name: Skip until the Cloudflare token is set
-        if: env.CLOUDFLARE_API_TOKEN == ''
-        run: echo "::notice::No CLOUDFLARE_API_TOKEN secret yet, so nothing was deployed."
       - uses: actions/checkout@v5
-        if: env.CLOUDFLARE_API_TOKEN != ''
-      - uses: actions/setup-node@v5
-        if: env.CLOUDFLARE_API_TOKEN != ''
+      - uses: ./.github/actions/deploy
         with:
-          node-version-file: .nvmrc
-      - run: npm run build
-        if: env.CLOUDFLARE_API_TOKEN != ''
-      - run: npx --yes wrangler@4.158.0 deploy --env dev
-        if: env.CLOUDFLARE_API_TOKEN != ''
+          token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy --env dev
 
   # The tester site (int) changes only when a tag v* is pushed, or when this
-  # workflow is run by hand against a tag (to re-deploy or roll back).
+  # workflow is run by hand against a tag (to re-deploy or roll back). The
+  # build takes its version from the tag (scripts/build.ts).
   deploy-testers:
     name: Deploy testers (int)
     needs: test
@@ -78,22 +80,12 @@ jobs:
     concurrency:
       group: deploy-testers
       cancel-in-progress: false
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     steps:
-      - name: Skip until the Cloudflare token is set
-        if: env.CLOUDFLARE_API_TOKEN == ''
-        run: echo "::notice::No CLOUDFLARE_API_TOKEN secret yet, so nothing was deployed."
       - uses: actions/checkout@v5
-        if: env.CLOUDFLARE_API_TOKEN != ''
-      - uses: actions/setup-node@v5
-        if: env.CLOUDFLARE_API_TOKEN != ''
+      - uses: ./.github/actions/deploy
         with:
-          node-version-file: .nvmrc
-      - run: npm run build
-        if: env.CLOUDFLARE_API_TOKEN != ''
-      - run: npx --yes wrangler@4.158.0 deploy
-        if: env.CLOUDFLARE_API_TOKEN != ''
+          token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy
 
   # Each pull request from this repository gets its own link on int-dev
   # (https://pr-<number>-int-dev.<account>.workers.dev), in one comment that
@@ -112,34 +104,20 @@ jobs:
       group: preview-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       GH_TOKEN: ${{ github.token }}
       PR: ${{ github.event.pull_request.number }}
     steps:
-      - name: Skip until the Cloudflare token is set
-        if: env.CLOUDFLARE_API_TOKEN == ''
-        run: echo "::notice::No CLOUDFLARE_API_TOKEN secret yet, so no preview."
       - uses: actions/checkout@v5
-        if: env.CLOUDFLARE_API_TOKEN != ''
-      - uses: actions/setup-node@v5
-        if: env.CLOUDFLARE_API_TOKEN != ''
+      - uses: ./.github/actions/deploy
         with:
-          node-version-file: .nvmrc
-      - run: npm run build
-        if: env.CLOUDFLARE_API_TOKEN != ''
-      - name: Upload a preview version
-        if: env.CLOUDFLARE_API_TOKEN != ''
-        run: |
-          set -o pipefail
-          npx --yes wrangler@4.158.0 versions upload --env dev \
-            --preview-alias "pr-$PR" --message "PR $PR ${GITHUB_SHA::7}" | tee upload.log
-          url=$(grep -oE 'https://pr-[A-Za-z0-9.-]+\.workers\.dev' upload.log | head -1 || true)
-          echo "PREVIEW_URL=${url:-}" >> "$GITHUB_ENV"
+          token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: versions upload --env dev --preview-alias pr-${{ github.event.pull_request.number }} --message PR-${{ github.event.pull_request.number }}-${{ github.sha }}
       - name: Post or update the preview comment
-        if: env.CLOUDFLARE_API_TOKEN != '' && env.PREVIEW_URL != ''
         run: |
+          url=$(grep -oE 'https://pr-[A-Za-z0-9.-]+\.workers\.dev' wrangler.log 2>/dev/null | head -1 || true)
+          if [ -z "$url" ]; then echo "::notice::No preview link to post."; exit 0; fi
           marker='<!-- int-maj-preview -->'
-          body="$marker"$'\n'"**Preview:** $PREVIEW_URL"$'\n\n'"Commit \`${GITHUB_SHA::7}\`. Updated on every push; the tester site is not affected."
+          body="$marker"$'\n'"**Preview:** $url"$'\n\n'"Commit \`${GITHUB_SHA::7}\`. Updated on every push; the tester site is not affected."
           id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
             --jq "[.[] | select(.body | startswith(\"$marker\"))][0].id // empty")
           if [ -n "$id" ]; then
