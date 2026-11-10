@@ -74,8 +74,18 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
 - `app/src/board.js` compares each game answer with the table and animates
   only the difference: throws, claims flying to the claimer, melds, draws and
   the shrinking wall.
-- `app/src/main.js` runs the turn loop (bots one decision per beat, automatic
-  draws and passes), the decision buttons, call-outs and the result card.
+- `app/src/main.js` is the boot, the turn loop (bots one decision per beat,
+  automatic draws and passes), the decision buttons and call-outs, and the
+  wiring of the modules below. Its siblings, each a plain ES module:
+  `shared.js` (the one mutable `state` - api, latest answer, busy, calls
+  off - plus the board, storage, `request`, `toast`, `faceChip` and other
+  small helpers), `input.js` (hand input: tap, lift, drag, swipe-to-throw,
+  the goulash picks), `hints.js` (closest-hands panel, hand sheet and the Hints
+  toggle), `result.js` (the result card and the final standings), `menu.js`
+  (the Calls, Sort, Sound, New game buttons and the help sheet) and
+  `report.js` (report a problem). Modules that need the loop (`input`,
+  `result`, `menu`) get its functions from `main.js` through an `installX`
+  call, so imports never run in a circle.
 - `app/src/standings.js` ranks the seats by total score for the final standings
   shown after the last hand's result card (its button reads "Final standings",
   the standings carry "New game"). Seats with equal totals share a rank and a
