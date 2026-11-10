@@ -95,8 +95,9 @@ The full workflow is `docs/WORKFLOW.md`. The rules every session follows:
   - *Visual* (anything the player sees or hears): report the preview link and
     leave the PR open; the owner checks it on their phone and sends
     corrections into the same session. Merge only when the owner says so.
-  - *Release to testers:* push a tag `v0.1.0-alpha.N` on `main` (or run the
-    workflow on an existing tag). It is the only way testers get a new build.
+  - *Release to testers:* sessions cannot push tags (the push gets a 403).
+    Tell the owner the next `v0.1.0-alpha.N` and the `main` commit to tag;
+    the owner pushes the tag. It is the only way testers get a new build.
   Sites: green pushes to `main` deploy to https://int-dev.mah-jong.workers.dev
   (`Deploy dev (int-dev)`); testers are on https://int.mah-jong.workers.dev,
   which changes only on a `v*` tag (`Deploy testers (int)`). This relies on
