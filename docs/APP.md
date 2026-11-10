@@ -94,7 +94,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
 - `app/src/sound.js` is the sound, synthesised live with Web Audio: no audio
   files, so nothing to license, ship or cache. See "Sound" below.
 
-Tap a tile to lift it and tap it again to discard; or hold it and swipe up (a mouse can drag it up the same way) and let go to throw it onto the table: it swells once the swipe is far enough, and sliding back down cancels. Tap a second tile while one is lifted and the two swap places; drag a tile along the hand and it trades places with every tile it passes, so you can arrange the hand your own way (it stays arranged for the hand). Claims, kongs, fishing,
+Tap a tile to lift it and tap it again to discard; or hold it and swipe up (a mouse can drag it up the same way) and let go to throw it onto the table: it swells once the swipe is far enough, and sliding back down cancels. Tap a second tile while one is lifted and the lift moves to it (so touch can compare discard options like hovering with a mouse); drag a tile along the hand and it trades places with every tile it passes, so you can arrange the hand your own way (it stays arranged for the hand). Claims, kongs, fishing,
 Mah Jong, reshuffle and the Goulash exchange appear as buttons when the engine
 offers them. The table is landscape only.
 
@@ -125,7 +125,7 @@ shut:
 | `draw` | a bot takes from the wall; your drawn tile slides in | soft, low brush and tap (centroid about 330 Hz) |
 | `clack` | a discard lands (yours, then each bot's, panned to its side; the opposite seat is darker and quieter) | the base beat: a weighty plastic tile on smooth felt, a low round thump (centroid about 300 Hz, top end rolled off), nearly the same each time, never sharp; the chimes and ticks are the bright sounds, so the two kinds stay apart |
 | `meld` | a call's tiles drop together; a claimed discard arrives with its own clack | 3-4 clacks a hair apart |
-| `tick` | a hand tile under the mouse, or your first tap on it (pitch follows its place in the hand); `swap` when two tiles trade places | very quiet click |
+| `tick` | a hand tile under the mouse, or your first tap on it (pitch follows its place in the hand); `swap` when a dragged tile trades places with one it passes | very quiet click |
 | `lift` | the moment you throw a tile | short low pluck, before the clack |
 | `alert` / `alertWin` | the game asks you to decide: chow, pung, kong, fishing, the Goulash exchange / Mah Jong is on offer | bright rising two- or three-note bell |
 | `notice`, `fishing` | an opponent calls / declares fishing | soft bell |

@@ -640,7 +640,7 @@ export class Board {
     return this.raycaster.ray.intersectPlane(plane, hit) ? hit.x : null;
   }
 
-  /** Swap two tiles' places in the hand. */
+  /** Swap two tiles' places in the hand (used while dragging past a tile). */
   swap(a, b) {
     const i = this.hand.indexOf(a);
     const j = this.hand.indexOf(b);
