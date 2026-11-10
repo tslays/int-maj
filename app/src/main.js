@@ -390,7 +390,7 @@ renderer.domElement.addEventListener("pointerdown", (event) => {
     selected = null;
     return;
   }
-  // Press on a hand tile: a tap selects / swaps / discards, a drag re-arranges.
+  // Press on a hand tile: a tap selects / moves the lift / discards, a drag re-arranges.
   const wasSelected = entry === selected;
   if (selected === null) {
     selected = entry;
@@ -485,11 +485,12 @@ function endPress(event, cancelled) {
     void act(discard);
     return;
   }
-  // A second tile tapped while one is lifted: they trade places.
-  const other = selected;
-  selected = null;
-  board.swap(other, entry);
-  void board.settle();
+  // A second tile tapped while one is lifted: the lift moves to it (to compare
+  // discards by touch); a second tap on that tile discards it.
+  if (selected !== null) void board.lift(selected, false);
+  selected = entry;
+  void board.lift(entry, true);
+  tickFor(entry);
 }
 
 renderer.domElement.addEventListener("pointerup", (event) => endPress(event, false));
@@ -1039,7 +1040,7 @@ $("#calls").addEventListener("click", () => {
 });
 showToggle("#calls", !callsOff);
 
-/* Sort: lit = the game sorts your tiles; off = you arrange them yourself (swapping or dragging). */
+/* Sort: lit = the game sorts your tiles; off = you arrange them yourself (by dragging). */
 function showSort(custom) {
   showToggle("#sort", !custom);
 }
