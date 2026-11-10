@@ -49,7 +49,7 @@ follows it only when `rules/AUDIT.md` is closed out (Milestone C).
 
 ## Milestone A — general play rules
 
-Pages 3-17 and 32. Write `rules/PRIMARY-RULES.md`: one numbered statement per
+Pages 3-17 and 32. Write `rules/archive/PRIMARY-RULES.md`: one numbered statement per
 rule, each with its page and, where it matters, the printed wording. Cover at
 minimum: tile set and counts; flowers and seasons; seating and winds; the wall
 and dealing; drawing and discarding; pungs, kongs, chows and pairs; what may be
@@ -67,7 +67,7 @@ carried over from the Companion without re-reading the primary page.
 
 ## Milestone B — hands and scores
 
-Pages 16-31. Write `rules/PRIMARY-HANDS.md`: one row per printed hand with its
+Pages 16-31. Write `rules/archive/PRIMARY-HANDS.md`: one row per printed hand with its
 number, name, score lines exactly as printed (Limit / Half Limit / Calculate,
 concealed and exposed where printed), its exact composition read from the
 illustration and caption, and its page. Then classify every entry in

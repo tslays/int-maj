@@ -1,9 +1,11 @@
 # Primary rules — general play
 
+Historical extraction, superseded by `rules/RULES.md`; not authority.
+
 Extracted from the owner-designated primary scan, `scans/The Game of Mah Jong
-Illustrated - trimmed.pdf`, read from the page renders in
-`rules/pages/illustrated/`. Page numbers below are **printed** page numbers; each
-render `pNN.png` is an open-book spread of printed pages `2NN-2` and `2NN-1`
+Illustrated - trimmed.pdf` (offline backup; the pages are in `rules/pages/`),
+read from the page renders in `rules/pages/illustrated/`. Page numbers below are **printed** page numbers; each
+render `pNN.jpg` is an open-book spread of printed pages `2NN-2` and `2NN-1`
 (PDF 32 is printed 62-63).
 
 Coverage: printed pages 4-33 and 62-63 (the Introduction through "How to use

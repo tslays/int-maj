@@ -1,7 +1,9 @@
 # Primary hands — the illustrated catalogue
 
+Historical extraction, superseded by `rules/RULES.md`; not authority.
+
 Extracted from the owner-designated primary scan
-(`scans/The Game of Mah Jong Illustrated - trimmed.pdf`) by reading the
+(`scans/The Game of Mah Jong Illustrated - trimmed.pdf`, offline backup; the pages are in `rules/pages/`) by reading the
 renders in `rules/pages/illustrated/`. Page numbers are **printed** pages. The
 synopsis is printed pp. 60-61; the score summary for the further variations is
 printed p. 50; the short list and the two unnumbered hands are printed p. 30.
