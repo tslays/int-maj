@@ -334,6 +334,7 @@ async function boot() {
   const resumed = state.api.resume();
   if (resumed !== null) {
     await apply(resumed, { animated: false });
+    if (resumed.restartedHand) toast("The game was updated, so this hand starts again. Your scores are kept.");
     void run();
     return;
   }

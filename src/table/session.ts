@@ -533,17 +533,33 @@ export class GameStore {
   }
 
   /**
-   * Rebuild a saved session under a fresh id by replaying its steps from the
-   * seed through the reducer. A snapshot that no longer replays (an older
-   * engine, a damaged save) returns an error and leaves the store unchanged.
+   * Rebuild a saved session under a fresh id by replaying its steps through
+   * the reducer, from the hand's checkpoint (or the seed when there is none).
+   *
+   * When the checkpoint is sound but the hand's steps no longer replay - a
+   * new version of the engine or the bots plays the hand differently - the
+   * hand starts again from its checkpoint (`restartedHand`), so the game and
+   * its scores survive an update. A snapshot with nothing usable returns an
+   * error and leaves the store unchanged.
    */
-  restore(snapshot: SessionSnapshot): SessionUpdate | { readonly error: string } {
+  restore(snapshot: SessionSnapshot): (SessionUpdate & { readonly restartedHand?: true }) | { readonly error: string } {
     let handStart: HandStart;
     let replayed;
+    let steps = snapshot.steps;
+    let humanSteps = snapshot.humanSteps;
+    let restartedHand = false;
     try {
       if (snapshot.handStart !== undefined) {
+        const firstStep = snapshot.handStart.step;
         const start = deserialize(JSON.stringify(snapshot.handStart.state));
-        replayed = replayFrom(start, snapshot.steps.slice(snapshot.handStart.step));
+        try {
+          replayed = replayFrom(start, steps.slice(firstStep));
+        } catch {
+          replayed = { state: start, events: [] };
+          steps = steps.slice(0, firstStep);
+          humanSteps = humanSteps.filter((index) => index < firstStep);
+          restartedHand = true;
+        }
         handStart = {
           step: snapshot.handStart.step,
           eventIndex: 0,
@@ -572,13 +588,14 @@ export class GameStore {
       seed: snapshot.seed,
       seat: SEAT,
       state: replayed.state,
-      steps: [...snapshot.steps],
-      humanSteps: [...snapshot.humanSteps],
+      steps: [...steps],
+      humanSteps: [...humanSteps],
       events: replayed.events,
       handStart,
     };
     this.sessions.set(id, session);
-    return { session, events: [...session.events] };
+    const update = { session, events: [...session.events] };
+    return restartedHand ? { ...update, restartedHand: true } : update;
   }
 
   /** Read-only inspection for tests; never serialised to a client. */
