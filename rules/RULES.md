@@ -941,7 +941,7 @@ the Companion readings that differ are listed in `rules/AUDIT.md` under
 
 Page tags `[C p. N]` are the Companion's **printed** pages. The render
 `rules/pages/companion/pNN.jpg` is the spread of printed pages `2NN-4` and `2NN-3`
-(so `p04.png` is printed pp. 4-5, `p30.png` is pp. 56-57).
+(so `p04.jpg` is printed pp. 4-5, `p30.jpg` is pp. 56-57).
 
 ## 1. The tier ladder
 
@@ -1196,7 +1196,7 @@ These Companion statements conflict with Part I or Part II and are recorded in
 
 # Appendix — evidence
 
-- `rules/PRIMARY-RULES.md` — the raw Milestone A extraction (this framework's
+- `rules/archive/PRIMARY-RULES.md` — the raw Milestone A extraction (this framework's
   Part I is that text, renumbered, unchanged).
 - `rules/AUDIT.md` — conflicts with `rules/archive/PLAY.md`, `rules/archive/ASSUMPTIONS.md` and
   the engine; Milestone C work list.

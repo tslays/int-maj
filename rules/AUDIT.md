@@ -7,7 +7,7 @@ conflict between the primary scan and `rules/archive/PLAY.md`,
 is `rules/pages/illustrated/pNN.jpg`.
 
 "Printed" is the literal reading of the page (quotes and rule numbers refer to
-`rules/PRIMARY-RULES.md`). "Old / engine" is what the tree currently says or
+`rules/archive/PRIMARY-RULES.md`). "Old / engine" is what the tree currently says or
 does. The Status column records the Milestone C/D2 slice that closed the row. The
 eight D2 rows (A7, A13, A15, A16, A17, A24, A25, A27) are closed in
 `test/deferred-rules.test.ts`; no row in this table is open.
@@ -93,7 +93,7 @@ These primary rules match the current engine and need no change:
 Source: the illustrated hands on printed pp. 34-58 and the two unnumbered
 hands on p. 30; score lines from those pages; cross-checked against the
 synopsis (pp. 60-61) and the p. 50 summary. Compositions and tiers are in
-`rules/PRIMARY-HANDS.md`.
+`rules/archive/PRIMARY-HANDS.md`.
 
 Every entry in `src/core/patterns/table.ts` is classified once:
 
@@ -234,7 +234,7 @@ table as the supplement; none is deleted.
 - The table's Companion page citations (pp. 9-60) are left as they are; this
   audit adds the primary page. A later pass can re-cite them, but no entry was
   deleted.
-- `rules/PRIMARY-HANDS.md` records the printed ambiguities (hand 8's repeated
+- `rules/archive/PRIMARY-HANDS.md` records the printed ambiguities (hand 8's repeated
   rank, hand 24's pair count, hand 25's chow option, hand 11's two score lines,
   All Kong's one-suit wording).
 
