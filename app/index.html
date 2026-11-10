@@ -741,6 +741,85 @@
           height: 64px;
           animation: turn 2.4s ease-in-out infinite;
         }
+        /* In a phone's browser: how to install, under the request to turn. */
+        .install {
+          width: min(300px, calc(100vw - 48px));
+          margin-top: 14px;
+          padding: 14px 16px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.05);
+          font-size: 14px;
+          font-weight: 400;
+          text-align: left;
+        }
+        .install h2 {
+          margin: 0 0 2px;
+          font-size: 15px;
+          font-weight: 600;
+        }
+        .install p {
+          margin: 0;
+          color: var(--muted);
+          line-height: 1.4;
+        }
+        .install p + p {
+          margin-top: 8px;
+          color: var(--ink);
+        }
+        .install ol {
+          margin: 12px 0 0;
+          padding: 0;
+          list-style: none;
+          counter-reset: step;
+        }
+        .install li {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 7px 0;
+          counter-increment: step;
+        }
+        .install li + li {
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .install li::before {
+          content: counter(step);
+          flex: none;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: rgba(140, 203, 234, 0.18);
+          color: #8ccbea;
+          font-size: 12px;
+          font-weight: 600;
+          line-height: 20px;
+          text-align: center;
+        }
+        .install li span {
+          flex: 1;
+        }
+        .install li small {
+          display: block;
+          color: var(--muted);
+          font-size: 12px;
+        }
+        .rotate .install svg {
+          flex: none;
+          width: 22px;
+          height: 22px;
+          animation: none;
+        }
+        .install .ghost {
+          display: block;
+          margin: 14px auto 2px;
+          padding: 9px 22px;
+          font-size: 14px;
+        }
+        .install[hidden],
+        .install [hidden] {
+          display: none;
+        }
         @keyframes turn {
           0%,
           30% {
@@ -780,6 +859,47 @@
         <line x1="28" y1="51" x2="36" y2="51" />
       </svg>
       Turn your phone sideways to play
+      <div class="install" id="install" hidden>
+        <h2>Better as an app</h2>
+        <p>Full screen, with its own icon, and it works offline.</p>
+        <button class="ghost" id="install-now" type="button" hidden><span>Install app</span></button>
+        <ol data-guide="ios" hidden>
+          <li>
+            <span>Tap <b>Share</b><small>In Safari it can sit behind the ••• button.</small></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#8ccbea" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 15V3.5M8 7l4-4 4 4M8.5 10H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1.5" />
+            </svg>
+          </li>
+          <li>
+            <span>Choose <b>Add to Home Screen</b></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#8ccbea" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+              <rect x="4" y="4" width="16" height="16" rx="4" />
+              <path d="M12 8.5v7M8.5 12h7" />
+            </svg>
+          </li>
+          <li><span>Tap <b>Add</b>, then open the game from its icon</span></li>
+        </ol>
+        <ol data-guide="android" hidden>
+          <li>
+            <span>Open the browser menu</span>
+            <svg viewBox="0 0 24 24" fill="#8ccbea" aria-hidden="true">
+              <circle cx="12" cy="5" r="1.9" />
+              <circle cx="12" cy="12" r="1.9" />
+              <circle cx="12" cy="19" r="1.9" />
+            </svg>
+          </li>
+          <li>
+            <span>Choose <b>Add to Home screen</b><small>Some browsers call it Install app.</small></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#8ccbea" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+              <rect x="4" y="4" width="16" height="16" rx="4" />
+              <path d="M12 8.5v7M8.5 12h7" />
+            </svg>
+          </li>
+          <li><span>Tap <b>Install</b>, then open the game from its icon</span></li>
+        </ol>
+        <p data-guide="ios-webview" hidden>To install it, open this page in Safari first.</p>
+        <p data-guide="android-webview" hidden>To install it, open this page in Chrome first.</p>
+      </div>
     </div>
     <nav class="menu">
       <button class="ghost" id="new-game" type="button"><span>New game</span></button>
@@ -835,8 +955,11 @@
           <p>The game saves after every move and picks up where you left off when you come back.</p>
         </div>
         <div class="detail-line">
-          <h3>Install on iPhone</h3>
-          <p>In Safari tap Share, then Add to Home Screen. Play with the phone on its side.</p>
+          <h3>Install on your phone</h3>
+          <p>
+            iPhone: tap Share, then Add to Home Screen. Android: open the browser menu, then Add to Home
+            screen. Play with the phone on its side.
+          </p>
         </div>
         <div class="detail-line" id="help-report">
           <h3>Report a problem</h3>
@@ -863,6 +986,7 @@
     </div>
     <section class="result" id="result" hidden></section>
     <p class="toast" id="toast" role="status" hidden></p>
+    <script type="module" src="src/install.js"></script>
     <script type="module" src="src/main.js"></script>
   </body>
 </html>
