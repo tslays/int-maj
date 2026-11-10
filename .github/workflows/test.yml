@@ -3,11 +3,16 @@ name: test
 on:
   push:
     branches: [main]
+    # A tag v* is a release to testers (see the deploy-testers job).
+    tags: ["v*"]
   pull_request:
   # The 300-hand soak takes minutes: it runs nightly, or on demand.
   schedule:
     - cron: "0 3 * * *"
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 # A newer push supersedes a run still going for the same branch.
 concurrency:
@@ -30,17 +35,48 @@ jobs:
       # The app testers install is the static build: prove it still builds.
       - run: npm run build
 
-  # Every push to main that passes the tests is published, so work done
-  # anywhere - a laptop or a cloud session from a phone - goes live by pushing.
-  deploy:
-    name: Deploy to Cloudflare
+  # Every push to main that passes the tests goes to the development site
+  # (int-dev), so work done anywhere - a laptop or a cloud session from a
+  # phone - can be looked at by pushing. Testers are not on this site.
+  deploy-dev:
+    name: Deploy dev (int-dev)
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     # One deploy at a time, and never cancelled halfway.
     concurrency:
-      group: deploy
+      group: deploy-dev
+      cancel-in-progress: false
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Skip until the Cloudflare token is set
+        if: env.CLOUDFLARE_API_TOKEN == ''
+        run: echo "::notice::No CLOUDFLARE_API_TOKEN secret yet, so nothing was deployed."
+      - uses: actions/checkout@v5
+        if: env.CLOUDFLARE_API_TOKEN != ''
+      - uses: actions/setup-node@v5
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        with:
+          node-version-file: .nvmrc
+      - run: npm run build
+        if: env.CLOUDFLARE_API_TOKEN != ''
+      - run: npx --yes wrangler@4.158.0 deploy --env dev
+        if: env.CLOUDFLARE_API_TOKEN != ''
+
+  # The tester site (int) changes only when a tag v* is pushed, or when this
+  # workflow is run by hand against a tag (to re-deploy or roll back).
+  deploy-testers:
+    name: Deploy testers (int)
+    needs: test
+    if: >-
+      github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+      && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: deploy-testers
       cancel-in-progress: false
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -59,9 +95,62 @@ jobs:
       - run: npx --yes wrangler@4.158.0 deploy
         if: env.CLOUDFLARE_API_TOKEN != ''
 
+  # Each pull request from this repository gets its own link on int-dev
+  # (https://pr-<number>-int-dev.<account>.workers.dev), in one comment that
+  # is updated on every push. It never touches the tester site. Not a
+  # required check: a failing preview must not block a merge.
+  preview:
+    name: Preview (PR link)
+    needs: test
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    concurrency:
+      group: preview-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+      PR: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Skip until the Cloudflare token is set
+        if: env.CLOUDFLARE_API_TOKEN == ''
+        run: echo "::notice::No CLOUDFLARE_API_TOKEN secret yet, so no preview."
+      - uses: actions/checkout@v5
+        if: env.CLOUDFLARE_API_TOKEN != ''
+      - uses: actions/setup-node@v5
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        with:
+          node-version-file: .nvmrc
+      - run: npm run build
+        if: env.CLOUDFLARE_API_TOKEN != ''
+      - name: Upload a preview version
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: |
+          set -o pipefail
+          npx --yes wrangler@4.158.0 versions upload --env dev \
+            --preview-alias "pr-$PR" --message "PR $PR ${GITHUB_SHA::7}" | tee upload.log
+          url=$(grep -oE 'https://pr-[A-Za-z0-9.-]+\.workers\.dev' upload.log | head -1 || true)
+          echo "PREVIEW_URL=${url:-}" >> "$GITHUB_ENV"
+      - name: Post or update the preview comment
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.PREVIEW_URL != ''
+        run: |
+          marker='<!-- int-maj-preview -->'
+          body="$marker"$'\n'"**Preview:** $PREVIEW_URL"$'\n\n'"Commit \`${GITHUB_SHA::7}\`. Updated on every push; the tester site is not affected."
+          id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
+            --jq "[.[] | select(.body | startswith(\"$marker\"))][0].id // empty")
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -f body="$body"
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -f body="$body"
+          fi
+
   soak:
     name: Soak (300 hands)
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref_type != 'tag')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:

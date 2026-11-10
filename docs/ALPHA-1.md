@@ -34,7 +34,7 @@ Everything else is **not** alpha-1.
 Done and live: offline play, saving with a checkpoint per hand, install from
 Safari, sound, claims/kongs/fishing/Goulash, undo, the result card with the
 book's arithmetic, bots that plan towards hands, the closest-hands helper
-with a tap-in sheet, and CI that deploys every green push to `main`.
+with a tap-in sheet, and CI that deploys every green push to `main` (since split: `int-dev`; testers get tags).
 `session.ts` already knows `gameOver` and keeps the full step log "for
 reports". The game's end today is the last hand's result card with a "New
 game" button: no final standings.
@@ -131,10 +131,12 @@ fit an unknown number. The habits that keep it cheap:
   cannot see the GitHub release.** It is the owner's record and changelog.
   Testers get the link and the guide by message, and send reports back by
   message. Do not make the repository public to fix this.
-- **One URL moves under the testers.** Every green push to `main` redeploys
-  it and installed copies update on next launch. During the test window merge
-  only fixes you would want testers to have. Splitting a stable tester URL
-  from a development URL (deploy on tag) is a good alpha-2 chunk, not now.
+- **The tester URL is stable.** https://int.mah-jong.workers.dev is deployed
+  only when a tag `v*` is pushed (or the workflow is run on an existing tag),
+  so merges to `main` do not move the build under testers; installed copies
+  update on next launch after a release. Development goes to
+  https://int-dev.mah-jong.workers.dev and each PR gets a preview link
+  (`docs/WORKFLOW.md`, "Going live").
 
 ## iPhone pass checklist (#1)
 

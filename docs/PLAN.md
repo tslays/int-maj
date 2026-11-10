@@ -54,7 +54,8 @@ build id), tester guide and in-app help (`docs/TESTING.md`), Report a problem
 who threw each discard, the iPhone-pass fixes, sound, and a 300-hand soak on
 the engine. Tracked in milestone `v0.1.0-alpha.1`; release gate is #43.
 
-Live at https://int.mah-jong.workers.dev.
+Testers: https://int.mah-jong.workers.dev (changes only on a `v*` tag).
+Development: https://int-dev.mah-jong.workers.dev (every green push to `main`).
 
 ## Next
 
@@ -68,8 +69,8 @@ The alpha-1 testers decide this. Findings from testing become issues labelled
   uses intermediate today.
 - Bot tuning, including Crazy Chows being a common way for the bots to win
   (over a quarter of bot wins in the soak).
-- A separate, stable tester URL deployed on tag, so merges to `main` stop
-  moving the build under testers.
+- Done (2026-11-10): a separate, stable tester URL deployed on tag (`int`);
+  `main` deploys to `int-dev` and each PR gets a preview link.
 
 ## Known follow-ups
 

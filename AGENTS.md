@@ -83,12 +83,23 @@ The full workflow is `docs/WORKFLOW.md`. The rules every session follows:
 - Run `npm test` (under a minute) before every commit. `npm run dev` builds
   and serves the app; review boards (`/?state=turn|claim|wait|fishing|win|drawn|result`)
   and `/?phone` show a screen without playing to it.
-- **Deliver autonomously, end to end** (owner-authorized until the owner says
-  otherwise, `docs/WORKFLOW.md` "Autonomous delivery loop"): on the session's
-  `claude/...` branch, open a pull request, wait for green CI, squash-merge it
-  into `main`, confirm the `Deploy to Cloudflare` job succeeded (it publishes
-  every green push to `main` to https://int.mah-jong.workers.dev), then report.
-  Do not stop at a pushed branch or ask first.
+- **Deliver autonomously** (owner-authorized, `docs/WORKFLOW.md` "Autonomous
+  delivery loop"): on the session's `claude/...` branch, open a pull request
+  (it gets a preview link comment), then by kind of change:
+  - *Non-visual* (engine, rules, docs, tests, CI): enable auto-merge (GitHub
+    MCP `enable_pr_auto_merge`, squash) and end the session; do not poll for
+    CI or deploy. If auto-merge cannot be enabled, wait for green and
+    squash-merge as before.
+  - *Visual* (anything the player sees or hears): report the preview link and
+    leave the PR open; the owner checks it on their phone and sends
+    corrections into the same session. Merge only when the owner says so.
+  - *Release to testers:* push a tag `v0.1.0-alpha.N` on `main` (or run the
+    workflow on an existing tag). It is the only way testers get a new build.
+  Sites: green pushes to `main` deploy to https://int-dev.mah-jong.workers.dev
+  (`Deploy dev (int-dev)`); testers are on https://int.mah-jong.workers.dev,
+  which changes only on a `v*` tag (`Deploy testers (int)`). This relies on
+  owner settings "Allow auto-merge" and a `main` ruleset requiring
+  `Tests and build`.
 - The look is the game's own: Riichi City is the quality bar, but never copy
   another app's art, tiles, characters, sounds or distinctive look.
 
