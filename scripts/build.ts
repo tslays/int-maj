@@ -32,7 +32,7 @@ const APP = join(ROOT, "app");
 const ENTRY = join(SRC, "table", "local.ts");
 
 /** Single files copied as they are; `index.html` is written by `writePage`. */
-const APP_FILES = ["table3d.html"] as const;
+const APP_FILES = ["table3d.html", "styles.css"] as const;
 
 /** Folders of the app copied as they are, keeping their paths. */
 const APP_DIRS = [
