@@ -213,6 +213,17 @@ describe("A13 Goulash", () => {
     zeroSum(current);
   });
 
+  it("opens a new game with a Goulash deal when the option asks for one", () => {
+    const plain = newGame("goulash-start", { dealer: "E" }).state;
+    assert.equal(plain.goulash, false);
+    assert.equal(plain.phase, "discard");
+    const goulash = newGame("goulash-start", { dealer: "E", goulash: true, goulashPool: 200 }).state;
+    assert.equal(goulash.goulash, true);
+    assert.equal(goulash.goulashPool, 200);
+    assert.equal(goulash.phase, "exchange");
+    assert.equal(goulash.goulashStage, 0);
+  });
+
   it("forbids chows and pays the agreed pool to the winner", () => {
     const state = fixture({
       goulash: true,

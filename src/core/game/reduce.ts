@@ -1656,7 +1656,6 @@ export function newGame(seed: string | number, options: NewGameOptions = {}): Ap
     drawRepeatUsed: false,
     variant: options.variant ?? "western",
     kitty: 0,
-    goulash: false,
     players: [],
     wall: { tiles: [], front: 0, back: -1 },
     turn: dealer,
