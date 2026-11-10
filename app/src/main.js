@@ -74,7 +74,8 @@ function scores() {
   return result;
 }
 
-function refreshConsole() {
+/** `litView`: the view whose turn the light shows (kept back while a move still animates). */
+function refreshConsole(litView = payload.view) {
   const view = payload.view;
   const totals = scores();
   updateConsole({
@@ -86,7 +87,7 @@ function refreshConsole() {
       wind: entry.wind,
       score: totals[entry.seat],
       dealer: entry.dealer,
-      turn: view.phase !== "finished" && view.turn === entry.seat,
+      turn: litView.phase !== "finished" && litView.turn === entry.seat,
     })),
   });
 }
@@ -129,7 +130,8 @@ let previousFishing = new Set();
 async function apply(next, { animated = true } = {}) {
   const before = payload;
   payload = next;
-  refreshConsole();
+  // Scores and wall update at once; the turn light waits for the move to finish.
+  refreshConsole(before?.view ?? next.view);
   const calls = await board.reconcile(next, { animated });
   refreshConsole();
   const announcements = [];
