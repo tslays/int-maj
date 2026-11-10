@@ -69,9 +69,9 @@ it is given (`claude/...`), so delivery is a pull request:
      and leave the pull request open. The owner looks at it on their phone
      and sends corrections into the same session; merge only when the owner
      says so.
-   - **Release to testers:** push a tag `v0.1.0-alpha.N` on `main` (or run
-     the workflow on an existing tag). This is the only way testers get a new
-     build.
+   - **Release to testers:** sessions cannot push tags (the push gets a 403).
+     Tell the owner the next `v0.1.0-alpha.N` and the `main` commit to tag;
+     the owner pushes the tag. This is the only way testers get a new build.
 4. Waiting for green by hand: `Tests and build` red means reproduce, fix, push
    again; never skip or disable a test to get green. Green and no unresolved
    review comments: squash-merge into `main` (one commit per pull request; no
