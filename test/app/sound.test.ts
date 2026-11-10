@@ -138,8 +138,8 @@ describe("sound voices", () => {
       for (const source of ctx.sources) {
         assert.equal(source.starts.length, 1);
         assert.equal(source.stops.length, 1);
-        assert.ok(source.starts[0] >= 5, "never starts before it was asked to");
-        assert.ok(source.stops[0] > source.starts[0], "stops after it starts");
+        assert.ok(source.starts[0]! >= 5, "never starts before it was asked to");
+        assert.ok(source.stops[0]! > source.starts[0]!, "stops after it starts");
       }
       for (const node of ctx.nodes) {
         for (const event of node.gain.events.concat(node.frequency.events)) {
@@ -198,10 +198,10 @@ describe("sound engine", () => {
     const { engine, ctx } = await running();
     const unlocked = ctx.sources.length; // the unlock's silent buffer is not a sound
     engine.cue("clack");
-    const first = Math.min(...ctx.sources.slice(unlocked).map((source) => source.starts[0]));
+    const first = Math.min(...ctx.sources.slice(unlocked).map((source) => source.starts[0]!));
     const before = ctx.sources.length;
     engine.cue("clack", { delay: 0.36 });
-    const later = Math.min(...ctx.sources.slice(before).map((source) => source.starts[0]));
+    const later = Math.min(...ctx.sources.slice(before).map((source) => source.starts[0]!));
     assert.ok(later - first > 0.3 && later - first < 0.4);
   });
 
@@ -231,7 +231,7 @@ describe("sound engine", () => {
     const sources = ctx.sources.length;
     assert.equal(engine.cue("clack"), true, "a cue after idle is not dropped");
     assert.equal(ctx.resumed, resumedBefore + 1, "the context resumes for it");
-    const starts = ctx.sources.slice(sources).map((source) => source.starts[0]);
+    const starts = ctx.sources.slice(sources).map((source) => source.starts[0]!);
     assert.ok(Math.min(...starts) >= ctx.currentTime && Math.min(...starts) < ctx.currentTime + 0.05);
     await Promise.resolve();
     assert.equal(engine.running, true);

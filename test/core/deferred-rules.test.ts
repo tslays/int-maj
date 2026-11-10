@@ -311,9 +311,9 @@ describe("A15 penalties", () => {
   it("does not let a passed discard be claimed later", () => {
     const state = fixture({
       hands: {
+        ...FILLER,
         E: "b1 b1 b1 c1 c2 c3 c7 c8 c9 wE wS wW b5 o9",
         S: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5",
-        ...FILLER,
       },
       wall: ["o6", "o7", "o8"],
       phase: "discard",

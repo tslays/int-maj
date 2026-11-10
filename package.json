@@ -9,6 +9,7 @@
   },
   "scripts": {
     "test": "node --test \"test/**/*.test.ts\"",
+    "typecheck": "tsc -p .",
     "soak": "SOAK_SEEDS=300 node --test test/core/soak.test.ts",
     "bot-soak": "node scripts/bot-soak.ts",
     "test:watch": "node --test --watch \"test/**/*.test.ts\"",
@@ -20,5 +21,9 @@
     "deploy": "npm test && npm run build && npx --yes wrangler@4.158.0 deploy",
     "dev": "npm run build && npm run preview",
     "pretest": "node -e \"if (+process.versions.node.split('.')[0] < 24) { console.error('int-maj needs Node 24 or later (see .nvmrc); this is Node ' + process.version + '.'); process.exit(1); }\""
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "typescript": "5.9.3"
   }
 }

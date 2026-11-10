@@ -542,7 +542,7 @@ function takeDiscard(draft: Draft, discarder: Seat, tile: string): void {
 }
 
 function addMeld(draft: Draft, seat: Seat, meld: MeldState): void {
-  draftPlayer(draft, seat).melds.push(meld);
+  draftPlayer(draft, seat).melds.push({ ...meld, tiles: [...meld.tiles] });
 }
 
 /** Payments are made to the nearest 100; over 50 rounds up, 50 or less down. */
@@ -1069,7 +1069,7 @@ function applyClaim(
     return { error: `illegal ${kind} claim on ${window.tile}`, state: draft as GameState };
   }
 
-  window.claims.push(match);
+  window.claims.push({ ...match, tiles: [...match.tiles] });
   window.pending.shift();
   if (window.pending.length === 0) return resolveClaims(draft, events, emit);
   draft.turn = window.pending[0]!;
@@ -1198,7 +1198,7 @@ function applyGoulashExchange(
   }
 
   const stage = draft.goulashStage ?? 0;
-  for (const [a, b] of GOULASH_PAIRS[stage]) {
+  for (const [a, b] of GOULASH_PAIRS[stage]!) {
     const pickedA = picks[a]!;
     const pickedB = picks[b]!;
     const handA = draftPlayer(draft, a).hand as string[];
@@ -1285,7 +1285,7 @@ function applyDeclareFishing(
       state: draft as GameState,
     };
   }
-  const entry: FishingState = {
+  const entry = {
     seat,
     wait: [...fixed.wait],
     tier: fixed.tier,

@@ -18,10 +18,10 @@ import {
   serialize,
   type Action,
 } from "../../src/core/game/index.ts";
-import { checkHand } from "../../src/core/check.ts";
+import { checkHand, type WaitReport } from "../../src/core/check.ts";
 import { tileKey } from "../../src/core/tiles.ts";
 import { createApiContext, routeApi, type ApiContext } from "../../src/table/api.ts";
-import { GameStore, type StatePayload } from "../../src/table/session.ts";
+import { GameStore, type StatePayload, type WaitPanelEntry } from "../../src/table/session.ts";
 import { viewFor } from "../../src/core/game/view.ts";
 
 interface ApiPayload extends StatePayload {
@@ -274,7 +274,7 @@ describe("table API", () => {
     for (let guard = 0; guard < 4000 && session.state.phase !== "finished"; guard++) {
       const view = viewFor(session.state, session.seat);
       if (view.legalActions.length > 0) {
-        const applied = store.move(id, view.legalActions[0]);
+        const applied = store.move(id, view.legalActions[0]!);
         assert.ok(!("error" in applied));
         assert.ok("session" in applied);
         session = applied.session;
@@ -388,14 +388,14 @@ describe("table API", () => {
     const melds = player.melds.map((meld) => `(${meld.tiles.join(" ")})`);
     const input = [...melds, ...player.hand].join(" ");
     const expected = checkHand(input);
-    assert.equal(expected.size, 13);
+    if (expected.size !== 13) throw new Error("expected a 13-tile check");
 
     const checker = payload.checker;
     if (checker.size !== 13) throw new Error("expected a 13-tile checker");
     assert.equal(checker.waits.length, expected.waits.length);
     for (let index = 0; index < expected.waits.length; index++) {
-      const actual = checker.waits[index];
-      const wait = expected.waits[index]!;
+      const actual: WaitPanelEntry | undefined = checker.waits[index];
+      const wait: WaitReport = expected.waits[index]!;
       assert.ok(actual !== undefined);
       assert.equal(actual.tile, tileKey(wait.tile));
       assert.equal(actual.remaining, wait.remaining);

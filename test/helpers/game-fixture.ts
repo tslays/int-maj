@@ -38,7 +38,7 @@ export interface FixtureOptions {
   readonly turn?: Seat;
   readonly fishing?: readonly FishingState[];
   readonly claimWindow?: ClaimWindow;
-  readonly lastDraw?: { readonly seat: Seat; readonly tile: string; readonly end: "front" | "back" };
+  readonly lastDraw?: GameState["lastDraw"];
   readonly result?: GameState["result"];
   readonly prevailingWind?: GameState["prevailingWind"];
   readonly gameOver?: boolean;

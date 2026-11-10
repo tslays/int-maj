@@ -32,6 +32,15 @@ function wonHand() {
   return play(state, { type: "Win", seat: "S", kind: "self-drawn" }).state;
 }
 
+/** One row of `rankSeats`. */
+interface Ranked {
+  seat: string;
+  rank: number;
+  total: number;
+  tied: boolean;
+  winner: boolean;
+}
+
 describe("final standings", () => {
   it("ranks the seats of a real won hand, best first, the winner named", () => {
     const { totals } = ledgerTotals(wonHand());
@@ -39,8 +48,8 @@ describe("final standings", () => {
     const ranking = rankSeats(scores);
     assert.equal(ranking[0].seat, "S");
     assert.equal(ranking[0].winner, true);
-    assert.deepEqual(ranking.map((entry) => entry.rank).slice(0, 1), [1]);
-    assert.equal(ranking.reduce((sum, entry) => sum + entry.total, 0), START * 4);
+    assert.deepEqual(ranking.map((entry: Ranked) => entry.rank).slice(0, 1), [1]);
+    assert.equal(ranking.reduce((sum: number, entry: Ranked) => sum + entry.total, 0), START * 4);
     for (let i = 1; i < ranking.length; i++) assert.ok(ranking[i - 1].total >= ranking[i].total);
     assert.equal(winnerLine(ranking, name), "South wins the game");
   });
@@ -48,7 +57,7 @@ describe("final standings", () => {
   it("shows equal totals as tied, sharing a rank, with no tie-break", () => {
     const ranking = rankSeats({ E: 16000, S: 17000, W: 15000, N: 16000 });
     assert.deepEqual(
-      ranking.map((entry) => [entry.seat, entry.rank, entry.tied]),
+      ranking.map((entry: Ranked) => [entry.seat, entry.rank, entry.tied]),
       [
         ["S", 1, false],
         ["E", 2, true],
@@ -60,7 +69,7 @@ describe("final standings", () => {
 
   it("names every seat tied for first as a winner", () => {
     const ranking = rankSeats({ E: 18000, S: 18000, W: 14000, N: 14000 });
-    assert.deepEqual(ranking.filter((entry) => entry.winner).map((entry) => entry.seat), ["E", "S"]);
+    assert.deepEqual(ranking.filter((entry: Ranked) => entry.winner).map((entry: Ranked) => entry.seat), ["E", "S"]);
     assert.equal(winnerLine(ranking, name), "East and South tie for the win");
     const three = rankSeats({ E: 17000, S: 17000, W: 17000, N: 13000 });
     assert.equal(winnerLine(three, name), "East, South and West tie for the win");
@@ -68,6 +77,6 @@ describe("final standings", () => {
 
   it("handles a four-way tie (nothing moved)", () => {
     const ranking = rankSeats({ E: 16000, S: 16000, W: 16000, N: 16000 });
-    assert.ok(ranking.every((entry) => entry.rank === 1 && entry.tied && entry.winner));
+    assert.ok(ranking.every((entry: Ranked) => entry.rank === 1 && entry.tied && entry.winner));
   });
 });
