@@ -13,18 +13,24 @@ pull request:
 ```
  prompt -> cloud session (fresh clone) -> claude/... branch -> pull request
                                                                    |
-                                          GitHub Actions: tests, build
-                                                                   | green: squash-merge
-                                                                   v
-                       main -> tests, build -> Deploy to Cloudflare -> https://int.mah-jong.workers.dev
+                                          GitHub Actions: tests, build, preview
+                                                  |                          |
+                                                  | green: squash-merge      v PR comment: preview link
+                                                  v                            (pr-N-int-dev, never `int`)
+        main -> tests, build -> Deploy dev (int-dev) -> https://int-dev.mah-jong.workers.dev
+        tag v* -> tests, build -> Deploy testers (int) -> https://int.mah-jong.workers.dev
 ```
+
+Two sites: **int-dev** is the development site (every green push to `main`,
+plus a preview link per pull request); **int** is the tester site, which
+changes only when a release tag is pushed.
 
 Everything a session needs is in the repository: the code, the rules
 (`rules/RULES.md`), the book pages and their OCR text to check them against
 (`rules/pages/`) and the deploy (`.github/workflows/test.yml`).
 
 The `int-maj` cloud environment (personal, linked to this repository) allows
-the package registries and the live site, so a session can confirm a deploy.
+the package registries and the live sites, so a session can confirm a deploy.
 It needs no setup script: there are no dependencies, and the SessionStart hook
 picks Node 24.
 
@@ -51,18 +57,37 @@ it is given (`claude/...`), so delivery is a pull request:
 
 1. `npm test` passes locally (the hook has already picked Node 24).
 2. Commit, push the branch, open a pull request into `main` (mirror
-   `.github/pull_request_template.md` if one exists).
-3. Watch the pull request's `Tests and build` check. Red: reproduce, fix, push
-   again; never skip or disable a test to get green.
-4. Green and no unresolved review comments: squash-merge it into `main` (one
-   commit per pull request; no force-push, no history rewriting, no merging
-   someone else's PR). GitHub then deletes the merged `claude/...` branch
-   (repository setting "Automatically delete head branches"); the pull
-   request keeps its history and can restore the branch.
-5. The push to `main` runs `Deploy to Cloudflare`. Check that job succeeds and
-   report the live URL. If the deploy job fails, say so and why; do not retry
-   blindly.
+   `.github/pull_request_template.md` if one exists). The pull request gets
+   a comment with its preview link (`pr-<number>-int-dev...workers.dev`).
+3. Then the route depends on the kind of change:
+   - **Non-visual** (engine, rules, docs, tests, CI): enable auto-merge
+     (GitHub MCP `enable_pr_auto_merge`, squash) and end the session. Do not
+     poll for CI or the deploy. If auto-merge cannot be enabled (repository
+     setting off), fall back to watching `Tests and build` and squash-merging
+     it when green, as below.
+   - **Visual** (anything the player sees or hears): report the preview link
+     and leave the pull request open. The owner looks at it on their phone
+     and sends corrections into the same session; merge only when the owner
+     says so.
+   - **Release to testers:** push a tag `v0.1.0-alpha.N` on `main` (or run
+     the workflow on an existing tag). This is the only way testers get a new
+     build.
+4. Waiting for green by hand: `Tests and build` red means reproduce, fix, push
+   again; never skip or disable a test to get green. Green and no unresolved
+   review comments: squash-merge into `main` (one commit per pull request; no
+   force-push, no history rewriting, no merging someone else's PR). GitHub
+   then deletes the merged `claude/...` branch (repository setting
+   "Automatically delete head branches"); the pull request keeps its history
+   and can restore the branch.
+5. The push to `main` runs `Deploy dev (int-dev)`; it never changes the tester
+   site. Check it only when the task is about the deploy; if it fails, say so
+   and why, and do not retry blindly.
 6. Report what shipped. A session on `main` directly skips steps 2 and 4.
+
+Owner settings this relies on: **Allow auto-merge** (Settings > General) and a
+ruleset on `main` that requires the `Tests and build` check. Without the
+first, sessions fall back to merging by hand; without the second, auto-merge
+would merge at once without waiting for tests.
 
 Stop and ask only for: a failing check you cannot fix, merge conflicts that
 need a product decision, or anything outside the ordinary (force-push,
@@ -70,18 +95,26 @@ deleting branches or history, changing the Cloudflare token or secrets).
 
 ## Going live
 
-- Every push to `main` whose tests and build pass is deployed by the
-  `Deploy to Cloudflare` job, usually a few minutes after the push. Installed
-  copies on phones update the next time they open.
+- **Development site, https://int-dev.mah-jong.workers.dev:** every push to
+  `main` whose tests and build pass is deployed by `Deploy dev (int-dev)`,
+  usually a few minutes after the push.
+- **Pull-request previews:** every pull request from this repository gets
+  `https://pr-<number>-int-dev.mah-jong.workers.dev` (the `Preview (PR link)`
+  job uploads a version of `int-dev` and posts or updates one comment). A
+  preview never touches `int`.
+- **Tester site, https://int.mah-jong.workers.dev:** deployed by
+  `Deploy testers (int)` only when a tag `v*` is pushed, or when the workflow
+  is run by hand (`workflow_dispatch`) on a tag ref, which re-deploys or rolls
+  back to that tag. Merges to `main` never move it. The URL stays `int`
+  because installed home-screen apps and saved games belong to the address.
 - A failing test means nothing is published.
-- A session that works on a branch and opens a pull request publishes only
-  when the pull request is merged into `main` (the GitHub app on the phone
-  can merge it).
+- A tag is the only way testers get a new build.
+- Installed copies on phones update the next time they open.
 - Sessions run autonomously and may merge their own finished, tested work into
   `main` (or open and merge a pull request) without asking first. The owner
   has given this permission in advance; it covers ordinary merges, which
-  deploy on green CI, and not force-pushes or rewriting shared history.
-- `npm run deploy` publishes by hand from a machine logged in with
+  deploy to `int-dev` on green CI, and not force-pushes or rewriting shared history.
+- `npm run deploy` publishes the tester site `int` by hand from a machine logged in with
   `npx wrangler login`; with no local copy it is not used.
 
 ## What is not in the repository
@@ -92,14 +125,6 @@ deleting branches or history, changing the Cloudflare token or secrets).
 | Saved games | each device's browser | a game belongs to the device it is played on |
 | Anything a session must remember | `AGENTS.md`, not Claude's memory | memory notes stay on one machine; a cloud session never sees them |
 | `dist/`, `.wrangler/` | wherever they are built | generated; never committed |
-
-## Later, when wanted
-
-- **Preview deploys:** each pull request gets its own temporary Cloudflare
-  link (`wrangler versions upload`), so a change can be tried on a phone before
-  it merges. Not set up yet: for now every green pull request merges and
-  deploys without the owner approving anything, and the owner wants to keep it
-  that way until they say otherwise.
 
 ## The Cloudflare token
 
