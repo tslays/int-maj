@@ -508,4 +508,25 @@ export function mountStage(parent) {
   buildConsole();
   frame();
   window.addEventListener("resize", frame);
+  // iOS home-screen apps can resume with a stale viewport (a gap at the top,
+  // or a scroll offset the page cannot undo). Reset the scroll and re-fit
+  // now and again once iOS has settled its own layout.
+  const refit = () => {
+    window.scrollTo(0, 0);
+    frame();
+  };
+  const resume = () => {
+    refit();
+    for (const delay of [100, 400, 1000]) setTimeout(refit, delay);
+  };
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") resume();
+  });
+  window.addEventListener("pageshow", resume);
+  window.addEventListener("focus", resume);
+  window.addEventListener("orientationchange", resume);
+  window.visualViewport?.addEventListener("resize", refit);
+  if (typeof ResizeObserver === "function") {
+    new ResizeObserver(frame).observe(parent);
+  }
 }

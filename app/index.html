@@ -37,6 +37,12 @@
         user-select: none;
         -webkit-tap-highlight-color: transparent;
       }
+      /* Pin the page to the screen so a stale iOS resume cannot leave a gap. */
+      html:not(.phone-frame) body {
+        position: fixed;
+        inset: 0;
+        height: auto;
+      }
       canvas {
         display: block;
         width: 100%;
