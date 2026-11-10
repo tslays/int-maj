@@ -50,8 +50,10 @@ both books leave open; read it for provenance, never as a rule source.
 
 ```
 app/          the 3D table: plain ES modules, no build step of its own
-  src/          main (loop, buttons), board (state to tiles), stage (renderer,
-                camera, motion), tiles (tile models), layout (table geometry)
+  src/          main (boot, loop, buttons), shared (state), input, hints,
+                result, menu, report (screens), board (state to tiles),
+                stage (renderer, camera, motion), tiles (tile models),
+                layout (table geometry)
   assets/       tile faces and icons; vendor/three/ is Three.js 0.170
 src/core/     the rules engine: pure and deterministic
 src/table/    the table service: sessions, bots, saving, `routeApi`
