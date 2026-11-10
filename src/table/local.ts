@@ -8,7 +8,9 @@
  *
  * After every answer about the dealt game, its seed and decisions are written
  * to storage, so closing the tab (or iOS evicting it) never loses a hand:
- * `resume` replays the saved steps through the reducer and continues.
+ * `resume` replays the saved steps through the reducer and continues. If a
+ * new version can no longer replay the hand in progress, that hand starts
+ * again from its checkpoint; the game and its scores are kept.
  */
 
 import { createApiContext, routeApi } from "./api.ts";
@@ -29,7 +31,10 @@ export interface KeyValueStorage {
 export interface LocalApi {
   /** Same contract as the client's `fetch` wrapper: resolve data or throw. */
   request(path: string, body?: unknown): Promise<unknown>;
-  /** The saved game's first payload, or null when there is nothing to resume. */
+  /**
+   * The saved game's first payload, or null when there is nothing to resume.
+   * `restartedHand: true` on it means the hand in progress had to start again.
+   */
   resume(): unknown;
   /** Forget the saved game. */
   clear(): void;
@@ -105,11 +110,14 @@ export function createLocalApi(storage: KeyValueStorage | null): LocalApi {
         return null;
       }
       saved = restored.session.id;
+      // A hand that had to start again is saved as such at once.
+      if (restored.restartedHand === true) save(saved);
       return JSON.parse(
         JSON.stringify({
           ...statePayload(restored.session),
           events: restored.events.flatMap((event) => describeEventFor(event, restored.session.seat).split("\n")),
           replaceLog: true,
+          ...(restored.restartedHand === true ? { restartedHand: true } : {}),
         }),
       );
     },

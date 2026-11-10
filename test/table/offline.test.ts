@@ -15,13 +15,14 @@ import { after, before, describe, it } from "node:test";
 import { pathToFileURL } from "node:url";
 
 import { chooseAction } from "../../src/core/game/bot.ts";
-import { ledgerTotals } from "../../src/core/game/reduce.ts";
+import { ledgerTotals } from "../../src/core/game/settle.ts";
 import { SEATS } from "../../src/core/game/state.ts";
 import { viewFor } from "../../src/core/game/view.ts";
 import { createApiContext, routeApi } from "../../src/table/api.ts";
 import {
   GameStore,
   isSessionSnapshot,
+  type SessionSnapshot,
   statePayload,
   type StatePayload,
 } from "../../src/table/session.ts";
@@ -148,6 +149,39 @@ describe("session snapshots", () => {
     assert.equal(store.get("g1"), undefined);
   });
 
+  it("restarts the hand from its checkpoint when its steps no longer replay", () => {
+    const store = new GameStore();
+    const { session } = store.create("checkpoint-3");
+    playOn(store, session.id);
+    assert.ok(!("error" in store.next(session.id)));
+    playOn(store, session.id, 6);
+    const live = store.get(session.id)!;
+    const snapshot = JSON.parse(JSON.stringify(store.snapshot(session.id)!)) as SessionSnapshot;
+    assert.ok(snapshot.steps.length > snapshot.handStart!.step, "the second hand has steps to lose");
+    // As a newer engine would see it: the hand's first step is no longer legal.
+    const steps = [...snapshot.steps];
+    steps[snapshot.handStart!.step] = { type: "Discard", seat: "S", tile: "zz" } as never;
+
+    const restored = new GameStore().restore({ ...snapshot, steps });
+    assert.ok(!("error" in restored));
+    assert.equal(restored.restartedHand, true);
+    assert.equal(restored.session.state.handNumber, 2);
+    assert.deepEqual(restored.session.steps, live.steps.slice(0, live.handStart.step));
+    assert.ok(restored.session.humanSteps.every((index) => index < live.handStart.step));
+    const payload = statePayload(restored.session);
+    assert.deepEqual(payload.scoresBefore, live.handStart.scoresBefore, "the scores of the finished hand are kept");
+    assert.deepEqual(restored.session.state, live.handStart.state);
+  });
+
+  it("does not flag an ordinary restore as restarted", () => {
+    const store = new GameStore();
+    const { session } = store.create("checkpoint-4");
+    playOn(store, session.id, 4);
+    const restored = new GameStore().restore(store.snapshot(session.id)!);
+    assert.ok(!("error" in restored));
+    assert.equal(restored.restartedHand, undefined);
+  });
+
   it("rejects malformed snapshots", () => {
     assert.equal(isSessionSnapshot(null), false);
     assert.equal(isSessionSnapshot({ version: 2, seed: "a", steps: [], humanSteps: [] }), false);
@@ -268,8 +302,9 @@ describe("the offline build", () => {
     assert.match(html, /serviceWorker\.register\("sw\.js"\)/);
     const manifest = JSON.parse(await readFile(join(outDir, "manifest.webmanifest"), "utf8"));
     assert.equal(manifest.display, "standalone");
-    // Old links to the 3D table still land on it.
-    assert.match(await readFile(join(outDir, "table3d.html"), "utf8"), /location\.replace/);
+    assert.match(html, /rel="stylesheet" href="styles.css"/);
+    assert.ok((await readFile(join(outDir, "styles.css"), "utf8")).includes("--strip"), "the stylesheet ships");
+    assert.match(await readFile(join(outDir, "sw.js"), "utf8"), /"styles\.css"/, "and is cached for offline use");
   });
 
   it("emits JavaScript only, with no TypeScript imports left", async () => {

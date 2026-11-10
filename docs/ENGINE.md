@@ -11,7 +11,7 @@ rules it follows are `rules/RULES.md`; this page describes its code.
 | `patterns/` | the hand catalogue as data (`table.ts`), its predicates and types |
 | `match.ts`, `score.ts`, `fishing.ts` | matching a hand, ground score and doubles, fishing |
 | `check.ts` | the table-side checker behind `npm run check` |
-| `game/` | the turn engine: state, actions, events, legal moves, reducer, replay, bot, text |
+| `game/` | the turn engine: state, actions, events, legal moves, reducer, replay, bot, text (modules below) |
 
 ## Catalogue
 
@@ -76,6 +76,17 @@ the input untouched when the move is illegal. `newGame(seed)` deals hand 1;
 `nextHand(state)` deals the next one after a finished hand. No clock and no
 `Math.random`: the state carries the seed, the RNG step count and the whole
 wall, so `deserialize(serialize(state))` resumes in another process.
+
+The reducer is six modules, each importing only the ones above it:
+
+| Module | Holds |
+| --- | --- |
+| `draft.ts` | the mutable working copy `apply` changes, the result types, tile-key helpers |
+| `hands.ts` | what a seat's tiles make: allowed patterns, complete hands, waits, fishing values, the claims a discard opens |
+| `settle.ts` | ending a hand: the result, payments at each settlement level, penalties, `ledgerTotals` |
+| `draws.ts` | taking tiles: the live end, the loose tiles or dead wall, bonus replacement |
+| `deal.ts` | `newGame`, `nextHand`, the deal itself, when a round and the game end |
+| `reduce.ts` | `apply` and one handler per action; claim resolution; the Goulash exchange |
 
 ```ts
 import { apply, deserialize, legalActions, newGame, serialize, viewFor } from "./src/core/index.ts";

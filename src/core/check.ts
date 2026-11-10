@@ -350,6 +350,7 @@ function makeHand(
     selfDrawn,
     seatWind: "E",
     prevailingWind: "E",
+    variant: "western",
   };
 }
 
