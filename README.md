@@ -27,13 +27,14 @@ The roadmap is [docs/PLAN.md](docs/PLAN.md).
 ## How work gets done
 
 The project is built through Claude Code cloud sessions; GitHub's `main`
-branch is the only shared copy, and every green push to it is live within
-minutes.
+branch is the only shared copy. Every green push to it is on the development
+site within minutes; testers get a new build only when a release is tagged.
 
 ```
-prompt -> cloud session on a claude/... branch -> pull request
-       -> CI: tests + build -> squash-merge into main
-       -> CI again on main -> Deploy to Cloudflare -> int.mah-jong.workers.dev
+prompt -> cloud session on a claude/... branch -> pull request (preview link)
+       -> CI: type check, tests, build -> squash-merge into main
+       -> CI again on main -> int-dev.mah-jong.workers.dev   (development)
+tag v* -> CI on the tag   -> int.mah-jong.workers.dev       (testers)
 ```
 
 Sessions follow [AGENTS.md](AGENTS.md) and run that whole chain without
@@ -43,14 +44,17 @@ session, the delivery loop, the Cloudflare token and its expiry - are in
 
 ## Working on it
 
-Node 24 or later (`.nvmrc`); there are no dependencies to install. In a
-Claude cloud session, a startup hook (`.claude/hooks/session-start.sh`)
-selects Node 24 by itself.
+Node 24 or later (`.nvmrc`). The game has no dependencies and `npm test`
+needs no install; `npm ci` adds the two dev-only tools, the type checker and
+the browser driver for the smoke test. In a Claude cloud session, a startup
+hook (`.claude/hooks/session-start.sh`) selects Node 24 and installs them.
 
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | build the app and serve it on http://127.0.0.1:8091/ |
 | `npm test` | every test (under a minute) |
+| `npm run typecheck` | a strict type check of all the TypeScript |
+| `npm run smoke` | the built app in headless Chromium: every review board, and a game played by touch |
 | `npm run play` | a console table against three bots |
 | `npm run check -- "dR dR dR dG dG dG dW dW dW b1 b2 b3 b5"` | what a hand makes or waits on |
 | `npm run replay -- examples/readme-hand.json` | replay a recorded hand |
@@ -58,7 +62,7 @@ selects Node 24 by itself.
 | `npm run bot-soak` | bot-only games: drawn rate and which hands win |
 
 Review boards show one screen without playing up to it:
-`/?state=turn|claim|wait|fishing|win|drawn|result`.
+`/?state=turn|claim|wait|fishing|announce|ron|win|drawn|result`.
 
 ## Project layout
 
@@ -69,13 +73,14 @@ src/
   table/            the table service: games, bots, saving, the API the app calls
   cli/              the console table behind `npm run play`
 bin/              command-line entry points: check, play, replay
-scripts/          build (into dist/), preview, soaks and art generators
+scripts/          build (into dist/), preview, smoke test, soaks and art generators
 test/             core/, table/, cli/, app/ and shared helpers/
 rules/            the rule framework, its audit and the book pages
 docs/             PLAN, WORKFLOW, APP and ENGINE references
 examples/         a recorded hand for the replay tool
-.github/          CI: tests and build on every push and PR, deploy on main
-.claude/          Claude Code settings: the startup hook that selects Node 24
+.github/          CI: type check, tests, build and smoke test on every push and
+                  PR; deploy to int-dev on main and to the tester site on a tag
+.claude/          Claude Code settings: the startup hook (Node 24, dev tools)
 ```
 
 The layers only call downwards: `app` uses `table`, `table` uses `core`, and
@@ -86,14 +91,14 @@ every game replays exactly from its seed.
 ## Rules
 
 [rules/RULES.md](rules/RULES.md) is the single normative rule set. Every rule
-carries its source: `[I p.N]` the primary book, `[C p.N]` used only where the
-primary book is silent) and `[A]` for a recorded assumption where
-both are silent. [rules/SOURCE.md](rules/SOURCE.md) sets the precedence and
+carries its source: `[I p.N]` for the primary book, `[C p.N]` for the
+supplement (used only where the primary book is silent) and `[A]` for a
+recorded assumption where both are silent. [rules/SOURCE.md](rules/SOURCE.md) sets the precedence and
 how to read a page; [rules/AUDIT.md](rules/AUDIT.md) records every correction
 made to the engine against the books.
 
 The pages of both books are in `rules/pages/` so any session can check a rule
-against the page. 
+against the page.
 
 ## Testing
 
@@ -102,6 +107,8 @@ covers the hand catalogue and scoring against the book, the turn engine, a
 self-played soak of seeded hands (tile conservation, zero-sum payments,
 replay), the table service's API (no hidden tile reaches the app), saving
 and resuming, the offline build, and the table geometry (nothing overlaps).
+`npm run typecheck` checks the types, which Node itself only strips, and
+`npm run smoke` drives the built app in a real browser; CI runs all three.
 
 ## Documentation
 

@@ -14,14 +14,8 @@
 
 import { wallRemaining, type GameState, type Seat } from "./state.ts";
 import type { Action } from "./actions.ts";
-import {
-  claimOptions,
-  fishingDeclarationFor,
-  handIsComplete,
-  isFeaturelessHand,
-  sortKeys,
-  waitsOf,
-} from "./reduce.ts";
+import { sortKeys } from "./draft.ts";
+import { claimOptions, fishingDeclarationFor, handIsComplete, isFeaturelessHand, waitsOf } from "./hands.ts";
 
 function distinct(keys: readonly string[]): string[] {
   return [...new Set(keys)];

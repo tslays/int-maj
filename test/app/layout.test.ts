@@ -39,6 +39,13 @@ for (let rel = 0; rel < 4; rel++) {
   for (let index = 0; index < MOST; index++) all.push({ rel, index, rect: discardRect(rel, index) });
 }
 
+/** One tile place from `meldLayout`. */
+interface Spot {
+  x: number;
+  z: number;
+  level: number;
+}
+
 describe("3D table discard layout", () => {
   it("never overlaps two discards, within a seat or between seats", () => {
     for (let i = 0; i < all.length; i++) {
@@ -152,9 +159,9 @@ describe("3D table discard layout", () => {
     assert.deepEqual(two.slice(0, 3), one, "an earlier meld never moves when another is made");
     assert.ok(two[3]!.x > two[2]!.x, "the next meld goes to its right");
     const crowded = meldLayout([3, 3, 3], 18, 7).tiles;
-    assert.ok(crowded.every((t) => t.z === crowded[0]!.z), "flowers and melds always lie in one single row");
+    assert.ok(crowded.every((t: Spot) => t.z === crowded[0]!.z), "flowers and melds always lie in one single row");
     const all = meldLayout([8, 4, 4, 4, 4], 8, 1, { bonusFirst: true });
-    assert.equal(new Set(all.tiles.map((t) => t.z)).size, 1, "even a crowded lane never wraps; the tiles shrink instead");
+    assert.equal(new Set(all.tiles.map((t: Spot) => t.z)).size, 1, "even a crowded lane never wraps; the tiles shrink instead");
     const withBonus = meldLayout([2, 3], 6, 10, { bonusFirst: true });
     const plain = meldLayout([2, 3], 6, 10);
     assert.ok(withBonus.tiles[2]!.x - withBonus.tiles[1]!.x > plain.tiles[2]!.x - plain.tiles[1]!.x, "a wider space after the bonus tiles");
@@ -164,10 +171,10 @@ describe("3D table discard layout", () => {
   it("lays a kong as a pung with the fourth tile on top of the middle one", () => {
     const kong = meldLayout([4], 12, 10, { kongs: [0] }).tiles;
     const pung = meldLayout([3], 12, 10).tiles;
-    assert.deepEqual(kong.map((t) => t.level), [0, 0, 0, 1]);
+    assert.deepEqual(kong.map((t: Spot) => t.level), [0, 0, 0, 1]);
     assert.equal(kong[3]!.x, kong[1]!.x, "the fourth tile lies over the middle tile");
     assert.equal(kong[3]!.z, kong[1]!.z);
-    assert.deepEqual(kong.slice(0, 3).map(({ x, z }) => ({ x, z })), pung.map(({ x, z }) => ({ x, z })), "it takes the room of a pung");
+    assert.deepEqual(kong.slice(0, 3).map(({ x, z }: Spot) => ({ x, z })), pung.map(({ x, z }: Spot) => ({ x, z })), "it takes the room of a pung");
     const next = meldLayout([4, 3], 12, 7, { kongs: [0] }).tiles;
     const afterPung = meldLayout([3, 3], 12, 7).tiles;
     assert.equal(next[4]!.x, afterPung[3]!.x, "the next meld follows as after a pung");
@@ -257,7 +264,7 @@ describe("wall draw (I p. 18-19 rules 6-8, p. 62)", () => {
     const l = wallLook(plan, front, r, held);
     const m = l.markers;
     assert.equal(m.length, held);
-    assert.ok(m.every((t) => t.rel === m[0]!.rel && t.slot === m[0]!.slot), "both loose tiles share one column");
+    assert.ok(m.every((t: { rel: number; slot: number }) => t.rel === m[0]!.rel && t.slot === m[0]!.slot), "both loose tiles share one column");
     const standing = plan.tiles.slice(l.goneHead, plan.tiles.length - l.goneTail);
     const heights = new Map<string, number>();
     for (const t of standing) heights.set(`${t.rel}:${t.slot}`, (heights.get(`${t.rel}:${t.slot}`) ?? 0) + 1);

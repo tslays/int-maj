@@ -122,7 +122,7 @@ export function tileKey(tile: Tile): string {
     case "wind":
       return `w${tile.wind}`;
     case "dragon":
-      return `d${tile.dragon[0].toUpperCase()}`;
+      return `d${tile.dragon.charAt(0).toUpperCase()}`;
     case "flower":
       return `f${tile.index}`;
     case "season":

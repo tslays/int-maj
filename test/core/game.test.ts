@@ -101,6 +101,10 @@ describe("seeded deal", () => {
         patternName: null,
         tier: null,
         points: null,
+        ground: null,
+        doubles: null,
+        raw: null,
+        limit: 1000,
         nextDealer: "E",
         reason: "test",
       },
@@ -693,7 +697,7 @@ describe("serialisation and views", () => {
     }
     assert.equal(view.wallRemaining, wallRemaining(state));
     assert.deepEqual(view.legalActions, legalActions(state, "E"));
-    const other = ["S", "W", "N"].find((seat) => seat !== state.dealer)!;
+    const other = (["S", "W", "N"] as const).find((seat) => seat !== state.dealer)!;
     assert.deepEqual(viewFor(state, other).legalActions, []);
   });
 });

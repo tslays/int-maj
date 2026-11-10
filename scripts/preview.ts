@@ -15,7 +15,7 @@
  */
 
 import { readFile, stat } from "node:fs/promises";
-import { createServer } from "node:http";
+import { createServer, type Server } from "node:http";
 import { networkInterfaces } from "node:os";
 import { extname, join, normalize, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,49 +38,58 @@ function option(argv: readonly string[], name: string): string | undefined {
   return index >= 0 ? argv[index + 1] : undefined;
 }
 
-const argv = process.argv.slice(2);
-const port = Number(option(argv, "--port") ?? 8091);
-const lan = argv.includes("--lan");
-const host = lan ? "0.0.0.0" : "127.0.0.1";
-
-try {
-  await stat(join(DIST, "index.html"));
-} catch {
-  console.error("No build found: run `npm run build` first.");
-  process.exit(1);
+/** Serve one built folder as static files; resolves once it is listening. */
+export function serve(dir: string, port: number, host = "127.0.0.1"): Promise<Server> {
+  const root = resolve(dir);
+  const server = createServer(async (req, res) => {
+    const url = new URL(req.url ?? "/", "http://localhost");
+    let path = decodeURIComponent(url.pathname);
+    if (path.endsWith("/")) path += "index.html";
+    const file = normalize(join(root, path));
+    if (file !== root && !file.startsWith(root + sep)) {
+      res.writeHead(403).end();
+      return;
+    }
+    try {
+      const data = await readFile(file);
+      res.writeHead(200, {
+        "content-type": TYPES[extname(file)] ?? "application/octet-stream",
+        // Always revalidate, like the production host: a rebuild is visible at
+        // once, and the service worker never caches a stale copy.
+        "cache-control": "no-cache",
+      });
+      res.end(data);
+    } catch {
+      res.writeHead(404, { "content-type": "text/plain" }).end("not found");
+    }
+  });
+  return new Promise((done, fail) => {
+    server.once("error", fail);
+    server.listen(port, host, () => done(server));
+  });
 }
 
-const server = createServer(async (req, res) => {
-  const url = new URL(req.url ?? "/", "http://localhost");
-  let path = decodeURIComponent(url.pathname);
-  if (path.endsWith("/")) path += "index.html";
-  const file = normalize(join(DIST, path));
-  if (file !== DIST && !file.startsWith(DIST + sep)) {
-    res.writeHead(403).end();
-    return;
-  }
-  try {
-    const data = await readFile(file);
-    res.writeHead(200, {
-      "content-type": TYPES[extname(file)] ?? "application/octet-stream",
-      // Always revalidate, like the production host: a rebuild is visible at
-      // once, and the service worker never caches a stale copy.
-      "cache-control": "no-cache",
-    });
-    res.end(data);
-  } catch {
-    res.writeHead(404, { "content-type": "text/plain" }).end("not found");
-  }
-});
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const argv = process.argv.slice(2);
+  const port = Number(option(argv, "--port") ?? 8091);
+  const lan = argv.includes("--lan");
 
-server.listen(port, host, () => {
+  try {
+    await stat(join(DIST, "index.html"));
+  } catch {
+    console.error("No build found: run `npm run build` first.");
+    process.exit(1);
+  }
+
+  await serve(DIST, port, lan ? "0.0.0.0" : "127.0.0.1");
   console.log(`Offline build on http://127.0.0.1:${port}/`);
-  if (!lan) return;
-  for (const entries of Object.values(networkInterfaces())) {
-    for (const entry of entries ?? []) {
-      if (entry.family === "IPv4" && !entry.internal) {
-        console.log(`  on your network: http://${entry.address}:${port}/`);
+  if (lan) {
+    for (const entries of Object.values(networkInterfaces())) {
+      for (const entry of entries ?? []) {
+        if (entry.family === "IPv4" && !entry.internal) {
+          console.log(`  on your network: http://${entry.address}:${port}/`);
+        }
       }
     }
   }
-});
+}

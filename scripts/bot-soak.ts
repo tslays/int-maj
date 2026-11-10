@@ -18,7 +18,9 @@ import { availableParallelism } from "node:os";
 import { isMainThread, parentPort, Worker, workerData } from "node:worker_threads";
 
 import { chooseAction } from "../src/core/game/bot.ts";
-import { apply, isApplyError, newGame } from "../src/core/game/reduce.ts";
+import { isApplyError } from "../src/core/game/draft.ts";
+import { newGame } from "../src/core/game/deal.ts";
+import { apply } from "../src/core/game/reduce.ts";
 import { viewFor } from "../src/core/game/view.ts";
 import { PATTERNS } from "../src/core/patterns/table.ts";
 
@@ -50,7 +52,7 @@ function playHand(seed: string, tally: Tally): void {
     if (isApplyError(result)) throw new Error(`${seed}: illegal bot action: ${result.error}`);
     state = result.state;
     for (const event of result.events) {
-      if (event.type === "Claimed" && event.kind !== "mahjong") tally.claims += 1;
+      if (event.type === "Claimed") tally.claims += 1;
       if (event.type === "FishingDeclared") tally.fishing += 1;
       if (event.type === "WinDeclared") {
         tally.patterns[event.patternId] = (tally.patterns[event.patternId] ?? 0) + 1;

@@ -213,6 +213,17 @@ describe("A13 Goulash", () => {
     zeroSum(current);
   });
 
+  it("opens a new game with a Goulash deal when the option asks for one", () => {
+    const plain = newGame("goulash-start", { dealer: "E" }).state;
+    assert.equal(plain.goulash, false);
+    assert.equal(plain.phase, "discard");
+    const goulash = newGame("goulash-start", { dealer: "E", goulash: true, goulashPool: 200 }).state;
+    assert.equal(goulash.goulash, true);
+    assert.equal(goulash.goulashPool, 200);
+    assert.equal(goulash.phase, "exchange");
+    assert.equal(goulash.goulashStage, 0);
+  });
+
   it("forbids chows and pays the agreed pool to the winner", () => {
     const state = fixture({
       goulash: true,
@@ -300,9 +311,9 @@ describe("A15 penalties", () => {
   it("does not let a passed discard be claimed later", () => {
     const state = fixture({
       hands: {
+        ...FILLER,
         E: "b1 b1 b1 c1 c2 c3 c7 c8 c9 wE wS wW b5 o9",
         S: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5",
-        ...FILLER,
       },
       wall: ["o6", "o7", "o8"],
       phase: "discard",

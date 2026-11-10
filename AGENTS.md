@@ -50,16 +50,20 @@ both books leave open; read it for provenance, never as a rule source.
 
 ```
 app/          the 3D table: plain ES modules, no build step of its own
+  index.html    the page; styles.css is its look
   src/          main (boot, loop, buttons), shared (state), input, hints,
-                result, menu, report (screens), board (state to tiles),
-                stage (renderer, camera, motion), tiles (tile models),
-                layout (table geometry)
-  assets/       tile faces and icons; vendor/three/ is Three.js 0.170
+                result, menu, report (screens), board (state to tiles, with
+                board-wall and board-hand), stage (renderer, camera, motion),
+                tiles (tile models), layout (table geometry)
+  assets/       tile faces and icons
+  vendor/three/ Three.js 0.170
 src/core/     the rules engine: pure and deterministic
+  game/         the turn engine: reduce (apply), with hands, draws, settle
+                and deal working on the draft copy
 src/table/    the table service: sessions, bots, saving, `routeApi`
 src/cli/      the console table
 bin/          command-line entry points: check, play, replay
-scripts/      build, preview, and art generators (scripts/art/)
+scripts/      build, preview, smoke test, and art generators (scripts/art/)
 test/         core/, table/, cli/, app/, helpers/ - mirroring the source
 rules/        the rule framework, its evidence and the book pages
 docs/         PLAN, APP and ENGINE references
@@ -82,9 +86,13 @@ The full workflow is `docs/WORKFLOW.md`. The rules every session follows:
   already put it first on PATH, and `npm test` refuses older ones.
 - **Finish pushed:** a cloud container is discarded, so nothing finished may
   stay uncommitted or unpushed.
-- Run `npm test` (under a minute) before every commit. `npm run dev` builds
-  and serves the app; review boards (`/?state=turn|claim|wait|fishing|win|drawn|result`)
-  and `/?phone` show a screen without playing to it.
+- Run `npm test` (under a minute) and `npm run typecheck` before every
+  commit; Node only strips types, so the type check is the only thing that
+  reads them. After changing anything under `app/`, also run `npm run smoke`
+  (the built app in headless Chromium, a few minutes). `npm run dev` builds
+  and serves the app; review boards
+  (`/?state=turn|claim|wait|fishing|announce|ron|win|drawn|result`) and
+  `/?phone` show a screen without playing to it.
 - **Deliver autonomously** (owner-authorized, `docs/WORKFLOW.md` "Autonomous
   delivery loop"): on the session's `claude/...` branch, open a pull request
   (it gets a preview link comment), then by kind of change:
@@ -98,6 +106,8 @@ The full workflow is `docs/WORKFLOW.md`. The rules every session follows:
   - *Release to testers:* sessions cannot push tags (the push gets a 403).
     Tell the owner the next `v0.1.0-alpha.N` and the `main` commit to tag;
     the owner pushes the tag. It is the only way testers get a new build.
+    The build takes its version from the tag, so there is nothing to bump:
+    `package.json` stays at `0.1.0-dev`.
   Sites: green pushes to `main` deploy to https://int-dev.mah-jong.workers.dev
   (`Deploy dev (int-dev)`); testers are on https://int.mah-jong.workers.dev,
   which changes only on a `v*` tag (`Deploy testers (int)`). This relies on
@@ -110,7 +120,9 @@ The full workflow is `docs/WORKFLOW.md`. The rules every session follows:
 
 - `src/core/**` stays pure: no I/O, clock, `Math.random` (use seeded RNG), or
   network; zero runtime dependencies. `src/table/**` is pure too, apart from
-  the storage handle `local.ts` is given.
+  the storage handle `local.ts` is given. The only packages are dev tools
+  (`typescript`, `@types/node`, `playwright`); nothing the game runs may
+  import one.
 - Hand-pattern data stays declarative; matching logic stays generic rather
   than accumulating hand-specific `if` cases. Declared melds are fixed sets
   in every decomposition.

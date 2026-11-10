@@ -9,8 +9,8 @@ tiles, characters or sounds.
 alpha the owner's mahjong group can test: each tester on their own phone (an
 iPhone is the reference), alone against three bots, offline, no house rules,
 no accounts or multiplayer (agreed 2026-11-07). Its scope, order and tracking
-are in `docs/ALPHA-1.md` (kept as the record of the plan); progress is the
-GitHub milestone of the same name. The finished offline build once called
+are in `docs/archive/ALPHA-1.md` (kept as the record of the plan); progress
+is the GitHub milestone of the same name. The finished offline build once called
 "Alpha 1" is now the "Prototype" below.
 
 Every piece of work is judged by one question: does it bring that test
@@ -54,14 +54,29 @@ build id), tester guide and in-app help (`docs/TESTING.md`), Report a problem
 who threw each discard, the iPhone-pass fixes, sound, and a 300-hand soak on
 the engine. Tracked in milestone `v0.1.0-alpha.1`; release gate is #43.
 
+**Alpha-2 (2026-11-10).** The first findings from testing: the turn light
+holds until a move has finished, tapping a second tile moves the lift instead
+of swapping, iOS fixes (no zoom on the report note, the table re-fits when the
+home-screen app resumes), and the tester site split from the development
+site, with a preview link per pull request.
+
+**Alpha-3, the housekeeping release.** A project review after alpha-2
+(no rule or look changed): the tester build takes its version from its tag
+(alpha-2 labelled itself alpha.1); a strict type check in CI, which found a
+start option the engine ignored and a few smaller slips; a saved game now
+survives an update that cannot replay the hand in progress; the turn engine
+and the board were split into modules; the page's CSS left `index.html`; CI
+builds once and deploys that build; and a browser smoke test
+(`npm run smoke`) covers the screens no test ran before.
+
 Testers: https://int.mah-jong.workers.dev (changes only on a `v*` tag).
 Development: https://int-dev.mah-jong.workers.dev (every green push to `main`).
 
 ## Next
 
-The alpha-1 testers decide this. Findings from testing become issues labelled
-`from-testing`; the list below is the backlog from the alpha-1 plan, offered as
-**candidates for alpha-2, not commitments**:
+The testers decide this. Findings from testing become issues labelled
+`from-testing`; the list below is the backlog from the alpha-1 plan, offered
+as **candidates, not commitments**:
 
 - Hand catalogue browser in the app, every hand pictured, with its book page.
 - Deal animation.
@@ -69,8 +84,6 @@ The alpha-1 testers decide this. Findings from testing become issues labelled
   uses intermediate today.
 - Bot tuning, including Crazy Chows being a common way for the bots to win
   (over a quarter of bot wins in the soak).
-- Done (2026-11-10): a separate, stable tester URL deployed on tag (`int`);
-  `main` deploys to `int-dev` and each PR gets a preview link.
 
 ## Known follow-ups
 

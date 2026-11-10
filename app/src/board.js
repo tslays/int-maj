@@ -13,28 +13,16 @@
  */
 
 import * as THREE from "three";
-import { D, H, W, TABLE, makeTile, roundedRect, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, tileOrder, jitter } from "./tiles.js";
-import { HAND_LIFT, breakFor, handTileStart, discardSlot, latestPlate, meldLayout, pondPad, wallLook, wallPlan, wallSlotX } from "./layout.js";
+import { D, H, W, makeTile, roundedRect, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, TABLE } from "./tiles.js";
+import { discardSlot, latestPlate, meldLayout, pondPad } from "./layout.js";
 import { sound } from "./sound.js";
-import {
-  animate,
-  easeInOutCubic,
-  easeOutBack,
-  easeOutCubic,
-  handCamera,
-  handScene,
-  renderer,
-  requestRender,
-  setHandRowWidth,
-  tableScene,
-  tween,
-  viewport,
-} from "./stage.js";
+import { animate, easeInOutCubic, easeOutBack, easeOutCubic, handScene, requestRender, tableScene, tween } from "./stage.js";
+import { handMethods } from "./board-hand.js";
+import { wallMethods } from "./board-wall.js";
 
 const SEATS = ["E", "S", "W", "N"];
-const { WALL_STACKS, WALL_R, HAND_Z, DISCARD_Z, DISCARD_SCALE } = TABLE;
+const { WALL_STACKS, WALL_R, HAND_Z, DISCARD_SCALE } = TABLE;
 const GAP = 0.02;
-const HAND_TILT = -0.16;
 
 /**
  * Lay a meld's tiles in a row; a kong is a pung with its fourth tile on top of
@@ -121,117 +109,6 @@ export class Board {
     }
     this.plate = null;
     this.wall = null;
-  }
-
-  /**
-   * 72 stacks of two, four walls of 18, broken where the book's dice put the
-   * break (see `breakFor`, `wallPlan`). The break stack is lifted off; its two
-   * tiles are the loose tiles, which lie on the dead wall's end column, the one
-   * touching the break (two more meshes, `markers`). Nothing on the wall ever moves.
-   */
-  buildWall(key, dealer = "E") {
-    const tiles = new Map();
-    const at = (entry) => tiles.get(`${entry.rel}:${entry.slot}:${entry.level}`);
-    for (let rel = 0; rel < 4; rel++) {
-      for (let stack = 0; stack < WALL_STACKS; stack++) {
-        for (const level of [0, 1]) {
-          const tile = poseFaceDown(makeTile(null), wallSlotX(stack), D / 2 + level * D, WALL_R);
-          this.frames[rel].add(tile);
-          tiles.set(`${rel}:${stack}:${level}`, tile);
-        }
-      }
-    }
-    const { wallSeat, count } = breakFor(key);
-    const builder = SEATS[(SEATS.indexOf(dealer) + wallSeat) % 4];
-    const plan = wallPlan(this.rel(builder), count);
-    const markers = { far: null, near: null };
-    for (const which of ["far", "near"]) {
-      markers[which] = poseFaceDown(makeTile(null), 0, 0, WALL_R);
-      markers[which].visible = false;
-      this.frames[plan.rel].add(markers[which]);
-    }
-    for (const level of [0, 1]) at({ ...plan.lifted, level }).visible = false; // the break stack is lifted off
-    this.wall = {
-      plan,
-      tiles: plan.tiles.map(at),
-      markers,
-      goneHead: 0,
-      goneTail: 0,
-      held: 0,
-      used: 0,
-      extent: [WALL_STACKS, WALL_STACKS, WALL_STACKS, WALL_STACKS],
-    };
-  }
-
-  /**
-   * Show the wall as the engine's counts say (`wallLook`): `front` tiles gone
-   * from the open end, `used` loose tiles consumed, `held` loose tiles lying
-   * on the block. Tiles that go vanish where they stand; the loose tiles
-   * (re)appear on top of their stacks. Only the draw itself moves.
-   */
-  setWall(front, used, held, animated) {
-    const wall = this.wall;
-    const look = wallLook(wall.plan, front, used, held);
-    const work = [];
-    const changed =
-      look.goneHead - wall.goneHead + (look.goneTail - wall.goneTail) + Math.abs(held - wall.held);
-    const lift = (tile) => {
-      const restY = tile.position.y;
-      work.push(
-        tween(tile.position, { y: restY + 1.2 }, 180, easeOutCubic).then(() => {
-          tile.visible = false;
-          tile.position.y = restY;
-        }),
-      );
-    };
-    const apply = (list, head, tail) => {
-      list.forEach((tile, index) => {
-        const visible = index >= head && index < list.length - tail;
-        if (tile.visible === visible) return;
-        if (!visible && animated && changed <= 4) lift(tile);
-        else tile.visible = visible;
-      });
-    };
-    apply(wall.tiles, look.goneHead, look.goneTail);
-    // Loose tiles: new ones are set down on top; one used lifts away.
-    const arrived = held - (wall.held - (used - wall.used));
-    for (const which of ["far", "near"]) {
-      const tile = wall.markers[which];
-      const place = look.markers.find((marker) => marker.which === which);
-      if (!place) {
-        if (tile.visible) {
-          if (animated && changed <= 4) lift(tile);
-          else tile.visible = false;
-        }
-        continue;
-      }
-      const wasHere =
-        tile.visible && tile.userData.rel === place.rel && tile.userData.slot === place.slot && tile.userData.level === place.level;
-      // Past the wall's corner the end column is on the neighbouring wall.
-      if (tile.parent !== this.frames[place.rel]) this.frames[place.rel].add(tile);
-      tile.userData.rel = place.rel;
-      tile.position.set(wallSlotX(place.slot), D / 2 + place.level * D, WALL_R);
-      tile.userData.slot = place.slot;
-      tile.userData.level = place.level;
-      const restY = tile.position.y;
-      const dropIn = animated && arrived > 0 && changed <= 4;
-      tile.visible = true;
-      if (dropIn || (!wasHere && animated && changed <= 4)) {
-        tile.position.y = restY + 0.8;
-        work.push(tween(tile.position, { y: restY }, 220, easeOutCubic));
-      }
-    }
-    Object.assign(wall, { goneHead: look.goneHead, goneTail: look.goneTail, held, used });
-    // The lane for melds is whatever is free at a wall's left end: one more
-    // than the highest slot with anything standing on it.
-    const extent = [0, 0, 0, 0];
-    const note = (rel, slot) => {
-      extent[rel] = Math.max(extent[rel], slot + 1);
-    };
-    wall.plan.tiles.slice(look.goneHead, wall.plan.tiles.length - look.goneTail).forEach((entry) => note(entry.rel, entry.slot));
-    for (const place of look.markers) note(place.rel, place.slot);
-    wall.extent = extent;
-    return work;
   }
 
   /**
@@ -449,128 +326,7 @@ export class Board {
     return this.frameOf(seat).localToWorld(new THREE.Vector3(place.x, 1.2, place.z));
   }
 
-  /* ------------------------------------------------------- your hand */
-
-  reconcileHand(payload, animated) {
-    const view = payload.view;
-    const keys = [...view.player.hand];
-    const ownTurn = view.phase === "discard" && view.turn === this.me;
-    let drawnKey = null;
-    if (ownTurn && view.lastDraw !== null && view.lastDraw.seat === this.me && keys.includes(view.lastDraw.tile)) {
-      drawnKey = view.lastDraw.tile;
-    }
-    const plain = [...keys];
-    if (drawnKey !== null) plain.splice(plain.indexOf(drawnKey), 1);
-    plain.sort((a, b) => tileOrder(a) - tileOrder(b));
-
-    // Keep the tile objects still in the hand; a newly drawn tile is always new.
-    const pool = [...this.hand];
-    const take = (key, drawn) => {
-      let index = pool.findIndex((entry) => entry.key === key && entry.drawn === drawn);
-      if (index < 0 && !drawn) index = pool.findIndex((entry) => entry.key === key);
-      return index < 0 ? null : pool.splice(index, 1)[0];
-    };
-    const next = [];
-    const fresh = new Set();
-    const make = (key) => {
-      const entry = { key, tile: makeTile(key, { shadows: false }), drawn: false, glide: 0 };
-      entry.tile.rotation.x = HAND_TILT;
-      this.handGroup.add(entry.tile);
-      fresh.add(entry);
-      return entry;
-    };
-    if (this.custom) {
-      // Your own arrangement stands: tiles keep their places, new ones join at the end.
-      const left = [...keys];
-      for (const entry of this.hand) {
-        const at = left.indexOf(entry.key);
-        if (at < 0) continue;
-        left.splice(at, 1);
-        pool.splice(pool.indexOf(entry), 1);
-        next.push(entry);
-      }
-      left.sort((a, b) => tileOrder(a) - tileOrder(b));
-      if (drawnKey !== null && left.includes(drawnKey)) left.push(left.splice(left.indexOf(drawnKey), 1)[0]);
-      for (const key of left) next.push(make(key));
-      next.forEach((entry, index) => {
-        entry.drawn = drawnKey !== null && index === next.length - 1;
-      });
-    } else {
-      const order = plain.map((key) => [key, false]);
-      if (drawnKey !== null) order.push([drawnKey, true]);
-      for (const [key, drawn] of order) {
-        const entry = take(key, drawn) ?? make(key);
-        entry.drawn = drawn;
-        next.push(entry);
-      }
-    }
-    for (const entry of pool) entry.tile.removeFromParent();
-    this.hand = next;
-
-    const work = this.layoutHand(fresh, animated);
-
-    return work;
-  }
-
-  /** Positions of the hand tiles, with the drawn tile set apart. */
-  handPlaces() {
-    const gap = 0.04;
-    const drawnGap = 0.45;
-    const plain = this.hand.filter((entry) => !entry.drawn);
-    const handWidth = plain.length * (W + gap) - gap + drawnGap + W;
-    const total = handWidth;
-    let x = -total / 2 + W / 2;
-    const places = new Map();
-    for (const entry of plain) {
-      places.set(entry, x);
-      x += W + gap;
-    }
-    const drawn = this.hand.find((entry) => entry.drawn);
-    if (drawn) places.set(drawn, x - gap + drawnGap);
-    return { places, total };
-  }
-
-  layoutHand(fresh, animated, skip = null) {
-    const { places, total } = this.handPlaces();
-    setHandRowWidth(total);
-    const work = [];
-    for (const entry of this.hand) {
-      if (entry === skip) continue;
-      const x = places.get(entry);
-      if (fresh.has(entry)) {
-        const start = handTileStart(x, entry.drawn, animated);
-        entry.tile.position.set(start.x, start.y, 0);
-        if (animated) {
-          work.push(tween(entry.tile.position, { x, y: 0 }, 260, easeOutCubic));
-          if (entry.drawn) sound.cue("draw", { own: true, delay: 0.17 });
-        }
-        continue;
-      }
-      const position = entry.tile.position;
-      if (Math.abs(position.x - x) > 1e-3 || Math.abs(position.y) > 1e-3) {
-        if (animated) work.push(this.glide(entry, { x, y: 0 }, 220));
-        else position.set(x, 0, 0);
-      }
-    }
-    return work;
-  }
-
-  /* ------------------------------------------------------- input */
-
-  /** The hand tile under a pointer event, or null. */
-  pick(event) {
-    const rect = renderer.domElement.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const fromBottom = rect.bottom - event.clientY;
-    if (fromBottom > viewport.strip) return null;
-    const pointer = new THREE.Vector2((x / rect.width) * 2 - 1, (fromBottom / viewport.strip) * 2 - 1);
-    this.raycaster.setFromCamera(pointer, handCamera);
-    const hits = this.raycaster.intersectObjects(this.handGroup.children, true);
-    if (hits.length === 0) return null;
-    let object = hits[0].object;
-    while (object.parent !== this.handGroup) object = object.parent;
-    return this.hand.find((entry) => entry.tile === object) ?? null;
-  }
+  /* ------------------------------------------------------- marks */
 
   /** Gold-mark every identical tile already open on the table (discards, melds), never your own hand. */
   markCopies(key) {
@@ -604,118 +360,6 @@ export class Board {
     requestRender();
   }
 
-  lift(entry, up) {
-    if (up) this.markCopies(entry.key);
-    else this.clearMarks();
-    return this.glide(entry, { y: up ? HAND_LIFT : 0 }, 140);
-  }
-
-  /** Move a hand tile; a newer move of the same tile replaces the one in flight. */
-  glide(entry, to, ms) {
-    const id = (entry.glide = (entry.glide ?? 0) + 1);
-    const position = entry.tile.position;
-    const from = { x: position.x, y: position.y };
-    return animate(ms, (t) => {
-      if (entry.glide !== id) return;
-      const k = easeOutCubic(t);
-      if (to.x !== undefined) position.x = from.x + (to.x - from.x) * k;
-      if (to.y !== undefined) position.y = from.y + (to.y - from.y) * k;
-    });
-  }
-
-  /* ------------------------------------------------------- arranging */
-
-  /** Hand-space x under a pointer event (on the hand's plane), or null. */
-  handX(event) {
-    const rect = renderer.domElement.getBoundingClientRect();
-    // A tile swiped up out of the strip still tracks along the hand's row.
-    const fromBottom = Math.max(0, Math.min(viewport.strip, rect.bottom - event.clientY));
-    const pointer = new THREE.Vector2(
-      ((event.clientX - rect.left) / rect.width) * 2 - 1,
-      (fromBottom / viewport.strip) * 2 - 1,
-    );
-    this.raycaster.setFromCamera(pointer, handCamera);
-    const hit = new THREE.Vector3();
-    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-    return this.raycaster.ray.intersectPlane(plane, hit) ? hit.x : null;
-  }
-
-  /** Swap two tiles' places in the hand (used while dragging past a tile). */
-  swap(a, b) {
-    const i = this.hand.indexOf(a);
-    const j = this.hand.indexOf(b);
-    if (i < 0 || j < 0 || i === j) return;
-    this.hand[i] = b;
-    this.hand[j] = a;
-    [a.drawn, b.drawn] = [b.drawn, a.drawn];
-    this.setCustom(true);
-    sound.cue("swap");
-  }
-
-  /** Note (and announce) whether the hand is in your own order. */
-  setCustom(custom) {
-    if (this.custom === custom) return;
-    this.custom = custom;
-    this.onCustomChange?.(custom);
-  }
-
-  /** Back to the default order: sorted, the drawn tile apart at the end. */
-  autoSort() {
-    this.setCustom(false);
-    const drawn = this.hand.filter((entry) => entry.drawn);
-    const plain = this.hand.filter((entry) => !entry.drawn);
-    plain.sort((a, b) => tileOrder(a.key) - tileOrder(b.key));
-    this.hand = [...plain, ...drawn];
-    return this.layoutHand(new Set(), true);
-  }
-
-  /** Carry a tile with the pointer; it trades places with each tile it passes. */
-  dragTo(entry, event) {
-    const x = this.handX(event);
-    if (x === null) return;
-    const { places, total } = this.handPlaces();
-    entry.glide += 1; // the pointer owns this tile now
-    entry.tile.position.x = Math.max(-total / 2, Math.min(total / 2, x));
-    entry.tile.position.y = HAND_LIFT;
-    let target = this.hand.indexOf(entry);
-    let best = Infinity;
-    this.hand.forEach((other, index) => {
-      const distance = Math.abs(places.get(other) - x);
-      if (distance < best) {
-        best = distance;
-        target = index;
-      }
-    });
-    let at = this.hand.indexOf(entry);
-    if (at === target) return;
-    while (at !== target) {
-      const step = target > at ? 1 : -1;
-      this.swap(entry, this.hand[at + step]);
-      at += step;
-    }
-    this.layoutHand(new Set(), true, entry);
-  }
-
-  /** Show (or clear) that releasing this carried tile will throw it: it swells a little. */
-  armThrow(entry, on) {
-    const k = on ? 1.12 : 1;
-    if (entry.tile.scale.x === k) return false;
-    entry.tile.scale.setScalar(k);
-    requestRender();
-    return true;
-  }
-
-  /** Settle every hand tile into its place (after a drag or a swap). */
-  settle() {
-    this.clearMarks();
-    return this.layoutHand(new Set(), true);
-  }
-
-  /** Remember where the tile you throw left the hand, so its arc starts there. */
-  noteThrow(entry) {
-    this.lastThrowX = entry.tile.position.x;
-  }
-
   /** Where a seat sits, for placing call-outs: a point on the table in world space. */
   seatPoint(seat) {
     const point = new THREE.Vector3(0, 1.5, this.rel(seat) === 0 ? WALL_R - 1.6 : HAND_Z - 2.6);
@@ -723,4 +367,4 @@ export class Board {
   }
 }
 
-export { jitter };
+Object.assign(Board.prototype, wallMethods, handMethods);

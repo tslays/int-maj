@@ -18,7 +18,9 @@
 
 import type { Action } from "../core/game/actions.ts";
 import type { Event } from "../core/game/events.ts";
-import { apply, isApplyError, newGame } from "../core/game/reduce.ts";
+import { isApplyError } from "../core/game/draft.ts";
+import { newGame } from "../core/game/deal.ts";
+import { apply } from "../core/game/reduce.ts";
 import { replaySteps } from "../core/game/replay.ts";
 import { SEATS, type GameState, type LedgerEntry, type Seat } from "../core/game/state.ts";
 import type { GameView } from "../core/game/view.ts";

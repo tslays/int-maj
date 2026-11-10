@@ -1,0 +1,39 @@
+# One Cloudflare deploy step, shared by the dev, tester and preview jobs:
+# fetch the `dist` the test job built and hand it to wrangler. Without a
+# token it does nothing and says so, so a fork or a fresh repository stays
+# green. The job must have checked the repository out (for wrangler.jsonc).
+name: Deploy dist with wrangler
+description: Download the built dist/ and run one wrangler command on it.
+inputs:
+  token:
+    description: The Cloudflare API token (pass the repository secret).
+    required: true
+  command:
+    description: The wrangler arguments, for example "deploy --env dev".
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Skip until the Cloudflare token is set
+      if: inputs.token == ''
+      shell: bash
+      run: echo "::notice::No CLOUDFLARE_API_TOKEN secret yet, so nothing was deployed."
+    - uses: actions/download-artifact@v4
+      if: inputs.token != ''
+      with:
+        name: dist
+        path: dist
+    - uses: actions/setup-node@v5
+      if: inputs.token != ''
+      with:
+        node-version-file: .nvmrc
+    # The output is kept in wrangler.log for a job that needs to read it.
+    - name: wrangler ${{ inputs.command }}
+      if: inputs.token != ''
+      shell: bash
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ inputs.token }}
+        WRANGLER_ARGS: ${{ inputs.command }}
+      run: |
+        set -o pipefail
+        npx --yes wrangler@4.158.0 $WRANGLER_ARGS | tee wrangler.log

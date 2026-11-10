@@ -30,7 +30,7 @@ import {
 export type SetFilter = (set: StandardSet) => boolean;
 export type KeyPredicate = (key: string) => boolean;
 
-export function isPungSet(set: StandardSet): boolean {
+export function isPungSet(set: StandardSet): set is Exclude<StandardSet, { kind: "chow" }> {
   return set.kind === "pung" || set.kind === "kong";
 }
 
