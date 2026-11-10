@@ -14,7 +14,9 @@
 
 import type { Action } from "./actions.ts";
 import type { Event } from "./events.ts";
-import { apply, isApplyError, newGame, nextHand, type ApplyOk } from "./reduce.ts";
+import { isApplyError, type ApplyOk } from "./draft.ts";
+import { newGame, nextHand } from "./deal.ts";
+import { apply } from "./reduce.ts";
 import type { GameState, Seat } from "./state.ts";
 
 export type ReplayStep = Action | { readonly type: "NextHand" };

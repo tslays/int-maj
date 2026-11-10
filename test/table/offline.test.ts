@@ -15,7 +15,7 @@ import { after, before, describe, it } from "node:test";
 import { pathToFileURL } from "node:url";
 
 import { chooseAction } from "../../src/core/game/bot.ts";
-import { ledgerTotals } from "../../src/core/game/reduce.ts";
+import { ledgerTotals } from "../../src/core/game/settle.ts";
 import { SEATS } from "../../src/core/game/state.ts";
 import { viewFor } from "../../src/core/game/view.ts";
 import { createApiContext, routeApi } from "../../src/table/api.ts";

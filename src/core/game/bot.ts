@@ -34,7 +34,7 @@ import { seatIndex, SEATS, type Seat } from "./state.ts";
 import type { GameView } from "./view.ts";
 import { PATTERNS } from "../patterns/table.ts";
 import { WINDS } from "../tiles.ts";
-import { exposureIndicates } from "./reduce.ts";
+import { exposureIndicates } from "./settle.ts";
 import {
   completedPattern,
   countsOf,

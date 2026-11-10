@@ -18,7 +18,9 @@ import { availableParallelism } from "node:os";
 import { isMainThread, parentPort, Worker, workerData } from "node:worker_threads";
 
 import { chooseAction } from "../src/core/game/bot.ts";
-import { apply, isApplyError, newGame } from "../src/core/game/reduce.ts";
+import { isApplyError } from "../src/core/game/draft.ts";
+import { newGame } from "../src/core/game/deal.ts";
+import { apply } from "../src/core/game/reduce.ts";
 import { viewFor } from "../src/core/game/view.ts";
 import { PATTERNS } from "../src/core/patterns/table.ts";
 

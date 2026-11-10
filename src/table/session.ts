@@ -21,14 +21,10 @@ import type { Action } from "../core/game/actions.ts";
 import { chooseAction } from "../core/game/bot.ts";
 import { closestHands, type ClosestHand } from "../core/game/closest.ts";
 import type { Event } from "../core/game/events.ts";
-import {
-  apply,
-  endsGame,
-  isApplyError,
-  ledgerTotals,
-  newGame,
-  nextHand,
-} from "../core/game/reduce.ts";
+import { isApplyError } from "../core/game/draft.ts";
+import { ledgerTotals } from "../core/game/settle.ts";
+import { endsGame, newGame, nextHand } from "../core/game/deal.ts";
+import { apply } from "../core/game/reduce.ts";
 import { replayFrom, replaySteps, type ReplayStep } from "../core/game/replay.ts";
 import {
   deserialize,
