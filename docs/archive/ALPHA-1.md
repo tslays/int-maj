@@ -1,5 +1,8 @@
 # Road to alpha-1
 
+> **Archived.** This plan was carried out: `v0.1.0-alpha.1` shipped on
+> 2026-11-09. It is kept as the record; `docs/PLAN.md` is the live roadmap.
+
 **Goal:** a build the owner can hand to a few members of the mahjong club to
 play on their own iPhones, with a way for them to tell us what went wrong.
 **Demo:** Wednesday 2026-11-11, morning. **Planned Monday 2026-11-09, afternoon.**

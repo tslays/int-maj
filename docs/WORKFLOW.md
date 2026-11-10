@@ -13,7 +13,7 @@ pull request:
 ```
  prompt -> cloud session (fresh clone) -> claude/... branch -> pull request
                                                                    |
-                                          GitHub Actions: tests, build, preview
+                                   GitHub Actions: types, tests, build, preview
                                                   |                          |
                                                   | green: squash-merge      v PR comment: preview link
                                                   v                            (pr-N-int-dev, never `int`)
@@ -31,8 +31,9 @@ Everything a session needs is in the repository: the code, the rules
 
 The `int-maj` cloud environment (personal, linked to this repository) allows
 the package registries and the live sites, so a session can confirm a deploy.
-It needs no setup script: there are no dependencies, and the SessionStart hook
-picks Node 24.
+It needs no setup script: the game has no dependencies, and the SessionStart
+hook picks Node 24 and installs the dev-only tools (the type checker and the
+smoke test's browser driver; the container already has a Chromium for it).
 
 ## A session, start to finish
 
@@ -41,11 +42,14 @@ picks Node 24.
    test` stops with a clear message on an older Node). Cloud containers
    default to Node 22 but ship 24: the SessionStart hook
    (`.claude/hooks/session-start.sh`) puts the `.nvmrc` Node first on PATH
-   for the whole session, so nothing needs doing by hand.
+   for the whole session and runs `npm ci` if the dev tools are missing, so
+   nothing needs doing by hand.
 2. **Work:** one task per session. Two sessions may run at once only if they
    do not change the same files.
-3. **Check:** `npm test` passes. For anything visible, look at it with
-   `npm run dev` - review boards (`/?state=...`) and `/?phone` help.
+3. **Check:** `npm test` and `npm run typecheck` pass. After a change under
+   `app/`, `npm run smoke` passes too (the built app in headless Chromium, a
+   few minutes). For anything visible, look at it with `npm run dev` - review
+   boards (`/?state=...`) and `/?phone` help.
 4. **Finish:** commit with a descriptive message and push. Never leave
    finished work uncommitted on one device while continuing on another.
 
@@ -55,7 +59,8 @@ The owner has authorized this in advance; a session does it without asking
 and does not stop at "pushed to a branch". A cloud session works on the branch
 it is given (`claude/...`), so delivery is a pull request:
 
-1. `npm test` passes locally (the hook has already picked Node 24).
+1. `npm test` and `npm run typecheck` pass locally (the hook has already
+   picked Node 24 and installed the type checker).
 2. Commit, push the branch, open a pull request into `main` (mirror
    `.github/pull_request_template.md` if one exists). The pull request gets
    a comment with its preview link (`pr-<number>-int-dev...workers.dev`).
@@ -72,6 +77,8 @@ it is given (`claude/...`), so delivery is a pull request:
    - **Release to testers:** sessions cannot push tags (the push gets a 403).
      Tell the owner the next `v0.1.0-alpha.N` and the `main` commit to tag;
      the owner pushes the tag. This is the only way testers get a new build.
+     Nothing is bumped first: the build reads its version from the tag
+     (`scripts/build.ts`), and `package.json` stays at `0.1.0-dev`.
 4. Waiting for green by hand: `Tests and build` red means reproduce, fix, push
    again; never skip or disable a test to get green. Green and no unresolved
    review comments: squash-merge into `main` (one commit per pull request; no
@@ -107,6 +114,11 @@ deleting branches or history, changing the Cloudflare token or secrets).
   is run by hand (`workflow_dispatch`) on a tag ref, which re-deploys or rolls
   back to that tag. Merges to `main` never move it. The URL stays `int`
   because installed home-screen apps and saved games belong to the address.
+- One build per run: the `Tests and build` job type-checks, tests, builds
+  `dist/` and uploads it; the deploy and preview jobs publish exactly that
+  folder through `.github/actions/deploy`.
+- `Smoke (browser)` runs `npm run smoke` beside it on pull requests and on
+  `main`. It is not a required check; look at it after changing `app/`.
 - A failing test means nothing is published.
 - A tag is the only way testers get a new build.
 - Installed copies on phones update the next time they open.

@@ -302,8 +302,9 @@ describe("the offline build", () => {
     assert.match(html, /serviceWorker\.register\("sw\.js"\)/);
     const manifest = JSON.parse(await readFile(join(outDir, "manifest.webmanifest"), "utf8"));
     assert.equal(manifest.display, "standalone");
-    // Old links to the 3D table still land on it.
-    assert.match(await readFile(join(outDir, "table3d.html"), "utf8"), /location\.replace/);
+    assert.match(html, /rel="stylesheet" href="styles.css"/);
+    assert.ok((await readFile(join(outDir, "styles.css"), "utf8")).includes("--strip"), "the stylesheet ships");
+    assert.match(await readFile(join(outDir, "sw.js"), "utf8"), /"styles\.css"/, "and is cached for offline use");
   });
 
   it("emits JavaScript only, with no TypeScript imports left", async () => {

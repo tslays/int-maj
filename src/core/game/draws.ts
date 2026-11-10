@@ -49,7 +49,7 @@ function addBonus(draft: Draft, seat: Seat, key: string): void {
 
 /**
  * Bonus tiles are drawn and replaced immediately. The replacement comes from
- * the loose end (back), like a kong replacement (PLAY.md, p. 34).
+ * the loose end (back), like a kong replacement (R-039).
  * Returns the play tile finally held, or null when the wall ran out.
  */
 export function replaceBonus(

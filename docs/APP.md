@@ -73,7 +73,10 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   clear of the console and other ponds.
 - `app/src/board.js` compares each game answer with the table and animates
   only the difference: throws, claims flying to the claimer, melds, draws and
-  the shrinking wall.
+  the shrinking wall. Two parts of the `Board` live in their own files and
+  are installed on it: `board-wall.js` (building and showing the wall) and
+  `board-hand.js` (your own hand: its tiles, layout, picking, lifting,
+  dragging). The page's CSS is `app/styles.css`.
 - `app/src/main.js` is the boot, the turn loop (bots one decision per beat,
   automatic draws and passes), the decision buttons and call-outs, and the
   wiring of the modules below. Its siblings, each a plain ES module:
@@ -158,10 +161,13 @@ Two URL options help when testing:
 
 | URL | Opens |
 | --- | --- |
-| `/?state=turn\|claim\|wait\|fishing\|win\|drawn\|result` | one fixed review board, replayed from a seed |
+| `/?state=turn\|claim\|wait\|fishing\|announce\|ron\|win\|drawn\|result` | one fixed review board, replayed from a seed |
 | `/?phone` | the table inside an iPhone-landscape frame, on any screen |
 
-`/table3d` redirects to `/` for old links.
+`npm run smoke` (`scripts/smoke.ts`) opens every one of these boards in
+headless Chromium, then plays a fresh game by touch: drag and sort, tap twice
+to throw, hints and help, a few turns, and a reload that resumes the save. It
+is the only test that runs `main.js`, `input.js`, `hints.js` and `result.js`.
 
 ## The table service
 
@@ -204,16 +210,22 @@ browser runs the same engine, bots and API routes as the tests. It copies the
 - **Saving.** After every move the game is written to `localStorage` as its
   seed, its decisions and a checkpoint at the start of the current hand. A
   reload, a closed tab or iOS evicting the page resumes the same hand;
-  resuming replays only the current hand.
+  resuming replays only the current hand. If a new version can no longer
+  replay that hand (the engine or the bots changed), the hand starts again
+  from its checkpoint, the scores of the finished hands are kept, and a
+  toast says so.
 - **Offline.** A generated service worker pre-caches every file under a cache
   named after the build's content hash. Once opened, the app starts in
   airplane mode; a new deploy replaces the cache and reloads the page once,
   which resumes the saved hand.
-- **Version label.** The menu shows `alpha.1 · <id>` small under the buttons.
-  `package.json` holds the version; the id is the short commit (`GITHUB_SHA`,
-  as in CI) or else the content hash. `src/build-info.js` exports `BUILD`
+- **Version label.** The menu shows `<stage> · <id>` small under the
+  buttons: `alpha.3 · <id>` on the tester site, `dev · <id>` everywhere else.
+  A release build takes its version from its tag (`v0.1.0-alpha.3` gives
+  `0.1.0-alpha.3`), so nothing is bumped by hand; other builds take
+  `package.json`'s `0.1.0-dev`. The id is the short commit (`GITHUB_SHA`, as
+  in CI) or else the content hash. `src/build-info.js` exports `BUILD`
   (`version`, `stage`, `id`) and `BUILD_LABEL`; import it to put the build in
-  a problem report. Unbuilt, the id reads `dev`.
+  a problem report. Unbuilt, the label reads `dev · local`.
 - **Report a problem.** The menu's Report button (accessible name "Report a
   problem") opens a sheet of that title with an optional
   one-line note; Send report hands the text to `navigator.share` (the iOS
@@ -223,7 +235,7 @@ browser runs the same engine, bots and API routes as the tests. It copies the
 
   ```
   int-maj problem report
-  Version: 0.1.0-alpha.1
+  Version: 0.1.0-alpha.3
   Build: <build id>
   User agent: <navigator.userAgent>
   Hand: <n> (<phase>)

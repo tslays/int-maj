@@ -1,8 +1,8 @@
 /**
  * The 3D table: boot, the turn loop and the wiring.
  *
- * The game runs in the page (`engine/table/local.js`, the same routes as the
- * dev server). Each answer is handed to the board, which animates the change;
+ * The game runs in the page (`engine/table/local.js`, which answers the
+ * table service's routes with no server). Each answer is handed to the board, which animates the change;
  * the loop then either lets the bots take their next decision, one per beat,
  * or shows you the choices the engine offers. The rest of the screen lives in
  * its own modules: `hints.js`, `input.js`, `result.js`, `menu.js`, `report.js`

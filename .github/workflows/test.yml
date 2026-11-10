@@ -126,6 +126,24 @@ jobs:
             gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -f body="$body"
           fi
 
+  # The built app in a real browser: every review board opens and draws, and
+  # a game is played by touch (scripts/smoke.ts). Software rendering makes it
+  # take a few minutes, so it runs beside the tests. Not a required check.
+  smoke:
+    name: Smoke (browser)
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run smoke
+
   soak:
     name: Soak (300 hands)
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref_type != 'tag')

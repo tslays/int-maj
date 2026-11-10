@@ -203,7 +203,7 @@ export function newGame(seed: string | number, options: NewGameOptions = {}): Ap
 
 /**
  * Deal the next hand after a finished one. The dealer repeats only when the
- * dealer won or the hand was drawn (PLAY.md #9, p. 34). Not an Action: the
+ * dealer won or the hand was drawn (R-030, R-032, R-101). Not an Action: the
  * engine exposes it separately so `apply` never invents a deal.
  */
 export function nextHand(state: GameState): ApplyOk {

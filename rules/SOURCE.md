@@ -2,10 +2,12 @@
 
 ## Normative source
 
-The owner designated the original rulebook scans in `scans/` as the main source
-for international mahjong on 2026-11-04. Use the actual pages (`rules/pages/`, from
-that PDF) for all rule semantics; it takes precedence over every conflicting earlier owner
-choice or project interpretation.
+The owner designated the original rulebook scans as the main source for
+international mahjong on 2026-11-04. Use the actual pages in `rules/pages/`
+(made from those scans) for all rule semantics; they take precedence over
+every conflicting earlier owner choice or project interpretation. The PDF
+masters are the owner's offline backup and are not in the repository; the
+`scans/` paths below name them.
 
 - **The primary file:** `scans/The Game of Mah Jong Illustrated - trimmed.pdf`
   — the owner's offline backup; sessions read the pages in `rules/pages/` instead. Its pages keep the full 4032x3024 scan in the MediaBox;
