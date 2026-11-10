@@ -10,6 +10,7 @@
   "scripts": {
     "test": "node --test \"test/**/*.test.ts\"",
     "typecheck": "tsc -p .",
+    "smoke": "node --disable-warning=ExperimentalWarning scripts/smoke.ts",
     "soak": "SOAK_SEEDS=300 node --test test/core/soak.test.ts",
     "bot-soak": "node scripts/bot-soak.ts",
     "test:watch": "node --test --watch \"test/**/*.test.ts\"",
