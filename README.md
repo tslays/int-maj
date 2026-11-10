@@ -1,7 +1,6 @@
 # International Mahjong
 
-International mahjong, played by the rules of *The Game of Mah Jong
-Illustrated*, on a 3D table in the browser against three bots. It runs
+International mahjong, on a 3D table in the browser against three bots. It runs
 offline, saves after every move and installs on a phone's home screen.
 
 **Play:** https://int.mah-jong.workers.dev (landscape; add `?phone` to see the
@@ -15,7 +14,7 @@ The roadmap is [docs/PLAN.md](docs/PLAN.md).
 
 - **The book's game.** Every rule, hand and payment follows the printed source,
   with page citations ([Rules](#rules) below); the special hands come from the
-  book and its supplement, *The Mah Jong Player's Companion*.
+  book and its supplement.
 - **A full table.** Draws and discards, chows, pungs and kongs, fishing, the
   Goulash, the result card with the book's arithmetic, and the next hand.
 - **Bots that plan.** Each bot aims at concrete target hands and calls only
@@ -87,16 +86,14 @@ every game replays exactly from its seed.
 ## Rules
 
 [rules/RULES.md](rules/RULES.md) is the single normative rule set. Every rule
-carries its source: `[I p.N]` for *The Game of Mah Jong Illustrated* (the
-primary book), `[C p.N]` for *The Mah Jong Player's Companion* (used only
-where the primary book is silent) and `[A]` for a recorded assumption where
+carries its source: `[I p.N]` the primary book, `[C p.N]` used only where the
+primary book is silent) and `[A]` for a recorded assumption where
 both are silent. [rules/SOURCE.md](rules/SOURCE.md) sets the precedence and
 how to read a page; [rules/AUDIT.md](rules/AUDIT.md) records every correction
 made to the engine against the books.
 
 The pages of both books are in `rules/pages/` so any session can check a rule
-against the page. They are the owner's copies of copyrighted books: **this
-repository must stay private**, and a test proves the build never ships them.
+against the page. 
 
 ## Testing
 
