@@ -239,7 +239,7 @@ function paintConsole(now = performance.now()) {
       context.translate(CONSOLE_SIZE / 2, CONSOLE_SIZE / 2);
       context.rotate((-edge * Math.PI) / 2);
       // Leaving an edge it slides on towards the corner; it enters the next from the corner.
-      paintGlow(context, away * reach, 0.42 * light.level * breath * near * near * (3 - 2 * near));
+      paintGlow(context, away * reach, 0.6 * light.level * breath * near * near * (3 - 2 * near));
       context.restore();
     }
   }
