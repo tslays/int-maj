@@ -1848,7 +1848,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     pages: [60],
     category: "suit",
     tier: "middle",
-    exposedTier: "middle",
+    exposedTier: null,
     requiresSelfDrawn: false,
     description:
       "Every odd number (1, 3, 5, 7, 9) in two suits, plus every even number " +
@@ -1857,7 +1857,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The synopsis line is cut after 'one tile o[f ...]'. Read as one tile of " +
       "each listed rank: 5 + 5 + 4 = 14. This is the only counting that " +
-      "reaches a full hand without inventing tiles.",
+      "reaches a full hand without inventing tiles. Concealed-only: the synopsis row carries no red dot (p. 4: the dots " +
+      "mark the hands whose pungs may be exposed).",
     match: ({ shape }) => {
       if (shape.total !== 14 || shape.honoursTotal !== 0) return false;
       return SUITS.some((evenSuit) => {
@@ -1875,7 +1876,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     pages: [60],
     category: "chow",
     tier: "half",
-    exposedTier: "half",
+    exposedTier: null,
     requiresSelfDrawn: false,
     description:
       "One chow in the first suit, two chows in the second suit, and a chow " +
@@ -1884,7 +1885,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The synopsis line is cut after 'Chow and Pr in T[hird ...]'. Read as a " +
       "chow distribution of 1 / 2 / 1 with the pair in the single-chow suit: " +
-      "3 + 6 + 5 = 14.",
+      "3 + 6 + 5 = 14. Concealed-only: the synopsis row carries no red dot (p. 4: the dots " +
+      "mark the hands whose pungs may be exposed).",
     match: ({ shape }) =>
       decomposeStandard(shape).some((decomposition) => {
         if (!decomposition.sets.every((set) => set.kind === "chow")) {
@@ -2167,7 +2169,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     pages: [57],
     category: "plain",
     tier: "double",
-    exposedTier: "double",
+    exposedTier: null,
     requiresSelfDrawn: false,
     description:
       "One of each wind plus 2, 44, 666 and 8888 in one suit; the kong is " +
@@ -2175,8 +2177,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     source: "Synopsis p. 57 (not illustrated).",
     notes:
       "The synopsis prints 2000/800. 'Kong concealed' applies to the 8888 " +
-      "kong: an exposed kong of that tile is rejected, while other exposed " +
-      "melds are allowed.",
+      "kong: an exposed kong of that tile is rejected. Concealed-only: the synopsis row carries no red dot (p. 4: the dots " +
+      "mark the hands whose pungs may be exposed).",
     match: ({ shape, hand }) => {
       if (shape.honoursTotal !== 4 || usedSuits(shape).length !== 1) {
         return false;
@@ -2215,16 +2217,16 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     pages: [57],
     category: "plain",
     tier: "double",
-    exposedTier: "double",
+    exposedTier: null,
     requiresSelfDrawn: false,
     description:
       "One of each wind plus 2222, 444, 66 and 8 in one suit; the kong is " +
       "concealed.",
     source: "Synopsis p. 57 (not illustrated).",
     notes:
-      "The synopsis prints 2000/800. 'Kong concealed' applies to the 8888 " +
-      "kong: an exposed kong of that tile is rejected, while other exposed " +
-      "melds are allowed.",
+      "The synopsis prints 2000/800. 'Kong concealed' applies to the 2222 " +
+      "kong: an exposed kong of that tile is rejected. Concealed-only: the synopsis row carries no red dot (p. 4: the dots " +
+      "mark the hands whose pungs may be exposed).",
     match: ({ shape, hand }) => {
       if (shape.honoursTotal !== 4 || usedSuits(shape).length !== 1) {
         return false;
