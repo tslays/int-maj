@@ -46,7 +46,7 @@ const PRINTED: Readonly<
   "purity-hand": ["calculate", "calculate", null],
   "seven-brothers": ["limit", "half", 1000],
   "numbers-doubled": ["middle", "middle", 1500],
-  "dragons-run": ["middle", "middle", 1500],
+  "dragons-run": ["middle", null, 1500],
   "chinese-odds": ["limit", "limit", 1000],
   "up-you-go": ["double", "double", 2000],
   "down-you-go": ["double", "double", 2000],
