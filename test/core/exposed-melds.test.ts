@@ -39,6 +39,17 @@ describe("exposed melds stay as they were claimed", () => {
     assert.notEqual(score.points, null);
   });
 
+  it("does not score Dragon's Run with a claimed chow (C p. 59: no red dot)", () => {
+    const rest = "b4 b5 b6 b7 b8 b9 dR dG dW wE wE";
+    const concealed = createHand({ concealed: `b1 b2 b3 ${rest}` });
+    assert.equal(matchHand(concealed).some((match) => match.pattern.id === "dragons-run"), true);
+    const claimed = createHand({
+      concealed: rest,
+      melds: [meld({ kind: "chow", tiles: "b1 b2 b3", exposed: true })],
+    });
+    assert.equal(matchHand(claimed).some((match) => match.pattern.id === "dragons-run"), false);
+  });
+
   it("scores every win in the bot games that used to end unscored", () => {
     for (const seed of ["u-17", "u-63"]) {
       let { state } = newGame(seed);

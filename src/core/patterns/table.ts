@@ -2366,7 +2366,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     pages: [59],
     category: "run",
     tier: "middle",
-    exposedTier: "middle",
+    exposedTier: null,
     requiresSelfDrawn: false,
     description:
       "Run 1-9 in one suit, one of each dragon, and a wind pair.",
@@ -2374,7 +2374,9 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "Distinct printed scoring hand: 1500/600, unlike Wriggly Dragon's " +
       "1000/400. The run is one suit, the three dragons are single tiles, " +
-      "and the pair is winds.",
+      "and the pair is winds. Concealed-only: the synopsis row carries no " +
+      "red dot (p. 4: the dots mark the hands whose pungs may be exposed), " +
+      "and the hand has no pung.",
     match: ({ shape }) =>
       SUITS.some((suit) =>
         matchesGroups(shape, [
