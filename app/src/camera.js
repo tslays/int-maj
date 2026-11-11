@@ -107,3 +107,24 @@ export function fitTableCamera(tableCamera, tiltDegrees, handTopFraction) {
   }
   place(high, solveTarget(high));
 }
+
+/**
+ * Place the table camera straight above the ponds, looking down: the zoomed
+ * view. The square of half-side `extent` about the centre fills the screen's
+ * width, or the height left between the hand (`bottomFraction` of the screen,
+ * from the bottom) and the top margin, whichever is tighter, and is centred
+ * in that height. Your own pond stays nearest you: the screen's up is the far
+ * side of the table, as in the playing view.
+ */
+export function fitPondCamera(tableCamera, extent, bottomFraction, topFraction = 0.03) {
+  const half = Math.tan(THREE.MathUtils.degToRad(tableCamera.fov) / 2);
+  const floor = -1 + 2 * bottomFraction;
+  const ceiling = 1 - 2 * topFraction;
+  const centre = (floor + ceiling) / 2;
+  const room = (ceiling - floor) / 2;
+  const distance = Math.max(extent / (half * tableCamera.aspect), extent / (half * room));
+  tableCamera.position.set(0, distance, centre * distance * half);
+  tableCamera.rotation.set(-Math.PI / 2, 0, 0);
+  tableCamera.updateMatrixWorld();
+  tableCamera.updateProjectionMatrix();
+}

@@ -19,9 +19,9 @@ registerHooks({
 
 const THREE = await import(THREE_URL);
 // @ts-expect-error - a plain browser module without type declarations
-const { fitHandCamera, fitTableCamera } = await import("../../app/src/camera.js");
+const { fitHandCamera, fitPondCamera, fitTableCamera } = await import("../../app/src/camera.js");
 // @ts-expect-error - a plain browser module without type declarations
-const { discardRect, meldRects, TABLE, H } = await import("../../app/src/layout.js");
+const { discardRect, meldRects, pondExtent, TABLE, H } = await import("../../app/src/layout.js");
 
 const SHAPES: [string, number, number][] = [
   ["desktop", 1280, 720],
@@ -110,6 +110,42 @@ describe("hand strip", () => {
             assert.ok(p.y >= -1 && p.y <= 1, `tile edge y=${y + lift} leaves the strip (${p.y.toFixed(2)})`);
           }
         }
+      }
+    });
+  }
+});
+
+describe("zoomed pond view", () => {
+  for (const [name, width, height] of SHAPES) {
+    it(`shows every discard from straight above, larger than the table view (${name})`, () => {
+      const portrait = height > width;
+      const { tileTop } = fitHandCamera(new THREE.PerspectiveCamera(5, 1, 1, 600), width, height, 15.5);
+      const table = new THREE.PerspectiveCamera(17, width / height, 0.5, 1200);
+      fitTableCamera(table, portrait ? 62 : 46, tileTop / height);
+      for (const counts of [[0, 0, 0, 0], [18, 18, 18, 18], [24, 19, 22, 18]]) {
+        const pond = new THREE.PerspectiveCamera(17, width / height, 0.5, 1200);
+        fitPondCamera(pond, pondExtent(counts) + 0.35, 0.05);
+        // Straight down, the far side of the table up the screen.
+        const forward = pond.getWorldDirection(new THREE.Vector3());
+        assert.ok(forward.y < -0.9999, "the camera looks straight down");
+        const far = new THREE.Vector3(0, 0, -5).project(pond);
+        const near = new THREE.Vector3(0, 0, 5).project(pond);
+        assert.ok(far.y > near.y, "your own pond is nearest the bottom");
+        counts.forEach((count, rel) => {
+          for (let index = 0; index < count; index++) {
+            const rect = discardRect(rel, index);
+            const box = seen(pond, rect);
+            assert.ok(box.left >= -1 && box.right <= 1, `seat ${rel} discard ${index + 1} is on screen across`);
+            assert.ok(box.bottom >= -1 && box.top <= 1, `seat ${rel} discard ${index + 1} is on screen up and down`);
+            // On the felt, the tile is drawn larger than the table view draws it.
+            const size = (camera: unknown) => {
+              const a = new THREE.Vector3(rect.minX, 0, rect.minZ).project(camera);
+              const b = new THREE.Vector3(rect.maxX, 0, rect.maxZ).project(camera);
+              return Math.abs((a.x - b.x) * (a.y - b.y));
+            };
+            assert.ok(size(pond) > size(table) * 1.2, `seat ${rel} discard ${index + 1} is larger zoomed`);
+          }
+        });
       }
     });
   }

@@ -16,7 +16,7 @@ import * as THREE from "three";
 import { D, H, W, makeTile, roundedRect, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, TABLE } from "./tiles.js";
 import { discardSlot, latestPlate, meldLayout, pondPad } from "./layout.js";
 import { sound } from "./sound.js";
-import { animate, easeInOutCubic, easeOutBack, easeOutCubic, handScene, requestRender, tableScene, tween } from "./stage.js";
+import { animate, easeInOutCubic, easeOutBack, easeOutCubic, handScene, requestRender, setPondCounts, tableScene, tween } from "./stage.js";
 import { handMethods } from "./board-hand.js";
 import { wallMethods } from "./board-wall.js";
 
@@ -149,6 +149,8 @@ export class Board {
     for (const entry of payload.table) {
       work.push(...this.reconcileDiscards(entry, meldsGrew, animated));
     }
+    // The zoomed view frames every pond, however far a fourth row has run.
+    setPondCounts(payload.table.map((entry) => entry.discards.length));
     for (const entry of payload.table) {
       if (entry.seat !== this.me) work.push(...this.reconcileRow(entry, animated));
       work.push(...this.reconcileMelds(entry, meldsGrew.has(entry.seat)));

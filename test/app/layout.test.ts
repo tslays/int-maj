@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 // @ts-expect-error - a plain browser module without type declarations
-import { breakFor, DRAWN_SLIDE, handTileStart, wallLook, wallPlan, discardRect, discardSlot, frameRect, handRects, latestPlate, pondPad, meldLayout, meldRects, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
+import { breakFor, DRAWN_SLIDE, handTileStart, wallLook, wallPlan, discardRect, discardSlot, frameRect, handRects, latestPlate, pondExtent, pondPad, meldLayout, meldRects, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
 
 interface Rect {
   readonly minX: number;
@@ -353,5 +353,27 @@ describe("hand tile entrance", () => {
     // slide's start, which is past the screen's right edge.
     assert.deepEqual(handTileStart(5, true, false), { x: 5, y: 0 });
     assert.deepEqual(handTileStart(5, false, false), { x: 5, y: 0 });
+  });
+});
+
+describe("pond extent (the zoomed view's square)", () => {
+  it("covers every discard lying, and stays inside the walls", () => {
+    for (const counts of [[0, 0, 0, 0], [6, 7, 12, 18], [19, 18, 18, 18], [18, 24, 18, 21], [26, 26, 26, 26]]) {
+      const extent = pondExtent(counts);
+      assert.ok(extent <= WALL_INNER, `${counts}: inside the walls`);
+      counts.forEach((count, rel) => {
+        for (let index = 0; index < count; index++) {
+          const rect = discardRect(rel, index);
+          assert.ok(Math.max(-rect.minX, rect.maxX, -rect.minZ, rect.maxZ) <= extent + 1e-9, `${counts}: seat ${rel} discard ${index + 1}`);
+        }
+      });
+    }
+  });
+
+  it("does not move until a fourth row starts, then takes it in", () => {
+    const rows = pondExtent([0, 0, 0, 0]);
+    assert.equal(pondExtent([18, 18, 18, 18]), rows);
+    assert.ok(pondExtent([18, 19, 18, 18]) > rows);
+    assert.ok(pondExtent([18, 26, 18, 18]) >= pondExtent([18, 19, 18, 18]));
   });
 });

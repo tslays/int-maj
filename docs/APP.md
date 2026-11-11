@@ -55,6 +55,15 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   is only as tall as the tile row needs (plus headroom for a lifted tile), and
   the table camera is solved down to the top of the standing hand tiles, so
   no screen is spent on felt between your melds and your hand.
+- The pond zoom (`stage.js` `setPondZoom`, `camera.js` `fitPondCamera`): a tap
+  on the table inside the walls swings the table camera straight above the
+  ponds (your own pond still nearest you) and your hand slides off the bottom
+  edge, so the discards have the whole screen; a tap anywhere swings back.
+  The view frames the square `pondExtent` gives for the discards lying (never
+  less than the three full rows). It works while the bots play; a tap with a
+  hand tile lifted only puts the tile down. With `prefers-reduced-motion` the
+  view changes at once. `test/app/view.test.ts` proves every discard is on
+  screen and larger than in the table view.
 - The turn light (`stage.js`, `updateConsole`): the console is painted in three
   layers (panel, light, lettering) so the light can move under the text. The
   seat whose turn it is glows along its edge with a soft, edgeless light, wide
