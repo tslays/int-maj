@@ -143,16 +143,27 @@ async function settled(page: Page): Promise<Payload> {
 
 /** Wait until it is your decision (or the hand is over). */
 async function yourMove(page: Page): Promise<Payload> {
-  await page.waitForFunction(
-    () => {
-      const handle = window.mahjong;
-      const payload = handle?.state();
-      if (handle === undefined || payload == null || handle.busy()) return false;
-      return payload.legalActions.length > 0 || payload.view.phase === "finished";
-    },
-    null,
-    { timeout: READY_MS },
-  );
+  try {
+    await page.waitForFunction(
+      () => {
+        const handle = window.mahjong;
+        const payload = handle?.state();
+        if (handle === undefined || payload == null || handle.busy()) return false;
+        return payload.legalActions.length > 0 || payload.view.phase === "finished";
+      },
+      null,
+      { timeout: READY_MS },
+    );
+  } catch (error) {
+    // Say where the table stood, so a failure on a CI runner can be told from a stuck game.
+    const where = await page.evaluate(() => ({
+      busy: window.mahjong?.busy(),
+      phase: window.mahjong?.state()?.view.phase,
+      legal: window.mahjong?.state()?.legalActions.map((action) => action.type),
+      toast: document.querySelector(".toast")?.textContent ?? null,
+    }));
+    throw new Error(`waiting for your move timed out: ${JSON.stringify(where)}`, { cause: error });
+  }
   return (await page.evaluate(() => window.mahjong!.state())) as Payload;
 }
 
@@ -231,7 +242,8 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.waitForFunction(
     () => {
       const payload = window.mahjong?.state();
-      return payload != null && payload.table.find((entry) => entry.seat === payload.seat)!.discards.length === 1;
+      // The hand is down to 13 once the tile is thrown (a bot may already have claimed it from the pond).
+      return payload != null && payload.view.player.hand.length < 14;
     },
     null,
     { timeout: READY_MS },
@@ -247,7 +259,8 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.touchscreen.tap(tile.x, tile.y);
   assert.equal(await zoomed(), false, "a tap anywhere zooms back");
   await page.waitForTimeout(500);
-  assert.equal(myDiscards(await settled(page)), 1, "the zoom taps throw nothing");
+  // At most the one tile thrown: a bot that claimed it has taken it out of the pond, so 0 is fine too.
+  assert.ok(myDiscards(await settled(page)) <= 1, "the zoom taps throw nothing");
   console.log("  ok  tap the ponds to zoom, tap to go back");
 
   // The hints panel lists hands; its toggle hides it. The help sheet opens and closes.
