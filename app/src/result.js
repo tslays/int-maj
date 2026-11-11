@@ -2,6 +2,7 @@
  * The result card after a hand and the final standings after the last one.
  */
 
+import { bookPages } from "./pages.js";
 import { explainSettlement } from "./settlement.js";
 import { sound } from "./sound.js";
 import { rankSeats, winnerLine } from "./standings.js";
@@ -64,10 +65,11 @@ function renderOutcome(outcome) {
     const description = document.createElement("p");
     description.className = "result-description";
     description.textContent = outcome.patternDescription;
-    if (outcome.patternPages.length > 0) {
+    const cited = bookPages(outcome.patternPages);
+    if (cited !== "") {
       const pages = document.createElement("span");
       pages.className = "result-pages";
-      pages.textContent = ` Illustrated p. ${outcome.patternPages.join(", ")}`;
+      pages.textContent = ` ${cited}`;
       description.append(pages);
     }
     main.append(description);

@@ -19,7 +19,12 @@ describe("pattern table schema", () => {
       new Set(PATTERNS.map((pattern) => pattern.id)).size,
       PATTERNS.length,
     );
-    for (const pattern of PATTERNS) assert.ok(pattern.pages.length > 0);
+    for (const pattern of PATTERNS) {
+      assert.ok(
+        pattern.pages.illustrated.length + pattern.pages.companion.length > 0,
+        `${pattern.id} cites no page in either book`,
+      );
+    }
   });
 
   it("records a reading for every provisional pattern", () => {

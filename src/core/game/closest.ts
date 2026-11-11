@@ -14,7 +14,7 @@
  */
 
 import { PATTERNS } from "../patterns/table.ts";
-import { TIER_POINTS, type Tier } from "../patterns/types.ts";
+import { TIER_POINTS, type PageRefs, type Tier } from "../patterns/types.ts";
 import { situationFor } from "./bot.ts";
 import { completion, KEYS, oddsFor, planGoals } from "./bot/plan.ts";
 import type { GameView } from "./view.ts";
@@ -28,8 +28,8 @@ export interface ClosestHand {
   readonly tier: Tier;
   /** The printed value, or null for a hand whose score is calculated. */
   readonly points: number | null;
-  /** Book pages the hand is printed on. */
-  readonly pages: readonly number[];
+  /** Book pages the hand is printed on, by book. */
+  readonly pages: PageRefs;
   /**
    * True when the hand exists only concealed: any exposed meld (a called
    * pung, kong or chow) rules it out. Most special hands are like this.
@@ -104,7 +104,7 @@ export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand
 export interface HandDetail {
   readonly pattern: string;
   readonly name: string;
-  readonly pages: readonly number[];
+  readonly pages: PageRefs;
   /** What the hand is made of, in plain words. */
   readonly description: string;
   /** Concealed-only: no exposed meld is allowed at any point. */
