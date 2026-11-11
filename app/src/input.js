@@ -1,10 +1,11 @@
 /**
  * Hand input: tap to lift, tap again to discard, drag to re-arrange, swipe up
- * to throw, and picking the three tiles of a goulash exchange.
+ * to throw, and picking the three tiles of a goulash exchange. A tap on the
+ * ponds toggles the zoomed, top-down view of the discards.
  */
 
 import { board, state } from "./shared.js";
-import { renderer } from "./stage.js";
+import { pondTap, pondZoomed, renderer, setPondZoom } from "./stage.js";
 import { sound } from "./sound.js";
 
 let selected = null;
@@ -43,8 +44,16 @@ function tickFor(entry) {
 }
 
 renderer.domElement.addEventListener("pointerdown", (event) => {
+  // Zoomed, the hand is off screen: no tile is under the finger.
+  const entry = pondZoomed() ? null : board.pick(event);
+  // A tap on the ponds (not on a hand tile, and with no tile lifted to put
+  // down) zooms in on them from above; a tap anywhere zooms back. It works
+  // while the bots play too: that is when you study the discards.
+  if (entry === null && (pondZoomed() || selected === null || state.busy || state.payload === null) && pondTap(event)) {
+    setPondZoom(!pondZoomed());
+    return;
+  }
   if (state.busy || state.payload === null) return;
-  const entry = board.pick(event);
   const legal = state.payload.legalActions;
 
   if (legal.some((action) => action.type === "GoulashExchange")) {
@@ -91,7 +100,7 @@ function throwing(event) {
 
 /** With a mouse (or pen) the tile under the pointer is pre-selected: click discards. */
 function hover(event) {
-  if (press !== null || state.busy || state.payload === null) return;
+  if (press !== null || state.busy || state.payload === null || pondZoomed()) return;
   if (state.payload.legalActions.some((action) => action.type === "GoulashExchange")) return;
   const entry = board.pick(event);
   if (entry === selected) return;
