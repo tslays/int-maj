@@ -7,7 +7,7 @@
  * exercise exactly the same game, bots and projections.
  *
  *   GET  /api/state?game=     one seat's view, legal actions and wait panel
- *   GET  /api/closest?game=   the catalogue hands your tiles are nearest to
+ *   GET  /api/closest?game=   every catalogue hand within reach of your tiles, nearest first
  *   GET  /api/hand?pattern=   one catalogue hand's conditions (concealed or open)
  *   GET  /api/scenario?state= a fixed review board (turn, claim, win, ...)
  *   POST /api/new             deal a game from `{ seed }`

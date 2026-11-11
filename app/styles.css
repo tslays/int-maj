@@ -580,6 +580,49 @@ button {
 .closest-item:focus-visible .closest-name {
   text-decoration: underline;
 }
+.closest-more {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 5px 0 3px;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.closest-more:hover,
+.closest-more:focus-visible {
+  color: inherit;
+  text-decoration: underline;
+}
+.list-note {
+  color: var(--muted);
+}
+.hand-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.hand-list li {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.hand-list .closest-item {
+  padding: 8px 0;
+}
+.hand-list .closest-name {
+  font-size: 14px;
+}
+.hand-list .closest-meta {
+  font-size: 12px;
+}
+.hand-list .closest-need .chip {
+  width: 18px;
+  height: 24px;
+}
 .play-icon {
   flex: none;
   width: 14px;

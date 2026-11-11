@@ -43,7 +43,10 @@ export interface ClosestHand {
   readonly chance: number;
 }
 
-/** Hands shown by default: enough to compare, few enough for a phone. */
+/**
+ * Hands named by default: enough to compare, few enough for a phone. Pass a
+ * larger limit (or Infinity) for the complete list of hands within reach.
+ */
 export const CLOSEST_SHOWN = 3;
 
 export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand[] {

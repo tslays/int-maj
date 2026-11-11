@@ -120,7 +120,7 @@ describe("table API", () => {
     assert.equal(payload.outcome, null);
   });
 
-  it("answers the closest hands for your own tiles, nearest first", async () => {
+  it("answers every hand within reach of your own tiles, nearest first", async () => {
     const created = await post<ApiPayload>("/api/new", { seed: "api-closest" });
     const game = created.body.game;
     const response = call<{ game: string; hands: ClosestHandPayload[] }>(
@@ -130,7 +130,8 @@ describe("table API", () => {
     assert.equal(response.status, 200);
     assert.equal(response.body.game, game);
     const hands = response.body.hands;
-    assert.ok(hands.length > 0 && hands.length <= 3);
+    assert.ok(hands.length > 3, "the complete list, not only the panel's three");
+    assert.equal(new Set(hands.map((hand) => hand.pattern)).size, hands.length, "each hand once");
     for (const [index, hand] of hands.entries()) {
       assert.equal(typeof hand.name, "string");
       assert.equal(hand.need.length, hand.away);

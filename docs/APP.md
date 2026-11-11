@@ -113,9 +113,15 @@ offers them. The table is landscape only.
 
 The panel at the top right lists the closest hands: up to three catalogue
 hands your tiles are nearest to, with how many tiles each still needs, its
-value and the missing tiles. It is asked for when your own tiles change and at
-each of your decisions, and hides on the result card. The menu's Hints button
-turns it off (remembered on the device).
+value. It is asked for when your own tiles change and at each of your
+decisions, and hides on the result card. The menu's Hints button turns it off
+(remembered on the device).
+
+When more than three hands are within reach, an "All N hands" line under the
+rows opens a scrolling sheet (`#hand-list`) with every one of them, nearest
+first, each with its missing tiles as chips; the answer already holds the full
+list, so the sheet costs no second request and follows the tiles while open.
+A row there opens the same hand sheet on top; closing it returns to the list.
 
 The panel is deliberately small and quiet (148px, muted colours, no tile
 chips) so it never competes with the table, even on a phone. Each row is the
@@ -180,7 +186,7 @@ tiles of the other seats, and their hand counts only.
 | Route | Body / query | Returns |
 | --- | --- | --- |
 | `GET /api/state` | `game=<id>` | the view, legal actions, wall count, per-seat table, ledger, wait panel, result and `scoresBefore` |
-| `GET /api/closest` | `game=<id>` | the catalogue hands your tiles are nearest to (`closestHands`), at most three |
+| `GET /api/closest` | `game=<id>` | every catalogue hand within six tiles of yours, nearest first (`closestHands`); the panel shows three, the "all hands" sheet the rest |
 | `GET /api/hand` | `pattern=<id>` | one catalogue hand's conditions: composition, concealed-only, self-drawn, concealed and open value (`handDetail`) |
 | `GET /api/scenario` | `state=<name>` | one fixed review board and its events |
 | `POST /api/new` | `{ "seed": "..." }` | a new game and its first state |

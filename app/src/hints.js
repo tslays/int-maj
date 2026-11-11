@@ -1,6 +1,7 @@
 /**
- * The closest-hands panel (top right), the hand sheet behind it and the
- * Hints toggle in the menu.
+ * The closest-hands panel (top right), the "all hands" sheet with every hand
+ * within reach, the hand sheet behind each row and the Hints toggle in the
+ * menu.
  */
 
 import { $, faceChip, request, showToggle, state, storage } from "./shared.js";
@@ -30,6 +31,7 @@ export async function refreshHints(force = false) {
   if (!hintsOn || state.payload === null || state.payload.outcome !== null || state.payload.view.phase === "finished") {
     panel.hidden = true;
     closeHandDetail();
+    closeHandList();
     hintsFor = null;
     return;
   }
@@ -82,7 +84,52 @@ function playIcon(concealedOnly) {
   return svg;
 }
 
+/** Rows the panel has room for; the "all hands" sheet holds the rest. */
+const PANEL_ROWS = 3;
+
+let reach = []; // every hand within reach, nearest first, as last answered
+
+/** One hand as a tappable row; `withNeed` adds the missing tiles (the sheet has room). */
+function handRow(hand, withNeed) {
+  const item = document.createElement("li");
+  const row = document.createElement("button");
+  row.type = "button";
+  row.className = "closest-item";
+  row.title = hand.concealedOnly ? "Concealed only" : "Exposed melds allowed";
+  row.setAttribute(
+    "aria-label",
+    `${hand.name}, ${hand.concealedOnly ? "concealed only" : "exposed melds allowed"}. Tap for details.`,
+  );
+  const name = document.createElement("span");
+  name.className = "closest-name";
+  name.textContent = hand.name;
+  const meta = document.createElement("span");
+  meta.className = "closest-meta";
+  const progress = document.createElement("span");
+  const value = hand.points === null ? "calculated" : hand.points.toLocaleString("en");
+  if (hand.away === 0) {
+    const done = document.createElement("span");
+    done.className = "closest-done";
+    done.textContent = "Complete";
+    progress.append(done, ` · ${value}`);
+  } else {
+    progress.textContent = `${hand.away} to go · ${value}`;
+  }
+  meta.append(progress, playIcon(hand.concealedOnly));
+  row.append(name, meta);
+  if (withNeed && hand.need.length > 0) {
+    const need = document.createElement("span");
+    need.className = "closest-need";
+    for (const key of hand.need) need.append(faceChip(key));
+    row.append(need);
+  }
+  row.addEventListener("click", () => void openHandDetail(hand));
+  item.append(row);
+  return item;
+}
+
 function renderHints(hands) {
+  reach = hands;
   const panel = $("#closest");
   const title = document.createElement("p");
   title.className = "closest-title";
@@ -93,42 +140,70 @@ function renderHints(hands) {
     empty.textContent = "Nothing within six tiles yet.";
     panel.replaceChildren(title, empty);
     panel.hidden = false;
+    closeHandList();
     return;
   }
   const list = document.createElement("ol");
-  for (const hand of hands) {
-    const item = document.createElement("li");
-    const row = document.createElement("button");
-    row.type = "button";
-    row.className = "closest-item";
-    row.title = hand.concealedOnly ? "Concealed only" : "Exposed melds allowed";
-    row.setAttribute(
-      "aria-label",
-      `${hand.name}, ${hand.concealedOnly ? "concealed only" : "exposed melds allowed"}. Tap for details.`,
-    );
-    const name = document.createElement("span");
-    name.className = "closest-name";
-    name.textContent = hand.name;
-    const meta = document.createElement("span");
-    meta.className = "closest-meta";
-    const progress = document.createElement("span");
-    const value = hand.points === null ? "calculated" : hand.points.toLocaleString("en");
-    if (hand.away === 0) {
-      const done = document.createElement("span");
-      done.className = "closest-done";
-      done.textContent = "Complete";
-      progress.append(done, ` · ${value}`);
-    } else {
-      progress.textContent = `${hand.away} to go · ${value}`;
-    }
-    meta.append(progress, playIcon(hand.concealedOnly));
-    row.append(name, meta);
-    row.addEventListener("click", () => void openHandDetail(hand));
-    item.append(row);
-    list.append(item);
-  }
+  for (const hand of hands.slice(0, PANEL_ROWS)) list.append(handRow(hand, false));
   panel.replaceChildren(title, list);
+  if (hands.length > PANEL_ROWS) {
+    const more = document.createElement("button");
+    more.type = "button";
+    more.id = "closest-more";
+    more.className = "closest-more";
+    more.textContent = `All ${hands.length} hands`;
+    more.setAttribute("aria-label", `Show all ${hands.length} hands within six tiles`);
+    more.addEventListener("click", () => openHandList());
+    panel.append(more);
+  }
   panel.hidden = false;
+  // An open list follows the tiles, but not while a hand's sheet covers it.
+  if (!$("#hand-list").hidden) openHandList(false);
+}
+
+/* ----------------------------------------------------------- all hands */
+
+function closeHandList() {
+  const sheet = $("#hand-list");
+  if (sheet.hidden) return;
+  sheet.hidden = true;
+  sheet.replaceChildren();
+}
+
+/** Every hand within reach, nearest first, on a sheet that scrolls. */
+function openHandList(focus = true) {
+  const sheet = $("#hand-list");
+  const scrolled = sheet.firstElementChild?.scrollTop ?? 0;
+  const card = document.createElement("div");
+  card.className = "detail-card";
+  card.setAttribute("role", "dialog");
+  card.setAttribute("aria-modal", "true");
+  card.setAttribute("aria-label", "Hands within reach");
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "detail-close";
+  close.setAttribute("aria-label", "Close");
+  close.textContent = "×";
+  close.addEventListener("click", closeHandList);
+
+  const heading = document.createElement("h2");
+  heading.textContent = "Hands within reach";
+  const note = document.createElement("p");
+  note.className = "list-note";
+  note.textContent =
+    `${reach.length} ${reach.length === 1 ? "hand" : "hands"} within six tiles, nearest first, ` +
+    "each in the version your tiles are closest to. Tap one for its details.";
+
+  const list = document.createElement("ol");
+  list.className = "hand-list";
+  for (const hand of reach) list.append(handRow(hand, true));
+
+  card.append(close, heading, note, list);
+  sheet.replaceChildren(card);
+  sheet.hidden = false;
+  card.scrollTop = scrolled;
+  if (focus) close.focus();
 }
 
 /* --------------------------------------------------------- hand detail */
@@ -221,8 +296,14 @@ async function openHandDetail(hand) {
 $("#hand-detail").addEventListener("click", (event) => {
   if (event.target === event.currentTarget) closeHandDetail();
 });
+$("#hand-list").addEventListener("click", (event) => {
+  if (event.target === event.currentTarget) closeHandList();
+});
 window.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") closeHandDetail();
+  if (event.key !== "Escape") return;
+  // The hand's sheet lies on top of the list: close it first.
+  if (!$("#hand-detail").hidden) closeHandDetail();
+  else closeHandList();
 });
 
 function showHintsButton() {

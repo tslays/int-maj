@@ -69,6 +69,19 @@ describe("closest hands", () => {
     assert.deepEqual(first?.need, []);
   });
 
+  it("names three by default and every hand within reach when asked", () => {
+    const state = fixture({ hands: { E: SNAKE_LESS_NORTH, ...OTHERS }, wall: LONG_WALL, phase: "draw", turn: "E" });
+    const view = viewFor(state, "E");
+    const all = closestHands(view, Infinity);
+    assert.ok(all.length > 3, `expected more than three hands in reach, got ${all.length}`);
+    assert.deepEqual(closestHands(view), all.slice(0, 3), "the default is the head of the full list");
+    assert.equal(new Set(all.map((hand) => hand.pattern)).size, all.length, "each pattern once");
+    assert.ok(all.every((hand) => hand.away <= 6 && hand.need.length === hand.away));
+    for (let index = 1; index < all.length; index++) {
+      assert.ok(all[index - 1]!.away <= all[index]!.away, "sorted nearest first");
+    }
+  });
+
   it("reads only the seat's own view", () => {
     const a = fixture({ hands: { E: SNAKE_LESS_NORTH, ...OTHERS }, wall: LONG_WALL, phase: "draw", turn: "E" });
     const b = fixture({

@@ -415,13 +415,14 @@ export function statePayload(session: WebSession): StatePayload {
 
 /**
  * The catalogue hands your tiles are nearest to, for the "closest hands"
- * helper. Built from your own `viewFor` projection only, and on request
- * rather than with every state, because planning costs a few milliseconds.
- * Empty once the hand is over.
+ * helper: every hand within reach, nearest first. The panel shows the first
+ * few and the "all hands" sheet the rest. Built from your own `viewFor`
+ * projection only, and on request rather than with every state, because
+ * planning costs a few milliseconds. Empty once the hand is over.
  */
 export function closestPayload(session: WebSession): { readonly game: string; readonly hands: readonly ClosestHand[] } {
   if (session.state.phase === "finished") return { game: session.id, hands: [] };
-  return { game: session.id, hands: closestHands(viewFor(session.state, session.seat)) };
+  return { game: session.id, hands: closestHands(viewFor(session.state, session.seat), Infinity) };
 }
 
 export interface GameStoreOptions {

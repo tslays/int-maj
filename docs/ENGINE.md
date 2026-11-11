@@ -226,4 +226,5 @@ The same plan powers the player's "closest hands" helper
 seat's own tiles are nearest to - for each pattern its closest version,
 fewest tiles missing first, then the best chance times the value - with the
 missing tiles, and drops a version whose missing copies are all in sight. It
-reads only that seat's `GameView`.
+names three by default and, given a larger limit, every hand within reach
+(the table asks for all of them). It reads only that seat's `GameView`.

@@ -222,6 +222,21 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.waitForSelector("#closest", { state: "hidden", timeout: 5000 });
   await page.click("#hints");
   await page.waitForSelector("#closest:not([hidden])", { timeout: 5000 });
+  // "All hands" opens the full list; a row opens its sheet on top; closing returns to the list.
+  if ((await page.locator("#closest-more").count()) > 0) {
+    await page.click("#closest-more");
+    await page.waitForSelector("#hand-list:not([hidden])", { timeout: 5000 });
+    const rows = await page.locator("#hand-list .closest-item").count();
+    if (rows <= 3) throw new Error(`the full list should hold more than the panel's three rows, got ${rows}`);
+    await page.locator("#hand-list .closest-item").last().click();
+    await page.waitForSelector("#hand-detail:not([hidden])", { timeout: 5000 });
+    await page.click("#hand-detail .detail-close");
+    await page.waitForSelector("#hand-detail", { state: "hidden", timeout: 5000 });
+    await page.waitForSelector("#hand-list:not([hidden])", { timeout: 5000 });
+    await page.click("#hand-list .detail-close");
+    await page.waitForSelector("#hand-list", { state: "hidden", timeout: 5000 });
+    console.log(`  ok  all hands list (${rows} hands)`);
+  }
   await page.click("#help");
   await page.waitForSelector("#help-sheet:not([hidden])", { timeout: 5000 });
   await page.click("#help-close");
