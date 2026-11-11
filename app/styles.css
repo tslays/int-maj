@@ -737,6 +737,85 @@ button {
     height: 64px;
     animation: turn 2.4s ease-in-out infinite;
   }
+  /* In a phone's browser: how to install, under the request to turn. */
+  .install {
+    width: min(300px, calc(100vw - 48px));
+    margin-top: 14px;
+    padding: 14px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    font-size: 14px;
+    font-weight: 400;
+    text-align: left;
+  }
+  .install h2 {
+    margin: 0 0 2px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .install p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .install p + p {
+    margin-top: 8px;
+    color: var(--ink);
+  }
+  .install ol {
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: step;
+  }
+  .install li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    counter-increment: step;
+  }
+  .install li + li {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .install li::before {
+    content: counter(step);
+    flex: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(140, 203, 234, 0.18);
+    color: #8ccbea;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 20px;
+    text-align: center;
+  }
+  .install li span {
+    flex: 1;
+  }
+  .install li small {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .rotate .install svg {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    animation: none;
+  }
+  .install .ghost {
+    display: block;
+    margin: 14px auto 2px;
+    padding: 9px 22px;
+    font-size: 14px;
+  }
+  .install[hidden],
+  .install [hidden] {
+    display: none;
+  }
   @keyframes turn {
     0%,
     30% {
