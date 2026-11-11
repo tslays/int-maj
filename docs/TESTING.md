@@ -25,10 +25,10 @@ The message to paste to the club, then the known limits. It stands alone.
 > wrong?
 >
 > **To send a report:** tap Report in the menu, type a line about
-> what you saw (optional) and tap Send report. The share sheet opens; pick
-> Messages or Mail. If your device has no share sheet, the report is copied
-> and you paste it into your message. It holds the build, your device and
-> every move of the game so far, and no name or account.
+> what you saw (optional) and tap Send. It goes straight to us and answers
+> with a report number. It holds the build, your device and every move of the
+> game so far, and no name or account. Without a connection it offers to
+> share the report as a message instead.
 
 ## Known limits
 

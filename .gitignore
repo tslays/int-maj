@@ -12,3 +12,4 @@ dist/
 
 # Wrangler's local cache from `npm run deploy`.
 .wrangler/
+.dev.vars
