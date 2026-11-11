@@ -15,7 +15,9 @@ The message to paste to the club, then the known limits. It stands alone.
 > **How it works:** tap a tile in your hand and tap it again to throw it (or
 > hold it and swipe up). Claims, kongs, fishing and Mah Jong appear as buttons.
 > The Hints panel lists the hands you are closest to; tap a row to see that
-> hand. The menu has New game, Calls, Sort, Hints and Options (sound, house rules, help, report). The game
+> hand. The All hands button above it opens every hand in both books, searchable.
+> The menu has New game, Calls, Sort, Hints and Options. Options holds Sound,
+> the house rule (which hands are in play), Help and Report. The game
 > saves after every move and resumes where you left off. On an iPhone the
 > silent switch mutes the game; flip it off (or use the Sound switch in Options).
 >
@@ -33,7 +35,16 @@ The message to paste to the club, then the known limits. It stands alone.
 ## Known limits
 
 - You play against three bots only. No accounts, no multiplayer.
-- No house rules: it follows the one rulebook, with no options to change.
+- One house rule, in Options: which hands are in play. All hands (the default),
+  Companion hands only (leaves out the three hands only the Illustrated book
+  prints), or Companion hands with pictures (also leaves out the nine hands
+  the Companion prints without a sample picture). The change applies from the
+  next hand. Nothing else can be changed: the rules of play follow the one
+  rulebook.
+- Where both books print a hand, its tier and score follow the Companion.
+  Chinese Odds, Sparrow's Sanctuary, Three Great Scholars, Four Blessings and
+  Civil War pay the middle amount (1500), and every double-limit fishing hand
+  pays 800.
 - Settlement: the engine settles at the intermediate level. The winner is
   paid by all three players, and a player who was fishing (one tile away
   from winning) also gets a settlement. Hands further from winning are not
