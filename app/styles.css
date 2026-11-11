@@ -1009,6 +1009,9 @@ button {
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.05);
   text-align: left;
+  /* Cards below the fold are not laid out or painted until scrolled near: 89 cards carry 1,250 tiles. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 150px;
 }
 .index-card:hover,
 .index-card:focus-visible {

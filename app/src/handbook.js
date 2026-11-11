@@ -15,6 +15,7 @@ import { $, companionRules, faceChip, handSetInForce, request, state } from "./s
 
 let catalogue = null; // { set, groups, hands }: the hands in play, fetched again when the hand set changes
 let progress = new Map(); // pattern -> closest-hands entry, for the hand in play
+const cards = new Map(); // pattern -> its card, built once per catalogue and reused by every list
 const filter = { text: "", group: "all", tier: "all", play: "all", book: "all", sort: "book" };
 
 const TIERS = ["half", "limit", "middle", "double", "calculate"];
@@ -69,6 +70,8 @@ function ordered(hands) {
 }
 
 function card(hand) {
+  const cached = cards.get(hand.pattern);
+  if (cached !== undefined) return cached;
   const item = document.createElement("button");
   item.type = "button";
   item.className = "index-card";
@@ -97,17 +100,30 @@ function card(hand) {
   play.className = "index-play";
   play.append(playIcon(hand.concealedOnly), hand.concealedOnly ? "Concealed only" : "Exposed allowed");
   foot.append(play);
-  const mine = progress.get(hand.pattern);
-  if (mine !== undefined) {
-    const badge = document.createElement("span");
-    badge.className = "index-away";
-    badge.textContent = mine.away === 0 ? "Complete" : `${mine.away} to go`;
-    foot.append(badge);
-  }
 
   item.append(head, tiles, text, foot);
-  item.addEventListener("click", () => void openHandDetail(hand.pattern, mine ?? null));
+  // The closest-hands entry is read when the card is tapped, so it is never stale.
+  item.addEventListener("click", () => void openHandDetail(hand.pattern, progress.get(hand.pattern) ?? null));
+  cards.set(hand.pattern, item);
   return item;
+}
+
+/** Put (or take away) the "n to go" badge on every card; the cards themselves are not rebuilt. */
+function applyProgress() {
+  for (const [pattern, item] of cards) {
+    const mine = progress.get(pattern);
+    let badge = item.querySelector(".index-away");
+    if (mine === undefined) {
+      badge?.remove();
+      continue;
+    }
+    if (badge === null) {
+      badge = document.createElement("span");
+      badge.className = "index-away";
+      item.querySelector(".index-foot").append(badge);
+    }
+    badge.textContent = mine.away === 0 ? "Complete" : `${mine.away} to go`;
+  }
 }
 
 function renderList() {
@@ -218,18 +234,41 @@ async function readProgress() {
   }
 }
 
+/** Fetch the hands in play and build their cards, when the hand set has changed since they were. */
+async function loadCatalogue() {
+  const set = handSetInForce();
+  if (catalogue !== null && catalogue.set === set) return;
+  const answer = await request(`/api/hands?set=${set}`);
+  catalogue = { set, groups: answer.groups, hands: answer.hands };
+  cards.clear();
+  filter.group = "all";
+  filter.book = "all";
+  for (const hand of catalogue.hands) hand.search = haystack(hand);
+  renderFilters();
+  renderList();
+}
+
+/** Build the index while the panel is still hidden, so the first tap on "All hands" has nothing left to do. */
+export function warmIndex() {
+  if (state.api === null) return;
+  void loadCatalogue().catch(() => {});
+}
+
+/** How close your tiles are, worked out after the panel is up: it costs a moment on a phone. */
+async function refreshProgress() {
+  const fresh = await readProgress();
+  if ($("#hand-index").hidden) return;
+  progress = fresh;
+  if (progress.size === 0) filter.sort = "book";
+  applyProgress();
+  renderFilters();
+  if (filter.sort === "near") renderList();
+}
+
 export async function openIndex() {
   if (state.api === null) return;
   try {
-    const set = handSetInForce();
-    if (catalogue === null || catalogue.set !== set) {
-      const answer = await request(`/api/hands?set=${set}`);
-      catalogue = { set, groups: answer.groups, hands: answer.hands };
-      filter.group = "all";
-      filter.book = "all";
-      for (const hand of catalogue.hands) hand.search = haystack(hand);
-    }
-    progress = await readProgress();
+    await loadCatalogue();
   } catch {
     return;
   }
@@ -237,6 +276,8 @@ export async function openIndex() {
   renderFilters();
   renderList();
   $("#hand-index").hidden = false;
+  // After the panel has painted.
+  requestAnimationFrame(() => setTimeout(() => void refreshProgress(), 0));
 }
 
 function closeIndex() {
