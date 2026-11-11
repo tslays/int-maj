@@ -37,6 +37,8 @@ export interface Scenario {
   readonly title: string;
   /** The deal this board is replayed from. */
   readonly seed: string;
+  /** The hand is dealt as a Goulash, as after a drawn hand (I p. 21). */
+  readonly goulash?: boolean;
   /** True at the board the page freezes. */
   readonly at: (view: GameView, state: GameState) => boolean;
 }
@@ -130,6 +132,16 @@ const TABLE = {
       state.result.selfDrawn &&
       state.fishing.length >= 1,
   },
+
+  goulash: {
+    title: "The first Goulash exchange",
+    seed: "goulash-0",
+    goulash: true,
+    at: (view) =>
+      view.phase === "exchange" &&
+      view.goulash?.stage === 0 &&
+      view.legalActions.some((action) => action.type === "GoulashExchange"),
+  },
 } satisfies Record<string, Scenario>;
 
 export type ScenarioName = keyof typeof TABLE;
@@ -147,8 +159,8 @@ export function isScenarioName(value: string): value is ScenarioName {
  * session has no id yet: the store numbers it on admission.
  */
 export function buildScenario(name: ScenarioName): Omit<WebSession, "id"> {
-  const scenario = SCENARIOS[name];
-  const started = newGame(scenario.seed, { dealer: "E" });
+  const scenario: Scenario = SCENARIOS[name];
+  const started = newGame(scenario.seed, { dealer: "E", goulash: scenario.goulash === true });
   let state = started.state;
   const steps: ReplayStep[] = [];
   const humanSteps: number[] = [];
