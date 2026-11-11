@@ -8,7 +8,8 @@
     "node": ">=24"
   },
   "scripts": {
-    "test": "node --test \"test/**/*.test.ts\"",
+    "test": "node --test --test-reporter=dot \"test/**/*.test.ts\"",
+    "test:verbose": "node --test \"test/**/*.test.ts\"",
     "typecheck": "tsc -p .",
     "smoke": "node --disable-warning=ExperimentalWarning scripts/smoke.ts",
     "soak": "SOAK_SEEDS=300 node --test test/core/soak.test.ts",

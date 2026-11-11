@@ -1,0 +1,5 @@
+# Search-only ignores (ripgrep, and the agent's search tools built on it).
+# Git still tracks these; they stay readable by path. Kept out of searches
+# because a hit there costs context and is never a rule source (AGENTS.md).
+rules/archive/*
+!rules/archive/ASSUMPTIONS.md

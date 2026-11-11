@@ -32,7 +32,9 @@ protocol. Do not preserve a previous choice just because it was
 owner-confirmed or already encoded.
 
 Read the actual page, including diagrams, before making rule claims. OCR is a
-navigation aid, not authority. Implement the source literally; do not
+navigation aid, not authority. Each page image costs a few thousand tokens:
+find the page by its `[I p.N]`/`[C p.N]` tag or by searching the OCR text,
+then open only that image, never the whole folder or the whole OCR file. Implement the source literally; do not
 normalize an odd rule to another mahjong convention. If the source is unclear
 or silent, record the exact page, evidence, uncertainty and the narrowest
 assumption in `rules/archive/ASSUMPTIONS.md`; never quietly invent a rule.
@@ -49,6 +51,8 @@ deliberately deferred table rulings, and the engine follows the framework.
 Everything under `rules/archive/` is historical audit material, not
 authority. The archive still holds the recorded assumptions for questions
 both books leave open; read it for provenance, never as a rule source.
+`.ignore` keeps the archive (except `ASSUMPTIONS.md`) out of searches; open a
+file there by path when its provenance is needed.
 
 ## Project structure
 
