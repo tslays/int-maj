@@ -116,6 +116,23 @@ export function discardRect(rel, index) {
 /** The inner edge of the walls: discards must stay inside this square. */
 export const WALL_INNER = WALL_R - H / 2;
 
+/**
+ * How far from the table's centre the ponds reach, given each seat's number
+ * of discards: the half-side of the square the zoomed, top-down view frames.
+ * Never less than the three full rows, so the view does not jump about early
+ * in a hand; a long fourth row pushes it out towards the walls.
+ */
+export function pondExtent(counts) {
+  let extent = TABLE.DISCARD_Z + STEP_Z * FULL_ROWS;
+  counts.forEach((count, rel) => {
+    for (let index = FULL_ROWS * ROW; index < count; index++) {
+      const rect = discardRect(rel, index);
+      extent = Math.max(extent, -rect.minX, rect.maxX, -rect.minZ, rect.maxZ);
+    }
+  });
+  return extent;
+}
+
 /** How far to the right of its place a newly drawn hand tile starts, to slide in from. */
 export const DRAWN_SLIDE = 1.4;
 

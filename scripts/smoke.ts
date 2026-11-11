@@ -215,6 +215,18 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   );
   console.log("  ok  tap twice to throw");
 
+  // A tap on the ponds zooms onto them from above; a second tap goes back.
+  payload = await yourMove(page);
+  const zoomed = () => page.evaluate(() => document.documentElement.classList.contains("pond-zoom"));
+  await page.touchscreen.tap(VIEWPORT.width / 2, VIEWPORT.height * 0.4);
+  assert.equal(await zoomed(), true, "a tap on the ponds zooms in");
+  await page.waitForTimeout(500);
+  await page.touchscreen.tap(tile.x, tile.y);
+  assert.equal(await zoomed(), false, "a tap anywhere zooms back");
+  await page.waitForTimeout(500);
+  assert.equal(myDiscards(await settled(page)), 1, "the zoom taps throw nothing");
+  console.log("  ok  tap the ponds to zoom, tap to go back");
+
   // The hints panel lists hands; its toggle hides it. The help sheet opens and closes.
   payload = await yourMove(page);
   await page.waitForSelector("#closest:not([hidden])", { timeout: READY_MS });

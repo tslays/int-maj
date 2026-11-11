@@ -10,7 +10,8 @@
 
 import * as THREE from "three";
 import { RoomEnvironment } from "../vendor/three/RoomEnvironment.js";
-import { HAND_FOV, fitHandCamera, fitTableCamera } from "./camera.js";
+import { HAND_FOV, fitHandCamera, fitPondCamera, fitTableCamera } from "./camera.js";
+import { WALL_INNER, pondExtent } from "./layout.js";
 import { D, H, TABLE } from "./tiles.js";
 
 const { TABLE_HALF, WALL_R, HAND_Z, CENTER_HALF } = TABLE;
@@ -402,7 +403,83 @@ function fit() {
   style.setProperty("--hand-top", `${tileTop}px`);
   tableCamera.aspect = width / height;
   fitTableCamera(tableCamera, portrait ? 62 : 46, tileTop / height);
+  views.table.position.copy(tableCamera.position);
+  views.table.quaternion.copy(tableCamera.quaternion);
+  // The zoomed view has the whole screen: the hand slides away for it.
+  fitPondCamera(tableCamera, pondReach + POND_MARGIN, 0.05);
+  views.pond.position.copy(tableCamera.position);
+  views.pond.quaternion.copy(tableCamera.quaternion);
+  poseTableCamera();
+}
+
+/* --------------------------------------------------------- pond zoom */
+
+// A tap on the ponds swings the table camera straight above them, so every
+// discard is large and square-on, and your hand slides off the bottom edge to
+// give them the whole screen; another tap swings it back.
+const POND_MARGIN = 0.35;
+const ZOOM_MS = 340;
+const views = {
+  table: { position: new THREE.Vector3(), quaternion: new THREE.Quaternion() },
+  pond: { position: new THREE.Vector3(), quaternion: new THREE.Quaternion() },
+};
+const zoom = { on: false, k: 0, run: 0 };
+let pondReach = pondExtent([]);
+
+/** Set the table camera between its two views: `zoom.k` is 0 at the table, 1 above the ponds. */
+function poseTableCamera() {
+  tableCamera.position.lerpVectors(views.table.position, views.pond.position, zoom.k);
+  tableCamera.quaternion.slerpQuaternions(views.table.quaternion, views.pond.quaternion, zoom.k);
+  tableCamera.updateMatrixWorld();
   requestRender();
+}
+
+/** How many discards each seat (by `rel`) has: the zoomed view frames them all. */
+export function setPondCounts(counts) {
+  const next = pondExtent(counts);
+  if (Math.abs(next - pondReach) < 0.01) return;
+  pondReach = next;
+  fit();
+}
+
+export const pondZoomed = () => zoom.on;
+
+/** Swing to the top-down view of the ponds, or back to the table. */
+export function setPondZoom(on) {
+  if (zoom.on === on) return;
+  zoom.on = on;
+  document.documentElement.classList.toggle("pond-zoom", on);
+  const run = ++zoom.run;
+  const from = zoom.k;
+  const to = on ? 1 : 0;
+  if (reducedMotion.matches) {
+    zoom.k = to;
+    poseTableCamera();
+    return;
+  }
+  void animate(ZOOM_MS, (t) => {
+    if (run !== zoom.run) return false;
+    zoom.k = from + (to - from) * easeInOutCubic(t);
+    poseTableCamera();
+    return true;
+  });
+}
+
+const pondRay = new THREE.Raycaster();
+const feltPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+/**
+ * Whether a pointer event is a tap for the zoom: anywhere once zoomed, else
+ * above the hand strip and inside the walls, where the ponds lie.
+ */
+export function pondTap(event) {
+  if (zoom.on) return true;
+  const rect = renderer.domElement.getBoundingClientRect();
+  if (rect.bottom - event.clientY <= viewport.strip) return false;
+  const pointer = new THREE.Vector2(((event.clientX - rect.left) / rect.width) * 2 - 1, 1 - ((event.clientY - rect.top) / rect.height) * 2);
+  pondRay.setFromCamera(pointer, tableCamera);
+  const hit = pondRay.ray.intersectPlane(feltPlane, new THREE.Vector3());
+  return hit !== null && Math.abs(hit.x) <= WALL_INNER && Math.abs(hit.z) <= WALL_INNER;
 }
 
 export const frame = fit;
@@ -493,11 +570,15 @@ function render(now) {
   renderer.clear();
   renderer.render(tableScene, tableCamera);
   renderer.clearDepth();
-  renderer.setViewport(0, 0, width, strip);
-  renderer.setScissor(0, 0, width, strip);
-  renderer.setScissorTest(true);
-  renderer.render(handScene, handCamera);
-  renderer.setScissorTest(false);
+  // The hand's strip slides off the bottom edge as the view zooms onto the ponds.
+  if (zoom.k < 1) {
+    const sunk = -Math.round(strip * zoom.k);
+    renderer.setViewport(0, sunk, width, strip);
+    renderer.setScissor(0, 0, width, Math.max(1, strip + sunk));
+    renderer.setScissorTest(true);
+    renderer.render(handScene, handCamera);
+    renderer.setScissorTest(false);
+  }
   if (tweens.length > 0) requestRender();
 }
 
