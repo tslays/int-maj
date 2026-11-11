@@ -52,7 +52,7 @@ both books leave open; read it for provenance, never as a rule source.
 app/          the 3D table: plain ES modules, no build step of its own
   index.html    the page; styles.css is its look
   src/          main (boot, loop, buttons), shared (state), input, hints,
-                result, menu, report (screens), board (state to tiles, with
+                handbook (the index of all hands), result, menu, report (screens), board (state to tiles, with
                 board-wall and board-hand), stage (renderer, camera, motion),
                 tiles (tile models), layout (table geometry)
   assets/       tile faces and icons

@@ -228,6 +228,22 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.waitForSelector("#help-sheet", { state: "hidden", timeout: 5000 });
   console.log("  ok  hints toggle, help sheet");
 
+  // The index of all hands: opens, filters by a book heading, searches, opens a hand's sheet.
+  await page.click("#index-open");
+  await page.waitForSelector("#hand-index:not([hidden]) .index-card", { timeout: READY_MS });
+  assert.equal(await page.locator(".index-card").count(), 89, "every catalogue hand is listed");
+  await page.click('.index-chip:has-text("Two Suits")');
+  assert.equal(await page.locator(".index-card").count(), 3, "the book files three hands under Two Suits");
+  await page.fill("#index-search", "knitting");
+  assert.equal(await page.locator(".index-card").count(), 1);
+  await page.click(".index-card");
+  await page.waitForSelector("#hand-detail:not([hidden])", { timeout: 5000 });
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#hand-detail", { state: "hidden", timeout: 5000 });
+  await page.click("#index-close");
+  await page.waitForSelector("#hand-index", { state: "hidden", timeout: 5000 });
+  console.log("  ok  index of all hands");
+
   // Play on against the bots through the same door the buttons use.
   const wallAtStart = payload.wall.remaining;
   for (let decisions = 0; decisions < 5 && payload.view.phase !== "finished"; decisions++) {

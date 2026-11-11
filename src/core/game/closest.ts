@@ -14,7 +14,8 @@
  */
 
 import { PATTERNS } from "../patterns/table.ts";
-import { TIER_POINTS, type PageRefs, type Tier } from "../patterns/types.ts";
+import { EDITORIAL_ROWS, EXAMPLES, SYNOPSIS } from "../patterns/reference.ts";
+import { TIER_POINTS, type HandPattern, type PageRefs, type Tier } from "../patterns/types.ts";
 import { situationFor } from "./bot.ts";
 import { completion, KEYS, oddsFor, planGoals } from "./bot/plan.ts";
 import type { GameView } from "./view.ts";
@@ -104,7 +105,12 @@ export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand
 export interface HandDetail {
   readonly pattern: string;
   readonly name: string;
+  /** Book pages the hand is printed on, by book (the same references as the hand's sheet). */
   readonly pages: PageRefs;
+  /** The book headings the hand is filed under (`HandGroup.id`), in book order. */
+  readonly groups: readonly string[];
+  /** One complete example, as tile keys in reading order. */
+  readonly example: readonly string[];
   /** What the hand is made of, in plain words. */
   readonly description: string;
   /** Concealed-only: no exposed meld is allowed at any point. */
@@ -118,14 +124,38 @@ export interface HandDetail {
   readonly exposedPoints: number | null;
 }
 
-/** One hand by id, for the "explore this hand" view; null for an unknown id. */
-export function handDetail(id: string): HandDetail | null {
-  const pattern = PATTERN_BY_ID.get(id);
-  if (pattern === undefined) return null;
+/** A heading of the Companion's synopsis, or "Other" for hands it does not file. */
+export interface HandGroup {
+  readonly id: string;
+  readonly name: string;
+  /** The hands under the heading, in the book's order. */
+  readonly hands: readonly string[];
+}
+
+const OTHER_GROUP = "other";
+
+/** The book's headings with their hands; a last "Other" holds hands no heading lists. */
+function buildGroups(): HandGroup[] {
+  const groups: HandGroup[] = SYNOPSIS.map((heading) => ({
+    id: heading.id,
+    name: heading.name,
+    hands: [...new Set([...heading.rows.map(([, id]) => id), ...(EDITORIAL_ROWS[heading.id] ?? [])])],
+  }));
+  const filed = new Set(groups.flatMap((group) => group.hands));
+  const rest = PATTERNS.filter((pattern) => !filed.has(pattern.id)).map((pattern) => pattern.id);
+  if (rest.length > 0) groups.push({ id: OTHER_GROUP, name: "Other", hands: rest });
+  return groups;
+}
+
+const GROUPS: readonly HandGroup[] = buildGroups();
+
+function detailOf(pattern: HandPattern): HandDetail {
   return {
     pattern: pattern.id,
     name: pattern.name,
     pages: pattern.pages,
+    groups: GROUPS.filter((group) => group.hands.includes(pattern.id)).map((group) => group.id),
+    example: (EXAMPLES[pattern.id] ?? "").split(" ").filter((key) => key.length > 0),
     description: pattern.description,
     concealedOnly: pattern.exposedTier === null,
     requiresSelfDrawn: pattern.requiresSelfDrawn,
@@ -134,4 +164,15 @@ export function handDetail(id: string): HandDetail | null {
     exposedTier: pattern.exposedTier,
     exposedPoints: pattern.exposedTier === null ? null : TIER_POINTS[pattern.exposedTier],
   };
+}
+
+/** One hand by id, for the "explore this hand" view; null for an unknown id. */
+export function handDetail(id: string): HandDetail | null {
+  const pattern = PATTERN_BY_ID.get(id);
+  return pattern === undefined ? null : detailOf(pattern);
+}
+
+/** The whole catalogue for the hand index: every hand, and the book's headings to filter by. */
+export function handIndex(): { readonly groups: readonly HandGroup[]; readonly hands: readonly HandDetail[] } {
+  return { groups: GROUPS, hands: PATTERNS.map(detailOf) };
 }
