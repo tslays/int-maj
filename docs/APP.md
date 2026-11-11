@@ -163,6 +163,7 @@ Two URL options help when testing:
 | --- | --- |
 | `/?state=turn\|claim\|wait\|fishing\|announce\|ron\|win\|drawn\|result` | one fixed review board, replayed from a seed |
 | `/?phone` | the table inside an iPhone-landscape frame, on any screen |
+| `/?install=ios\|android\|ios-webview\|android-webview` | that install guide on the turn-your-phone screen, on any phone held upright |
 
 `npm run smoke` (`scripts/smoke.ts`) opens every one of these boards in
 headless Chromium, then plays a fresh game by touch: drag and sort, tap twice
@@ -253,9 +254,16 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   replay rebuilds the hands, which is all a replayable report must hold.
   `npm run replay -- report.txt` replays a pasted report (`replayReport` in
   code) to the same state.
-- **Install.** Safari > Share > Add to Home Screen gives a full-screen app
-  with its own icon (`app/assets/icons/`). Service workers need https, so install
-  from the deployed site, not from a `--lan` address.
+- **Install.** Safari > Share > Add to Home Screen (Android: browser menu >
+  Add to Home screen) gives a full-screen app with its own icon
+  (`app/assets/icons/`). Service workers need https, so install from the
+  deployed site, not from a `--lan` address.
+- **Install guide.** A phone's browser shows the steps for that phone under
+  "Turn your phone sideways" (`app/src/install.js`): Share steps on iOS, a
+  one-tap Install button on Android once the browser offers it
+  (`beforeinstallprompt`) and the menu steps until then, and "open in
+  Safari/Chrome" inside another app's browser. An installed copy and a
+  computer never see it.
 
 ## Deploying
 
