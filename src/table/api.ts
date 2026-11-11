@@ -9,7 +9,7 @@
  *   GET  /api/state?game=     one seat's view, legal actions and wait panel
  *   GET  /api/closest?game=   the catalogue hands your tiles are nearest to
  *   GET  /api/hand?pattern=   one catalogue hand's conditions (concealed or open)
- *   GET  /api/house-rules     the house rules on offer and the hands each leaves out
+ *   GET  /api/house-rules     the hand sets on offer and the hands each leaves out
  *   GET  /api/scenario?state= a fixed review board (turn, claim, win, ...)
  *   POST /api/new             deal a game from `{ seed, houseRules }`
  *   POST /api/move            apply `{ game, action }`, return events as text
@@ -18,11 +18,12 @@
  *   POST /api/next            deal the next hand after a finished one, under
  *                             `{ houseRules }` when they are given
  *
- * `houseRules` is `{ companionHandsOnly: boolean }`; a hand keeps the rules
+ * `houseRules` is `{ handSet: "all" | "companion" | "companion-pictured" }`; a hand keeps the rules
  * it was dealt with, so a change shows from the next deal.
  */
 
 import { handDetail } from "../core/game/closest.ts";
+import { HAND_SETS } from "../core/patterns/table.ts";
 import { describeEventFor } from "../core/game/describe.ts";
 import type { Action } from "../core/game/actions.ts";
 import {
@@ -31,6 +32,7 @@ import {
   GameStore,
   houseRulesPayload,
   isDone,
+  isHandSet,
   statePayload,
   type HouseRules,
   type SessionUpdate,
@@ -116,11 +118,11 @@ function optionalHouseRules(record: Record<string, unknown>): HouseRules | undef
     throw new ApiError(400, "houseRules must be an object");
   }
   const rules = value as Record<string, unknown>;
-  const companionHandsOnly = rules.companionHandsOnly ?? DEFAULT_HOUSE_RULES.companionHandsOnly;
-  if (typeof companionHandsOnly !== "boolean") {
-    throw new ApiError(400, "houseRules.companionHandsOnly must be true or false");
+  const handSet = rules.handSet ?? DEFAULT_HOUSE_RULES.handSet;
+  if (!isHandSet(handSet)) {
+    throw new ApiError(400, `houseRules.handSet must be one of ${HAND_SETS.join(", ")}`);
   }
-  return { companionHandsOnly };
+  return { handSet };
 }
 
 /** The public event log as text lines the client can append to its log. */

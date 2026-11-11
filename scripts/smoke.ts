@@ -229,17 +229,21 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.click("#help-close");
   await page.waitForSelector("#help-sheet", { state: "hidden", timeout: 5000 });
   // A house rule set mid-hand waits for the next deal; the hand on the table keeps its rules.
-  await page.click("#rule-companion");
-  await page.waitForSelector("#rule-companion[aria-pressed=true]", { timeout: 5000 });
-  await page.waitForSelector("#rule-companion-pending:not([hidden])", { timeout: 5000 });
-  if ((await page.textContent("#rule-companion-hands"))!.includes("Mixed Pung") === false) {
-    throw new Error("the options sheet does not name the hands the house rule leaves out");
+  await page.click('#hand-set [data-set="companion"]');
+  await page.waitForSelector('#hand-set [data-set="companion"][aria-checked=true]', { timeout: 5000 });
+  await page.waitForSelector("#hand-set-pending:not([hidden])", { timeout: 5000 });
+  if ((await page.textContent("#hand-set-note"))!.includes("Mixed Pung") === false) {
+    throw new Error("the options sheet does not name the hands the hand set leaves out");
   }
-  await page.click("#rule-companion");
-  await page.waitForSelector("#rule-companion-pending", { state: "hidden", timeout: 5000 });
+  await page.click('#hand-set [data-set="companion-pictured"]');
+  if ((await page.textContent("#hand-set-note"))!.includes("Robin") === false) {
+    throw new Error("the pictured hand set does not name the hands without a picture");
+  }
+  await page.click('#hand-set [data-set="all"]');
+  await page.waitForSelector("#hand-set-pending", { state: "hidden", timeout: 5000 });
   await page.click("#options-close");
   await page.waitForSelector("#options-sheet", { state: "hidden", timeout: 5000 });
-  console.log("  ok  hints toggle, options sheet, help sheet, house rule switch");
+  console.log("  ok  hints toggle, options sheet, help sheet, hand set choice");
 
   // Play on against the bots through the same door the buttons use.
   const wallAtStart = payload.wall.remaining;

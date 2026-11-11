@@ -84,9 +84,15 @@ export interface HandPattern {
   /**
    * True when only *The Game of Mah Jong Illustrated* prints the hand: the
    * Companion's catalogue does not have it (rules/AUDIT.md, "Missing from the
-   * table"). The "Companion hands only" house rule leaves these hands out.
+   * table"). The "Companion hands" hand sets leave these hands out.
    */
   readonly illustratedOnly?: boolean;
+  /**
+   * True when the Companion prints the hand but without a sample picture: its
+   * synopsis marks it "N/I", Not Illustrated [C p. 4]. The "Companion hands
+   * with pictures" hand set leaves these out.
+   */
+  readonly companionUnillustrated?: boolean;
   /** For variant families such as Dragon's Tail (1 & 2). */
   readonly variantOf?: string;
   /**

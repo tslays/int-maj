@@ -98,21 +98,14 @@
         </div>
         <div class="detail-line">
           <h3>House rules</h3>
-          <div class="option-row">
-            <div>
-              <p><b>Companion hands only</b></p>
-              <p class="option-note">
-                Play with the hands of <i>The Mah Jong Player's Companion</i> alone. The hands that only
-                <i>The Game of Mah Jong Illustrated</i> prints<span id="rule-companion-hands"></span> are left
-                out: nobody can go Mah Jong or fish with them, you or the other players, and Hints no longer
-                lists them.
-              </p>
-              <p class="option-note option-pending" id="rule-companion-pending" hidden>
-                Takes effect with the next hand.
-              </p>
-            </div>
-            <button class="ghost" id="rule-companion" type="button" aria-pressed="false" aria-label="Companion hands only"><span>Off</span></button>
+          <p><b>Which hands are in play</b></p>
+          <div class="segmented" id="hand-set" role="radiogroup" aria-label="Which hands are in play">
+            <button class="ghost" type="button" role="radio" aria-checked="true" data-set="all"><span>All hands</span></button>
+            <button class="ghost" type="button" role="radio" aria-checked="false" data-set="companion"><span>Companion hands</span></button>
+            <button class="ghost" type="button" role="radio" aria-checked="false" data-set="companion-pictured"><span>Companion, pictured</span></button>
           </div>
+          <p class="option-note" id="hand-set-note"></p>
+          <p class="option-note option-pending" id="hand-set-pending" hidden>Takes effect with the next hand.</p>
         </div>
         <div class="detail-line option-buttons">
           <button class="ghost" id="help" type="button"><span>Help</span></button>
@@ -155,8 +148,9 @@
         <div class="detail-line">
           <h3>House rules</h3>
           <p>
-            Options has the table's house rules. A change never touches the hand being played: it takes
-            effect with the next hand, for you and for the other players alike.
+            Options has the table's house rules, such as which hands are in play: all of them, only the
+            Companion's, or only the Companion's that come with a sample picture. A change never touches
+            the hand being played: it takes effect with the next hand, for you and for the other players alike.
           </p>
         </div>
         <div class="detail-line">

@@ -11,50 +11,62 @@ import { sound } from "./sound.js";
 import { $, request, state, storage } from "./shared.js";
 
 const RULES_KEY = "int-maj:house-rules";
+const HAND_SETS = ["all", "companion", "companion-pictured"];
+
+/** What each hand set means, before the table names the hands it leaves out. */
+const HAND_SET_TEXT = {
+  all: "Every hand either book prints, with or without a sample picture.",
+  companion: "Only hands the Companion prints. Left out:",
+  "companion-pictured": "Only Companion hands that come with a sample picture. Left out:",
+};
 
 function savedRules() {
   try {
     const saved = JSON.parse(storage()?.getItem(RULES_KEY) ?? "{}");
-    return { companionHandsOnly: saved?.companionHandsOnly === true };
+    if (HAND_SETS.includes(saved?.handSet)) return { handSet: saved.handSet };
+    // The first version of this option was a plain on/off switch.
+    if (saved?.companionHandsOnly === true) return { handSet: "companion" };
   } catch {
-    return { companionHandsOnly: false };
+    // Unreadable: start from the default.
   }
+  return { handSet: "all" };
 }
 
 const rules = savedRules();
+/** The names of the hands each set leaves out, as the table reports them. */
+let leftOut = null;
 
 /** The house rules the player has chosen, for the next deal. */
 export function houseRules() {
   return { ...rules };
 }
 
-/* An option's switch says its state in words as well as by its light. */
-function showSwitch(selector, on) {
-  const button = $(selector);
+function showRules() {
+  for (const button of document.querySelectorAll("#hand-set [data-set]")) {
+    button.setAttribute("aria-checked", String(button.dataset.set === rules.handSet));
+  }
+  const names = leftOut?.[rules.handSet] ?? [];
+  $("#hand-set-note").textContent =
+    rules.handSet === "all" || leftOut === null ? HAND_SET_TEXT[rules.handSet] : `${HAND_SET_TEXT[rules.handSet]} ${names.join(", ")}.`;
+  // Pending: the hand on the table was dealt under another set.
+  const inForce = state.payload?.houseRules?.handSet;
+  $("#hand-set-pending").hidden = inForce === undefined || inForce === rules.handSet;
+}
+
+function showSound() {
+  const on = !sound.muted;
+  const button = $("#sound");
   button.classList.toggle("on", on);
   button.setAttribute("aria-pressed", String(on));
   button.firstElementChild.textContent = on ? "On" : "Off";
 }
 
-function showRules() {
-  showSwitch("#rule-companion", rules.companionHandsOnly);
-  // Pending: the hand on the table was dealt under the other setting.
-  const inForce = state.payload?.houseRules?.companionHandsOnly;
-  $("#rule-companion-pending").hidden = inForce === undefined || inForce === rules.companionHandsOnly;
-}
-
-function showSound() {
-  showSwitch("#sound", !sound.muted);
-}
-
 /* The left-out hands are named by the table, never by a list kept here. */
 async function nameHands() {
   try {
-    const { companionHandsOnly } = await request("/api/house-rules");
-    const names = companionHandsOnly.hands;
-    if (names.length === 0) return;
-    const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
-    $("#rule-companion-hands").textContent = ` (${list})`;
+    const { handSets } = await request("/api/house-rules");
+    leftOut = Object.fromEntries(handSets.map((set) => [set.id, set.leftOut]));
+    showRules();
   } catch {
     // The sentence reads without the names.
   }
@@ -91,8 +103,10 @@ export function installOptions() {
     sound.cue("press"); // heard only when sound has just been turned on
   });
 
-  $("#rule-companion").addEventListener("click", () => {
-    rules.companionHandsOnly = !rules.companionHandsOnly;
+  $("#hand-set").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-set]");
+    if (button === null) return;
+    rules.handSet = button.dataset.set;
     try {
       storage()?.setItem(RULES_KEY, JSON.stringify(rules));
     } catch {

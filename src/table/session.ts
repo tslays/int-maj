@@ -38,7 +38,7 @@ import {
 import { viewFor, type GameView, type PlayerView } from "../core/game/view.ts";
 import type { Wind } from "../core/tiles.ts";
 import type { Tier } from "../core/patterns/types.ts";
-import { ILLUSTRATED_ONLY_HANDS, PATTERNS } from "../core/patterns/table.ts";
+import { HAND_SET_EXCLUDED, HAND_SETS, PATTERNS, type HandSet } from "../core/patterns/table.ts";
 
 /** The web table always seats you at East, and deals to you. */
 const SEAT: Seat = "E";
@@ -55,35 +55,38 @@ const PATTERN_BY_ID: ReadonlyMap<string, (typeof PATTERNS)[number]> = new Map(
  * deal: a change asked for mid-hand takes effect with the next deal.
  */
 export interface HouseRules {
-  /**
-   * Play with the Companion's catalogue only: the hands that only the
-   * Illustrated book prints are no hand for anyone, and never hinted.
-   */
-  readonly companionHandsOnly: boolean;
+  /** Which hands are in play: every hand, the Companion's, or its pictured hands. */
+  readonly handSet: HandSet;
 }
 
-export const DEFAULT_HOUSE_RULES: HouseRules = Object.freeze({ companionHandsOnly: false });
+export const DEFAULT_HOUSE_RULES: HouseRules = Object.freeze({ handSet: "all" });
+
+export function isHandSet(value: unknown): value is HandSet {
+  return typeof value === "string" && (HAND_SETS as readonly string[]).includes(value);
+}
 
 /** The engine's exclusion list for a set of house rules. */
 export function excludedHandsFor(rules: HouseRules): readonly string[] {
-  return rules.companionHandsOnly ? ILLUSTRATED_ONLY_HANDS : [];
-}
-
-/** The house rules on offer, with the names of the hands each leaves out. */
-export function houseRulesPayload(): {
-  readonly companionHandsOnly: { readonly hands: readonly string[] };
-} {
-  return {
-    companionHandsOnly: {
-      hands: ILLUSTRATED_ONLY_HANDS.map((id) => PATTERN_NAMES.get(id) ?? id),
-    },
-  };
+  return HAND_SET_EXCLUDED[rules.handSet];
 }
 
 /** The house rules a hand is being played under, read back from its state. */
 export function houseRulesOf(state: GameState): HouseRules {
   const excluded = state.excludedHands ?? [];
-  return { companionHandsOnly: ILLUSTRATED_ONLY_HANDS.every((id) => excluded.includes(id)) };
+  const has = (set: HandSet) => HAND_SET_EXCLUDED[set].every((id) => excluded.includes(id));
+  return { handSet: has("companion-pictured") ? "companion-pictured" : has("companion") ? "companion" : "all" };
+}
+
+/** The house rules on offer: each hand set with the names of the hands it leaves out. */
+export function houseRulesPayload(): {
+  readonly handSets: readonly { readonly id: HandSet; readonly leftOut: readonly string[] }[];
+} {
+  return {
+    handSets: HAND_SETS.map((id) => ({
+      id,
+      leftOut: HAND_SET_EXCLUDED[id].map((hand) => PATTERN_NAMES.get(hand) ?? hand),
+    })),
+  };
 }
 
 export interface WebSession {

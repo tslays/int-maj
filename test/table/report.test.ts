@@ -8,7 +8,7 @@ import { describe, it } from "node:test";
 
 import { chooseAction } from "../../src/core/game/bot.ts";
 import { viewFor } from "../../src/core/game/view.ts";
-import { GameStore } from "../../src/table/session.ts";
+import { GameStore, houseRulesOf } from "../../src/table/session.ts";
 import { buildReport, isReportText, parseReport, replayReport } from "../../src/table/report.ts";
 import { createLocalApi } from "../../src/table/local.ts";
 
@@ -89,39 +89,49 @@ describe("problem report", () => {
 });
 
 describe("house rules at the table", () => {
-  const COMPANION_ONLY = { companionHandsOnly: true };
-  const LEFT_OUT = ["all-kong", "buried-treasure", "mixed-pung"];
+  const COMPANION = { handSet: "companion" } as const;
+  const PICTURED = { handSet: "companion-pictured" } as const;
+  const ILLUSTRATED = ["all-kong", "buried-treasure", "mixed-pung"];
+  const UNPICTURED = [
+    "blue-mountains", "down-you-go", "dragons-run", "dragons-scales", "driven-snow",
+    "ods-evens", "robin", "up-you-go", "white-elephant",
+  ];
 
-  it("deals a game under the rule and says so in every payload", async () => {
+  it("deals a game under the hand set and says so in every payload", async () => {
     const api = createLocalApi(null);
-    const dealt = (await api.request("/api/new", { seed: "house-1", houseRules: COMPANION_ONLY })) as {
-      houseRules: { companionHandsOnly: boolean };
+    const dealt = (await api.request("/api/new", { seed: "house-1", houseRules: COMPANION })) as {
+      houseRules: { handSet: string };
       view: { excludedHands: string[] };
     };
-    assert.equal(dealt.houseRules.companionHandsOnly, true);
-    assert.deepEqual([...dealt.view.excludedHands].sort(), LEFT_OUT);
+    assert.equal(dealt.houseRules.handSet, "companion");
+    assert.deepEqual([...dealt.view.excludedHands].sort(), ILLUSTRATED);
+
+    const pictured = (await api.request("/api/new", { seed: "house-1", houseRules: PICTURED })) as typeof dealt;
+    assert.equal(pictured.houseRules.handSet, "companion-pictured");
+    assert.deepEqual([...pictured.view.excludedHands].sort(), [...ILLUSTRATED, ...UNPICTURED].sort());
 
     const plain = (await api.request("/api/new", { seed: "house-1" })) as typeof dealt;
-    assert.equal(plain.houseRules.companionHandsOnly, false);
+    assert.equal(plain.houseRules.handSet, "all");
     assert.deepEqual(plain.view.excludedHands, []);
 
-    await assert.rejects(api.request("/api/new", { seed: "x", houseRules: { companionHandsOnly: "yes" } }));
-    const offered = (await api.request("/api/house-rules")) as { companionHandsOnly: { hands: string[] } };
-    assert.deepEqual(offered.companionHandsOnly.hands, [
-      "Buried Treasure (Concealed Mah Jong)",
-      "All Kong",
-      "Mixed Pung",
-    ]);
+    await assert.rejects(api.request("/api/new", { seed: "x", houseRules: { handSet: "most" } }));
+    const offered = (await api.request("/api/house-rules")) as {
+      handSets: { id: string; leftOut: string[] }[];
+    };
+    assert.deepEqual(offered.handSets.map((set) => set.id), ["all", "companion", "companion-pictured"]);
+    assert.deepEqual(offered.handSets.map((set) => set.leftOut.length), [0, 3, 12]);
+    assert.ok(offered.handSets[1]!.leftOut.includes("Mixed Pung"));
+    assert.ok(offered.handSets[2]!.leftOut.includes("Robin"));
   });
 
-  it("changes the rule only at the next deal, and the report replays it", () => {
+  it("changes the hand set only at the next deal, and the report replays it", () => {
     const store = new GameStore();
-    const { session } = store.create("house-2", COMPANION_ONLY);
+    const { session } = store.create("house-2", PICTURED);
     playOut(store, session.id);
-    assert.deepEqual([...(store.state(session.id)!.excludedHands ?? [])].sort(), LEFT_OUT);
+    assert.equal(houseRulesOf(store.state(session.id)!).handSet, "companion-pictured");
 
     // Same rules: an ordinary step. Changed rules: the step carries the new list.
-    const next = store.next(session.id, { companionHandsOnly: false });
+    const next = store.next(session.id, { handSet: "all" });
     assert.ok(!("error" in next));
     assert.deepEqual(next.session.steps.at(-1), { type: "NextHand", excludedHands: [] });
     assert.equal(store.state(session.id)!.excludedHands, undefined);
@@ -129,10 +139,10 @@ describe("house rules at the table", () => {
 
     const live = store.get(session.id)!;
     const text = buildReport(live, INFO);
-    assert.match(text, /^House rules: \(none\)$/m);
+    assert.match(text, /^House rules: hand set all$/m);
     const parsed = parseReport(text);
     assert.ok(!("error" in parsed));
-    assert.deepEqual([...(parsed.excludedHands ?? [])].sort(), LEFT_OUT);
+    assert.equal(parsed.excludedHands?.length, ILLUSTRATED.length + UNPICTURED.length);
     assert.equal(JSON.stringify(replayReport(parsed).state), JSON.stringify(live.state));
 
     // A saved game keeps its rules through a restore.
@@ -141,15 +151,14 @@ describe("house rules at the table", () => {
     assert.equal(JSON.stringify(restored.session.state), JSON.stringify(live.state));
   });
 
-  it("keeps the rule when the next hand is dealt without naming one", () => {
+  it("keeps the hand set when the next hand is dealt without naming one", () => {
     const store = new GameStore();
-    const { session } = store.create("house-3", COMPANION_ONLY);
+    const { session } = store.create("house-3", COMPANION);
     playOut(store, session.id);
-    const state = store.state(session.id)!;
-    if (state.gameOver === true) return;
+    if (store.state(session.id)!.gameOver === true) return;
     const next = store.next(session.id);
     assert.ok(!("error" in next));
     assert.deepEqual(next.session.steps.at(-1), { type: "NextHand" });
-    assert.deepEqual([...(next.session.state.excludedHands ?? [])].sort(), LEFT_OUT);
+    assert.equal(houseRulesOf(next.session.state).handSet, "companion");
   });
 });

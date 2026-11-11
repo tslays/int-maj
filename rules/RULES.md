@@ -1200,16 +1200,28 @@ Neither book prints these. They are options a table may switch on; with every
 one off, the game is exactly Parts I-III. A hand keeps the rules it was dealt
 under: a change takes effect with the next deal.
 
-- **Companion hands only** `[A]`. The table plays the Companion's catalogue:
-  the three hands that only the Illustrated book prints — Concealed Mah Jong
-  (Buried Treasure) `[I p. 38]`, All Kong and Mixed Pung `[I p. 30]`
-  (`rules/AUDIT.md`, "Missing from the table") — are left out. A left-out hand
-  is no winning hand, no wait and no fishing hand for any player, and it is
-  not hinted. Tiles that also make another catalogue hand score as that hand;
-  tiles that make only a left-out hand (four pungs across three suits, say)
-  are not Mah Jong. Nothing else changes: the Illustrated tiers, fishing
-  figures and rules of play of Parts I-III still govern. In the table:
-  `illustratedOnly` on the pattern, `excludedHands` on the game.
+- **Which hands are in play** `[A]`. One of three sets, each the one before
+  it with more left out. A left-out hand is no winning hand, no wait and no
+  fishing hand for any player, and it is not hinted. Tiles that also make
+  another hand in play score as that hand; tiles that make only a left-out
+  hand (four pungs across three suits, say) are not Mah Jong. Nothing else
+  changes: the Illustrated tiers, fishing figures and rules of play of
+  Parts I-III still govern.
+  1. **All hands** (the default): every hand either book prints, with or
+     without a sample picture. This is Parts I-III as written.
+  2. **Companion hands**: the Companion's catalogue. Left out are the three
+     hands only the Illustrated book prints: Concealed Mah Jong (Buried
+     Treasure) `[I p. 38]`, All Kong and Mixed Pung `[I p. 30]` (`rules/AUDIT.md`,
+     "Missing from the table"). Every other Illustrated hand is also in the
+     Companion's short list, synopsis and hand pages (checked page by page).
+  3. **Companion hands with pictures**: set 2 less the nine hands the
+     Companion's synopsis marks "N/I" `[C p. 4]`, printed without a sample
+     picture: Up You Go, Down You Go `[C p. 57]`, Dragon's Run `[C p. 59]`,
+     Odds & Evens, Robin, Blue Mountains, White Elephant, Driven Snow and
+     Dragon's Scales `[C p. 60]` (Part III §2). Twelve hands in all are left out.
+
+  In the table: `illustratedOnly` and `companionUnillustrated` on the pattern,
+  `HAND_SET_EXCLUDED` for the sets, `excludedHands` on the game.
 
 # Appendix — evidence
 

@@ -68,7 +68,7 @@ export function buildReport(session: WebSession, info: ReportInfo): string {
     `Build: ${oneLine(info.build, 40)}`,
     `User agent: ${oneLine(info.userAgent, 300)}`,
     `Hand: ${session.state.handNumber} (${session.state.phase})`,
-    `House rules: ${houseRulesOf(session.state).companionHandsOnly ? "Companion hands only" : "(none)"}`,
+    `House rules: hand set ${houseRulesOf(session.state).handSet}`,
     `Decisions: ${session.steps.length} (yours: ${session.humanSteps.length})`,
     `Note: ${note === "" ? "(none)" : note}`,
     "",

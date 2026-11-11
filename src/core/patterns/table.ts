@@ -1844,6 +1844,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "ods-evens",
+    companionUnillustrated: true,
     name: "Odds & Evens",
     pages: [60],
     category: "suit",
@@ -1871,6 +1872,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "robin",
+    companionUnillustrated: true,
     name: "Robin",
     pages: [60],
     category: "chow",
@@ -1994,6 +1996,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "blue-mountains",
+    companionUnillustrated: true,
     name: "Blue Mountains",
     pages: [60],
     category: "suit",
@@ -2017,6 +2020,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "white-elephant",
+    companionUnillustrated: true,
     name: "White Elephant",
     pages: [60],
     category: "suit",
@@ -2042,6 +2046,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "driven-snow",
+    companionUnillustrated: true,
     name: "Driven Snow",
     pages: [60],
     category: "suit",
@@ -2067,6 +2072,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "dragons-scales",
+    companionUnillustrated: true,
     name: "Dragon's Scales",
     pages: [60],
     category: "suit",
@@ -2163,6 +2169,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "up-you-go",
+    companionUnillustrated: true,
     name: "Up You Go",
     pages: [57],
     category: "plain",
@@ -2211,6 +2218,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "down-you-go",
+    companionUnillustrated: true,
     name: "Down You Go",
     pages: [57],
     category: "plain",
@@ -2362,6 +2370,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "dragons-run",
+    companionUnillustrated: true,
     name: "Dragon's Run",
     pages: [59],
     category: "run",
@@ -2468,9 +2477,30 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
 ]);
 
 /**
- * The hands only the Illustrated book prints. The "Companion hands only"
- * house rule passes these ids as a game's `excludedHands`.
+ * The hands only the Illustrated book prints: the Companion's catalogue does
+ * not have them.
  */
 export const ILLUSTRATED_ONLY_HANDS: readonly string[] = Object.freeze(
   PATTERNS.filter((pattern) => pattern.illustratedOnly === true).map((pattern) => pattern.id),
 );
+
+/** The hands the Companion prints without a sample picture (its "N/I" hands). */
+export const COMPANION_UNILLUSTRATED_HANDS: readonly string[] = Object.freeze(
+  PATTERNS.filter((pattern) => pattern.companionUnillustrated === true).map((pattern) => pattern.id),
+);
+
+/**
+ * The hand sets a table can play, widest first, as the hands each one leaves
+ * out. Each set is the one before it with more left out:
+ *   all                 every hand either book prints
+ *   companion           the Companion's catalogue: no Illustrated-only hand
+ *   companion-pictured  the Companion's hands that have a sample picture
+ */
+export const HAND_SETS = ["all", "companion", "companion-pictured"] as const;
+export type HandSet = (typeof HAND_SETS)[number];
+
+export const HAND_SET_EXCLUDED: Readonly<Record<HandSet, readonly string[]>> = Object.freeze({
+  all: Object.freeze([] as string[]),
+  companion: ILLUSTRATED_ONLY_HANDS,
+  "companion-pictured": Object.freeze([...ILLUSTRATED_ONLY_HANDS, ...COMPANION_UNILLUSTRATED_HANDS]),
+});

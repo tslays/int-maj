@@ -1,7 +1,7 @@
 /**
- * The "Companion hands only" house rule: the hands that only the Illustrated
- * book prints are left out of a game - for the scorer, the waits, the bots'
- * plans and the closest-hands helper alike.
+ * The hand sets (all, Companion, Companion with pictures): the hands a set leaves
+ * out are no hand for the scorer, the waits, the bots' plans or the closest-hands
+ * helper alike.
  *
  * A left-out hand is no hand at all unless the tiles also make another one:
  * four pungs in three suits are a Mixed Pung and nothing else, so under the
@@ -25,7 +25,12 @@ import {
 } from "../../src/core/game/index.ts";
 import { planGoals } from "../../src/core/game/bot/plan.ts";
 import { createHand } from "../../src/core/hand.ts";
-import { ILLUSTRATED_ONLY_HANDS, PATTERNS } from "../../src/core/patterns/table.ts";
+import {
+  COMPANION_UNILLUSTRATED_HANDS,
+  HAND_SET_EXCLUDED,
+  ILLUSTRATED_ONLY_HANDS,
+  PATTERNS,
+} from "../../src/core/patterns/table.ts";
 import { scoreHand } from "../../src/core/score.ts";
 import { fixture } from "../helpers/game-fixture.ts";
 
@@ -45,13 +50,48 @@ const MIXED_PUNG_WAITING = "b1 b1 b1 c5 c5 c5 o9 o9 o9 wE wE b4 b4";
 // Buried Treasure (I p. 38): one suit, chows and a pair, every tile from the wall.
 const BURIED_TREASURE = "o2 o3 o4 o3 o4 o5 o6 o7 o8 o6 o7 o8 o9 o9";
 
-describe("Companion hands only", () => {
+describe("hand sets", () => {
   it("leaves out exactly the hands the Companion does not print", () => {
     // rules/AUDIT.md "Missing from the table": I p. 38 hand 11, and the two on I p. 30.
     assert.deepEqual([...ILLUSTRATED_ONLY_HANDS].sort(), ["all-kong", "buried-treasure", "mixed-pung"]);
     for (const id of ILLUSTRATED_ONLY_HANDS) {
       assert.ok(PATTERNS.some((pattern) => pattern.id === id));
     }
+  });
+
+  it("is exactly the Companion's \"N/I\" hands that the pictured set drops", () => {
+    // C p. 4 "N/I = Not Illustrated"; the synopsis marks these nine (rules/RULES.md Part III §2).
+    assert.deepEqual([...COMPANION_UNILLUSTRATED_HANDS].sort(), [
+      "blue-mountains", "down-you-go", "dragons-run", "dragons-scales", "driven-snow",
+      "ods-evens", "robin", "up-you-go", "white-elephant",
+    ]);
+    assert.deepEqual(HAND_SET_EXCLUDED.all, []);
+    assert.deepEqual(HAND_SET_EXCLUDED.companion, ILLUSTRATED_ONLY_HANDS);
+    for (const id of ILLUSTRATED_ONLY_HANDS) {
+      assert.ok(!COMPANION_UNILLUSTRATED_HANDS.includes(id), "no hand is in both lists");
+    }
+    assert.equal(HAND_SET_EXCLUDED["companion-pictured"].length, 12);
+  });
+
+  it("does not offer Dragon's Run as a wait once pictures are required", () => {
+    // Run 1-9 + one of each Dragon + a pair of Winds (C p. 59, N/I).
+    const waiting = {
+      hands: { E: "b1 b2 b3 b4 b5 b6 b7 b8 b9 dG dR dW wE", ...OTHERS },
+      wall: LONG_WALL,
+      phase: "draw",
+      turn: "E",
+    } as const;
+    // A second wind of any kind also makes Five Odd Honours (in both books, pictured): only
+    // the matching East Wind needs Dragon's Run.
+    const everyWind = ["wE", "wS", "wW", "wN"];
+    assert.deepEqual(waitsOf(fixture(waiting), "E"), everyWind);
+    assert.deepEqual(waitsOf(fixture({ ...waiting, excludedHands: HAND_SET_EXCLUDED.companion }), "E"), everyWind);
+    assert.deepEqual(
+      waitsOf(fixture({ ...waiting, excludedHands: HAND_SET_EXCLUDED["companion-pictured"] }), "E"),
+      ["wS", "wW", "wN"],
+    );
+    const view = viewFor(fixture({ ...waiting, excludedHands: HAND_SET_EXCLUDED["companion-pictured"] }), "E");
+    assert.ok(closestHands(view, 50).every((hand) => hand.pattern !== "dragons-run"));
   });
 
   it("does not accept a Mixed Pung when the hand is left out", () => {

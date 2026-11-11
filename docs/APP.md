@@ -235,8 +235,9 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   `/api/new` and `/api/next`, and the table fixes a hand's rules at its deal
   (`GameState.excludedHands`), so a change made mid-hand reads "Takes effect
   with the next hand" until then. Every payload carries the rules in force
-  (`houseRules`), `/api/house-rules` names the hands a rule leaves out, and a
-  problem report carries the rules so it replays. "Companion hands only" is
+  (`houseRules`), `/api/house-rules` names the hands each hand set leaves out, and a
+  problem report carries the rules so it replays. The one rule so far is which hands are in play
+  (all, the Companion's, or the Companion's with sample pictures); see
   `rules/RULES.md` Part III §5.
 - **Report a problem.** The Report button in Options (accessible name "Report a
   problem") opens a sheet of that title with an optional
