@@ -155,7 +155,9 @@ consoleTexture.anisotropy = maxAnisotropy;
 let consoleKey = "";
 
 function buildConsole() {
-  const top = new THREE.MeshPhysicalMaterial({ map: consoleTexture, roughness: 0.4, clearcoat: 1, clearcoatRoughness: 0.15 });
+  // No clearcoat: seen from straight above (the zoomed pond view), its mirror
+  // reflection of the room washed the scoring centre out to grey.
+  const top = new THREE.MeshPhysicalMaterial({ map: consoleTexture, roughness: 0.4 });
   const side = new THREE.MeshStandardMaterial({ color: 0x2c3438, roughness: 0.35, metalness: 0.4 });
   const panel = new THREE.Mesh(new THREE.BoxGeometry(CENTER_HALF * 2, 0.24, CENTER_HALF * 2), [
     side, side, top, side, side, side,
