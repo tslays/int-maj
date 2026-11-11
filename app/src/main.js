@@ -13,7 +13,7 @@ import { createLocalApi } from "../engine/table/local.js";
 import { clearSelection, goulashKeys, installInput, resetGoulash } from "./input.js";
 import { refreshGoulash } from "./goulash.js";
 import { refreshHints } from "./hints.js";
-import "./handbook.js";
+import { warmIndex } from "./handbook.js";
 import { installMenu } from "./menu.js";
 import { houseRules, installOptions } from "./options.js";
 import "./report.js";
@@ -325,6 +325,8 @@ async function boot() {
   initTiles(renderer, requestRender);
   preloadFaces(ALL_FACES);
   state.api = createLocalApi(storage());
+  // Build the index of all hands once the table is up, so "All hands" opens at once.
+  setTimeout(() => ("requestIdleCallback" in window ? window.requestIdleCallback(warmIndex) : setTimeout(warmIndex, 0)), 1000);
   // Review states: `?state=claim|win|result|...` opens one fixed board.
   const review = new URLSearchParams(window.location.search).get("state");
   if (review !== null) {
