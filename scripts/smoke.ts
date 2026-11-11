@@ -98,6 +98,29 @@ const BOARD_CHECKS: Readonly<Record<ScenarioName, (payload: Payload, page: Page)
     assert.equal(payload.outcome?.kind, "win");
     await resultCard(page);
   },
+  goulash: async (payload, page) => {
+    assert.equal(payload.view.phase, "exchange");
+    assert.deepEqual(await buttons(page), ["Pass 3 tiles"]);
+    await page.waitForSelector("#goulash:not([hidden])", { timeout: READY_MS });
+    const banner = (await page.textContent("#goulash")) ?? "";
+    assert.match(banner, /Goulash/, "the banner names the Goulash");
+    assert.match(banner, /Exchange 1 of 3/, "the banner names the exchange");
+    assert.match(banner, /pass to West, opposite you/, "the banner names your partner");
+    // Three taps pick the tiles, the button passes them, and the second exchange is announced.
+    const strip = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--strip")));
+    assert.equal(await page.isDisabled("#goulash-confirm"), true, "nothing to pass before three tiles are picked");
+    for (const offset of [-150, -30, 90]) {
+      await page.touchscreen.tap(VIEWPORT.width / 2 + offset, VIEWPORT.height - strip / 2);
+      await page.waitForTimeout(250);
+    }
+    assert.match((await page.textContent("#goulash-count")) ?? "", /3 of 3 picked/);
+    assert.equal(await page.isDisabled("#goulash-confirm"), false, "three picked tiles can be passed");
+    await page.click("#goulash-confirm");
+    await page.waitForFunction(() => /Exchange 2 of 3/.test(document.querySelector("#goulash")?.textContent ?? ""), null, {
+      timeout: READY_MS,
+    });
+    assert.match((await page.textContent("#goulash")) ?? "", /pass to South, on your right/);
+  },
 };
 
 async function buttons(page: Page): Promise<string[]> {
