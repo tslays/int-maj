@@ -228,11 +228,31 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   (`version`, `stage`, `id`) and `BUILD_LABEL`; import it to put the build in
   a problem report. Unbuilt, the label reads `dev · local`.
 - **Report a problem.** The menu's Report button (accessible name "Report a
-  problem") opens a sheet of that title with an optional
-  one-line note; Send report hands the text to `navigator.share` (the iOS
-  share sheet) or, where that is missing or fails, to the clipboard with a
-  toast. No server, account or network. `src/table/report.ts` builds it
-  (`LocalApi.report`), so `app/` only collects the note and delivers. The text:
+  problem") opens a sheet of that title with an optional one-line note and a
+  Send button (accessible name "Send report"; the keyboard's return key sends
+  too). `app/src/report.js` posts the text to `api/report` on its own site,
+  and the Worker in front of the static files (`src/worker/`, the only server
+  code) files it as an issue labelled `report` in this repository, titled
+  with the note and the build; the sheet answers "Sent as report #N". The
+  issue holds the text in a code block, so save that block as `report.txt` to
+  replay it. A game too long for an issue (about nine hands) has its replay
+  block gzipped and base64-encoded by the Worker (`src/worker/pack.ts`);
+  `npm run replay` unpacks it. The endpoint takes only a same-origin post of
+  one well-formed report of at most 300 000 characters, five a minute per
+  address, and needs the Worker secret `REPORT_GITHUB_TOKEN`
+  (`docs/WORKFLOW.md`, "Problem reports"). When the post fails (offline, or
+  no token on that site, as under `npm run dev`) the sheet says so and offers
+  "Share it instead": `navigator.share` (the iOS share sheet) or, where that
+  is missing or fails, the clipboard with a toast.
+
+  A phone's keyboard covers the page instead of resizing it, most of it in
+  landscape, so the sheet is kept on `window.visualViewport` (the part still
+  in sight) and aligned to its top, with the note and Send side by side;
+  under 240px of visible height it drops its small print. It also opens over
+  the turn-your-phone screen, so a report can be typed in portrait.
+
+  `src/table/report.ts` builds the text (`LocalApi.report`), so `app/` only
+  collects the note and delivers. The text:
 
   ```
   int-maj problem report

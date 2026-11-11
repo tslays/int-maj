@@ -64,6 +64,7 @@ jobs:
       - uses: ./.github/actions/deploy
         with:
           token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          report-token: ${{ secrets.REPORT_GITHUB_TOKEN }}
           command: deploy --env dev
 
   # The tester site (int) changes only when a tag v* is pushed, or when this
@@ -85,6 +86,7 @@ jobs:
       - uses: ./.github/actions/deploy
         with:
           token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          report-token: ${{ secrets.REPORT_GITHUB_TOKEN }}
           command: deploy
 
   # Each pull request from this repository gets its own link on int-dev
@@ -111,6 +113,7 @@ jobs:
       - uses: ./.github/actions/deploy
         with:
           token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          report-token: ${{ secrets.REPORT_GITHUB_TOKEN }}
           command: versions upload --env dev --preview-alias pr-${{ github.event.pull_request.number }} --message PR-${{ github.event.pull_request.number }}-${{ github.sha }}
       - name: Post or update the preview comment
         run: |

@@ -148,6 +148,28 @@ deploy job then fails. Create a new token the same way, replace the secret
 Never paste a token into a chat, a file or a screenshot; if one leaks, roll it
 in Cloudflare and replace the secret.
 
+## Problem reports
+
+The app's Report button posts to `/api/report` on its own site, and the
+Worker (`src/worker/`) files the report as an issue labelled `report` in this
+repository. Sessions read those issues with the GitHub tools and replay them
+with `npm run replay` (`docs/APP.md`, "Report a problem").
+
+The Worker needs a GitHub token, set up once by the owner:
+
+1. GitHub > Settings > Developer settings > Fine-grained tokens > Generate
+   new token. Repository access: only `tslays/int-maj`. Permissions:
+   **Issues: Read and write**, nothing else.
+2. Save it as the repository secret `REPORT_GITHUB_TOKEN` (GitHub > the
+   repository > Settings > Secrets and variables > Actions).
+
+Every deploy then hands it to the Worker it deploys (`int-dev` on the next
+push to `main`, `int` on the next tag); pull-request previews use the one
+`int-dev` holds. Until a site has the token, its Report button says the
+report could not be sent and offers the share sheet. When the token expires
+the same happens: create a new one, replace the secret, and re-run a deploy.
+The token can only read and write this repository's issues.
+
 ## Private material
 
 `rules/pages/` holds the owner's copies of copyrighted books. The repository
