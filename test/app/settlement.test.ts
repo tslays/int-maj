@@ -75,9 +75,9 @@ describe("the result card's account of the points", () => {
 
     // And the reason for each: the winning hand, East's double, fishing.
     assert.deepEqual(reasons(seats, "E"), [
-      "Winning hand: every other player pays the winner. East pays double (p. 21).",
-      "Fishing: East was one tile short of a half-limit hand. A fishing hand is paid by the other losing players, not by the winner (p. 21, 32). East receives double (p. 21).",
-      "Fishing: East was one tile short of a half-limit hand. A fishing hand is paid by the other losing players, not by the winner (p. 21, 32). East receives double (p. 21).",
+      "Winning hand: every other player pays the winner. East pays double (Illustrated p. 21).",
+      "Fishing: East was one tile short of a half-limit hand. A fishing hand is paid by the other losing players, not by the winner (Illustrated pp. 21, 32). East receives double (Illustrated p. 21).",
+      "Fishing: East was one tile short of a half-limit hand. A fishing hand is paid by the other losing players, not by the winner (Illustrated pp. 21, 32). East receives double (Illustrated p. 21).",
     ]);
     assert.equal(reasons(seats, "W")[0], "Winning hand: every other player pays the winner.");
     // The winner never appears as a fishing payer or payee.
@@ -111,12 +111,12 @@ describe("the result card's account of the points", () => {
     assert.deepEqual(shown(seats, "S"), ["Nothing paid or received"]);
     assert.equal(
       reasons(seats, "S")[0],
-      "Nobody went Mah Jong before the wall ran out, so nobody pays and nobody scores (p. 21).",
+      "Nobody went Mah Jong before the wall ran out, so nobody pays and nobody scores (Illustrated p. 21).",
     );
     // The fishing player is told why fishing paid nothing.
     assert.equal(
       reasons(seats, "E")[0],
-      "Nobody went Mah Jong before the wall ran out, so nobody pays and nobody scores (p. 21). You were fishing, but fishing only pays when another player goes Mah Jong (p. 21, 32).",
+      "Nobody went Mah Jong before the wall ran out, so nobody pays and nobody scores (Illustrated p. 21). You were fishing, but fishing only pays when another player goes Mah Jong (Illustrated pp. 21, 32).",
     );
   });
 
@@ -145,8 +145,8 @@ describe("the result card's account of the points", () => {
     const careless = seats.E!.filter((line) => line.why.startsWith("Careless discard"));
     assert.equal(careless.length, 2);
     assert.deepEqual(careless.map((line) => line.text).sort(), ["Pays South 1,000", "Pays South 1,000"]);
-    assert.ok(careless.some((line) => line.why.includes("you also pay West's share (p. 22)")));
-    assert.ok(careless.some((line) => line.why.includes("you also pay North's share (p. 22)")));
+    assert.ok(careless.some((line) => line.why.includes("you also pay West's share (Illustrated p. 22)")));
+    assert.ok(careless.some((line) => line.why.includes("you also pay North's share (Illustrated p. 22)")));
     assert.ok(careless.every((line) => line.why.includes("South's exposed sets showed was needed")));
     assert.ok(seats.E!.some((line) => line.why.startsWith("Winning hand")));
   });

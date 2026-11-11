@@ -41,10 +41,10 @@ export function explainSettlement({ outcome, you, dealer, name, fishing }) {
   const doubleNote = (entry) => {
     if (entry.doubled !== true) return "";
     if (entry.kind === "careless" && entry.covers === dealer && entry.from !== dealer && entry.to !== dealer) {
-      return "East's share is paid double (p. 21).";
+      return "East's share is paid double (Illustrated p. 21).";
     }
-    if (entry.from === dealer) return "East pays double (p. 21).";
-    if (entry.to === dealer) return "East receives double (p. 21).";
+    if (entry.from === dealer) return "East pays double (Illustrated p. 21).";
+    if (entry.to === dealer) return "East receives double (Illustrated p. 21).";
     return "";
   };
 
@@ -57,21 +57,21 @@ export function explainSettlement({ outcome, you, dealer, name, fishing }) {
           entry.to,
         )}${entry.to === you ? "r" : "'s"} exposed sets showed was needed, so ${who(entry.from)} also ${pays(
           entry.from,
-        )} ${share(entry.covers)} share (p. 22).`;
+        )} ${share(entry.covers)} share (Illustrated p. 22).`;
       case "fishing":
         return `Fishing: ${who(entry.to)} ${was(entry.to)} one tile short of ${
           TIER_TEXT[entry.tier] ?? "a hand"
-        }. A fishing hand is paid by the other losing players, not by the winner (p. 21, 32).`;
+        }. A fishing hand is paid by the other losing players, not by the winner (Illustrated pp. 21, 32).`;
       case "difference":
-        return "The losing hands are settled by the difference between them (p. 24).";
+        return "The losing hands are settled by the difference between them (Illustrated p. 24).";
       case "goulash":
-        return "The Goulash pool goes to the winner (p. 21).";
+        return "The Goulash pool goes to the winner (Illustrated p. 21).";
       case "too-many-tiles":
-        return `${capital(who(entry.from))} had too many tiles, so ${pays(entry.from)} every other player (p. 22).`;
+        return `${capital(who(entry.from))} had too many tiles, so ${pays(entry.from)} every other player (Illustrated p. 22).`;
       case "false-mahjong":
         return `${capital(who(entry.from))} declared a false Mah Jong, so ${pays(
           entry.from,
-        )} a half limit to each other player (p. 22).`;
+        )} a half limit to each other player (Illustrated p. 22).`;
       default:
         return entry.reason;
     }
@@ -93,11 +93,11 @@ export function explainSettlement({ outcome, you, dealer, name, fishing }) {
     if (drawn) {
       why.push(
         ledger.length === 0
-          ? "Nobody went Mah Jong before the wall ran out, so nobody pays and nobody scores (p. 21)."
-          : "Nobody went Mah Jong, so no hand scores (p. 21).",
+          ? "Nobody went Mah Jong before the wall ran out, so nobody pays and nobody scores (Illustrated p. 21)."
+          : "Nobody went Mah Jong, so no hand scores (Illustrated p. 21).",
       );
       if (fishers.includes(seat)) {
-        why.push(`${capital(who(seat))} ${was(seat)} fishing, but fishing only pays when another player goes Mah Jong (p. 21, 32).`);
+        why.push(`${capital(who(seat))} ${was(seat)} fishing, but fishing only pays when another player goes Mah Jong (Illustrated pp. 21, 32).`);
       }
     }
     seats[seat].push({ dir: "none", text: "Nothing paid or received", why: why.join(" ") });
