@@ -222,11 +222,23 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.waitForSelector("#closest", { state: "hidden", timeout: 5000 });
   await page.click("#hints");
   await page.waitForSelector("#closest:not([hidden])", { timeout: 5000 });
+  // A listed hand opens its sheet, which shows the book's picture of the hand.
+  if ((await page.locator(".closest-item").count()) > 0) {
+    await page.click(".closest-item");
+    await page.waitForSelector("#hand-detail:not([hidden]) .detail-line", { timeout: 5000 });
+    const pictured = await page.locator("#hand-detail .sample-tiles .chip").count();
+    const sheet = (await page.textContent("#hand-detail")) ?? "";
+    if (pictured < 14 && !sheet.includes("without a picture")) {
+      throw new Error("the hand sheet shows neither the book's sample hand nor that there is none");
+    }
+    await page.click("#hand-detail .detail-close");
+    await page.waitForSelector("#hand-detail", { state: "hidden", timeout: 5000 });
+  }
   await page.click("#help");
   await page.waitForSelector("#help-sheet:not([hidden])", { timeout: 5000 });
   await page.click("#help-close");
   await page.waitForSelector("#help-sheet", { state: "hidden", timeout: 5000 });
-  console.log("  ok  hints toggle, help sheet");
+  console.log("  ok  hints toggle, hand sheet, help sheet");
 
   // The index of all hands: opens, filters by a book heading, searches, opens a hand's sheet.
   await page.click("#index-open");

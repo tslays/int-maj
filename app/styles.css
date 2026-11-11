@@ -700,6 +700,45 @@ button {
   width: 22px;
   height: 30px;
 }
+.detail-sample {
+  margin: 4px 0 0;
+}
+.detail-sample + .detail-sample {
+  margin-top: 10px;
+}
+.sample-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 7px;
+}
+.sample-group {
+  display: inline-flex;
+  gap: 1px;
+}
+.sample-tiles .chip {
+  width: 22px;
+  height: 30px;
+}
+.sample-tiles .chip-any {
+  box-sizing: border-box;
+  width: 34px;
+  padding: 1px;
+  background: #f8f6f0;
+  color: #1c2a30;
+  font-size: 7px;
+  font-weight: 700;
+  line-height: 1.05;
+  text-align: center;
+}
+.detail-sample figcaption {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.detail-card .sample-note {
+  margin-top: 2px;
+  font-size: 12px;
+}
 .help-card {
   width: min(520px, 100%);
 }
