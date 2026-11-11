@@ -143,16 +143,27 @@ async function settled(page: Page): Promise<Payload> {
 
 /** Wait until it is your decision (or the hand is over). */
 async function yourMove(page: Page): Promise<Payload> {
-  await page.waitForFunction(
-    () => {
-      const handle = window.mahjong;
-      const payload = handle?.state();
-      if (handle === undefined || payload == null || handle.busy()) return false;
-      return payload.legalActions.length > 0 || payload.view.phase === "finished";
-    },
-    null,
-    { timeout: READY_MS },
-  );
+  try {
+    await page.waitForFunction(
+      () => {
+        const handle = window.mahjong;
+        const payload = handle?.state();
+        if (handle === undefined || payload == null || handle.busy()) return false;
+        return payload.legalActions.length > 0 || payload.view.phase === "finished";
+      },
+      null,
+      { timeout: READY_MS },
+    );
+  } catch (error) {
+    // Say where the table stood, so a failure on a CI runner can be told from a stuck game.
+    const where = await page.evaluate(() => ({
+      busy: window.mahjong?.busy(),
+      phase: window.mahjong?.state()?.view.phase,
+      legal: window.mahjong?.state()?.legalActions.map((action) => action.type),
+      toast: document.querySelector(".toast")?.textContent ?? null,
+    }));
+    throw new Error(`waiting for your move timed out: ${JSON.stringify(where)}`, { cause: error });
+  }
   return (await page.evaluate(() => window.mahjong!.state())) as Payload;
 }
 
