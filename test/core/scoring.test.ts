@@ -147,8 +147,8 @@ describe("scoring precedence", () => {
   it("awards the highest tier only, never the sum", () => {
     const result = scoreHand(overlapping);
     assert.equal(result.winning?.pattern.id, "three-great-scholars");
-    assert.equal(result.tier, "limit");
-    assert.equal(result.points, 1000);
+    assert.equal(result.tier, "middle");
+    assert.equal(result.points, 1500);
   });
 
   it("scores a Calculate hand from ground and doubles", () => {
@@ -170,7 +170,7 @@ describe("scoring precedence", () => {
       selfDrawn: false,
     });
     const result = scoreHand(onDiscard);
-    assert.equal(result.points, 1000);
+    assert.equal(result.points, 1500);
     assert.deepEqual(Object.keys(result).sort(), [
       "doubles",
       "ground",

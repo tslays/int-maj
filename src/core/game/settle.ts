@@ -49,6 +49,7 @@ function losingHandPoints(draft: Draft, seat: Seat): number {
       limit,
       withoutMahJongBonus: true,
       goulash: draft.goulash === true,
+      excluded: draft.excludedHands,
     });
     if (score.ground !== null) best = Math.max(best, score.ground);
   }
@@ -67,6 +68,7 @@ function heldDoubles(draft: Draft, seat: Seat): number {
     const score = scoreHand(hand, {
       limit: draft.limit ?? DEFAULT_LIMIT,
       goulash: draft.goulash === true,
+      excluded: draft.excludedHands,
     });
     return score.doubles ?? 0;
   }
@@ -290,6 +292,7 @@ export function finishWin(
   const score = scoreHand(hand, {
     limit: draft.limit ?? DEFAULT_LIMIT,
     goulash: draft.goulash === true,
+    excluded: draft.excludedHands,
     wonOnLooseTile: selfDrawn && draft.lastDraw?.end === "loose",
     wonOnLastWallTile:
       selfDrawn &&

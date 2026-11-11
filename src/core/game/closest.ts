@@ -210,7 +210,19 @@ export function handDetail(id: string): HandDetail | null {
   return pattern === undefined ? null : detailOf(pattern);
 }
 
-/** The whole catalogue for the hand index: every hand, and the book's headings to filter by. */
-export function handIndex(): { readonly groups: readonly HandGroup[]; readonly hands: readonly HandDetail[] } {
-  return { groups: GROUPS, hands: PATTERNS.map(detailOf) };
+/**
+ * The catalogue for the hand index: every hand in play, and the book's
+ * headings to filter by. `excluded` names the hands the table plays without
+ * (a house rule); they and their place under a heading are left out.
+ */
+export function handIndex(
+  excluded: readonly string[] = [],
+): { readonly groups: readonly HandGroup[]; readonly hands: readonly HandDetail[] } {
+  if (excluded.length === 0) return { groups: GROUPS, hands: PATTERNS.map(detailOf) };
+  return {
+    groups: GROUPS.map((group) => ({ ...group, hands: group.hands.filter((id) => !excluded.includes(id)) })).filter(
+      (group) => group.hands.length > 0,
+    ),
+    hands: PATTERNS.filter((pattern) => !excluded.includes(pattern.id)).map(detailOf),
+  };
 }

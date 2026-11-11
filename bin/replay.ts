@@ -105,6 +105,7 @@ async function main(): Promise<void> {
 
   // A "Report a problem" text carries its own seed, dealer and decisions.
   let reportDealer: Seat | undefined;
+  let reportExcluded: readonly string[] | undefined;
   let input: unknown;
   if (isReportText(text)) {
     const report = parseReport(text);
@@ -114,6 +115,7 @@ async function main(): Promise<void> {
       return;
     }
     reportDealer = report.dealer;
+    reportExcluded = report.excludedHands;
     input = { seed: report.seed, actions: report.steps };
   } else {
     input = JSON.parse(text);
@@ -150,7 +152,10 @@ async function main(): Promise<void> {
 
   let result;
   try {
-    result = replaySteps(seed, steps, reportDealer === undefined ? {} : { dealer: reportDealer });
+    result = replaySteps(seed, steps, {
+      ...(reportDealer === undefined ? {} : { dealer: reportDealer }),
+      ...(reportExcluded === undefined ? {} : { excludedHands: reportExcluded }),
+    });
   } catch (error) {
     console.error(`replay failed: ${error instanceof Error ? error.message : String(error)}`);
     process.exitCode = 1;

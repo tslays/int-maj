@@ -75,9 +75,7 @@
       <button class="ghost on" id="calls" type="button" aria-pressed="true"><span>Calls</span></button>
       <button class="ghost on" id="sort" type="button" aria-pressed="true"><span>Sort</span></button>
       <button class="ghost on" id="hints" type="button" aria-pressed="true"><span>Hints</span></button>
-      <button class="ghost on" id="sound" type="button" aria-pressed="true"><span>Sound</span></button>
-      <button class="ghost" id="report" type="button" aria-label="Report a problem"><span>Report</span></button>
-      <button class="ghost" id="help" type="button"><span>Help</span></button>
+      <button class="ghost" id="options" type="button"><span>Options</span></button>
       <small class="build-label" id="build-label"></small>
     </nav>
     <script type="module">
@@ -118,6 +116,34 @@
       </div>
     </div>
     <div class="hand-detail" id="hand-detail" hidden></div>
+    <div class="hand-detail" id="options-sheet" hidden>
+      <div class="detail-card help-card" role="dialog" aria-modal="true" aria-label="Options">
+        <button class="detail-close" id="options-close" type="button" aria-label="Close">&times;</button>
+        <h2>Options</h2>
+        <div class="detail-line option-row">
+          <div>
+            <h3>Sound</h3>
+            <p>On an iPhone the silent switch also mutes it.</p>
+          </div>
+          <button class="ghost on" id="sound" type="button" aria-pressed="true" aria-label="Sound"><span>On</span></button>
+        </div>
+        <div class="detail-line">
+          <h3>House rules</h3>
+          <p><b>Which hands are in play</b></p>
+          <div class="segmented" id="hand-set" role="radiogroup" aria-label="Which hands are in play">
+            <button class="ghost" type="button" role="radio" aria-checked="true" data-set="all"><span>All hands</span></button>
+            <button class="ghost" type="button" role="radio" aria-checked="false" data-set="companion"><span>Companion hands</span></button>
+            <button class="ghost" type="button" role="radio" aria-checked="false" data-set="companion-pictured"><span>Companion, pictured</span></button>
+          </div>
+          <p class="option-note" id="hand-set-note"></p>
+          <p class="option-note option-pending" id="hand-set-pending" hidden>Takes effect with the next hand.</p>
+        </div>
+        <div class="detail-line option-buttons">
+          <button class="ghost" id="help" type="button"><span>Help</span></button>
+          <button class="ghost" id="report" type="button" aria-label="Report a problem"><span>Report</span></button>
+        </div>
+      </div>
+    </div>
     <div class="hand-detail" id="help-sheet" hidden>
       <div class="detail-card help-card" role="dialog" aria-modal="true" aria-label="How to use the app">
         <button class="detail-close" id="help-close" type="button" aria-label="Close">&times;</button>
@@ -174,11 +200,9 @@
             <li><b>Calls</b>: lit, you are asked about every discard you could claim. Off, you are not asked about Pung, Chow or Kong, which cuts the pauses. You are still asked about Mah Jong.</li>
             <li><b>Sort</b>: lit, the game keeps your hand in order. After you have rearranged it by hand, tap it to sort again.</li>
             <li><b>Hints</b>: show or hide the Closest hands panel.</li>
-            <li><b>Sound</b>: on or off. On an iPhone the silent switch also mutes it.</li>
-            <li><b>Report</b>: send a problem to the developers (below).</li>
-            <li><b>Help</b>: this sheet. The small label under the menu is the build you are playing.</li>
+            <li><b>Options</b>: opens a sheet with the <b>Sound</b> switch (on iPhone the silent switch also mutes it), the house rules, <b>Report</b> (send a problem to the developers, below) and <b>Help</b>, this sheet. The small label under the menu is the build you are playing.</li>
           </ul>
-          <p>A lit button is on. Hints and Sound are remembered on this device.</p>
+          <p>A lit button is on. Hints, Sound and the house rules are remembered on this device.</p>
         </div>
         <div class="detail-line">
           <h3>Closest hands</h3>
@@ -193,7 +217,7 @@
         <div class="detail-line">
           <h3>All hands</h3>
           <p>
-            The button above that panel opens a list of every hand in both books, even with Hints off. Search
+            The button above that panel opens a list of every hand in play, even with Hints off. With all hands in play that is every hand in both books. Search
             by name or tiles ("dragon pairs", "1-9"), or filter by kind, value, concealed or exposed play and
             book. During a hand each card says how many tiles you are away, and <b>Order</b> can put the
             nearest first. Tap a card for its sheet. The cross, a tap outside or Escape closes a sheet.
@@ -206,6 +230,14 @@
             shows its change in green or red and its new total; tap a seat to see who paid what, and why.
             <b>Next hand</b> deals again. After the last hand, <b>Final standings</b> ranks the seats, and
             <b>New game</b> starts over.
+          </p>
+        </div>
+        <div class="detail-line">
+          <h3>House rules</h3>
+          <p>
+            Options has the table's house rules, such as which hands are in play: all of them, only the
+            Companion's, or only the Companion's that come with a sample picture. A change never touches
+            the hand being played: it takes effect with the next hand, for you and for the other players alike.
           </p>
         </div>
         <div class="detail-line">
@@ -225,7 +257,7 @@
         <div class="detail-line" id="help-report">
           <h3>Report a problem</h3>
           <p>
-            Tap <b>Report</b>, add a line about what you saw if you like, and tap <b>Send</b>. It goes to the
+            Open <b>Options</b>, tap <b>Report</b>, add a line about what you saw if you like, and tap <b>Send</b>. It goes to the
             developers with the build, your device and every move of this game, so the hand can be replayed. No
             name or account. Without a connection, <b>Share it instead</b> sends it as a message.
           </p>

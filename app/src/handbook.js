@@ -11,9 +11,9 @@
 
 import { openHandDetail, playIcon, TIER_LABEL } from "./hints.js";
 import { bookPages } from "./pages.js";
-import { $, faceChip, request, state } from "./shared.js";
+import { $, companionRules, faceChip, handSetInForce, request, state } from "./shared.js";
 
-let catalogue = null; // { groups, hands }, fetched once
+let catalogue = null; // { set, groups, hands }: the hands in play, fetched again when the hand set changes
 let progress = new Map(); // pattern -> closest-hands entry, for the hand in play
 const filter = { text: "", group: "all", tier: "all", play: "all", book: "all", sort: "book" };
 
@@ -40,7 +40,7 @@ function haystack(hand) {
       hand.concealedPoints ?? "",
       hand.concealedOnly ? "concealed only" : "exposed or concealed",
       hand.requiresSelfDrawn ? "self-drawn wall" : "",
-      bookPages(hand.pages),
+      bookPages(hand.pages, companionRules()),
     ].join(" "),
   );
 }
@@ -189,11 +189,16 @@ function renderFilters() {
       ["concealed", "Concealed only", count((hand) => hand.concealedOnly)],
       ["exposed", "Exposed allowed", count((hand) => !hand.concealedOnly)],
     ]),
-    choices("Book", "book", [
-      ["all", "Both books"],
-      ["illustrated", "Illustrated", count((hand) => hand.pages.illustrated.length > 0)],
-      ["companion", "Companion only", count((hand) => hand.pages.illustrated.length === 0)],
-    ]),
+    // The Companion sets know only one book, so there is nothing to filter by.
+    ...(companionRules()
+      ? []
+      : [
+          choices("Book", "book", [
+            ["all", "Both books"],
+            ["illustrated", "Illustrated", count((hand) => hand.pages.illustrated.length > 0)],
+            ["companion", "Companion only", count((hand) => hand.pages.illustrated.length === 0)],
+          ]),
+        ]),
   );
   const rail = $("#index-filters");
   const scroll = rail.scrollTop;
@@ -216,9 +221,12 @@ async function readProgress() {
 export async function openIndex() {
   if (state.api === null) return;
   try {
-    if (catalogue === null) {
-      const answer = await request("/api/hands");
-      catalogue = { groups: answer.groups, hands: answer.hands };
+    const set = handSetInForce();
+    if (catalogue === null || catalogue.set !== set) {
+      const answer = await request(`/api/hands?set=${set}`);
+      catalogue = { set, groups: answer.groups, hands: answer.hands };
+      filter.group = "all";
+      filter.book = "all";
       for (const hand of catalogue.hands) hand.search = haystack(hand);
     }
     progress = await readProgress();

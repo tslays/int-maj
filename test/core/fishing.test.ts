@@ -74,15 +74,15 @@ describe("fishing settlement", () => {
       half: 200,
       limit: 400,
       middle: 600,
-      double: 500,
+      double: 800,
       calculate: null,
     });
     const awards = settleFishing(declarations, "east");
     assert.deepEqual(
       awards.map((award) => award.points),
-      [200, 500],
+      [200, 800],
     );
-    assert.deepEqual(fishingTotal(awards), { points: 700, unknown: 0 });
+    assert.deepEqual(fishingTotal(awards), { points: 1000, unknown: 0 });
   });
 
   it("uses a declaration's printed figure when it has one", () => {

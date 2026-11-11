@@ -72,6 +72,7 @@ export function buildHand(
 export const ORDINARY_PATTERNS = new Set(["ordinary-mahjong", "chinese-ordinary"]);
 
 export function allowedPattern(state: GameState, patternId: string): boolean {
+  if (state.excludedHands?.includes(patternId) === true) return false;
   if (
     state.specialHands !== undefined &&
     !ORDINARY_PATTERNS.has(patternId) &&
@@ -114,7 +115,10 @@ export function handIsComplete(state: GameState, seat: Seat, winningTile: string
   if (effectiveCount(player) !== 14) return null;
   const hand = buildHand(state, seat, { winningTile, selfDrawn: true });
   if (hand === null) return null;
-  const score = scoreHand(hand, { limit: state.limit ?? DEFAULT_LIMIT });
+  const score = scoreHand(hand, {
+    limit: state.limit ?? DEFAULT_LIMIT,
+    excluded: state.excludedHands,
+  });
   if (score.winning === null || !allowedPattern(state, score.winning.pattern.id)) return null;
   return score;
 }
@@ -151,13 +155,8 @@ function tierRank(tier: Tier): number {
   return points === null ? -1 : points;
 }
 
-/** Companion-only double-limit hands keep their printed 800 fishing figure. */
-const COMPANION_DOUBLE_FISHING = new Set(["up-you-go", "down-you-go"]);
-
-function fishingFigure(tier: Tier, patternId: string): number | null {
-  if (tier === "double" && COMPANION_DOUBLE_FISHING.has(patternId)) return 800;
-  if (tier === "calculate") return null;
-  return TIER_FISHING[tier];
+function fishingFigure(tier: Tier): number | null {
+  return tier === "calculate" ? null : TIER_FISHING[tier];
 }
 
 /**
@@ -180,13 +179,16 @@ export function fishingValueFor(
       selfDrawn: true,
     });
     if (hand === null) continue;
-    const score = scoreHand(hand, { withoutMahJongBonus: true });
+    const score = scoreHand(hand, {
+      withoutMahJongBonus: true,
+      excluded: state.excludedHands,
+    });
     const winning = score.winning;
     if (winning === null) continue;
     const value =
       winning.tier === "calculate"
         ? score.points
-        : fishingFigure(winning.tier, winning.pattern.id);
+        : fishingFigure(winning.tier);
     if (value === null) continue;
     const rank = tierRank(winning.tier);
     if (bestTier === null || rank > bestRank) {

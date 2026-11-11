@@ -129,6 +129,8 @@ export interface NewGameOptions {
   readonly settlement?: SettlementLevel;
   readonly tournament?: boolean;
   readonly specialHands?: readonly string[];
+  /** House rule: hands this table plays without. */
+  readonly excludedHands?: readonly string[];
   readonly goulash?: boolean;
   readonly goulashJokers?: "blank" | "two-bamboo";
   readonly goulashPool?: number;
@@ -195,10 +197,21 @@ export function newGame(seed: string | number, options: NewGameOptions = {}): Ap
   } as unknown as Draft;
   if (selected !== null) draft.seatSelection = selected;
   if (options.specialHands !== undefined) draft.specialHands = [...options.specialHands];
+  if (options.excludedHands !== undefined && options.excludedHands.length > 0) {
+    draft.excludedHands = [...options.excludedHands];
+  }
   if (options.goulashJokers !== undefined) draft.goulashJokers = options.goulashJokers;
   dealHand(draft, seed, 0, dealer, 1, events, emit);
   draft.eventSeq = seq;
   return { state: draft as GameState, events };
+}
+
+export interface NextHandOptions {
+  /**
+   * A house rule changed between hands: the hands the table plays without
+   * from this deal on. Omitted, the previous hand's list stays.
+   */
+  readonly excludedHands?: readonly string[];
 }
 
 /**
@@ -206,7 +219,7 @@ export function newGame(seed: string | number, options: NewGameOptions = {}): Ap
  * dealer won or the hand was drawn (R-030, R-032, R-101). Not an Action: the
  * engine exposes it separately so `apply` never invents a deal.
  */
-export function nextHand(state: GameState): ApplyOk {
+export function nextHand(state: GameState, options: NextHandOptions = {}): ApplyOk {
   if (state.phase !== "finished" || state.result === null) {
     throw new Error("nextHand requires a finished hand");
   }
@@ -225,7 +238,16 @@ export function nextHand(state: GameState): ApplyOk {
     events.push({ ...event, seq } as Event);
     seq += 1;
   };
-  emit({ type: "NextDeal", dealer, hand: state.handNumber + 1 });
+  if (options.excludedHands !== undefined) {
+    if (options.excludedHands.length > 0) draft.excludedHands = [...options.excludedHands];
+    else delete draft.excludedHands;
+  }
+  emit({
+    type: "NextDeal",
+    dealer,
+    hand: state.handNumber + 1,
+    ...(options.excludedHands === undefined ? {} : { excludedHands: [...options.excludedHands] }),
+  });
   dealHand(draft, state.seed, state.rngSteps, dealer, state.handNumber + 1, events, emit);
   draft.eventSeq = seq;
   return { state: draft as GameState, events };

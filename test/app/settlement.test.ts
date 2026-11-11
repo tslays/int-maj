@@ -20,7 +20,7 @@ const FILLER = {
   N: "o1 o1 o1 o2 o2 o2 o3 o3 o3 o4 o4 o4 o5",
 };
 
-function account(state: GameState, you = "E") {
+function account(state: GameState, you = "E", cite = true) {
   const result = state.result!;
   return explainSettlement({
     outcome: {
@@ -34,6 +34,7 @@ function account(state: GameState, you = "E") {
     dealer: state.dealer,
     name: (seat: string) => NAMES[seat],
     fishing: state.fishing.map((entry) => entry.seat),
+    cite,
   }) as Record<string, { dir: string; text: string; why: string }[]>;
 }
 
@@ -62,15 +63,15 @@ describe("the result card's account of the points", () => {
 
     // Who pays whom how much, seat by seat.
     assert.deepEqual(shown(seats, "E"), [
-      "Pays South 2,000",
+      "Pays South 3,000",
       "Receives 400 from you",
       "Receives 400 from North",
     ]);
-    assert.deepEqual(shown(seats, "W"), ["Pays South 1,000", "Pays East 400"]);
+    assert.deepEqual(shown(seats, "W"), ["Pays South 1,500", "Pays East 400"]);
     assert.deepEqual(shown(seats, "S"), [
-      "Receives 2,000 from East",
-      "Receives 1,000 from you",
-      "Receives 1,000 from North",
+      "Receives 3,000 from East",
+      "Receives 1,500 from you",
+      "Receives 1,500 from North",
     ]);
 
     // And the reason for each: the winning hand, East's double, fishing.
@@ -91,6 +92,32 @@ describe("the result card's account of the points", () => {
         return sum + (line.dir === "get" ? amount : line.dir === "pay" ? -amount : 0);
       }, 0);
       assert.equal(net, totals[seat as "E"], `${seat}: the lines add up to the net change`);
+    }
+  });
+
+  it("leaves the Illustrated page citations out when asked", () => {
+    const state = fixture({
+      hands: {
+        S: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 b5",
+        E: "b1 b2 b3 b4 b5 b6 b7 c1 c2 c3 o1 o2 o3",
+        W: FILLER.W,
+        N: FILLER.N,
+      },
+      wall: ["o6"],
+      phase: "discard",
+      turn: "S",
+      lastDraw: { seat: "S", tile: "b5", end: "front" },
+      fishing: [{ seat: "E", wait: ["b7"], tier: "half" }],
+    });
+    const won = play(state, { type: "Win", seat: "S", kind: "self-drawn" }).state;
+    const seats = account(won, "W", false);
+    assert.deepEqual(reasons(seats, "E"), [
+      "Winning hand: every other player pays the winner. East pays double.",
+      "Fishing: East was one tile short of a half-limit hand. A fishing hand is paid by the other losing players, not by the winner. East receives double.",
+      "Fishing: East was one tile short of a half-limit hand. A fishing hand is paid by the other losing players, not by the winner. East receives double.",
+    ]);
+    for (const seat of ["E", "S", "W", "N"]) {
+      assert.ok(reasons(seats, seat).every((why) => !/Illustrated/.test(why)), seat);
     }
   });
 

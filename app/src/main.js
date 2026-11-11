@@ -15,6 +15,7 @@ import { refreshGoulash } from "./goulash.js";
 import { refreshHints } from "./hints.js";
 import "./handbook.js";
 import { installMenu } from "./menu.js";
+import { houseRules, installOptions } from "./options.js";
 import "./report.js";
 import { installResult, showOutcome } from "./result.js";
 import { $, board, faceChip, request, scores, state, storage, toast } from "./shared.js";
@@ -298,7 +299,7 @@ async function newGame() {
   hideChoices();
   try {
     const seed = `g-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
-    await apply(await request("/api/new", { seed }), { animated: false });
+    await apply(await request("/api/new", { seed, houseRules: houseRules() }), { animated: false });
   } catch (error) {
     toast(error.message);
   } finally {
@@ -358,5 +359,6 @@ window.mahjong = {
 installInput({ act });
 installResult({ callOut, apply, run, hideChoices, newGame });
 installMenu({ run, newGame });
+installOptions();
 
 void boot();
