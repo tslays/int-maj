@@ -13,6 +13,7 @@
  * player's concealed tiles. Pure and deterministic.
  */
 
+import { BOOK_TITLE, samplesFor, type SampleTile } from "../patterns/samples.ts";
 import { PATTERNS } from "../patterns/table.ts";
 import { EDITORIAL_ROWS, EXAMPLES, SYNOPSIS } from "../patterns/reference.ts";
 import { TIER_POINTS, type HandPattern, type PageRefs, type Tier } from "../patterns/types.ts";
@@ -122,6 +123,42 @@ export interface HandDetail {
   /** Null when the hand does not exist with exposed melds. */
   readonly exposedTier: Tier | null;
   readonly exposedPoints: number | null;
+  /** The sample hand each book pictures, primary book first; empty if neither does. */
+  readonly samples: readonly HandSample[];
+}
+
+/**
+ * One printed picture of a hand: the tiles as the page groups them. A picture
+ * both books print identically is one entry with both sources.
+ */
+export interface HandSample {
+  /** Where it is printed: a book's title and page, primary book first. */
+  readonly sources: readonly { readonly book: string; readonly page: number }[];
+  /** Printed sub-heading when the book pictures several versions. */
+  readonly label: string | null;
+  /** A tile key, or `{ any }` for a card the book prints in place of a tile. */
+  readonly groups: readonly (readonly SampleTile[])[];
+  readonly notes: readonly string[];
+}
+
+function mergedSamples(id: string): HandSample[] {
+  const merged: { -readonly [K in keyof HandSample]: HandSample[K] }[] = [];
+  for (const sample of samplesFor(id)) {
+    const source = { book: BOOK_TITLE[sample.book], page: sample.page };
+    const twin = merged.find((entry) => JSON.stringify(entry.groups) === JSON.stringify(sample.groups));
+    if (twin === undefined) {
+      merged.push({
+        sources: [source],
+        label: sample.label ?? null,
+        groups: sample.groups,
+        notes: sample.note === undefined ? [] : [sample.note],
+      });
+      continue;
+    }
+    twin.sources = [...twin.sources, source];
+    if (sample.note !== undefined && !twin.notes.includes(sample.note)) twin.notes = [...twin.notes, sample.note];
+  }
+  return merged;
 }
 
 /** A heading of the Companion's synopsis, or "Other" for hands it does not file. */
@@ -163,6 +200,7 @@ function detailOf(pattern: HandPattern): HandDetail {
     concealedPoints: TIER_POINTS[pattern.tier],
     exposedTier: pattern.exposedTier,
     exposedPoints: pattern.exposedTier === null ? null : TIER_POINTS[pattern.exposedTier],
+    samples: mergedSamples(pattern.id),
   };
 }
 
