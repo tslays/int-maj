@@ -56,7 +56,7 @@ both books leave open; read it for provenance, never as a rule source.
 app/          the 3D table: plain ES modules, no build step of its own
   index.html    the page; styles.css is its look
   src/          main (boot, loop, buttons), shared (state), input, hints,
-                result, menu, report (screens), board (state to tiles, with
+                handbook (the index of all hands), result, menu, report (screens), board (state to tiles, with
                 board-wall and board-hand), stage (renderer, camera, motion),
                 tiles (tile models), layout (table geometry)
   assets/       tile faces and icons
@@ -65,6 +65,7 @@ src/core/     the rules engine: pure and deterministic
   game/         the turn engine: reduce (apply), with hands, draws, settle
                 and deal working on the draft copy
 src/table/    the table service: sessions, bots, saving, `routeApi`
+src/worker/   the Cloudflare Worker: files a problem report as a GitHub issue
 src/cli/      the console table
 bin/          command-line entry points: check, play, replay
 scripts/      build, preview, smoke test, and art generators (scripts/art/)
@@ -73,7 +74,9 @@ rules/        the rule framework, its evidence and the book pages
 docs/         PLAN, APP and ENGINE references
 ```
 
-Layers only call downwards: `app` -> `src/table` -> `src/core`. The app talks
+Layers only call downwards: `app` -> `src/table` -> `src/core`; `src/worker`
+(the one piece of server code, reached only by the Report button) also sits
+on `src/table`. The app talks
 to the game only through `routeApi` (via `src/table/local.ts`) and receives
 `viewFor` projections and per-seat event text, never a `GameState` and never
 another seat's concealed tile. Put new code in the layer that owns it and its
@@ -95,7 +98,7 @@ The full workflow is `docs/WORKFLOW.md`. The rules every session follows:
   reads them. After changing anything under `app/`, also run `npm run smoke`
   (the built app in headless Chromium, a few minutes). `npm run dev` builds
   and serves the app; review boards
-  (`/?state=turn|claim|wait|fishing|announce|ron|win|drawn|result`) and
+  (`/?state=turn|claim|wait|fishing|announce|ron|win|drawn|result|goulash`) and
   `/?phone` show a screen without playing to it.
 - **Deliver autonomously** (owner-authorized, `docs/WORKFLOW.md` "Autonomous
   delivery loop"): on the session's `claude/...` branch, open a pull request

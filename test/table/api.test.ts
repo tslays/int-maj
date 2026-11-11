@@ -33,7 +33,7 @@ interface ClosestHandPayload {
   readonly name: string;
   readonly away: number;
   readonly need: readonly string[];
-  readonly pages: { readonly companion: readonly number[]; readonly illustrated: readonly number[] };
+  readonly pages: { readonly illustrated: readonly number[]; readonly companion: readonly number[] };
 }
 
 interface ApiError {
@@ -135,13 +135,31 @@ describe("table API", () => {
       assert.equal(typeof hand.name, "string");
       assert.equal(hand.need.length, hand.away);
       assert.ok(hand.need.every((key) => TILE_KEY.test(key)));
-      assert.ok(hand.pages.companion.length + hand.pages.illustrated.length > 0);
+      assert.ok(hand.pages.illustrated.length + hand.pages.companion.length > 0);
       if (index > 0) assert.ok(hands[index - 1]!.away <= hand.away);
     }
     assert.ok(hands.every((hand) => hand.away <= 6), "only hands within reach are named");
 
     assert.equal(call<ApiError>("GET", "/api/closest").status, 400);
     assert.equal(call<ApiError>("GET", "/api/closest?game=missing").status, 404);
+  });
+
+  it("lists more closest hands on request, and the whole catalogue for the index", async () => {
+    const created = await post<ApiPayload>("/api/new", { seed: "api-closest" });
+    const game = encodeURIComponent(created.body.game);
+    const three = call<{ hands: ClosestHandPayload[] }>("GET", `/api/closest?game=${game}`).body.hands;
+    const all = call<{ hands: ClosestHandPayload[] }>("GET", `/api/closest?game=${game}&limit=100`).body.hands;
+    assert.ok(all.length > three.length);
+    assert.deepEqual(all.slice(0, three.length), three);
+
+    const index = call<{ groups: { id: string; hands: string[] }[]; hands: { pattern: string; example: string[] }[] }>(
+      "GET",
+      "/api/hands",
+    );
+    assert.equal(index.status, 200);
+    assert.equal(index.body.hands.length, 89);
+    assert.ok(index.body.groups.some((group) => group.id === "pairs" && group.hands.includes("knitting")));
+    assert.ok(index.body.hands.every((hand) => hand.example.every((key) => TILE_KEY.test(key))));
   });
 
   it("tells a player whether a hand is concealed only, and explains it", () => {
@@ -491,3 +509,24 @@ describe("hidden information in the event log", () => {
     }
   });
 });
+
+describe("the hand index under a hand set", () => {
+  it("lists every hand by default and leaves a set's hands out", () => {
+    const all = call<{ hands: { pattern: string }[]; groups: { hands: string[] }[] }>("GET", "/api/hands");
+    assert.equal(all.status, 200);
+    const ids = (answer: typeof all.body) => answer.hands.map((hand) => hand.pattern);
+    assert.ok(ids(all.body).includes("mixed-pung"));
+
+    const companion = call<typeof all.body>("GET", "/api/hands?set=companion").body;
+    assert.equal(ids(companion).length, ids(all.body).length - 3);
+    assert.ok(!ids(companion).includes("mixed-pung") && ids(companion).includes("robin"));
+    assert.ok(companion.groups.every((group) => !group.hands.includes("mixed-pung")));
+
+    const pictured = call<typeof all.body>("GET", "/api/hands?set=companion-pictured").body;
+    assert.equal(ids(pictured).length, ids(all.body).length - 12);
+    assert.ok(!ids(pictured).includes("robin"));
+
+    assert.equal(call<ApiError>("GET", "/api/hands?set=most").status, 400);
+  });
+});
+

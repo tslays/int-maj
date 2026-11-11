@@ -266,6 +266,92 @@ button {
   }
 }
 
+/* The Goulash banner: over the middle of the table while tiles are exchanged. */
+.goulash {
+  position: fixed;
+  z-index: 4;
+  left: 50%;
+  top: calc((100% - var(--hand-top, var(--strip))) / 2);
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  width: min(380px, calc(100% - 340px));
+  min-width: 290px;
+  padding: 10px 18px 12px;
+  border-radius: 14px;
+  border: 2px solid var(--gold-2);
+  background: rgba(17, 25, 28, 0.93);
+  box-shadow: 0 0 0 5px rgba(229, 161, 47, 0.16), 0 14px 40px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  pointer-events: none;
+  animation: call-in 320ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+.goulash p {
+  margin: 0;
+}
+.goulash-kicker {
+  font-size: 12px;
+  color: var(--muted);
+}
+.goulash h2 {
+  margin: 0 0 2px;
+  font-style: italic;
+  font-weight: 900;
+  font-size: 42px;
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gold-1);
+  text-shadow: 0 2px 0 #9a5a07, 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+.goulash-rule {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.goulash-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 9px 0 3px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold-1);
+}
+.goulash-steps span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gold-2);
+}
+.goulash-steps span.done {
+  background: var(--gold-2);
+}
+.goulash-steps span.now {
+  background: var(--gold-1);
+  box-shadow: 0 0 6px var(--gold-1);
+}
+.goulash-steps span:last-of-type {
+  margin-right: 4px;
+}
+.goulash-task {
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+}
+.goulash-count {
+  margin-top: 2px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.goulash-count.ready {
+  color: #6fd08e;
+  font-weight: 700;
+}
+
 /* The result of a hand. */
 .result {
   position: fixed;
@@ -501,11 +587,39 @@ button {
 }
 
 /* Closest hands: the catalogue hands your tiles are nearest to. */
-.closest {
+.corner {
   position: fixed;
   top: var(--safe-t);
   right: var(--safe-r);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
   width: 148px;
+}
+/* The door to the index of all hands: as quiet as the panel under it. */
+.index-open {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 30px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(17, 25, 28, 0.55);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.index-open:hover,
+.index-open:focus-visible {
+  border-color: rgba(140, 203, 234, 0.7);
+}
+.closest {
+  box-sizing: border-box;
+  width: 100%;
   margin: 0;
   padding: 6px 8px 4px;
   border-radius: 10px;
@@ -672,6 +786,45 @@ button {
   width: 22px;
   height: 30px;
 }
+.detail-sample {
+  margin: 4px 0 0;
+}
+.detail-sample + .detail-sample {
+  margin-top: 10px;
+}
+.sample-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 7px;
+}
+.sample-group {
+  display: inline-flex;
+  gap: 1px;
+}
+.sample-tiles .chip {
+  width: 22px;
+  height: 30px;
+}
+.sample-tiles .chip-any {
+  box-sizing: border-box;
+  width: 34px;
+  padding: 1px;
+  background: #f8f6f0;
+  color: #1c2a30;
+  font-size: 7px;
+  font-weight: 700;
+  line-height: 1.05;
+  text-align: center;
+}
+.detail-sample figcaption {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.detail-card .sample-note {
+  margin-top: 2px;
+  font-size: 12px;
+}
 .help-card {
   width: min(520px, 100%);
 }
@@ -729,6 +882,213 @@ button {
   gap: 12px;
   padding: 6px 6px 4px;
 }
+
+/* The index of all hands: a search bar, a rail of filters, a grid of hands. */
+.hand-index {
+  position: fixed;
+  inset: 0;
+  z-index: 29; /* under the hand sheet, which opens from a card */
+  display: grid;
+  padding: var(--safe-t) var(--safe-r) 8px var(--safe-l);
+  background: rgba(5, 9, 11, 0.62);
+}
+.hand-index[hidden] {
+  display: none;
+}
+.index-panel {
+  display: grid;
+  grid-template: auto minmax(0, 1fr) / 146px minmax(0, 1fr);
+  min-height: 0;
+  width: min(1080px, 100%);
+  margin: 0 auto;
+  border-radius: 14px;
+  background: #162126;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  font-size: 12px;
+}
+.index-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 6px 8px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.index-bar h2 {
+  flex: none;
+  margin: 0;
+  font-size: 16px;
+}
+.index-bar input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  font: inherit;
+  font-size: 16px; /* iOS Safari zooms into fields below 16px */
+  -webkit-user-select: text;
+  user-select: text;
+}
+.index-bar input:focus {
+  outline: none;
+  border-color: #8ccbea;
+}
+.index-count {
+  flex: none;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.index-bar .detail-close {
+  position: static;
+  flex: none;
+}
+.index-filters,
+.index-list {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+.index-filters {
+  padding: 2px 6px 10px 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+.index-filters h3 {
+  margin: 10px 6px 3px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.index-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  min-height: 30px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  text-align: left;
+}
+.index-chip small {
+  color: var(--muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.index-chip:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.index-chip[aria-pressed="true"] {
+  background: rgba(140, 203, 234, 0.2);
+  color: #cfeaf8;
+  font-weight: 700;
+}
+.index-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(212px, 1fr));
+  align-content: start;
+  gap: 8px;
+  padding: 10px;
+}
+.index-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 8px 8px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  text-align: left;
+}
+.index-card:hover,
+.index-card:focus-visible {
+  border-color: rgba(140, 203, 234, 0.7);
+  outline: none;
+}
+.index-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.index-card-head strong {
+  overflow: hidden;
+  font-size: 13px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.index-value {
+  flex: none;
+  color: var(--gold-1);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.index-tiles {
+  gap: 1px;
+  margin: 0;
+}
+.index-tiles .chip {
+  width: 13px;
+  height: 18px;
+  border-radius: 2px;
+  box-shadow: inset 0 -1px 0 #8ccbea;
+}
+.index-tiles .chip-white {
+  outline-width: 1px;
+  outline-offset: -4px;
+}
+.index-text {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--muted);
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.index-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  color: var(--muted);
+  font-size: 11px;
+}
+.index-play {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.index-away {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(255, 224, 138, 0.16);
+  color: var(--gold-1);
+  font-weight: 700;
+}
+.index-empty {
+  grid-column: 1 / -1;
+  margin: 18px 0 4px;
+  color: var(--muted);
+  text-align: center;
+}
+.index-list > .index-chip {
+  grid-column: 1 / -1;
+  justify-content: center;
+  width: auto;
+  margin: 0 auto;
+  background: rgba(140, 203, 234, 0.2);
+}
 .help-card ul {
   margin: 0;
   padding-left: 18px;
@@ -742,18 +1102,80 @@ button {
   color: var(--muted);
 }
 
-#report-note {
-  width: 100%;
+/* The report sheet. A phone's keyboard covers the lower half of the page (most
+   of it in landscape), so report.js keeps the sheet on the part still visible
+   and the card is short: the note and Send side by side, at the top. */
+#report-sheet {
   box-sizing: border-box;
-  margin-top: 8px;
+  inset: var(--report-top, 0px) 0 auto 0;
+  height: var(--report-height, 100%);
+  padding-bottom: 6px;
+}
+@media (pointer: coarse) {
+  #report-sheet {
+    align-items: start;
+  }
+}
+.report-card {
+  width: min(520px, 100%);
+}
+.report-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+#report-note {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 8px;
   font: inherit;
   font-size: 16px; /* iOS Safari zooms into fields below 16px */
+  line-height: 1.3;
   color: inherit;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 8px;
   resize: none;
+}
+#report-send {
+  flex: none;
+  min-width: 76px;
+}
+#report-send:disabled {
+  opacity: 0.55;
+}
+.report-status {
+  margin-top: 8px;
+}
+.report-status.bad {
+  color: #f0b27a;
+}
+#report-share {
+  margin-top: 8px;
+}
+.report-fine {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+/* Barely any room above the keyboard: only the title, the note and Send. */
+#report-sheet.tight {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.tight .report-card {
+  padding: 8px 12px;
+}
+.tight .report-card h2 {
+  margin-bottom: 6px;
+  font-size: 15px;
+}
+.tight .detail-close {
+  top: 0;
+}
+.tight .report-fine {
+  display: none;
 }
 .toast {
   position: fixed;
@@ -884,7 +1306,11 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .act,
   .callout,
+  .goulash,
   .result-card {
     animation: none;
   }
+}
+.help-card .help-intro {
+  color: var(--muted);
 }

@@ -20,7 +20,8 @@ The roadmap is [docs/PLAN.md](docs/PLAN.md).
 - **Bots that plan.** Each bot aims at concrete target hands and calls only
   when that raises its hand's value. The "closest hands" panel shows you the
   same plan for your own tiles (the menu's Hints button hides it).
-- **Plays anywhere.** A static site: it works in airplane mode, saves after
+- **Plays anywhere.** A static site (its only server code files a problem
+  report): it works in airplane mode, saves after
   every move and resumes where you left off. Add it to the home screen from
   Safari to install it.
 
@@ -62,7 +63,7 @@ hook (`.claude/hooks/session-start.sh`) selects Node 24 and installs them.
 | `npm run bot-soak` | bot-only games: drawn rate and which hands win |
 
 Review boards show one screen without playing up to it:
-`/?state=turn|claim|wait|fishing|announce|ron|win|drawn|result`.
+`/?state=turn|claim|wait|fishing|announce|ron|win|drawn|result|goulash`.
 
 ## Project layout
 

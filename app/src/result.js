@@ -3,11 +3,12 @@
  */
 
 import { houseRules } from "./options.js";
+import { bookPages } from "./pages.js";
 import { explainSettlement } from "./settlement.js";
 import { sound } from "./sound.js";
 import { rankSeats, winnerLine } from "./standings.js";
 import { tileOrder } from "./tiles.js";
-import { $, WIND_NAME, board, bookPages, companionRules, faceChip, request, scores, seatName, state, storage, toast } from "./shared.js";
+import { $, WIND_NAME, board, companionRules, faceChip, request, scores, seatName, state, storage, toast } from "./shared.js";
 
 let callOut = null;
 let apply = null;
@@ -65,11 +66,11 @@ function renderOutcome(outcome) {
     const description = document.createElement("p");
     description.className = "result-description";
     description.textContent = outcome.patternDescription;
-    const printed = bookPages(outcome.patternPages);
-    if (printed !== null) {
+    const cited = bookPages(outcome.patternPages, companionRules());
+    if (cited !== "") {
       const pages = document.createElement("span");
       pages.className = "result-pages";
-      pages.textContent = ` ${printed}`;
+      pages.textContent = ` ${cited}`;
       description.append(pages);
     }
     main.append(description);

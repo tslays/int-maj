@@ -19,7 +19,7 @@ import { checkHand, summarizeMatch, type MatchSummary } from "../core/check.ts";
 import { tileKey } from "../core/tiles.ts";
 import type { Action } from "../core/game/actions.ts";
 import { chooseAction } from "../core/game/bot.ts";
-import { closestHands, pagesOf, type BookPages, type ClosestHand } from "../core/game/closest.ts";
+import { closestHands, type ClosestHand } from "../core/game/closest.ts";
 import type { Event } from "../core/game/events.ts";
 import { isApplyError } from "../core/game/draft.ts";
 import { ledgerTotals } from "../core/game/settle.ts";
@@ -37,7 +37,7 @@ import {
 } from "../core/game/state.ts";
 import { viewFor, type GameView, type PlayerView } from "../core/game/view.ts";
 import type { Wind } from "../core/tiles.ts";
-import type { Tier } from "../core/patterns/types.ts";
+import type { PageRefs, Tier } from "../core/patterns/types.ts";
 import { HAND_SET_EXCLUDED, HAND_SETS, PATTERNS, type HandSet } from "../core/patterns/table.ts";
 
 /** The web table always seats you at East, and deals to you. */
@@ -186,8 +186,8 @@ export interface OutcomePayload {
    * so the result screen can explain the hand instead of only naming it.
    */
   readonly patternDescription: string | null;
-  /** The printed pages of each book the combination is on. */
-  readonly patternPages: BookPages;
+  /** The book pages the combination is printed on, by book; null without one. */
+  readonly patternPages: PageRefs | null;
   readonly ledger: readonly LedgerEntry[];
   /** Ledger entries whose reason names a fishing settlement. */
   readonly fishing: readonly LedgerEntry[];
@@ -425,7 +425,7 @@ function outcomeFor(session: WebSession, view: GameView): OutcomePayload | null 
         ? scored.matches.map((id) => ({ id, name: PATTERN_NAMES.get(id) ?? id }))
         : [],
     patternDescription: PATTERN_BY_ID.get(result.patternId ?? "")?.description ?? null,
-    patternPages: pagesOf(PATTERN_BY_ID.get(result.patternId ?? "")),
+    patternPages: PATTERN_BY_ID.get(result.patternId ?? "")?.pages ?? null,
     ledger: state.ledger,
     fishing: state.ledger.filter((entry) => entry.reason.startsWith("fishing")),
     totals: totals.totals,
@@ -465,9 +465,12 @@ export function statePayload(session: WebSession): StatePayload {
  * rather than with every state, because planning costs a few milliseconds.
  * Empty once the hand is over.
  */
-export function closestPayload(session: WebSession): { readonly game: string; readonly hands: readonly ClosestHand[] } {
+export function closestPayload(
+  session: WebSession,
+  limit?: number,
+): { readonly game: string; readonly hands: readonly ClosestHand[] } {
   if (session.state.phase === "finished") return { game: session.id, hands: [] };
-  return { game: session.id, hands: closestHands(viewFor(session.state, session.seat)) };
+  return { game: session.id, hands: closestHands(viewFor(session.state, session.seat), limit) };
 }
 
 export interface GameStoreOptions {

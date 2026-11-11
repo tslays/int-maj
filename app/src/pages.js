@@ -1,19 +1,51 @@
 /**
- * Where a hand is printed, in words. A pure function so the wording can be
- * tested: the Companion rule sets know only the Companion, so Illustrated
- * pages never show there; with every hand in play both books are named.
+ * Page citations, always with the book's name. The table cites two books
+ * that number their pages independently - *The Game of Mah Jong Illustrated*
+ * and *The Mah Jong Player's Companion* - so a bare "p. 38" would send a
+ * player to the wrong book half the time. Pure words, no browser.
  */
 
-const list = (numbers) => (numbers.length > 1 ? `pp. ${numbers.join(", ")}` : `p. ${numbers[0]}`);
+const BOOKS = [
+  ["illustrated", "Illustrated"],
+  ["companion", "Companion"],
+];
+
+/** "Illustrated p. 38", "Companion pp. 10, 27". */
+export function citePages(book, pages) {
+  return `${book} ${pages.length > 1 ? "pp." : "p."} ${pages.join(", ")}`;
+}
 
 /**
- * @param {{ companion: readonly number[], illustrated: readonly number[] }} pages
- * @param {boolean} companionOnly  the hand is played with the Companion's hands only
- * @returns {string | null}  e.g. "Companion p. 49 · Illustrated p. 40", or null when there is nothing to cite
+ * Every book a hand is printed in, the primary book first:
+ * "Illustrated p. 38 · Companion pp. 10, 27". Empty when there is no page.
+ * A table playing with the Companion's hands only has no use for the other
+ * book, so `companionOnly` leaves the Illustrated out.
+ *
+ * @param {{illustrated?: readonly number[], companion?: readonly number[]} | null | undefined} pages
+ * @param {boolean} [companionOnly]
  */
-export function describePages(pages, companionOnly) {
-  const parts = [];
-  if (pages.companion.length > 0) parts.push(`Companion ${list(pages.companion)}`);
-  if (pages.illustrated.length > 0 && !companionOnly) parts.push(`Illustrated ${list(pages.illustrated)}`);
-  return parts.length === 0 ? null : parts.join(" · ");
+export function bookPages(pages, companionOnly = false) {
+  return BOOKS.filter(([key]) => !(companionOnly && key === "illustrated") && (pages?.[key]?.length ?? 0) > 0)
+    .map(([key, name]) => citePages(name, pages[key]))
+    .join(" · ");
+}
+
+/**
+ * A hand's printed sample pictures, as a Companion-only table sees them: the
+ * Illustrated book's pictures are dropped, and a picture both books print
+ * keeps only its Companion source.
+ *
+ * @template {{ sources: readonly { book: string, page: number }[] }} T
+ * @param {readonly T[]} samples
+ * @param {boolean} companionOnly
+ * @returns {T[]}
+ */
+export function visibleSamples(samples, companionOnly) {
+  if (!companionOnly) return [...samples];
+  const out = [];
+  for (const sample of samples) {
+    const sources = sample.sources.filter((source) => source.book.includes("Companion"));
+    if (sources.length > 0) out.push({ ...sample, sources });
+  }
+  return out;
 }

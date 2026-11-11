@@ -98,6 +98,29 @@ const BOARD_CHECKS: Readonly<Record<ScenarioName, (payload: Payload, page: Page)
     assert.equal(payload.outcome?.kind, "win");
     await resultCard(page);
   },
+  goulash: async (payload, page) => {
+    assert.equal(payload.view.phase, "exchange");
+    assert.deepEqual(await buttons(page), ["Pass 3 tiles"]);
+    await page.waitForSelector("#goulash:not([hidden])", { timeout: READY_MS });
+    const banner = (await page.textContent("#goulash")) ?? "";
+    assert.match(banner, /Goulash/, "the banner names the Goulash");
+    assert.match(banner, /Exchange 1 of 3/, "the banner names the exchange");
+    assert.match(banner, /pass to West, opposite you/, "the banner names your partner");
+    // Three taps pick the tiles, the button passes them, and the second exchange is announced.
+    const strip = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--strip")));
+    assert.equal(await page.isDisabled("#goulash-confirm"), true, "nothing to pass before three tiles are picked");
+    for (const offset of [-150, -30, 90]) {
+      await page.touchscreen.tap(VIEWPORT.width / 2 + offset, VIEWPORT.height - strip / 2);
+      await page.waitForTimeout(250);
+    }
+    assert.match((await page.textContent("#goulash-count")) ?? "", /3 of 3 picked/);
+    assert.equal(await page.isDisabled("#goulash-confirm"), false, "three picked tiles can be passed");
+    await page.click("#goulash-confirm");
+    await page.waitForFunction(() => /Exchange 2 of 3/.test(document.querySelector("#goulash")?.textContent ?? ""), null, {
+      timeout: READY_MS,
+    });
+    assert.match((await page.textContent("#goulash")) ?? "", /pass to South, on your right/);
+  },
 };
 
 async function buttons(page: Page): Promise<string[]> {
@@ -215,6 +238,18 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   );
   console.log("  ok  tap twice to throw");
 
+  // A tap on the ponds zooms onto them from above; a second tap goes back.
+  payload = await yourMove(page);
+  const zoomed = () => page.evaluate(() => document.documentElement.classList.contains("pond-zoom"));
+  await page.touchscreen.tap(VIEWPORT.width / 2, VIEWPORT.height * 0.4);
+  assert.equal(await zoomed(), true, "a tap on the ponds zooms in");
+  await page.waitForTimeout(500);
+  await page.touchscreen.tap(tile.x, tile.y);
+  assert.equal(await zoomed(), false, "a tap anywhere zooms back");
+  await page.waitForTimeout(500);
+  assert.equal(myDiscards(await settled(page)), 1, "the zoom taps throw nothing");
+  console.log("  ok  tap the ponds to zoom, tap to go back");
+
   // The hints panel lists hands; its toggle hides it. The help sheet opens and closes.
   payload = await yourMove(page);
   await page.waitForSelector("#closest:not([hidden])", { timeout: READY_MS });
@@ -222,6 +257,18 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.waitForSelector("#closest", { state: "hidden", timeout: 5000 });
   await page.click("#hints");
   await page.waitForSelector("#closest:not([hidden])", { timeout: 5000 });
+  // A listed hand opens its sheet, which shows the book's picture of the hand.
+  if ((await page.locator(".closest-item").count()) > 0) {
+    await page.click(".closest-item");
+    await page.waitForSelector("#hand-detail:not([hidden]) .detail-line", { timeout: 5000 });
+    const pictured = await page.locator("#hand-detail .sample-tiles .chip").count();
+    const sheet = (await page.textContent("#hand-detail")) ?? "";
+    if (pictured < 14 && !sheet.includes("without a picture")) {
+      throw new Error("the hand sheet shows neither the book's sample hand nor that there is none");
+    }
+    await page.click("#hand-detail .detail-close");
+    await page.waitForSelector("#hand-detail", { state: "hidden", timeout: 5000 });
+  }
   await page.click("#options");
   await page.waitForSelector("#options-sheet:not([hidden])", { timeout: 5000 });
   await page.click("#help");
@@ -244,6 +291,23 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.click("#options-close");
   await page.waitForSelector("#options-sheet", { state: "hidden", timeout: 5000 });
   console.log("  ok  hints toggle, options sheet, help sheet, hand set choice");
+
+
+  // The index of all hands: opens, filters by a book heading, searches, opens a hand's sheet.
+  await page.click("#index-open");
+  await page.waitForSelector("#hand-index:not([hidden]) .index-card", { timeout: READY_MS });
+  assert.equal(await page.locator(".index-card").count(), 89, "every catalogue hand is listed");
+  await page.click('.index-chip:has-text("Two Suits")');
+  assert.equal(await page.locator(".index-card").count(), 3, "the book files three hands under Two Suits");
+  await page.fill("#index-search", "knitting");
+  assert.equal(await page.locator(".index-card").count(), 1);
+  await page.click(".index-card");
+  await page.waitForSelector("#hand-detail:not([hidden])", { timeout: 5000 });
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#hand-detail", { state: "hidden", timeout: 5000 });
+  await page.click("#index-close");
+  await page.waitForSelector("#hand-index", { state: "hidden", timeout: 5000 });
+  console.log("  ok  index of all hands");
 
   // Play on against the bots through the same door the buttons use.
   const wallAtStart = payload.wall.remaining;

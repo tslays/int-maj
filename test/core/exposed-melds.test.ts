@@ -39,6 +39,32 @@ describe("exposed melds stay as they were claimed", () => {
     assert.notEqual(score.points, null);
   });
 
+  it("does not score Dragon's Run with a claimed chow (C p. 59: no red dot)", () => {
+    const rest = "b4 b5 b6 b7 b8 b9 dR dG dW wE wE";
+    const concealed = createHand({ concealed: `b1 b2 b3 ${rest}` });
+    assert.equal(matchHand(concealed).some((match) => match.pattern.id === "dragons-run"), true);
+    const claimed = createHand({
+      concealed: rest,
+      melds: [meld({ kind: "chow", tiles: "b1 b2 b3", exposed: true })],
+    });
+    assert.equal(matchHand(claimed).some((match) => match.pattern.id === "dragons-run"), false);
+  });
+
+  it("does not score the other undotted Companion hands with a claimed set (C p. 4)", () => {
+    const has = (hand: ReturnType<typeof createHand>, id: string) =>
+      matchHand(hand).some((match) => match.pattern.id === id);
+    const cases = [
+      { id: "robin", rest: "c1 c2 c3 c4 c5 c6 o1 o2 o3 o5 o5", kind: "chow", set: "b1 b2 b3" },
+      { id: "up-you-go", rest: "wE wS wW wN b2 b4 b4 b8 b8 b8 b8", kind: "pung", set: "b6 b6 b6" },
+      { id: "down-you-go", rest: "wE wS wW wN b2 b2 b2 b2 b6 b6 b8", kind: "pung", set: "b4 b4 b4" },
+    ] as const;
+    for (const { id, rest, kind, set } of cases) {
+      assert.equal(has(createHand({ concealed: `${set} ${rest}` }), id), true, `${id} concealed`);
+      const claimed = createHand({ concealed: rest, melds: [meld({ kind, tiles: set, exposed: true })] });
+      assert.equal(has(claimed, id), false, `${id} with a claimed ${kind}`);
+    }
+  });
+
   it("scores every win in the bot games that used to end unscored", () => {
     for (const seed of ["u-17", "u-63"]) {
       let { state } = newGame(seed);

@@ -82,8 +82,39 @@
       import { BUILD_LABEL } from "./src/build-info.js";
       document.getElementById("build-label").textContent = BUILD_LABEL;
     </script>
+    <div class="goulash" id="goulash" role="status" aria-live="polite" hidden></div>
     <div class="actions" id="actions"></div>
-    <aside class="closest" id="closest" aria-live="polite" hidden></aside>
+    <div class="corner">
+      <button class="index-open" id="index-open" type="button" aria-label="Search all hands">
+        <span>All hands</span>
+        <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="10.5" cy="10.5" r="6.5" />
+          <path d="M15.5 15.5 21 21" />
+        </svg>
+      </button>
+      <aside class="closest" id="closest" aria-live="polite" hidden></aside>
+    </div>
+    <div class="hand-index" id="hand-index" hidden>
+      <div class="index-panel" role="dialog" aria-modal="true" aria-label="All hands">
+        <header class="index-bar">
+          <h2>All hands</h2>
+          <input
+            id="index-search"
+            type="search"
+            placeholder="Search: dragon, 1-9, pairs, limit&hellip;"
+            aria-label="Search the hands"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            enterkeyhint="search"
+          />
+          <span class="index-count" id="index-count" aria-live="polite"></span>
+          <button class="detail-close" id="index-close" type="button" aria-label="Close">&times;</button>
+        </header>
+        <nav class="index-filters" id="index-filters" aria-label="Filters"></nav>
+        <div class="index-list" id="index-list"></div>
+      </div>
+    </div>
     <div class="hand-detail" id="hand-detail" hidden></div>
     <div class="hand-detail" id="options-sheet" hidden>
       <div class="detail-card help-card" role="dialog" aria-modal="true" aria-label="Options">
@@ -114,36 +145,92 @@
       </div>
     </div>
     <div class="hand-detail" id="help-sheet" hidden>
-      <div class="detail-card help-card" role="dialog" aria-modal="true" aria-label="How to play">
+      <div class="detail-card help-card" role="dialog" aria-modal="true" aria-label="How to use the app">
         <button class="detail-close" id="help-close" type="button" aria-label="Close">&times;</button>
-        <h2>How to play</h2>
+        <h2>How to use the app</h2>
+        <p class="help-intro">
+          You play international mahjong against three bots, offline on this device. This sheet is about the
+          app; the rules are in the book.
+        </p>
         <div class="detail-line">
-          <h3>Discard</h3>
-          <p>Tap a tile in your hand, then tap it again to throw it. Or hold a tile and swipe up.</p>
+          <h3>The table</h3>
+          <ul>
+            <li>You sit at the bottom, your hand along the lower edge. The bots sit left, across and right.</li>
+            <li>
+              The panel in the centre shows the round and hand (for example East 2), the tiles left in the wall,
+              and every seat's wind and score. The dealer's wind is coral, and a soft light marks whose turn it
+              is.
+            </li>
+            <li>
+              Each seat's discards lie in front of it; the newest one rests on a light plate. Melds and bonus
+              tiles sit beside each wall.
+            </li>
+            <li>
+              <b>Study the discards:</b> tap the middle of the table to see them large, from above. Tap anywhere
+              to go back. It works while the bots play too.
+            </li>
+          </ul>
         </div>
         <div class="detail-line">
-          <h3>Calling and winning</h3>
-          <p>
-            When you can claim a discard, make a kong, go fishing or declare Mah Jong, a button appears above
-            your hand. Tap it, or let it pass.
-          </p>
+          <h3>Your turn: discarding</h3>
+          <ul>
+            <li>Tap a tile to lift it, tap it again to throw it. Or hold it and swipe up, then let go; slide back down to cancel.</li>
+            <li>With a tile lifted, tapping another moves the lift, so you can compare. Tap empty table to put it down.</li>
+            <li>With a mouse, the tile under the pointer lifts by itself and one click throws it.</li>
+            <li>To arrange your hand yourself, drag a tile sideways; it trades places with the tiles it passes. That turns <b>Sort</b> off.</li>
+          </ul>
         </div>
         <div class="detail-line">
-          <h3>Hints</h3>
-          <p>
-            The Hints panel lists the hands you are closest to. Tap a row to open that hand's sheet: what it is,
-            what it pays and which tiles you still need.
-          </p>
+          <h3>The buttons above your hand</h3>
+          <p>They appear only when the game offers you the choice, with a chime. Draws, and discards you cannot claim, happen by themselves.</p>
+          <ul>
+            <li><b>Pung</b>, <b>Chow</b>: take the discard shown at the left of the bar. With several possible chows, tap Chow, then the run you want (<b>Back</b> returns).</li>
+            <li><b>Kong</b>: declare a kong from your own tiles.</li>
+            <li><b>Mah Jong</b>: declare your winning hand, from the wall or on a discard.</li>
+            <li><b>Fishing</b>: announce that you are one tile from winning; the tiles shown are the ones you wait on. <b>Don't announce</b> keeps it to yourself.</li>
+            <li><b>Pass</b>: decline the discard.</li>
+            <li><b>Reshuffle</b>: on your first turn, when the deal gives you nothing to build on, ask for a new deal.</li>
+            <li><b>Pass 3 tiles</b>: in a Goulash, tap three tiles to pass to the seat named on the banner, then confirm.</li>
+          </ul>
         </div>
         <div class="detail-line">
           <h3>Menu</h3>
           <ul>
-            <li><b>New game</b> starts a fresh deal.</li>
-            <li><b>Calls</b> off: you are no longer asked about discards.</li>
-            <li><b>Sort</b> keeps your hand in order.</li>
-            <li><b>Hints</b> shows or hides the closest-hands panel.</li>
-            <li><b>Options</b> holds the sound, the house rules, this help and Report a problem.</li>
+            <li><b>New game</b>: start again from the first hand. The game in progress is dropped.</li>
+            <li><b>Calls</b>: lit, you are asked about every discard you could claim. Off, you are not asked about Pung, Chow or Kong, which cuts the pauses. You are still asked about Mah Jong.</li>
+            <li><b>Sort</b>: lit, the game keeps your hand in order. After you have rearranged it by hand, tap it to sort again.</li>
+            <li><b>Hints</b>: show or hide the Closest hands panel.</li>
+            <li><b>Options</b>: opens a sheet with the <b>Sound</b> switch (on iPhone the silent switch also mutes it), the house rules, <b>Report</b> (send a problem to the developers, below) and <b>Help</b>, this sheet. The small label under the menu is the build you are playing.</li>
           </ul>
+          <p>A lit button is on. Hints, Sound and the house rules are remembered on this device.</p>
+        </div>
+        <div class="detail-line">
+          <h3>Closest hands</h3>
+          <p>
+            The panel at the top right lists up to three hands your tiles are nearest to: its name, how many
+            tiles you still need and its value. The eye icon says how to play it: a closed eye means concealed
+            only, so calling a discard rules it out; an open eye means exposed melds are fine. It updates as
+            your tiles change. Tap a row for the hand's sheet: what it is, its picture from the book, what it
+            pays and the tiles you still need.
+          </p>
+        </div>
+        <div class="detail-line">
+          <h3>All hands</h3>
+          <p>
+            The button above that panel opens a list of every hand in play, even with Hints off. With all hands in play that is every hand in both books. Search
+            by name or tiles ("dragon pairs", "1-9"), or filter by kind, value, concealed or exposed play and
+            book. During a hand each card says how many tiles you are away, and <b>Order</b> can put the
+            nearest first. Tap a card for its sheet. The cross, a tap outside or Escape closes a sheet.
+          </p>
+        </div>
+        <div class="detail-line">
+          <h3>After a hand</h3>
+          <p>
+            The result card names the winning hand and what it scored, or says the hand was drawn. Each seat
+            shows its change in green or red and its new total; tap a seat to see who paid what, and why.
+            <b>Next hand</b> deals again. After the last hand, <b>Final standings</b> ranks the seats, and
+            <b>New game</b> starts over.
+          </p>
         </div>
         <div class="detail-line">
           <h3>House rules</h3>
@@ -155,36 +242,49 @@
         </div>
         <div class="detail-line">
           <h3>Saving</h3>
-          <p>The game saves after every move and picks up where you left off when you come back.</p>
+          <p>
+            The game saves after every move, on this device only, and picks up where you left off, also after a
+            reload. If an update changes the game, the hand starts again with your scores kept.
+          </p>
         </div>
         <div class="detail-line">
           <h3>Install on your phone</h3>
           <p>
-            iPhone: tap Share, then Add to Home Screen. Android: open the browser menu, then Add to Home
-            screen. Play with the phone on its side.
+            Play with the phone on its side. iPhone: tap Share, then Add to Home Screen. Android: open the
+            browser menu, then Add to Home screen. Installed, it runs full screen and offline.
           </p>
         </div>
         <div class="detail-line" id="help-report">
           <h3>Report a problem</h3>
           <p>
-            Open Options and tap Report, add a line about what you saw if you like, and send it. It shares the
-            build, your device and every move of this game, so the hand can be replayed.
+            Open <b>Options</b>, tap <b>Report</b>, add a line about what you saw if you like, and tap <b>Send</b>. It goes to the
+            developers with the build, your device and every move of this game, so the hand can be replayed. No
+            name or account. Without a connection, <b>Share it instead</b> sends it as a message.
           </p>
         </div>
       </div>
     </div>
     <div class="hand-detail" id="report-sheet" hidden>
-      <div class="detail-card help-card" role="dialog" aria-modal="true" aria-label="Report a problem">
+      <div class="detail-card report-card" role="dialog" aria-modal="true" aria-label="Report a problem">
         <button class="detail-close" id="report-close" type="button" aria-label="Close">&times;</button>
         <h2>Report a problem</h2>
-        <div class="detail-line">
-          <p>
-            The report holds the build, your device and every move of this game. It has no name or account.
-            Optional: what did you see?
-          </p>
-          <textarea id="report-note" rows="3" maxlength="280" aria-label="What did you see?"></textarea>
+        <div class="report-row">
+          <textarea
+            id="report-note"
+            rows="2"
+            maxlength="280"
+            enterkeyhint="send"
+            placeholder="What did you see? (optional)"
+            aria-label="What did you see?"
+          ></textarea>
+          <button class="ghost" id="report-send" type="button" aria-label="Send report"><span>Send</span></button>
         </div>
-        <button class="ghost" id="report-send" type="button"><span>Send report</span></button>
+        <p class="report-status" id="report-status" role="status" hidden></p>
+        <button class="ghost" id="report-share" type="button" hidden><span>Share it instead</span></button>
+        <p class="report-fine">
+          Goes straight to the developers, with the build, your device and every move of this game. No name
+          or account.
+        </p>
       </div>
     </div>
     <section class="result" id="result" hidden></section>

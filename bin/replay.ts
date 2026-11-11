@@ -27,6 +27,7 @@ import {
   type ReplayStep,
 } from "../src/core/game/index.ts";
 import { isReportText, parseReport } from "../src/table/report.ts";
+import { PACKED_BEGIN, unpackReport } from "../src/worker/pack.ts";
 
 const USAGE = `Usage: npm run replay -- <file.json>
        npm run replay -- --events <file.json>
@@ -93,7 +94,9 @@ async function main(): Promise<void> {
     }
   }
 
-  const text = path === undefined ? await readStdin() : readFileSync(path, "utf8");
+  const raw = path === undefined ? await readStdin() : readFileSync(path, "utf8");
+  // A long game's report arrives with its replay block packed (src/worker/pack.ts).
+  const text = raw.includes(PACKED_BEGIN) ? await unpackReport(raw) : raw;
   if (text.trim().length === 0) {
     console.error(USAGE);
     process.exitCode = 2;

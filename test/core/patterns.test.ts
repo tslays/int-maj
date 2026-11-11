@@ -20,9 +20,11 @@ describe("pattern table schema", () => {
       PATTERNS.length,
     );
     for (const pattern of PATTERNS) {
-      // Every hand is printed in at least one book, and the Illustrated-only hands in no other.
-      assert.ok(pattern.companionPages.length + pattern.illustratedPages.length > 0, pattern.id);
-      if (pattern.illustratedOnly === true) assert.equal(pattern.companionPages.length, 0, pattern.id);
+      assert.ok(
+        pattern.pages.illustrated.length + pattern.pages.companion.length > 0,
+        `${pattern.id} cites no page in either book`,
+      );
+      if (pattern.illustratedOnly === true) assert.equal(pattern.pages.companion.length, 0, pattern.id);
     }
   });
 
@@ -217,17 +219,16 @@ describe("Three Great Scholars", () => {
 });
 
 describe("Up You Go concealed kong", () => {
-  it("accepts an exposed non-kong meld", () => {
+  it("rejects an exposed pung: the synopsis row has no red dot (C p. 4)", () => {
     const hand = createHand({
       concealed: "wE wS wW wN b2 b4 b4 b8 b8 b8 b8",
       melds: [meld({ kind: "pung", tiles: "b6 b6 b6", exposed: true })],
       selfDrawn: true,
     });
-    const match = matchHand(hand).find(
-      (entry) => entry.pattern.id === "up-you-go",
+    assert.equal(
+      matchHand(hand).some((entry) => entry.pattern.id === "up-you-go"),
+      false,
     );
-    assert.ok(match);
-    assert.equal(match!.tier, "double");
   });
 
   it("rejects an exposed kong of the required tile", () => {

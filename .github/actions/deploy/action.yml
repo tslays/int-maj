@@ -11,6 +11,13 @@ inputs:
   command:
     description: The wrangler arguments, for example "deploy --env dev".
     required: true
+  report-token:
+    description: >-
+      The GitHub token the Worker files problem reports with (pass the
+      repository secret REPORT_GITHUB_TOKEN). Empty leaves the Worker's
+      secret as it is.
+    required: false
+    default: ""
 runs:
   using: composite
   steps:
@@ -34,6 +41,17 @@ runs:
       env:
         CLOUDFLARE_API_TOKEN: ${{ inputs.token }}
         WRANGLER_ARGS: ${{ inputs.command }}
+        REPORT_GITHUB_TOKEN: ${{ inputs.report-token }}
       run: |
         set -o pipefail
-        npx --yes wrangler@4.158.0 $WRANGLER_ARGS | tee wrangler.log
+        secrets=()
+        if [ -n "$REPORT_GITHUB_TOKEN" ]; then
+          # Written outside the checkout and removed again; never printed.
+          file="$RUNNER_TEMP/worker-secrets.json"
+          node -e 'require("fs").writeFileSync(process.argv[1], JSON.stringify({ REPORT_GITHUB_TOKEN: process.env.REPORT_GITHUB_TOKEN }))' "$file"
+          secrets=(--secrets-file "$file")
+          trap 'rm -f "$file"' EXIT
+        else
+          echo "::notice::No REPORT_GITHUB_TOKEN secret, so the Worker's report token is left as it is."
+        fi
+        npx --yes wrangler@4.158.0 $WRANGLER_ARGS "${secrets[@]}" | tee wrangler.log

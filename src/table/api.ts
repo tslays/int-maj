@@ -8,8 +8,10 @@
  *
  *   GET  /api/state?game=     one seat's view, legal actions and wait panel
  *   GET  /api/closest?game=   the catalogue hands your tiles are nearest to
+ *                             (`&limit=` up to 100 instead of the default three)
  *   GET  /api/hand?pattern=   one catalogue hand's conditions (concealed or open)
  *   GET  /api/house-rules     the hand sets on offer and the hands each leaves out
+ *   GET  /api/hands?set=      the hands in play (set: all, companion, companion-pictured) with the book's headings, for the index
  *   GET  /api/scenario?state= a fixed review board (turn, claim, win, ...)
  *   POST /api/new             deal a game from `{ seed, houseRules }`
  *   POST /api/move            apply `{ game, action }`, return events as text
@@ -22,8 +24,8 @@
  * it was dealt with, so a change shows from the next deal.
  */
 
-import { handDetail } from "../core/game/closest.ts";
-import { HAND_SETS } from "../core/patterns/table.ts";
+import { handDetail, handIndex } from "../core/game/closest.ts";
+import { HAND_SET_EXCLUDED, HAND_SETS } from "../core/patterns/table.ts";
 import { describeEventFor } from "../core/game/describe.ts";
 import type { Action } from "../core/game/actions.ts";
 import {
@@ -166,11 +168,20 @@ function routeGet(context: ApiContext, request: ApiRequest): ApiResponse | null 
     if (id === null || id.length === 0) return fail(400, "game is required");
     const session = store.get(id);
     if (session === undefined) return fail(404, `unknown game: ${id}`);
-    return ok(closestPayload(session), request.query.has("pretty"));
+    const limit = Number(request.query.get("limit") ?? "");
+    return ok(
+      closestPayload(session, Number.isInteger(limit) && limit > 0 ? Math.min(limit, 100) : undefined),
+      request.query.has("pretty"),
+    );
   }
 
   if (request.path === "/api/house-rules") {
     return ok(houseRulesPayload(), request.query.has("pretty"));
+  }
+  if (request.path === "/api/hands") {
+    const set = request.query.get("set") ?? "all";
+    if (!isHandSet(set)) return fail(400, `set must be one of ${HAND_SETS.join(", ")}`);
+    return ok(handIndex(HAND_SET_EXCLUDED[set]), request.query.has("pretty"));
   }
 
   if (request.path === "/api/hand") {

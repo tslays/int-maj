@@ -55,6 +55,15 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   is only as tall as the tile row needs (plus headroom for a lifted tile), and
   the table camera is solved down to the top of the standing hand tiles, so
   no screen is spent on felt between your melds and your hand.
+- The pond zoom (`stage.js` `setPondZoom`, `camera.js` `fitPondCamera`): a tap
+  on the table inside the walls swings the table camera straight above the
+  ponds (your own pond still nearest you) and your hand slides off the bottom
+  edge, so the discards have the whole screen; a tap anywhere swings back.
+  The view frames the square `pondExtent` gives for the discards lying (never
+  less than the three full rows). It works while the bots play; a tap with a
+  hand tile lifted only puts the tile down. With `prefers-reduced-motion` the
+  view changes at once. `test/app/view.test.ts` proves every discard is on
+  screen and larger than in the table view.
 - The turn light (`stage.js`, `updateConsole`): the console is painted in three
   layers (panel, light, lettering) so the light can move under the text. The
   seat whose turn it is glows along its edge with a soft, edgeless light, wide
@@ -83,8 +92,12 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   `shared.js` (the one mutable `state` - api, latest answer, busy, calls
   off - plus the board, storage, `request`, `toast`, `faceChip` and other
   small helpers), `input.js` (hand input: tap, lift, drag, swipe-to-throw,
-  the goulash picks), `hints.js` (closest-hands panel, hand sheet and the Hints
-  toggle), `result.js` (the result card and the final standings), `menu.js`
+  the goulash picks), `goulash.js` (the Goulash banner over the middle of the
+  table during the three exchanges: what the hand is, which exchange, who your
+  tiles go to, how many are picked), `hints.js` (closest-hands panel, the hand
+  sheet with the book's own sample hand, and the Hints toggle), `handbook.js`
+  (the index of all hands), `result.js` (the result card and the final
+  standings), `menu.js`
   (the Calls, Sort, New game buttons and the help sheet), `options.js` (the
   Options sheet: the Sound switch, the house rules, and the Help and Report
   buttons) and `report.js` (report a problem). Modules that need the loop (`input`,
@@ -127,6 +140,31 @@ when exposed melds are allowed. Tapping a row opens the hand's sheet
 discards, the hand's composition, what it pays concealed and exposed, whether
 it must be self-drawn, the tiles you still need and its book pages. Close it with the cross, the backdrop or Escape.
 
+Above the panel, **All hands** opens the index of every catalogue hand
+(`app/src/handbook.js`, `GET /api/hands`), so nobody has to reach for either
+book. It stays there with Hints off. Each card shows the hand's name, value, an
+example in tiles, its composition and the concealed/exposed icon; tapping it
+opens the same hand sheet, which also lists the example and the page in each
+book. The rail on the left filters by:
+
+- **Kind of hand**: the headings of the Companion's "Full synopsis of special
+  hands" (C pp. 56-61) - Runs, Chows, Pairs, Pungs & Kongs, Winds, Dragons,
+  All Honours, Winds &/or Dragons with Suits, One/Two/Three Suits and the
+  Bamboo, Circle and Character suits - with the hands in the book's order. A
+  hand the book files under several headings is under each. The transcription
+  is `src/core/patterns/reference.ts`. All Kong and Mixed Pung (Illustrated
+  p. 30, not in the synopsis) are filed under Pungs & Kongs by composition;
+  Buried Treasure and the Chinese ordinary hand have no heading and sit under
+  "Other".
+- **Value** (the concealed tier), **Play** (concealed only or exposed allowed)
+  and **Book** (printed in the Illustrated book, or only in the Companion).
+
+The search box matches every typed word against the name, composition,
+headings, value and book of a hand ("dragon pairs", "1-9 wind"). While a hand
+is being played, cards within reach of your tiles carry "n to go"
+(`/api/closest?limit=100`), the sheet lists the tiles still needed, and
+**Order** can sort the nearest hands first.
+
 ## Sound
 
 `app/src/sound.js` plays named cues (`sound.cue("clack", { delay, pan, far })`)
@@ -162,7 +200,7 @@ Two URL options help when testing:
 
 | URL | Opens |
 | --- | --- |
-| `/?state=turn\|claim\|wait\|fishing\|announce\|ron\|win\|drawn\|result` | one fixed review board, replayed from a seed |
+| `/?state=turn\|claim\|wait\|fishing\|announce\|ron\|win\|drawn\|result\|goulash` | one fixed review board, replayed from a seed |
 | `/?phone` | the table inside an iPhone-landscape frame, on any screen |
 | `/?install=ios\|android\|ios-webview\|android-webview` | that install guide on the turn-your-phone screen, on any phone held upright |
 
@@ -181,8 +219,9 @@ tiles of the other seats, and their hand counts only.
 | Route | Body / query | Returns |
 | --- | --- | --- |
 | `GET /api/state` | `game=<id>` | the view, legal actions, wall count, per-seat table, ledger, wait panel, result and `scoresBefore` |
-| `GET /api/closest` | `game=<id>` | the catalogue hands your tiles are nearest to (`closestHands`), at most three |
-| `GET /api/hand` | `pattern=<id>` | one catalogue hand's conditions: composition, concealed-only, self-drawn, concealed and open value (`handDetail`) |
+| `GET /api/closest` | `game=<id>` | the catalogue hands your tiles are nearest to (`closestHands`), at most three; `limit=<n>` raises that to at most 100 |
+| `GET /api/hand` | `pattern=<id>` | one catalogue hand's conditions: composition, concealed-only, self-drawn, concealed and open value, its example, book headings and the page in each book (`handDetail`) |
+| `GET /api/hands` | - | the whole catalogue for the index: every hand as above, and the book's headings with their hands in book order (`handIndex`) |
 | `GET /api/scenario` | `state=<name>` | one fixed review board and its events |
 | `POST /api/new` | `{ "seed": "..." }` | a new game and its first state |
 | `POST /api/move` | `{ "game": "...", "action": {...} }` | the new state plus `events` as text lines |
@@ -243,11 +282,31 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   pages (`pages.js`) and the payment explanations drop their Illustrated page
   citations (`explainSettlement({ cite: false })`).
 - **Report a problem.** The Report button in Options (accessible name "Report a
-  problem") opens a sheet of that title with an optional
-  one-line note; Send report hands the text to `navigator.share` (the iOS
-  share sheet) or, where that is missing or fails, to the clipboard with a
-  toast. No server, account or network. `src/table/report.ts` builds it
-  (`LocalApi.report`), so `app/` only collects the note and delivers. The text:
+  problem") opens a sheet of that title with an optional one-line note and a
+  Send button (accessible name "Send report"; the keyboard's return key sends
+  too). `app/src/report.js` posts the text to `api/report` on its own site,
+  and the Worker in front of the static files (`src/worker/`, the only server
+  code) files it as an issue labelled `report` in this repository, titled
+  with the note and the build; the sheet answers "Sent as report #N". The
+  issue holds the text in a code block, so save that block as `report.txt` to
+  replay it. A game too long for an issue (about nine hands) has its replay
+  block gzipped and base64-encoded by the Worker (`src/worker/pack.ts`);
+  `npm run replay` unpacks it. The endpoint takes only a same-origin post of
+  one well-formed report of at most 300 000 characters, five a minute per
+  address, and needs the Worker secret `REPORT_GITHUB_TOKEN`
+  (`docs/WORKFLOW.md`, "Problem reports"). When the post fails (offline, or
+  no token on that site, as under `npm run dev`) the sheet says so and offers
+  "Share it instead": `navigator.share` (the iOS share sheet) or, where that
+  is missing or fails, the clipboard with a toast.
+
+  A phone's keyboard covers the page instead of resizing it, most of it in
+  landscape, so the sheet is kept on `window.visualViewport` (the part still
+  in sight) and aligned to its top, with the note and Send side by side;
+  under 240px of visible height it drops its small print. It also opens over
+  the turn-your-phone screen, so a report can be typed in portrait.
+
+  `src/table/report.ts` builds the text (`LocalApi.report`), so `app/` only
+  collects the note and delivers. The text:
 
   ```
   int-maj problem report

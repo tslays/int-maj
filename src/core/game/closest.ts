@@ -13,26 +13,15 @@
  * player's concealed tiles. Pure and deterministic.
  */
 
+import { BOOK_TITLE, samplesFor, type SampleTile } from "../patterns/samples.ts";
 import { PATTERNS } from "../patterns/table.ts";
-import { TIER_POINTS, type HandPattern, type Tier } from "../patterns/types.ts";
+import { EDITORIAL_ROWS, EXAMPLES, SYNOPSIS } from "../patterns/reference.ts";
+import { TIER_POINTS, type HandPattern, type PageRefs, type Tier } from "../patterns/types.ts";
 import { situationFor } from "./bot.ts";
 import { completion, KEYS, oddsFor, planGoals } from "./bot/plan.ts";
 import type { GameView } from "./view.ts";
 
 const PATTERN_BY_ID = new Map(PATTERNS.map((pattern) => [pattern.id, pattern]));
-
-/** Where a hand is printed: the printed pages of each of the two books. */
-export interface BookPages {
-  readonly companion: readonly number[];
-  readonly illustrated: readonly number[];
-}
-
-export function pagesOf(pattern: HandPattern | undefined): BookPages {
-  return {
-    companion: [...(pattern?.companionPages ?? [])],
-    illustrated: [...(pattern?.illustratedPages ?? [])],
-  };
-}
 
 export interface ClosestHand {
   readonly pattern: string;
@@ -41,8 +30,8 @@ export interface ClosestHand {
   readonly tier: Tier;
   /** The printed value, or null for a hand whose score is calculated. */
   readonly points: number | null;
-  /** The printed pages of each book the hand is on. */
-  readonly pages: BookPages;
+  /** Book pages the hand is printed on, by book. */
+  readonly pages: PageRefs;
   /**
    * True when the hand exists only concealed: any exposed meld (a called
    * pung, kong or chow) rules it out. Most special hands are like this.
@@ -98,7 +87,7 @@ export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand
         name: pattern.name,
         tier,
         points: TIER_POINTS[tier],
-        pages: pagesOf(pattern),
+        pages: pattern.pages,
         concealedOnly: pattern.exposedTier === null,
         away: need.length,
         need,
@@ -117,7 +106,12 @@ export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand
 export interface HandDetail {
   readonly pattern: string;
   readonly name: string;
-  readonly pages: BookPages;
+  /** Book pages the hand is printed on, by book (the same references as the hand's sheet). */
+  readonly pages: PageRefs;
+  /** The book headings the hand is filed under (`HandGroup.id`), in book order. */
+  readonly groups: readonly string[];
+  /** One complete example, as tile keys in reading order. */
+  readonly example: readonly string[];
   /** What the hand is made of, in plain words. */
   readonly description: string;
   /** Concealed-only: no exposed meld is allowed at any point. */
@@ -129,16 +123,76 @@ export interface HandDetail {
   /** Null when the hand does not exist with exposed melds. */
   readonly exposedTier: Tier | null;
   readonly exposedPoints: number | null;
+  /** The sample hand each book pictures, primary book first; empty if neither does. */
+  readonly samples: readonly HandSample[];
 }
 
-/** One hand by id, for the "explore this hand" view; null for an unknown id. */
-export function handDetail(id: string): HandDetail | null {
-  const pattern = PATTERN_BY_ID.get(id);
-  if (pattern === undefined) return null;
+/**
+ * One printed picture of a hand: the tiles as the page groups them. A picture
+ * both books print identically is one entry with both sources.
+ */
+export interface HandSample {
+  /** Where it is printed: a book's title and page, primary book first. */
+  readonly sources: readonly { readonly book: string; readonly page: number }[];
+  /** Printed sub-heading when the book pictures several versions. */
+  readonly label: string | null;
+  /** A tile key, or `{ any }` for a card the book prints in place of a tile. */
+  readonly groups: readonly (readonly SampleTile[])[];
+  readonly notes: readonly string[];
+}
+
+function mergedSamples(id: string): HandSample[] {
+  const merged: { -readonly [K in keyof HandSample]: HandSample[K] }[] = [];
+  for (const sample of samplesFor(id)) {
+    const source = { book: BOOK_TITLE[sample.book], page: sample.page };
+    const twin = merged.find((entry) => JSON.stringify(entry.groups) === JSON.stringify(sample.groups));
+    if (twin === undefined) {
+      merged.push({
+        sources: [source],
+        label: sample.label ?? null,
+        groups: sample.groups,
+        notes: sample.note === undefined ? [] : [sample.note],
+      });
+      continue;
+    }
+    twin.sources = [...twin.sources, source];
+    if (sample.note !== undefined && !twin.notes.includes(sample.note)) twin.notes = [...twin.notes, sample.note];
+  }
+  return merged;
+}
+
+/** A heading of the Companion's synopsis, or "Other" for hands it does not file. */
+export interface HandGroup {
+  readonly id: string;
+  readonly name: string;
+  /** The hands under the heading, in the book's order. */
+  readonly hands: readonly string[];
+}
+
+const OTHER_GROUP = "other";
+
+/** The book's headings with their hands; a last "Other" holds hands no heading lists. */
+function buildGroups(): HandGroup[] {
+  const groups: HandGroup[] = SYNOPSIS.map((heading) => ({
+    id: heading.id,
+    name: heading.name,
+    hands: [...new Set([...heading.rows.map(([, id]) => id), ...(EDITORIAL_ROWS[heading.id] ?? [])])],
+  }));
+  const filed = new Set(groups.flatMap((group) => group.hands));
+  const rest = PATTERNS.filter((pattern) => !filed.has(pattern.id)).map((pattern) => pattern.id);
+  if (rest.length > 0) groups.push({ id: OTHER_GROUP, name: "Other", hands: rest });
+  return groups;
+}
+
+const GROUPS: readonly HandGroup[] = buildGroups();
+
+function detailOf(pattern: HandPattern): HandDetail {
   return {
     pattern: pattern.id,
     name: pattern.name,
-    pages: pagesOf(pattern),
+    pages: pattern.pages,
+    groups: GROUPS.filter((group) => group.hands.includes(pattern.id)).map((group) => group.id),
+    example: (EXAMPLES[pattern.id] ?? "").split(" ").filter((key) => key.length > 0),
     description: pattern.description,
     concealedOnly: pattern.exposedTier === null,
     requiresSelfDrawn: pattern.requiresSelfDrawn,
@@ -146,5 +200,29 @@ export function handDetail(id: string): HandDetail | null {
     concealedPoints: TIER_POINTS[pattern.tier],
     exposedTier: pattern.exposedTier,
     exposedPoints: pattern.exposedTier === null ? null : TIER_POINTS[pattern.exposedTier],
+    samples: mergedSamples(pattern.id),
+  };
+}
+
+/** One hand by id, for the "explore this hand" view; null for an unknown id. */
+export function handDetail(id: string): HandDetail | null {
+  const pattern = PATTERN_BY_ID.get(id);
+  return pattern === undefined ? null : detailOf(pattern);
+}
+
+/**
+ * The catalogue for the hand index: every hand in play, and the book's
+ * headings to filter by. `excluded` names the hands the table plays without
+ * (a house rule); they and their place under a heading are left out.
+ */
+export function handIndex(
+  excluded: readonly string[] = [],
+): { readonly groups: readonly HandGroup[]; readonly hands: readonly HandDetail[] } {
+  if (excluded.length === 0) return { groups: GROUPS, hands: PATTERNS.map(detailOf) };
+  return {
+    groups: GROUPS.map((group) => ({ ...group, hands: group.hands.filter((id) => !excluded.includes(id)) })).filter(
+      (group) => group.hands.length > 0,
+    ),
+    hands: PATTERNS.filter((pattern) => !excluded.includes(pattern.id)).map(detailOf),
   };
 }
