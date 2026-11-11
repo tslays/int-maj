@@ -12,6 +12,7 @@
 import { createLocalApi } from "../engine/table/local.js";
 import { clearSelection, goulashKeys, installInput, resetGoulash } from "./input.js";
 import { refreshHints } from "./hints.js";
+import "./handbook.js";
 import { installMenu } from "./menu.js";
 import "./report.js";
 import { installResult, showOutcome } from "./result.js";

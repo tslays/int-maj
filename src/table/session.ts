@@ -419,9 +419,12 @@ export function statePayload(session: WebSession): StatePayload {
  * rather than with every state, because planning costs a few milliseconds.
  * Empty once the hand is over.
  */
-export function closestPayload(session: WebSession): { readonly game: string; readonly hands: readonly ClosestHand[] } {
+export function closestPayload(
+  session: WebSession,
+  limit?: number,
+): { readonly game: string; readonly hands: readonly ClosestHand[] } {
   if (session.state.phase === "finished") return { game: session.id, hands: [] };
-  return { game: session.id, hands: closestHands(viewFor(session.state, session.seat)) };
+  return { game: session.id, hands: closestHands(viewFor(session.state, session.seat), limit) };
 }
 
 export interface GameStoreOptions {

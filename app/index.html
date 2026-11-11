@@ -85,7 +85,37 @@
       document.getElementById("build-label").textContent = BUILD_LABEL;
     </script>
     <div class="actions" id="actions"></div>
-    <aside class="closest" id="closest" aria-live="polite" hidden></aside>
+    <div class="corner">
+      <button class="index-open" id="index-open" type="button" aria-label="Search all hands">
+        <span>All hands</span>
+        <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="10.5" cy="10.5" r="6.5" />
+          <path d="M15.5 15.5 21 21" />
+        </svg>
+      </button>
+      <aside class="closest" id="closest" aria-live="polite" hidden></aside>
+    </div>
+    <div class="hand-index" id="hand-index" hidden>
+      <div class="index-panel" role="dialog" aria-modal="true" aria-label="All hands">
+        <header class="index-bar">
+          <h2>All hands</h2>
+          <input
+            id="index-search"
+            type="search"
+            placeholder="Search: dragon, 1-9, pairs, limit&hellip;"
+            aria-label="Search the hands"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            enterkeyhint="search"
+          />
+          <span class="index-count" id="index-count" aria-live="polite"></span>
+          <button class="detail-close" id="index-close" type="button" aria-label="Close">&times;</button>
+        </header>
+        <nav class="index-filters" id="index-filters" aria-label="Filters"></nav>
+        <div class="index-list" id="index-list"></div>
+      </div>
+    </div>
     <div class="hand-detail" id="hand-detail" hidden></div>
     <div class="hand-detail" id="help-sheet" hidden>
       <div class="detail-card help-card" role="dialog" aria-modal="true" aria-label="How to play">
@@ -106,7 +136,9 @@
           <h3>Hints</h3>
           <p>
             The Hints panel lists the hands you are closest to. Tap a row to open that hand's sheet: what it is,
-            what it pays and which tiles you still need.
+            what it pays and which tiles you still need. <b>All hands</b> above it opens the index of every
+            hand in both books: search by name or tiles, or filter by the book's headings, value and
+            concealed or exposed play.
           </p>
         </div>
         <div class="detail-line">
