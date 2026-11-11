@@ -84,15 +84,23 @@ describe("book sample hands", () => {
     assert.ok(!fillings(twins).some((tiles) => matches("gates-of-heaven", tiles)));
   });
 
-  it("reaches the hand sheet with the book's title and page", () => {
+  it("reaches the hand sheet, one picture with every book that prints it", () => {
     const snake = handDetail("wriggly-snake")!;
-    assert.equal(snake.samples.length, 2);
-    assert.deepEqual(
-      snake.samples.map((sample) => [sample.book, sample.page]),
-      [["The Game of Mah Jong Illustrated", 38], ["The Mah Jong Player's Companion", 10]],
-    );
+    assert.equal(snake.samples.length, 1);
+    assert.deepEqual(snake.samples[0]!.sources, [
+      { book: "The Game of Mah Jong Illustrated", page: 38 },
+      { book: "The Mah Jong Player's Companion", page: 10 },
+    ]);
     assert.deepEqual(snake.samples[0]!.groups[2], [{ any: "Any tile paired" }]);
     assert.deepEqual(handDetail("robin")!.samples, []);
-    assert.ok(!("illustrates" in handDetail("big-robert")!.samples[0]!));
+  });
+
+  it("keeps two pictures apart when the books differ", () => {
+    const run = handDetail("run-pung-pair")!;
+    assert.equal(run.samples.length, 2);
+    assert.ok(run.samples.every((sample) => sample.sources.length === 1));
+    const tail = handDetail("dragons-tail")!;
+    assert.equal(tail.samples.length, 2, "two versions, each printed in both books");
+    assert.ok(tail.samples.every((sample) => sample.sources.length === 2));
   });
 });

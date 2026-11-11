@@ -175,18 +175,23 @@ function sampleFigure(sample) {
     tiles.append(set);
   }
   const caption = document.createElement("figcaption");
-  caption.textContent = `${sample.book}, p. ${sample.page}${sample.label === null ? "" : ` \u00b7 ${sample.label}`}`;
+  const lines = sample.sources.map((source) => `${source.book}, p. ${source.page}`);
+  if (sample.label !== null) lines.unshift(sample.label);
+  lines.forEach((text, index) => {
+    if (index > 0) caption.append(document.createElement("br"));
+    caption.append(text);
+  });
   figure.append(tiles, caption);
-  if (sample.note !== null) {
+  for (const text of sample.notes) {
     const note = document.createElement("p");
     note.className = "sample-note";
-    note.textContent = sample.note;
+    note.textContent = text;
     figure.append(note);
   }
   return figure;
 }
 
-function sampleSection(samples) {
+function sampleSection(samples, pages) {
   const line = document.createElement("div");
   line.className = "detail-line";
   const heading = document.createElement("h3");
@@ -194,7 +199,7 @@ function sampleSection(samples) {
   line.append(heading);
   if (samples.length === 0) {
     const none = document.createElement("p");
-    none.textContent = "The book lists this hand without a picture.";
+    none.textContent = `The books list this hand (${bookPages(pages)}) without a picture.`;
     line.append(none);
   }
   for (const sample of samples) line.append(sampleFigure(sample));
@@ -242,7 +247,7 @@ export async function openHandDetail(pattern, progress = null) {
       "though it pays less than playing it concealed.";
   banner.append(playIcon(detail.concealedOnly), bannerTitle, bannerText);
 
-  card.append(close, heading, banner, detailLine("What it is", detail.description), sampleSection(detail.samples));
+  card.append(close, heading, banner, detailLine("What it is", detail.description), sampleSection(detail.samples, detail.pages));
   if (detail.requiresSelfDrawn) {
     card.append(detailLine("Self-drawn", "Every tile, the winning one included, must come from the wall."));
   }
@@ -274,7 +279,6 @@ export async function openHandDetail(pattern, progress = null) {
     }
     card.append(detailLine(progress.away === 0 ? "Your hand" : `You still need (${progress.away})`, need));
   }
-  card.append(detailLine("In the books", bookPages(detail.pages)));
 
   sheet.replaceChildren(card);
   sheet.hidden = false;
