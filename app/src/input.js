@@ -3,7 +3,8 @@
  * to throw, and picking the three tiles of a goulash exchange.
  */
 
-import { board, state } from "./shared.js";
+import { showGoulashPicked } from "./goulash.js";
+import { $, board, state } from "./shared.js";
 import { renderer } from "./stage.js";
 import { sound } from "./sound.js";
 
@@ -61,6 +62,7 @@ renderer.domElement.addEventListener("pointerdown", (event) => {
     }
     const confirm = $("#goulash-confirm");
     if (confirm) confirm.disabled = goulashPicks.length !== 3;
+    showGoulashPicked(goulashPicks.length);
     return;
   }
 

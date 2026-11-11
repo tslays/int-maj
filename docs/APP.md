@@ -83,7 +83,9 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   `shared.js` (the one mutable `state` - api, latest answer, busy, calls
   off - plus the board, storage, `request`, `toast`, `faceChip` and other
   small helpers), `input.js` (hand input: tap, lift, drag, swipe-to-throw,
-  the goulash picks), `hints.js` (closest-hands panel, hand sheet and the Hints
+  the goulash picks), `goulash.js` (the Goulash banner over the middle of the
+  table during the three exchanges: what the hand is, which exchange, who your
+  tiles go to, how many are picked), `hints.js` (closest-hands panel, hand sheet and the Hints
   toggle), `result.js` (the result card and the final standings), `menu.js`
   (the Calls, Sort, Sound, New game buttons and the help sheet) and
   `report.js` (report a problem). Modules that need the loop (`input`,
@@ -161,7 +163,7 @@ Two URL options help when testing:
 
 | URL | Opens |
 | --- | --- |
-| `/?state=turn\|claim\|wait\|fishing\|announce\|ron\|win\|drawn\|result` | one fixed review board, replayed from a seed |
+| `/?state=turn\|claim\|wait\|fishing\|announce\|ron\|win\|drawn\|result\|goulash` | one fixed review board, replayed from a seed |
 | `/?phone` | the table inside an iPhone-landscape frame, on any screen |
 | `/?install=ios\|android\|ios-webview\|android-webview` | that install guide on the turn-your-phone screen, on any phone held upright |
 
