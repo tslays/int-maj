@@ -1030,7 +1030,7 @@ not illustrate it `[C p. 4: N/I = Not Illustrated]`.
 | `down-you-go` | Down You Go | One of each Wind + 2222, 444, 66, 8 in one suit; the 2222 kong is concealed. | DOUBLE LIMIT (2000 / 800) | `[C p. 57]` | N/I. The table note says "8888" by mistake; the printed kong is 2222, which the predicate already uses. |
 | `numbers-in-parallel` | Numbers in Parallel | Pung/kong and pair of Dragons or Winds + pung/kong of the same number in each suit, no 1s or 9s. | MIDDLE LIMIT (Exposed 1500 / 600) | `[C p. 43]` | |
 | `numbers-doubled` | Numbers Doubled | Pair of Winds or Dragons + two pung/kongs of each of two numbers in each of two suits, no 1s or 9s. | MIDDLE LIMIT (Exposed 1500 / 600) | `[C p. 43]` | |
-| `dragons-run` | Dragon's Run | Run 1–9 in one suit + one of each Dragon + pair of Winds. | 1500 / 600 (middle limit) | `[C p. 59]` | N/I. Distinct from Wriggly Dragon (1000 / 400). |
+| `dragons-run` | Dragon's Run | Run 1–9 in one suit + one of each Dragon + pair of Winds. | 1500 / 600 (middle limit) | `[C p. 59]` | N/I. Distinct from Wriggly Dragon (1000 / 400). Concealed: the synopsis row has no red dot `[C p. 4]`, so a chow claimed for the run forfeits the hand. |
 
 **Corrections to `src/core/patterns/table.ts` settled by these pages**
 
