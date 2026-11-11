@@ -44,17 +44,17 @@ describe("payments", () => {
       lastDraw: { seat: "E", tile: "b5", end: "front" },
     });
     const won = play(state, { type: "Win", seat: "E", kind: "self-drawn" });
-    assert.equal(won.state.result?.points, 1000);
+    assert.equal(won.state.result?.points, 1500);
     assert.equal(won.state.result?.nextDealer, "E");
     assert.deepEqual(
       won.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
       [
-        ["S", "E", 2000],
-        ["W", "E", 2000],
-        ["N", "E", 2000],
+        ["S", "E", 3000],
+        ["W", "E", 3000],
+        ["N", "E", 3000],
       ],
     );
-    assert.deepEqual(ledgerTotals(won.state).totals, { E: 6000, S: -2000, W: -2000, N: -2000 });
+    assert.deepEqual(ledgerTotals(won.state).totals, { E: 9000, S: -3000, W: -3000, N: -3000 });
     zeroSum(won.state);
   });
 
@@ -75,9 +75,9 @@ describe("payments", () => {
     assert.deepEqual(
       won.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
       [
-        ["E", "S", 2000],
-        ["W", "S", 1000],
-        ["N", "S", 1000],
+        ["E", "S", 3000],
+        ["W", "S", 1500],
+        ["N", "S", 1500],
       ],
     );
     assert.match(won.state.ledger[0]!.reason, /dealer double/);
@@ -108,9 +108,9 @@ describe("payments", () => {
     assert.deepEqual(
       won.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
       [
-        ["E", "S", 2000],
-        ["W", "S", 1000],
-        ["N", "S", 1000],
+        ["E", "S", 3000],
+        ["W", "S", 1500],
+        ["N", "S", 1500],
       ],
     );
     assert.equal(won.state.result?.nextDealer, "S");
@@ -182,9 +182,9 @@ describe("payments", () => {
       won.state.ledger
         .map((entry) => [entry.from, entry.to, entry.points]),
       [
-        ["S", "E", 2000],
-        ["W", "E", 2000],
-        ["N", "E", 2000],
+        ["S", "E", 3000],
+        ["W", "E", 3000],
+        ["N", "E", 3000],
       ],
     );
     // East had nothing exposed, so no exposed tiles indicated b5: South's

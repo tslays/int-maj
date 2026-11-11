@@ -24,6 +24,7 @@ describe("pattern table schema", () => {
         pattern.pages.illustrated.length + pattern.pages.companion.length > 0,
         `${pattern.id} cites no page in either book`,
       );
+      if (pattern.illustratedOnly === true) assert.equal(pattern.pages.companion.length, 0, pattern.id);
     }
   });
 

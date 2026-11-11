@@ -8,12 +8,16 @@ International mahjong, by the rules of *The Game of Mah Jong Illustrated*, on a
 Two printed sources form the rules framework, in this order:
 
 1. ***The Game of Mah Jong Illustrated*** (primary, normative). It governs
-   every rule, hand, tile, deal, wall, replacement, turn, call, win, score,
+   every rule, tile, deal, wall, replacement, turn, call, win, ground score,
    payment and exception, and it overrides every conflicting prior decision,
    transcription, test or document.
 2. ***The Mah Jong Player's Companion*** (supplement). It extends the primary
-   source with its larger special-hand catalogue and its tiers; it applies
-   only where the primary book is silent and never contradicts it.
+   source with its larger special-hand catalogue and its tiers. **Owner ruling,
+   2026-11-11:** for the special-hand catalogue (which hands exist, their
+   composition, tier and fishing figure) the Companion governs wherever both
+   books print a hand; everywhere else it applies only where the primary book
+   is silent. A table can also play with the Companion's hands only
+   (`rules/RULES.md` Part III §5), and then shows nothing from the Illustrated.
 
 The pages of both books are in the repository: `rules/pages/illustrated/pNN.jpg`
 and `rules/pages/companion/pNN.jpg` (open-book spreads, see

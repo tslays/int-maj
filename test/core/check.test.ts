@@ -114,7 +114,7 @@ describe("checkHand on 14 tiles", () => {
       result.matches.map((match) => match.pattern.id),
       ["three-great-scholars", "ordinary-mahjong"],
     );
-    assert.equal(result.matches[0]!.points, 1000);
+    assert.equal(result.matches[0]!.points, 1500);
     assert.equal(result.matches[1]!.points, null);
     assert.equal(result.best, result.matches[0]);
     assert.equal(result.concealed, true);

@@ -370,7 +370,7 @@ function heldCounts(tiles: readonly PlayTile[]): Map<string, number> {
  * every catalogue match, best tier first. 13 effective tiles are a wait:
  * every play tile that would match a pattern, with the visible copies left.
  */
-export function checkHand(input: CheckInput): CheckResult {
+export function checkHand(input: CheckInput, excluded: readonly string[] = []): CheckResult {
   const parsed = parseTiles(input);
   if (parsed.errors.length > 0) {
     return { size: null, errors: [...parsed.errors] };
@@ -396,7 +396,7 @@ export function checkHand(input: CheckInput): CheckResult {
 
     if (effective === 14) {
       const hand = makeHand(parsed, concealed, melds, false);
-      const matches = matchHand(hand);
+      const matches = matchHand(hand, undefined, excluded);
       return {
         size: 14,
         matches,
@@ -420,11 +420,14 @@ export function checkHand(input: CheckInput): CheckResult {
         remaining <= 0,
         true,
       );
-      const matches = matchHand(hand);
+      const matches = matchHand(hand, undefined, excluded);
       if (matches.length === 0) continue;
       const claimable =
-        matchHand(makeHand(parsed, [...concealed, candidate], melds, remaining <= 0))
-          .length > 0;
+        matchHand(
+          makeHand(parsed, [...concealed, candidate], melds, remaining <= 0),
+          undefined,
+          excluded,
+        ).length > 0;
       waits.push({
         tile: candidate,
         remaining: Math.max(0, remaining),

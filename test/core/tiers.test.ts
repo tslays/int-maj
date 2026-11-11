@@ -30,9 +30,9 @@ const PRINTED: Readonly<
   "unique-wonder": ["double", null, 2000],
   "windy-ones": ["limit", "half", 1000],
   "three-sisters": ["limit", "half", 1000],
-  "three-great-scholars": ["limit", "limit", 1000],
-  "four-blessings": ["limit", "limit", 1000],
-  "sparrows-sanctuary": ["limit", null, 1000],
+  "three-great-scholars": ["middle", "middle", 1500],
+  "four-blessings": ["middle", "middle", 1500],
+  "sparrows-sanctuary": ["middle", null, 1500],
   lillypilly: ["limit", "half", 1000],
   "all-winds-and-dragons": ["limit", "limit", 1000],
   "chow-chow": ["half", null, 500],
@@ -47,7 +47,8 @@ const PRINTED: Readonly<
   "seven-brothers": ["limit", "half", 1000],
   "numbers-doubled": ["middle", "middle", 1500],
   "dragons-run": ["middle", null, 1500],
-  "chinese-odds": ["limit", "limit", 1000],
+  "chinese-odds": ["middle", "middle", 1500],
+  "civil-war": ["middle", "middle", 1500],
   "up-you-go": ["double", null, 2000],
   "down-you-go": ["double", null, 2000],
 };
@@ -75,7 +76,7 @@ describe("printed tier table", () => {
       half: 200,
       limit: 400,
       middle: 600,
-      double: 500,
+      double: 800,
       calculate: null,
     });
   });

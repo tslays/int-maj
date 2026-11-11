@@ -4,8 +4,8 @@
  * hands (`handbook.js`).
  */
 
-import { bookPages } from "./pages.js";
-import { $, faceChip, request, showToggle, state, storage } from "./shared.js";
+import { bookPages, visibleSamples } from "./pages.js";
+import { $, companionRules, faceChip, request, showToggle, state, storage } from "./shared.js";
 
 /* --------------------------------------------------------- closest hands */
 
@@ -192,14 +192,17 @@ function sampleFigure(sample) {
 }
 
 function sampleSection(samples, pages) {
+  const companionOnly = companionRules();
   const line = document.createElement("div");
   line.className = "detail-line";
   const heading = document.createElement("h3");
-  heading.textContent = "The hand in the book";
+  heading.textContent = companionOnly ? "The hand in the Companion" : "The hand in the book";
   line.append(heading);
   if (samples.length === 0) {
     const none = document.createElement("p");
-    none.textContent = `The books list this hand (${bookPages(pages)}) without a picture.`;
+    none.textContent = companionOnly
+      ? `The Companion lists this hand (${bookPages(pages, true)}) without a picture.`
+      : `The books list this hand (${bookPages(pages)}) without a picture.`;
     line.append(none);
   }
   for (const sample of samples) line.append(sampleFigure(sample));
@@ -247,7 +250,9 @@ export async function openHandDetail(pattern, progress = null) {
       "though it pays less than playing it concealed.";
   banner.append(playIcon(detail.concealedOnly), bannerTitle, bannerText);
 
-  card.append(close, heading, banner, detailLine("What it is", detail.description), sampleSection(detail.samples, detail.pages));
+  // A Companion-only table sees the Companion's pictures and pages alone.
+  const samples = visibleSamples(detail.samples, companionRules());
+  card.append(close, heading, banner, detailLine("What it is", detail.description), sampleSection(samples, detail.pages));
   if (detail.requiresSelfDrawn) {
     card.append(detailLine("Self-drawn", "Every tile, the winning one included, must come from the wall."));
   }
@@ -262,7 +267,7 @@ export async function openHandDetail(pattern, progress = null) {
   card.append(payLine);
 
   // The book's own picture is the example; only a hand it does not picture gets a made-up one.
-  if (detail.samples.length === 0) {
+  if (samples.length === 0) {
     const example = document.createElement("span");
     example.className = "closest-need detail-need";
     for (const key of detail.example) example.append(faceChip(key));

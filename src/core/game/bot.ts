@@ -112,6 +112,7 @@ export function situationFor(view: GameView, seat: Seat): Situation {
     flowers: view.player.flowers,
     seasons: view.player.seasons,
     ambition: temperamentOf(seat).ambition,
+    excluded: view.excludedHands,
   };
 }
 

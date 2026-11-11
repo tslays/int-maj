@@ -10,23 +10,33 @@
  *   GET  /api/closest?game=   the catalogue hands your tiles are nearest to
  *                             (`&limit=` up to 100 instead of the default three)
  *   GET  /api/hand?pattern=   one catalogue hand's conditions (concealed or open)
- *   GET  /api/hands           the whole catalogue with the book's headings, for the index
+ *   GET  /api/house-rules     the hand sets on offer and the hands each leaves out
+ *   GET  /api/hands?set=      the hands in play (set: all, companion, companion-pictured) with the book's headings, for the index
  *   GET  /api/scenario?state= a fixed review board (turn, claim, win, ...)
- *   POST /api/new             deal a game from `{ seed }`
+ *   POST /api/new             deal a game from `{ seed, houseRules }`
  *   POST /api/move            apply `{ game, action }`, return events as text
  *   POST /api/step            the next single bot decision, or `{ done }`
  *   POST /api/undo            replay to before the previous human decision
- *   POST /api/next            deal the next hand after a finished one
+ *   POST /api/next            deal the next hand after a finished one, under
+ *                             `{ houseRules }` when they are given
+ *
+ * `houseRules` is `{ handSet: "all" | "companion" | "companion-pictured" }`; a hand keeps the rules
+ * it was dealt with, so a change shows from the next deal.
  */
 
 import { handDetail, handIndex } from "../core/game/closest.ts";
+import { HAND_SET_EXCLUDED, HAND_SETS } from "../core/patterns/table.ts";
 import { describeEventFor } from "../core/game/describe.ts";
 import type { Action } from "../core/game/actions.ts";
 import {
   closestPayload,
+  DEFAULT_HOUSE_RULES,
   GameStore,
+  houseRulesPayload,
   isDone,
+  isHandSet,
   statePayload,
+  type HouseRules,
   type SessionUpdate,
 } from "./session.ts";
 import {
@@ -102,6 +112,21 @@ function requireAction(record: Record<string, unknown>): Action {
   return value as Action;
 }
 
+/** The body's `houseRules`, or undefined when the request does not set them. */
+function optionalHouseRules(record: Record<string, unknown>): HouseRules | undefined {
+  const value = record.houseRules;
+  if (value === undefined) return undefined;
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new ApiError(400, "houseRules must be an object");
+  }
+  const rules = value as Record<string, unknown>;
+  const handSet = rules.handSet ?? DEFAULT_HOUSE_RULES.handSet;
+  if (!isHandSet(handSet)) {
+    throw new ApiError(400, `houseRules.handSet must be one of ${HAND_SETS.join(", ")}`);
+  }
+  return { handSet };
+}
+
 /** The public event log as text lines the client can append to its log. */
 function responsePayload(update: SessionUpdate, extraEvents: readonly string[] = []) {
   return {
@@ -150,7 +175,14 @@ function routeGet(context: ApiContext, request: ApiRequest): ApiResponse | null 
     );
   }
 
-  if (request.path === "/api/hands") return ok(handIndex(), request.query.has("pretty"));
+  if (request.path === "/api/house-rules") {
+    return ok(houseRulesPayload(), request.query.has("pretty"));
+  }
+  if (request.path === "/api/hands") {
+    const set = request.query.get("set") ?? "all";
+    if (!isHandSet(set)) return fail(400, `set must be one of ${HAND_SETS.join(", ")}`);
+    return ok(handIndex(HAND_SET_EXCLUDED[set]), request.query.has("pretty"));
+  }
 
   if (request.path === "/api/hand") {
     const id = request.query.get("pattern");
@@ -172,7 +204,7 @@ function routePost(context: ApiContext, request: ApiRequest): ApiResponse | null
     if (seed !== undefined && typeof seed !== "string" && typeof seed !== "number") {
       throw new ApiError(400, "seed must be a string or number");
     }
-    const update = store.create(seed);
+    const update = store.create(seed, optionalHouseRules(body));
     return ok({ ...responsePayload(update), replaceLog: true });
   }
 
@@ -208,7 +240,7 @@ function routePost(context: ApiContext, request: ApiRequest): ApiResponse | null
 
   if (request.path === "/api/next") {
     const game = requireString(body, "game");
-    const update = store.next(game);
+    const update = store.next(game, optionalHouseRules(body));
     if ("error" in update) return fail(400, update.error);
     return ok(responsePayload(update));
   }

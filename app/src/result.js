@@ -2,12 +2,13 @@
  * The result card after a hand and the final standings after the last one.
  */
 
+import { houseRules } from "./options.js";
 import { bookPages } from "./pages.js";
 import { explainSettlement } from "./settlement.js";
 import { sound } from "./sound.js";
 import { rankSeats, winnerLine } from "./standings.js";
 import { tileOrder } from "./tiles.js";
-import { $, WIND_NAME, board, faceChip, request, scores, seatName, state, storage, toast } from "./shared.js";
+import { $, WIND_NAME, board, companionRules, faceChip, request, scores, seatName, state, storage, toast } from "./shared.js";
 
 let callOut = null;
 let apply = null;
@@ -65,7 +66,7 @@ function renderOutcome(outcome) {
     const description = document.createElement("p");
     description.className = "result-description";
     description.textContent = outcome.patternDescription;
-    const cited = bookPages(outcome.patternPages);
+    const cited = bookPages(outcome.patternPages, companionRules());
     if (cited !== "") {
       const pages = document.createElement("span");
       pages.className = "result-pages";
@@ -136,6 +137,7 @@ function renderOutcome(outcome) {
     dealer: state.payload.view.dealer,
     name: seatName,
     fishing: state.payload.view.fishing.map((entry) => entry.seat),
+    cite: !companionRules(),
   });
   const table = document.createElement("div");
   table.className = "result-scores";
@@ -205,7 +207,7 @@ function renderOutcome(outcome) {
     panel.replaceChildren();
     state.busy = true;
     try {
-      await apply(await request("/api/next", { game: state.payload.game }), { animated: false });
+      await apply(await request("/api/next", { game: state.payload.game, houseRules: houseRules() }), { animated: false });
     } catch (error) {
       toast(error.message);
     } finally {

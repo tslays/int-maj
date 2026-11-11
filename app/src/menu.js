@@ -1,8 +1,8 @@
 /**
- * The menu: the Calls, Sort, Sound and New game buttons, and the help sheet.
+ * The menu: the Calls, Sort and New game buttons, and the help sheet. Sound,
+ * the house rules and the Help and Report buttons live in `options.js`.
  */
 
-import { sound } from "./sound.js";
 import { $, board, showToggle, state } from "./shared.js";
 
 /** `hooks.run` resumes the turn loop; `hooks.newGame` starts a fresh game. */
@@ -26,18 +26,6 @@ export function installMenu({ run, newGame }) {
   $("#sort").addEventListener("click", () => {
     if (board.custom) void board.autoSort();
     else board.setCustom(true);
-  });
-
-  /* Sound: lit = on by default; the choice is remembered on the device. */
-  function showSound() {
-    showToggle("#sound", !sound.muted);
-  }
-  showSound();
-
-  $("#sound").addEventListener("click", () => {
-    sound.setMuted(!sound.muted);
-    showSound();
-    sound.cue("press"); // heard only when sound has just been turned on
   });
 
   $("#new-game").addEventListener("click", () => void newGame());

@@ -98,8 +98,9 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   sheet with the book's own sample hand, and the Hints toggle), `handbook.js`
   (the index of all hands), `result.js` (the result card and the final
   standings), `menu.js`
-  (the Calls, Sort, Sound, New game buttons and the help sheet) and
-  `report.js` (report a problem). Modules that need the loop (`input`,
+  (the Calls, Sort, New game buttons and the help sheet), `options.js` (the
+  Options sheet: the Sound switch, the house rules, and the Help and Report
+  buttons) and `report.js` (report a problem). Modules that need the loop (`input`,
   `result`, `menu`) get its functions from `main.js` through an `installX`
   call, so imports never run in a circle.
 - `app/src/standings.js` ranks the seats by total score for the final standings
@@ -189,8 +190,8 @@ audio session (`navigator.audioSession.type`), so the game no longer shows a
 speaker symbol in the Dynamic Island (issue #49); the price is that the phone's
 silent switch mutes the game. After 5 seconds with no cue the audio context is
 suspended (so iOS sees no audio activity) and the next cue resumes it; that cue
-is scheduled at once and starts when the clock runs again. The menu's Sound
-button turns all of it off (remembered on the device), and is the control for
+is scheduled at once and starts when the clock runs again. The Sound
+switch in Options turns all of it off (remembered on the device), and is the control for
 desktop and Android, which have no silent switch. A hidden page is silent. `test/app/sound.test.ts`
 checks the scheduling with a fake audio context; to hear a cue, render it with an
 `OfflineAudioContext` through `createVoices` (it takes any context).
@@ -266,7 +267,21 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   in CI) or else the content hash. `src/build-info.js` exports `BUILD`
   (`version`, `stage`, `id`) and `BUILD_LABEL`; import it to put the build in
   a problem report. Unbuilt, the label reads `dev · local`.
-- **Report a problem.** The menu's Report button (accessible name "Report a
+- **Options and house rules.** The menu's Options button opens a sheet with
+  the Sound switch, the house rules, and the Help and Report buttons (their
+  sheets open on top of it). A house rule is a preference kept on the device
+  (`int-maj:house-rules`); `houseRules()` in `options.js` is sent with every
+  `/api/new` and `/api/next`, and the table fixes a hand's rules at its deal
+  (`GameState.excludedHands`), so a change made mid-hand reads "Takes effect
+  with the next hand" until then. Every payload carries the rules in force
+  (`houseRules`), `/api/house-rules` names the hands each hand set leaves out, and a
+  problem report carries the rules so it replays. The one rule so far is which hands are in play
+  (all, the Companion's, or the Companion's with sample pictures); see
+  `rules/RULES.md` Part III §5. Hand values are the Companion's in every set;
+  in the two Companion sets the hand sheet and result card name only Companion
+  pages (`pages.js`) and the payment explanations drop their Illustrated page
+  citations (`explainSettlement({ cite: false })`).
+- **Report a problem.** The Report button in Options (accessible name "Report a
   problem") opens a sheet of that title with an optional one-line note and a
   Send button (accessible name "Send report"; the keyboard's return key sends
   too). `app/src/report.js` posts the text to `api/report` on its own site,

@@ -19,7 +19,10 @@ import { newGame, nextHand } from "./deal.ts";
 import { apply } from "./reduce.ts";
 import type { GameState, Seat } from "./state.ts";
 
-export type ReplayStep = Action | { readonly type: "NextHand" };
+export type ReplayStep =
+  | Action
+  /** `excludedHands` is present when a house rule changed with this deal. */
+  | { readonly type: "NextHand"; readonly excludedHands?: readonly string[] };
 
 export function stepsFromEvents(events: readonly Event[]): ReplayStep[] {
   const steps: ReplayStep[] = [];
@@ -68,7 +71,11 @@ export function stepsFromEvents(events: readonly Event[]): ReplayStep[] {
         steps.push({ type: "RequestReshuffle", seat: event.seat });
         break;
       case "NextDeal":
-        steps.push({ type: "NextHand" });
+        steps.push(
+          event.excludedHands === undefined
+            ? { type: "NextHand" }
+            : { type: "NextHand", excludedHands: event.excludedHands },
+        );
         break;
       default:
         break;
@@ -112,6 +119,8 @@ function autoPass(
 export interface ReplayOptions {
   /** The hand's first dealer, when the caller fixed it rather than the seed. */
   readonly dealer?: Seat;
+  /** House rule the game was dealt with: hands the table plays without. */
+  readonly excludedHands?: readonly string[];
 }
 
 export function replaySteps(
@@ -119,7 +128,10 @@ export function replaySteps(
   steps: readonly ReplayStep[],
   options: ReplayOptions = {},
 ): ApplyOk {
-  const start = newGame(seed, options.dealer === undefined ? {} : { dealer: options.dealer });
+  const start = newGame(seed, {
+    ...(options.dealer === undefined ? {} : { dealer: options.dealer }),
+    ...(options.excludedHands === undefined ? {} : { excludedHands: options.excludedHands }),
+  });
   const rest = replayFrom(start.state, steps);
   return { state: rest.state, events: [...start.events, ...rest.events] };
 }
@@ -138,7 +150,10 @@ export function replayFrom(start: GameState, steps: readonly ReplayStep[]): Appl
       if (state.phase !== "finished") {
         throw new Error("NextHand step before the hand finished");
       }
-      const next = nextHand(state);
+      const next = nextHand(
+        state,
+        step.excludedHands === undefined ? {} : { excludedHands: step.excludedHands },
+      );
       state = next.state;
       events.push(...next.events);
       continue;

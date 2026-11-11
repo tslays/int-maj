@@ -828,6 +828,60 @@ button {
 .help-card {
   width: min(520px, 100%);
 }
+/* Options: a setting per row, its switch on the right. */
+.option-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+.option-row .ghost {
+  min-width: 64px;
+  margin-right: 6px;
+}
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 6px 0 0;
+}
+.segmented .ghost {
+  min-width: 0;
+  padding-left: 24px;
+}
+.segmented .ghost::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-radius: 50%;
+  background: #7d8a94;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.35);
+}
+.segmented .ghost[aria-checked="true"] {
+  background: linear-gradient(180deg, var(--silver-2), #c4cdd4);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3), inset 0 -1px 0 rgba(255, 255, 255, 0.35);
+}
+.segmented .ghost[aria-checked="true"]::before {
+  background: #6fd08e;
+  box-shadow: 0 0 4px rgba(111, 208, 142, 0.55), inset 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+.option-note {
+  margin-top: 3px !important;
+  color: var(--muted);
+  font-size: 12px;
+}
+.option-pending {
+  color: #f0c36a;
+}
+.option-buttons {
+  display: flex;
+  gap: 12px;
+  padding: 6px 6px 4px;
+}
 
 /* The index of all hands: a search bar, a rail of filters, a grid of hands. */
 .hand-index {

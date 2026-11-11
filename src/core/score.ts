@@ -45,6 +45,8 @@ export interface ScoreOptions {
   readonly withoutMahJongBonus?: boolean;
   /** A Goulash hand never scores the no-chows double. */
   readonly goulash?: boolean;
+  /** Hands the table plays without (a house rule); they never match. */
+  readonly excluded?: readonly string[];
 }
 
 export interface ScoreResult {
@@ -80,7 +82,7 @@ export function tierPoints(tier: Tier, limit = DEFAULT_LIMIT): number | null {
 
 export function scoreHand(hand: Hand, options: ScoreOptions = {}): ScoreResult {
   const limit = options.limit ?? DEFAULT_LIMIT;
-  const matches = matchHand(hand);
+  const matches = matchHand(hand, undefined, options.excluded);
   const buried = matches.find((match) => match.pattern.id === "buried-treasure");
   const fixedTier = matches.some(
     (match) => match.tier !== "calculate" && match.pattern.id !== "chow-chow",

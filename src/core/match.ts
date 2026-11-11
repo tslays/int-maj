@@ -16,7 +16,15 @@ export interface PatternMatch {
   readonly concealed: boolean;
 }
 
-export function matchHand(hand: Hand, shape: HandShape = normalizeHand(hand)): PatternMatch[] {
+/**
+ * `excluded` names hands the table has agreed to play without (a house rule):
+ * they are skipped, so a hand that also makes another pattern scores as that.
+ */
+export function matchHand(
+  hand: Hand,
+  shape: HandShape = normalizeHand(hand),
+  excluded: readonly string[] = [],
+): PatternMatch[] {
   const concealed = isConcealed(hand);
   const context = {
     shape,
@@ -30,6 +38,7 @@ export function matchHand(hand: Hand, shape: HandShape = normalizeHand(hand)): P
     if (pattern.requiresSelfDrawn && !hand.selfDrawn) continue;
     const tier = concealed ? pattern.tier : pattern.exposedTier;
     if (tier === null) continue;
+    if (excluded.includes(pattern.id)) continue;
     if (!pattern.match(context)) continue;
     matches.push({ pattern, tier, points: TIER_POINTS[tier], concealed });
   }

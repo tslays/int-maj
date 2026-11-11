@@ -173,7 +173,7 @@ describe("table API", () => {
 
     const open = call<Record<string, unknown>>("GET", "/api/hand?pattern=three-great-scholars");
     assert.equal(open.body.concealedOnly, false);
-    assert.equal(open.body.exposedPoints, 1000);
+    assert.equal(open.body.exposedPoints, 1500);
 
     assert.equal(call<ApiError>("GET", "/api/hand").status, 400);
     assert.equal(call<ApiError>("GET", "/api/hand?pattern=nope").status, 404);
@@ -509,3 +509,24 @@ describe("hidden information in the event log", () => {
     }
   });
 });
+
+describe("the hand index under a hand set", () => {
+  it("lists every hand by default and leaves a set's hands out", () => {
+    const all = call<{ hands: { pattern: string }[]; groups: { hands: string[] }[] }>("GET", "/api/hands");
+    assert.equal(all.status, 200);
+    const ids = (answer: typeof all.body) => answer.hands.map((hand) => hand.pattern);
+    assert.ok(ids(all.body).includes("mixed-pung"));
+
+    const companion = call<typeof all.body>("GET", "/api/hands?set=companion").body;
+    assert.equal(ids(companion).length, ids(all.body).length - 3);
+    assert.ok(!ids(companion).includes("mixed-pung") && ids(companion).includes("robin"));
+    assert.ok(companion.groups.every((group) => !group.hands.includes("mixed-pung")));
+
+    const pictured = call<typeof all.body>("GET", "/api/hands?set=companion-pictured").body;
+    assert.equal(ids(pictured).length, ids(all.body).length - 12);
+    assert.ok(!ids(pictured).includes("robin"));
+
+    assert.equal(call<ApiError>("GET", "/api/hands?set=most").status, 400);
+  });
+});
+

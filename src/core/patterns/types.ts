@@ -21,16 +21,17 @@ export const TIER_POINTS: Readonly<Record<Tier, number | null>> = Object.freeze(
 });
 
 /**
- * Printed fishing values, one per winning tier. The Illustrated pages print
- * fractions of the limit: half 200, limit 400, double 500. Middle 600 belongs
- * only to Companion hands; a Companion double hand keeps its printed 800.
- * `calculate` has no fixed fishing figure because the hand score is computed.
+ * Printed fishing values, one per winning tier, as the Companion prints them
+ * (C p. 4): half 200, limit 400, middle 600, double 800. The Illustrated book
+ * prints 500 for a double limit; the Companion's figure governs (the owner's
+ * ruling, rules/RULES.md Part III). `calculate` has no fixed fishing figure
+ * because the hand score is computed.
  */
 export const TIER_FISHING: Readonly<Record<Tier, number | null>> = Object.freeze({
   half: 200,
   limit: 400,
   middle: 600,
-  double: 500,
+  double: 800,
   calculate: null,
 });
 
@@ -94,6 +95,18 @@ export interface HandPattern {
   readonly description: string;
   /** Where the composition was transcribed from. */
   readonly source: string;
+  /**
+   * True when only *The Game of Mah Jong Illustrated* prints the hand: the
+   * Companion's catalogue does not have it (rules/AUDIT.md, "Missing from the
+   * table"). The "Companion hands" hand sets leave these hands out.
+   */
+  readonly illustratedOnly?: boolean;
+  /**
+   * True when the Companion prints the hand but without a sample picture: its
+   * synopsis marks it "N/I", Not Illustrated [C p. 4]. The "Companion hands
+   * with pictures" hand set leaves these out.
+   */
+  readonly companionUnillustrated?: boolean;
   /** For variant families such as Dragon's Tail (1 & 2). */
   readonly variantOf?: string;
   /**
