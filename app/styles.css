@@ -1257,3 +1257,6 @@ button {
     animation: none;
   }
 }
+.help-card .help-intro {
+  color: var(--muted);
+}
