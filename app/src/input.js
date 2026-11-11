@@ -3,7 +3,7 @@
  * to throw, and picking the three tiles of a goulash exchange.
  */
 
-import { board, state } from "./shared.js";
+import { $, board, state } from "./shared.js";
 import { renderer } from "./stage.js";
 import { sound } from "./sound.js";
 

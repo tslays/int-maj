@@ -15,6 +15,8 @@
  *    with the pointer, a tile is dragged into your own order and sorted back,
  *    the hints and the help sheet open, some turns are played against the
  *    bots, and a reload resumes the same hand from the save.
+ * 3. The hand after a drawn one is a Goulash: three tiles are picked by touch
+ *    and passed on with the button.
  *
  * It needs Playwright (a dev dependency: `npm ci`) and a Chromium for it
  * (`npx playwright install chromium`; cloud sessions have one already). It is
@@ -49,6 +51,7 @@ interface Payload {
     readonly turn: string;
     readonly handNumber: number;
     readonly player: { readonly hand: readonly string[] };
+    readonly goulash: { readonly stage: number } | null;
   };
 }
 
@@ -58,6 +61,7 @@ declare global {
       state(): Payload | null;
       busy(): boolean;
       act(action: unknown): Promise<void>;
+      next(): void;
     };
   }
 }
@@ -262,6 +266,36 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.context().close();
 }
 
+/** After a drawn hand the next is a Goulash: pick three tiles, pass them on. */
+async function goulashExchange(browser: Browser, origin: string): Promise<void> {
+  const errors: string[] = [];
+  const page = await openPage(browser, errors);
+  await page.goto(`${origin}/?state=drawn`);
+  await settled(page);
+  await resultCard(page);
+  await page.evaluate(() => window.mahjong!.next());
+  await page.waitForFunction(() => window.mahjong?.state()?.view.phase === "exchange", null, { timeout: READY_MS });
+  const payload = await yourMove(page);
+  assert.ok(payload.legalActions.some((action) => action.type === "GoulashExchange"), "you pick three tiles to pass");
+  assert.equal(await page.isDisabled("#goulash-confirm"), true, "nothing picked yet");
+
+  const strip = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--strip")));
+  const handY = VIEWPORT.height - strip / 2;
+  await page.waitForTimeout(400);
+  for (const dx of [-120, 0, 120]) {
+    await page.touchscreen.tap(VIEWPORT.width / 2 + dx, handY);
+    await page.waitForTimeout(150);
+  }
+  assert.equal(await page.isDisabled("#goulash-confirm"), false, "three picked tiles arm the button");
+  await page.click("#goulash-confirm");
+  await page.waitForFunction(() => window.mahjong?.state()?.view.goulash?.stage === 1, null, { timeout: READY_MS });
+  await yourMove(page);
+  assert.equal(await page.isDisabled("#goulash-confirm"), true, "the next exchange starts unpicked");
+  assert.deepEqual(errors, [], "goulash: no errors");
+  await page.context().close();
+  console.log("  ok  pick three tiles, pass them, on to the second exchange");
+}
+
 function option(argv: readonly string[], name: string): string | undefined {
   const index = argv.indexOf(name);
   return index >= 0 ? argv[index + 1] : undefined;
@@ -290,6 +324,8 @@ try {
   await reviewBoards(browser, origin, shots);
   console.log("A game, as a player");
   await playThrough(browser, origin, shots);
+  console.log("A Goulash exchange");
+  await goulashExchange(browser, origin);
   console.log("Smoke test passed.");
 } catch (error) {
   failed = true;
