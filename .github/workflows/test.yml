@@ -94,9 +94,10 @@ jobs:
           command: deploy
 
   # Each pull request from this repository gets its own link on int-dev
-  # (https://pr-<number>-int-dev.<account>.workers.dev), in one comment that
-  # is updated on every push. It never touches the tester site. Not a
-  # required check: a failing preview must not block a merge.
+  # (https://pr-<number>-int-dev.<account>.workers.dev), shown in this run's
+  # summary (not a PR comment, so no notification mail). It is updated on every
+  # push and never touches the tester site. Not a required check: a failing
+  # preview must not block a merge.
   preview:
     name: Preview (PR link)
     needs: test
@@ -105,13 +106,9 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
-      pull-requests: write
     concurrency:
       group: preview-${{ github.event.pull_request.number }}
       cancel-in-progress: true
-    env:
-      GH_TOKEN: ${{ github.token }}
-      PR: ${{ github.event.pull_request.number }}
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/deploy
@@ -119,19 +116,17 @@ jobs:
           token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           report-token: ${{ secrets.REPORT_GITHUB_TOKEN }}
           command: versions upload --env dev --preview-alias pr-${{ github.event.pull_request.number }} --message PR-${{ github.event.pull_request.number }}-${{ github.sha }}
-      - name: Post or update the preview comment
+      - name: Show the preview link in the run summary
         run: |
           url=$(grep -oE 'https://pr-[A-Za-z0-9.-]+\.workers\.dev' wrangler.log 2>/dev/null | head -1 || true)
-          if [ -z "$url" ]; then echo "::notice::No preview link to post."; exit 0; fi
-          marker='<!-- int-maj-preview -->'
-          body="$marker"$'\n'"**Preview:** $url"$'\n\n'"Commit \`${GITHUB_SHA::7}\`. Updated on every push; the tester site is not affected."
-          id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
-            --jq "[.[] | select(.body | startswith(\"$marker\"))][0].id // empty")
-          if [ -n "$id" ]; then
-            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -f body="$body"
-          else
-            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -f body="$body"
-          fi
+          if [ -z "$url" ]; then echo "::notice::No preview link to show."; exit 0; fi
+          {
+            echo "### Preview"
+            echo
+            echo "$url"
+            echo
+            echo "Commit \`${GITHUB_SHA::7}\`. Updated on every push; the tester site is not affected."
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # The built app in a real browser: every review board opens and draws, and
   # a game is played by touch (scripts/smoke.ts). Software rendering makes it
