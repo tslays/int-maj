@@ -7,7 +7,7 @@ import { explainSettlement } from "./settlement.js";
 import { sound } from "./sound.js";
 import { rankSeats, winnerLine } from "./standings.js";
 import { tileOrder } from "./tiles.js";
-import { $, WIND_NAME, board, faceChip, request, scores, seatName, state, storage, toast } from "./shared.js";
+import { $, WIND_NAME, board, bookPages, companionRules, faceChip, request, scores, seatName, state, storage, toast } from "./shared.js";
 
 let callOut = null;
 let apply = null;
@@ -65,10 +65,11 @@ function renderOutcome(outcome) {
     const description = document.createElement("p");
     description.className = "result-description";
     description.textContent = outcome.patternDescription;
-    if (outcome.patternPages.length > 0) {
+    const printed = bookPages(outcome.patternPages);
+    if (printed !== null) {
       const pages = document.createElement("span");
       pages.className = "result-pages";
-      pages.textContent = ` Illustrated p. ${outcome.patternPages.join(", ")}`;
+      pages.textContent = ` ${printed}`;
       description.append(pages);
     }
     main.append(description);
@@ -135,6 +136,7 @@ function renderOutcome(outcome) {
     dealer: state.payload.view.dealer,
     name: seatName,
     fishing: state.payload.view.fishing.map((entry) => entry.seat),
+    cite: !companionRules(),
   });
   const table = document.createElement("div");
   table.className = "result-scores";

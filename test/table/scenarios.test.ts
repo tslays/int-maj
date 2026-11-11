@@ -137,7 +137,10 @@ describe("review states", () => {
     const pattern = PATTERNS.find((entry) => entry.id === win.state.result?.patternId);
     assert.ok(pattern !== undefined, "the win names a catalogue hand");
     assert.equal(outcome.patternDescription, pattern.description);
-    assert.deepEqual([...outcome.patternPages], [...pattern.pages]);
+    assert.deepEqual(outcome.patternPages, {
+      companion: [...pattern.companionPages],
+      illustrated: [...pattern.illustratedPages],
+    });
     // The hand is over, so the winning tiles are public - the screen shows the
     // combination, not a count of hidden tiles. Concealed tiles plus public
     // melds make the fourteen that won.

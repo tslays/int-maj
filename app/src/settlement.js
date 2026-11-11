@@ -6,7 +6,9 @@
  * sends (`outcome.ledger`, every entry tagged with its kind), so it needs no
  * browser and the wording can be tested.
  *
- * The page citations are the book's: *The Game of Mah Jong Illustrated*.
+ * The page citations are the book's: *The Game of Mah Jong Illustrated*. A
+ * table playing with the Companion's hands only has no use for that book, so
+ * `cite: false` leaves every citation out.
  */
 
 const fmt = (points) => points.toLocaleString("en");
@@ -28,10 +30,12 @@ const capital = (text) => text.charAt(0).toUpperCase() + text.slice(1);
  * @param {string} input.dealer    the seat that was East this hand
  * @param {(seat: string) => string} input.name  a seat's wind name, "South"
  * @param {readonly string[]} input.fishing      the seats that announced they were fishing
+ * @param {boolean} [input.cite]                 keep the Illustrated page citations (default true)
  * @returns {Record<string, { dir: "pay" | "get" | "none", text: string, why: string }[]>}
  *   each seat's payments ("Pays South 1,200") with the reason for each
  */
-export function explainSettlement({ outcome, you, dealer, name, fishing }) {
+export function explainSettlement({ outcome, you, dealer, name, fishing, cite = true }) {
+  const plain = (text) => (cite ? text : text.replace(/ \(p\. [0-9, ]+\)/g, ""));
   const ledger = outcome.ledger.filter((entry) => entry.points !== null);
   const who = (seat) => (seat === you ? "you" : name(seat));
   const was = (seat) => (seat === you ? "were" : "was");
@@ -79,7 +83,7 @@ export function explainSettlement({ outcome, you, dealer, name, fishing }) {
 
   const seats = { E: [], S: [], W: [], N: [] };
   for (const entry of ledger) {
-    const why = [reasonOf(entry), doubleNote(entry)].filter(Boolean).join(" ");
+    const why = plain([reasonOf(entry), doubleNote(entry)].filter(Boolean).join(" "));
     seats[entry.from].push({ dir: "pay", text: `Pays ${who(entry.to)} ${fmt(entry.points)}`, why });
     seats[entry.to].push({ dir: "get", text: `Receives ${fmt(entry.points)} from ${who(entry.from)}`, why });
   }
@@ -100,7 +104,7 @@ export function explainSettlement({ outcome, you, dealer, name, fishing }) {
         why.push(`${capital(who(seat))} ${was(seat)} fishing, but fishing only pays when another player goes Mah Jong (p. 21, 32).`);
       }
     }
-    seats[seat].push({ dir: "none", text: "Nothing paid or received", why: why.join(" ") });
+    seats[seat].push({ dir: "none", text: "Nothing paid or received", why: plain(why.join(" ")) });
   }
   return seats;
 }

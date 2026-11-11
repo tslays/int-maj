@@ -10,7 +10,7 @@ and the code changes.
 | Tag | Meaning |
 |---|---|
 | `[I p.N]` | Transcribed from *The Game of Mah Jong Illustrated* — primary and normative. Page numbers are the book's **printed** pages; the render is `rules/pages/illustrated/pNN.jpg` (each render is a two-page spread, printed `2NN-2` and `2NN-1`). |
-| `[C p.N]` | From *The Mah Jong Player's Companion* — a supplement that extends this framework where the primary book is silent. It never overrides an `[I]` rule. |
+| `[C p.N]` | From *The Mah Jong Player's Companion* — a supplement that extends this framework where the primary book is silent, and that governs the special-hand catalogue wherever both books print a hand (owner ruling, 2026-11-11). It never overrides an `[I]` rule of play. |
 | `[A]` | A recorded assumption for a question both books leave open; the reasoning is in `rules/archive/ASSUMPTIONS.md`. |
 
 Quoted sentences are printed wording, copied from the render. Text without
@@ -27,8 +27,12 @@ from another mahjong variant, or from the old catalogue's habits.
    tier. Those extensions stand because the primary book does not contradict
    them.
 3. Where both speak and disagree, the Illustrated reading replaces the
-   Companion's. The replacement is recorded in `rules/AUDIT.md` — it is not
-   preserved as a house rule or a variant.
+   Companion's — **except for the special-hand catalogue** (which hands exist,
+   their composition, tier and fishing figure), where the owner ruled on
+   2026-11-11 that the Companion governs wherever both books print the hand
+   (Part III §1). The rules of play, ground score, doubles, payments and
+   penalties stay the Illustrated book's. The superseded readings are
+   recorded in `rules/AUDIT.md`.
 4. Where both are silent, the narrowest literal reading is chosen and recorded
    as `[A]` in `rules/archive/ASSUMPTIONS.md`.
 
@@ -935,9 +939,12 @@ whose caption says "any tile paired".
 
 *The Mah Jong Player's Companion* (Patricia A. Thompson and Betty Maloney,
 Kangaroo Press, 1997) is the supplement. This part records **only what the
-Companion adds** to Parts I and II. The Illustrated book wins every conflict;
-the Companion readings that differ are listed in `rules/AUDIT.md` under
-"Catalogue and Part III conflicts" and are not applied here.
+Companion adds** to Parts I and II, and where it overrides Part II. The
+Illustrated book wins every conflict about the rules of play; the Companion
+wins the conflicts about a hand's tier, composition and fishing figure
+(owner ruling, 2026-11-11, §1). The Companion readings of play rules that
+differ are listed in `rules/AUDIT.md` under "Catalogue and Part III
+conflicts" and are not applied here.
 
 Page tags `[C p. N]` are the Companion's **printed** pages. The render
 `rules/pages/companion/pNN.jpg` is the spread of printed pages `2NN-4` and `2NN-3`
@@ -962,29 +969,32 @@ The Companion prints four tiers with a fishing figure for each `[C p. 4]`:
 
 ### How this reconciles with Parts I and II
 
-- **The Illustrated book prints no middle tier.** Its printed tiers are half
-  limit, limit and double limit (Part II: 7 double, 37 limit, 5 half, and 4
-  scored by doubling, the score sheet or 10 points). Its values — half 500,
-  limit 1000, double 2000 — and its fishing figures — half 200, limit 400,
-  double 500 (`[I p. 32]`, Part I R69) — stay authoritative for every hand the
-  Illustrated book prints.
-- **Middle limit exists only for Companion hands that print it.** Exactly four
-  Companion-only hands print 1500/600: Odds & Evens, Numbers in Parallel,
-  Numbers Doubled and Dragon's Run. No Illustrated hand is rescored to middle.
-- **Five Illustrated hands are printed at Middle in the Companion but at a
-  lower tier in the Illustrated book**: Three Great Scholars (C p. 58, 1500;
-  I p. 49, LIMIT), Four Blessings (C p. 30, 1500; I p. 49, LIMIT), Civil War
-  (C p. 30, 1500; I p. 53, DOUBLE LIMIT), Chinese Odds (C p. 59, 1500; I p. 40,
-  LIMIT) and Sparrow's Sanctuary (C pp. 21 and 52, 1500; I p. 44, LIMIT). The
-  Illustrated tier governs; the Companion figures are recorded as superseded
-  in `rules/AUDIT.md` (C8).
-- **Double-limit fishing.** The Companion prints 800 `[C p. 4]`; the
-  Illustrated prints 500 `[I p. 32]`. For every hand the Illustrated prints,
-  500 governs. The two Companion-only double-limit hands (Up You Go, Down You
-  Go) print 800; 800 is used only for those supplement hands, never to replace
-  the Illustrated figure for its hands. This is AUDIT C9.
-- The Companion's tier names are otherwise the Illustrated ones; its
-  half/limit hands fish at the same 200/400 as Part I.
+The owner ruled on 2026-11-11 that **the Companion governs the special-hand
+catalogue**: for a hand both books print, the Companion's tier, composition and
+fishing figure are used, in every game and whichever hands are in play (§5).
+The Illustrated book still states the game itself and is the only source for
+the three hands the Companion does not print.
+
+- **Fishing figures** are the Companion's: half 200, limit 400, middle 600,
+  double limit **800** `[C p. 4]`. The Illustrated 500 for a double limit
+  `[I p. 32]`, Part I R69, is superseded for the catalogue (AUDIT C9).
+- **Middle limit** is used for every hand the Companion prints at 1500: Odds &
+  Evens, Numbers in Parallel, Numbers Doubled and Dragon's Run, and the five
+  hands the Illustrated book prints lower: Three Great Scholars (C p. 33,
+  exposed allowed; I p. 49 LIMIT), Four Blessings (C p. 30, exposed allowed; I
+  p. 49 LIMIT), Civil War (C p. 30, exposed allowed; I p. 53 DOUBLE LIMIT),
+  Chinese Odds (C p. 49, exposed allowed; I p. 40 LIMIT) and Sparrow's
+  Sanctuary (C pp. 21 and 49, concealed; I p. 44 LIMIT) (AUDIT C8).
+- **All Pair Jade** `[C pp. 23, 32]`: "GG or GG/GG + five or six pairs of Green
+  Bamboos (2, 3, 4, 6, 8)": one green-dragon pair with six bamboo pairs, or two
+  with five. The Illustrated book prints only the first shape `[I p. 44]`.
+- Every other hand both books print was compared on its tier, composition and
+  fishing figure and agrees. The comparison read the Companion's synopsis for
+  all of them and the hand pages for All Pair Jade, Three Great Scholars,
+  Hachi Ban, Sparrow's Sanctuary, Chinese Odds, Civil War and Four Blessings;
+  concealed/exposed wording on the other hand pages was not compared line by
+  line.
+- The Companion's tier names are otherwise the Illustrated ones.
 
 ## 2. The Companion-only hands
 
@@ -1220,8 +1230,15 @@ under: a change takes effect with the next deal.
      Odds & Evens, Robin, Blue Mountains, White Elephant, Driven Snow and
      Dragon's Scales `[C p. 60]` (Part III §2). Twelve hands in all are left out.
 
+  Whichever set is chosen, the values are the Companion's (§1). In the
+  Companion sets the app also shows no Illustrated page reference and no
+  Illustrated page citation in a payment's explanation: a table that chose the
+  Companion has no use for the other book. The ground score, doubles and
+  payments themselves are still computed by the Illustrated book's rules.
+
   In the table: `illustratedOnly` and `companionUnillustrated` on the pattern,
-  `HAND_SET_EXCLUDED` for the sets, `excludedHands` on the game.
+  `HAND_SET_EXCLUDED` for the sets, `excludedHands` on the game,
+  `companionPages` and `illustratedPages` for the page references.
 
 # Appendix — evidence
 

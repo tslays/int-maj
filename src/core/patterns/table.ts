@@ -175,7 +175,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "ordinary-mahjong",
     name: "Ordinary Mah Jong",
-    pages: [42],
+    companionPages: [42],
+    illustratedPages: [34],
     category: "plain",
     tier: "calculate",
     exposedTier: "calculate",
@@ -202,7 +203,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "wriggly-snake",
     name: "Wriggly Snake",
-    pages: [10, 27],
+    companionPages: [10, 27],
+    illustratedPages: [38],
     category: "run",
     tier: "limit",
     exposedTier: null,
@@ -235,7 +237,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "all-pair",
     name: "All Pair",
-    pages: [22],
+    companionPages: [22],
+    illustratedPages: [34],
     category: "pairs",
     tier: "half",
     exposedTier: null,
@@ -255,18 +258,19 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "three-great-scholars",
     name: "Three Great Scholars",
-    pages: [33, 49],
+    companionPages: [33],
+    illustratedPages: [49],
     category: "honour",
-    tier: "limit",
-    exposedTier: "limit",
+    tier: "middle",
+    exposedTier: "middle",
     requiresSelfDrawn: false,
     description:
       "Pungs/kongs of all three dragons, plus one pung/kong or chow and a " +
       "pair; the pair is in the fourth set's suit or is a wind pair.",
     source: "Synopsis p. 58; short-list tier convention.",
     notes:
-      "The Illustrated p. 49 prints LIMIT; the Companion's MIDDLE LIMIT " +
-      "(C p. 58) is superseded (AUDIT C8). Exposed dragon pungs are allowed.",
+      "MIDDLE LIMIT, exposed allowed (C p. 33). The Illustrated book prints " +
+      "LIMIT; the Companion's value governs (rules/RULES.md Part III).",
     match: ({ shape }) => {
       if (
         dragonCount(shape, "green") < 3 ||
@@ -294,7 +298,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "chow-chow",
     name: "Chow Chow",
-    pages: [15],
+    companionPages: [15],
+    illustratedPages: [],
     category: "chow",
     tier: "half",
     exposedTier: null,
@@ -320,7 +325,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "run-pung-pair",
     name: "Run, Pung & Pair",
-    pages: [9, 47],
+    companionPages: [9, 47],
+    illustratedPages: [36],
     category: "run",
     tier: "limit",
     exposedTier: null,
@@ -349,7 +355,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "gates-of-heaven",
     name: "Gates of Heaven",
-    pages: [9, 49],
+    companionPages: [9, 49],
+    illustratedPages: [36],
     category: "run",
     tier: "limit",
     exposedTier: null,
@@ -374,7 +381,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "confused-gates",
     name: "Confused Gates",
-    pages: [9, 51, 57],
+    companionPages: [9, 51],
+    illustratedPages: [57],
     category: "run",
     tier: "limit",
     exposedTier: null,
@@ -409,7 +417,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "hachi-ban",
     name: "Hachi Ban",
-    pages: [10, 25, 30, 32],
+    companionPages: [10, 25, 30, 32],
+    illustratedPages: [57],
     category: "run",
     tier: "limit",
     exposedTier: null,
@@ -435,7 +444,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "guardian-winds",
     name: "Guardian Winds",
-    pages: [10, 39],
+    companionPages: [10, 39],
+    illustratedPages: [],
     category: "run",
     tier: "limit",
     exposedTier: null,
@@ -458,7 +468,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "wriggly-dragon",
     name: "Wriggly Dragon",
-    pages: [11, 31],
+    companionPages: [11, 31],
+    illustratedPages: [],
     category: "run",
     tier: "limit",
     exposedTier: null,
@@ -480,7 +491,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "five-odd-honours",
     name: "Five Odd Honours",
-    pages: [11, 38],
+    companionPages: [11, 38],
+    illustratedPages: [56],
     category: "run",
     tier: "half",
     exposedTier: null,
@@ -503,7 +515,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "guardian-dragons",
     name: "Guardian Dragons",
-    pages: [10, 39],
+    companionPages: [10, 39],
+    illustratedPages: [],
     category: "run",
     tier: "limit",
     exposedTier: null,
@@ -527,7 +540,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "grand-sequence",
     name: "Grand Sequence",
-    pages: [11, 40],
+    companionPages: [11, 40],
+    illustratedPages: [],
     category: "run",
     tier: "limit",
     exposedTier: null,
@@ -553,7 +567,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "dragons-tail",
     name: "Dragon's Tail (1 & 2)",
-    pages: [12, 41],
+    companionPages: [12, 41],
+    illustratedPages: [52],
     category: "run",
     tier: "limit",
     exposedTier: "half",
@@ -585,7 +600,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "dragons-gates",
     name: "Dragon's Gates",
-    pages: [12, 34],
+    companionPages: [12, 34],
+    illustratedPages: [],
     category: "run",
     tier: "limit",
     exposedTier: "half",
@@ -610,7 +626,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "dragons-teeth",
     name: "Dragon's Teeth",
-    pages: [12, 33, 60],
+    companionPages: [12, 33, 60],
+    illustratedPages: [],
     category: "run",
     tier: "limit",
     exposedTier: "limit",
@@ -642,7 +659,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "gretas-garden",
     name: "Greta's Garden",
-    pages: [13, 38],
+    companionPages: [13, 38],
+    illustratedPages: [43],
     category: "run",
     tier: "limit",
     exposedTier: null,
@@ -665,7 +683,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "gretas-dragon",
     name: "Greta's Dragon",
-    pages: [13, 38],
+    companionPages: [13, 38],
+    illustratedPages: [43],
     category: "run",
     tier: "limit",
     exposedTier: null,
@@ -687,7 +706,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "red-lantern",
     name: "Red Lantern",
-    pages: [13, 40],
+    companionPages: [13, 40],
+    illustratedPages: [48],
     category: "run",
     tier: "double",
     exposedTier: "limit",
@@ -711,7 +731,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "gerties-garter",
     name: "Gertie's Garter",
-    pages: [14, 20, 50],
+    companionPages: [14, 20, 50],
+    illustratedPages: [37],
     category: "run",
     tier: "limit",
     exposedTier: null,
@@ -741,7 +762,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "yin-yang",
     name: "Yin Yang",
-    pages: [14, 50],
+    companionPages: [14, 50],
+    illustratedPages: [],
     category: "run",
     tier: "limit",
     exposedTier: null,
@@ -775,7 +797,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "big-robert",
     name: "Big Robert",
-    pages: [14],
+    companionPages: [14],
+    illustratedPages: [],
     category: "run",
     tier: "limit",
     exposedTier: null,
@@ -793,7 +816,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "big-robert-mixed",
     name: "Big Robert (mixed numbers)",
-    pages: [14],
+    companionPages: [14],
+    illustratedPages: [],
     category: "run",
     tier: "half",
     exposedTier: null,
@@ -811,7 +835,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "moon-at-bottom-of-well",
     name: "Moon at Bottom of Well",
-    pages: [15, 47, 60],
+    companionPages: [15, 47, 60],
+    illustratedPages: [],
     category: "chow",
     tier: "limit",
     exposedTier: null,
@@ -844,7 +869,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "three-philosophers",
     name: "Three Philosophers",
-    pages: [15],
+    companionPages: [15],
+    illustratedPages: [],
     category: "chow",
     tier: "limit",
     exposedTier: null,
@@ -869,7 +895,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "crazy-chows",
     name: "Crazy Chows",
-    pages: [16],
+    companionPages: [16],
+    illustratedPages: [],
     category: "chow",
     tier: "half",
     exposedTier: null,
@@ -893,7 +920,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "little-robert",
     name: "Little Robert",
-    pages: [16],
+    companionPages: [16],
+    illustratedPages: [],
     category: "chow",
     tier: "half",
     exposedTier: null,
@@ -913,7 +941,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "windy-chow",
     name: "Windy Chow",
-    pages: [18, 26],
+    companionPages: [18, 26],
+    illustratedPages: [41],
     category: "chow",
     tier: "half",
     exposedTier: null,
@@ -935,7 +964,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "chop-suey",
     name: "Chop Suey",
-    pages: [18, 26],
+    companionPages: [18, 26],
+    illustratedPages: [58],
     category: "chow",
     tier: "limit",
     exposedTier: null,
@@ -958,7 +988,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "chow-mein",
     name: "Chow Mien",
-    pages: [18, 26],
+    companionPages: [18, 26],
+    illustratedPages: [58],
     category: "chow",
     tier: "limit",
     exposedTier: null,
@@ -981,7 +1012,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "hovering-angel",
     name: "Hovering Angel",
-    pages: [17, 41],
+    companionPages: [17, 41],
+    illustratedPages: [],
     category: "chow",
     tier: "limit",
     exposedTier: null,
@@ -1004,7 +1036,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "little-brother",
     name: "Little Brother",
-    pages: [17],
+    companionPages: [17],
+    illustratedPages: [],
     category: "chow",
     tier: "half",
     exposedTier: null,
@@ -1027,7 +1060,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "apple-blossom",
     name: "Apple Blossom",
-    pages: [19, 33],
+    companionPages: [19, 33],
+    illustratedPages: [],
     category: "chow",
     tier: "limit",
     exposedTier: null,
@@ -1050,7 +1084,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "professors",
     name: "The Professors",
-    pages: [19],
+    companionPages: [19],
+    illustratedPages: [],
     category: "chow",
     tier: "half",
     exposedTier: null,
@@ -1074,7 +1109,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "knitting",
     name: "Knitting",
-    pages: [20, 50],
+    companionPages: [20, 50],
+    illustratedPages: [37],
     category: "pairs",
     tier: "half",
     exposedTier: null,
@@ -1105,7 +1141,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "triple-knitting",
     name: "Triple Knitting",
-    pages: [20, 51],
+    companionPages: [20, 51],
+    illustratedPages: [37],
     category: "pairs",
     tier: "half",
     exposedTier: null,
@@ -1122,7 +1159,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "all-pair-honours",
     name: "All Pair Honours",
-    pages: [22, 44],
+    companionPages: [22, 44],
+    illustratedPages: [38],
     category: "pairs",
     tier: "limit",
     exposedTier: null,
@@ -1143,7 +1181,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "seven-twins",
     name: "Seven Twins",
-    pages: [22],
+    companionPages: [22],
+    illustratedPages: [],
     category: "pairs",
     tier: "half",
     exposedTier: null,
@@ -1161,7 +1200,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "dragons-breath",
     name: "Dragon's Breath",
-    pages: [24, 31],
+    companionPages: [24, 31],
+    illustratedPages: [53],
     category: "pairs",
     tier: "limit",
     exposedTier: null,
@@ -1182,7 +1222,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "windfall",
     name: "Windfall",
-    pages: [24, 27],
+    companionPages: [24, 27],
+    illustratedPages: [53],
     category: "pairs",
     tier: "limit",
     exposedTier: null,
@@ -1200,7 +1241,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "dragonette",
     name: "Dragonette",
-    pages: [24, 39],
+    companionPages: [24, 39],
+    illustratedPages: [],
     category: "pairs",
     tier: "limit",
     exposedTier: null,
@@ -1242,7 +1284,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "windy-ones",
     name: "Windy Ones",
-    pages: [28, 45],
+    companionPages: [28, 45],
+    illustratedPages: [42],
     category: "honour",
     tier: "limit",
     exposedTier: "half",
@@ -1266,7 +1309,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "windy-nines",
     name: "Windy Nines",
-    pages: [28, 45],
+    companionPages: [28, 45],
+    illustratedPages: [42],
     category: "honour",
     tier: "limit",
     exposedTier: "half",
@@ -1290,7 +1334,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "windvane",
     name: "Windvane",
-    pages: [28],
+    companionPages: [28],
+    illustratedPages: [],
     category: "honour",
     tier: "limit",
     exposedTier: null,
@@ -1315,18 +1360,20 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "civil-war",
     name: "Civil War",
-    pages: [30, 53],
+    companionPages: [30],
+    illustratedPages: [53],
     category: "honour",
-    tier: "double",
-    exposedTier: "double",
+    tier: "middle",
+    exposedTier: "middle",
     requiresSelfDrawn: false,
     description:
       "Pungs/kongs of North and South Winds, plus 1, 1, 6, 8 in one suit and " +
       "1, 5, 6, 8 in another suit (1861 and 1865).",
     source: "Illustration p. 30.",
     notes:
-      "The p. 30 illustration shows NNN, SSS and 1,8,6,1 in one suit plus the " +
-      "leading 1 of the second; the synopsis prints 1861 and 1865.",
+      "MIDDLE LIMIT, exposed allowed (C p. 30). The Illustrated book prints " +
+      "DOUBLE LIMIT. The illustration shows NNN, SSS and 1,8,6,1 in one suit " +
+      "plus the leading 1 of the second; the synopsis prints 1861 and 1865.",
     match: ({ shape }) => {
       for (const first of SUITS) {
         for (const second of SUITS) {
@@ -1353,10 +1400,11 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "four-blessings",
     name: "The Four Blessings",
-    pages: [30, 49],
+    companionPages: [30],
+    illustratedPages: [49],
     category: "honour",
-    tier: "limit",
-    exposedTier: "limit",
+    tier: "middle",
+    exposedTier: "middle",
     requiresSelfDrawn: false,
     description: "Pungs/kongs of all four winds plus any pair.",
     source: "Synopsis p. 56; illustration p. 30.",
@@ -1372,7 +1420,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "all-pair-jade",
     name: "All Pair Jade",
-    pages: [23, 32, 52],
+    companionPages: [23, 32, 52],
+    illustratedPages: [44],
     category: "dragon",
     tier: "limit",
     exposedTier: null,
@@ -1383,7 +1432,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     source: "Synopsis pp. 58 and 60; illustrations pp. 32 and 52.",
     notes:
       "A four-of-a-kind counts as two pairs, which is how six pairs of green " +
-      "Bamboos are possible from five ranks.",
+      "Bamboos are possible from five ranks. The Illustrated book prints only " +
+      "the one-dragon-pair shape; the Companion's wider reading governs.",
     match: ({ shape }) => {
       if (!isSevenPairs(shape)) return false;
       if (shapeKeys(shape).some((key) => !isBamboo(key) && key !== "dG")) {
@@ -1394,13 +1444,15 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       for (const rank of GREEN_BAMBOO_RANKS) {
         bambooPairs += Math.floor(rankCount(shape, "bamboo", rank) / 2);
       }
-      return dragonPairs === 1 && bambooPairs === 6;
+      // GG + six bamboo pairs, or GG/GG + five (C pp. 23 and 32); seven pairs either way.
+      return (dragonPairs === 1 && bambooPairs === 6) || (dragonPairs === 2 && bambooPairs === 5);
     },
   },
   {
     id: "all-pair-ruby-jade",
     name: "All Pair Ruby Jade",
-    pages: [23, 32, 53],
+    companionPages: [23, 32, 53],
+    illustratedPages: [46],
     category: "dragon",
     tier: "limit",
     exposedTier: null,
@@ -1438,7 +1490,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "golden-gates",
     name: "Golden Gates",
-    pages: [25, 34],
+    companionPages: [25, 34],
+    illustratedPages: [],
     category: "dragon",
     tier: "limit",
     exposedTier: "half",
@@ -1468,7 +1521,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "red-waratah",
     name: "Red Waratah",
-    pages: [34, 54],
+    companionPages: [34],
+    illustratedPages: [54],
     category: "dragon",
     tier: "limit",
     exposedTier: "half",
@@ -1490,7 +1544,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "green-jade",
     name: "Green Jade",
-    pages: [35, 53],
+    companionPages: [35, 53],
+    illustratedPages: [56],
     category: "dragon",
     tier: "limit",
     exposedTier: "limit",
@@ -1513,7 +1568,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "red-coral",
     name: "Red Coral",
-    pages: [35, 60],
+    companionPages: [35, 60],
+    illustratedPages: [56],
     category: "dragon",
     tier: "limit",
     exposedTier: "limit",
@@ -1536,7 +1592,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "white-opal",
     name: "White Opal",
-    pages: [35, 60],
+    companionPages: [35, 60],
+    illustratedPages: [56],
     category: "dragon",
     tier: "limit",
     exposedTier: "limit",
@@ -1559,7 +1616,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "imperial-jade",
     name: "Imperial Jade",
-    pages: [36, 52],
+    companionPages: [36, 52],
+    illustratedPages: [44],
     category: "dragon",
     tier: "double",
     exposedTier: "double",
@@ -1608,7 +1666,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "lily-of-the-valley",
     name: "Lily of the Valley",
-    pages: [36, 52],
+    companionPages: [36, 52],
+    illustratedPages: [44],
     category: "dragon",
     tier: "double",
     exposedTier: "double",
@@ -1632,7 +1691,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "lillypilly",
     name: "Lillypilly",
-    pages: [36, 54, 60],
+    companionPages: [36, 60],
+    illustratedPages: [54],
     category: "dragon",
     tier: "limit",
     exposedTier: "half",
@@ -1655,7 +1715,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "sunrise",
     name: "Sunrise",
-    pages: [42],
+    companionPages: [42],
+    illustratedPages: [],
     category: "suit",
     tier: "limit",
     exposedTier: "half",
@@ -1678,7 +1739,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "sunset",
     name: "Sunset",
-    pages: [42],
+    companionPages: [42],
+    illustratedPages: [],
     category: "suit",
     tier: "limit",
     exposedTier: "half",
@@ -1701,7 +1763,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "unique-wonder",
     name: "Unique Wonder",
-    pages: [44],
+    companionPages: [44],
+    illustratedPages: [38],
     category: "honour",
     tier: "double",
     exposedTier: null,
@@ -1726,7 +1789,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "all-honour-hand",
     name: "All Honour Hand",
-    pages: [44],
+    companionPages: [44],
+    illustratedPages: [38],
     category: "honour",
     tier: "calculate",
     exposedTier: "calculate",
@@ -1747,7 +1811,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "windy-dragons",
     name: "Windy Dragons",
-    pages: [25, 46],
+    companionPages: [25, 46],
+    illustratedPages: [48],
     category: "honour",
     tier: "limit",
     exposedTier: "limit",
@@ -1770,7 +1835,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "all-winds-and-dragons",
     name: "All Winds and Dragons",
-    pages: [46],
+    companionPages: [46],
+    illustratedPages: [48],
     category: "honour",
     tier: "limit",
     exposedTier: "limit",
@@ -1788,7 +1854,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "heads-and-tails",
     name: "Heads and Tails",
-    pages: [45, 51],
+    companionPages: [45, 51],
+    illustratedPages: [40],
     category: "honour",
     tier: "limit",
     exposedTier: "limit",
@@ -1806,7 +1873,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "heavenly-twins",
     name: "Heavenly Twins",
-    pages: [21, 48],
+    companionPages: [21, 48],
+    illustratedPages: [34],
     category: "pairs",
     tier: "limit",
     exposedTier: null,
@@ -1822,7 +1890,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "purity-hand",
     name: "Purity Hand",
-    pages: [48],
+    companionPages: [48],
+    illustratedPages: [34],
     category: "suit",
     tier: "calculate",
     exposedTier: "calculate",
@@ -1846,7 +1915,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     id: "ods-evens",
     companionUnillustrated: true,
     name: "Odds & Evens",
-    pages: [60],
+    companionPages: [60],
+    illustratedPages: [],
     category: "suit",
     tier: "middle",
     exposedTier: "middle",
@@ -1874,7 +1944,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     id: "robin",
     companionUnillustrated: true,
     name: "Robin",
-    pages: [60],
+    companionPages: [60],
+    illustratedPages: [],
     category: "chow",
     tier: "half",
     exposedTier: "half",
@@ -1913,18 +1984,17 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "sparrows-sanctuary",
     name: "Sparrow's Sanctuary",
-    pages: [21, 44, 49, 53],
+    companionPages: [21, 49, 53],
+    illustratedPages: [44],
     category: "suit",
-    tier: "limit",
+    tier: "middle",
     exposedTier: null,
     requiresSelfDrawn: false,
     description:
       "Two pairs of 1 Bamboo (a kong) plus a pair of each green Bamboo " +
       "(2, 3, 4, 6, 8).",
     source: "Short list p. 6; synopsis p. 60.",
-    notes:
-      "limit/limit is assumed " +
-      "from the other pair-jade hands.",
+    notes: "MIDDLE LIMIT, concealed (C pp. 21 and 49). The Illustrated book prints LIMIT.",
     match: ({ shape }) => {
       if (!isSevenPairs(shape)) return false;
       if (shapeKeys(shape).some((key) => !isBamboo(key))) return false;
@@ -1937,7 +2007,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "ruby-jade",
     name: "Ruby Jade",
-    pages: [37, 54],
+    companionPages: [37, 54],
+    illustratedPages: [46],
     category: "dragon",
     tier: "limit",
     exposedTier: "limit",
@@ -1957,7 +2028,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "red-lily",
     name: "Red Lily",
-    pages: [37, 54],
+    companionPages: [37, 54],
+    illustratedPages: [46],
     category: "dragon",
     tier: "double",
     exposedTier: "double",
@@ -1977,7 +2049,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "royal-ruby",
     name: "Royal Ruby",
-    pages: [37, 54],
+    companionPages: [37, 54],
+    illustratedPages: [46],
     category: "dragon",
     tier: "double",
     exposedTier: "double",
@@ -1998,7 +2071,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     id: "blue-mountains",
     companionUnillustrated: true,
     name: "Blue Mountains",
-    pages: [60],
+    companionPages: [60],
+    illustratedPages: [],
     category: "suit",
     tier: "limit",
     exposedTier: "limit",
@@ -2022,7 +2096,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     id: "white-elephant",
     companionUnillustrated: true,
     name: "White Elephant",
-    pages: [60],
+    companionPages: [60],
+    illustratedPages: [],
     category: "suit",
     tier: "limit",
     exposedTier: "limit",
@@ -2048,7 +2123,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     id: "driven-snow",
     companionUnillustrated: true,
     name: "Driven Snow",
-    pages: [60],
+    companionPages: [60],
+    illustratedPages: [],
     category: "suit",
     tier: "limit",
     exposedTier: "limit",
@@ -2074,7 +2150,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     id: "dragons-scales",
     companionUnillustrated: true,
     name: "Dragon's Scales",
-    pages: [60],
+    companionPages: [60],
+    illustratedPages: [],
     category: "suit",
     tier: "limit",
     exposedTier: "limit",
@@ -2099,7 +2176,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "dragonfly",
     name: "Dragonfly",
-    pages: [31],
+    companionPages: [31],
+    illustratedPages: [40],
     category: "dragon",
     tier: "limit",
     exposedTier: "half",
@@ -2122,7 +2200,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "three-sisters",
     name: "Three Sisters",
-    pages: [29],
+    companionPages: [29],
+    illustratedPages: [55],
     category: "honour",
     tier: "limit",
     exposedTier: "half",
@@ -2146,7 +2225,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "seven-brothers",
     name: "Seven Brothers",
-    pages: [29],
+    companionPages: [29],
+    illustratedPages: [55],
     category: "honour",
     tier: "limit",
     exposedTier: "half",
@@ -2171,7 +2251,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     id: "up-you-go",
     companionUnillustrated: true,
     name: "Up You Go",
-    pages: [57],
+    companionPages: [57],
+    illustratedPages: [],
     category: "plain",
     tier: "double",
     exposedTier: "double",
@@ -2220,7 +2301,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     id: "down-you-go",
     companionUnillustrated: true,
     name: "Down You Go",
-    pages: [57],
+    companionPages: [57],
+    illustratedPages: [],
     category: "plain",
     tier: "double",
     exposedTier: "double",
@@ -2268,7 +2350,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "numbers-in-parallel",
     name: "Numbers in Parallel",
-    pages: [43],
+    companionPages: [43],
+    illustratedPages: [],
     category: "plain",
     tier: "middle",
     exposedTier: "middle",
@@ -2305,7 +2388,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "numbers-doubled",
     name: "Numbers Doubled",
-    pages: [43],
+    companionPages: [43],
+    illustratedPages: [],
     category: "plain",
     tier: "middle",
     exposedTier: "middle",
@@ -2345,10 +2429,11 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "chinese-odds",
     name: "Chinese Odds",
-    pages: [40, 49],
+    companionPages: [49],
+    illustratedPages: [40],
     category: "suit",
-    tier: "limit",
-    exposedTier: "limit",
+    tier: "middle",
+    exposedTier: "middle",
     requiresSelfDrawn: false,
     description:
       "Four pungs/kongs of odd numbers plus an odd pair, all in one suit.",
@@ -2372,7 +2457,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     id: "dragons-run",
     companionUnillustrated: true,
     name: "Dragon's Run",
-    pages: [59],
+    companionPages: [59],
+    illustratedPages: [],
     category: "run",
     tier: "middle",
     exposedTier: "middle",
@@ -2396,7 +2482,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "buried-treasure",
     name: "Buried Treasure (Concealed Mah Jong)",
-    pages: [38],
+    companionPages: [],
+    illustratedPages: [38],
     category: "plain",
     tier: "calculate",
     exposedTier: null,
@@ -2418,7 +2505,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "all-kong",
     name: "All Kong",
-    pages: [30],
+    companionPages: [],
+    illustratedPages: [30],
     category: "plain",
     tier: "limit",
     exposedTier: "limit",
@@ -2438,7 +2526,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "mixed-pung",
     name: "Mixed Pung",
-    pages: [30],
+    companionPages: [],
+    illustratedPages: [30],
     category: "plain",
     tier: "limit",
     exposedTier: null,
@@ -2460,7 +2549,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "chinese-ordinary",
     name: "Chinese Ordinary Hand",
-    pages: [28, 62],
+    companionPages: [],
+    illustratedPages: [28, 62],
     category: "plain",
     tier: "calculate",
     exposedTier: "calculate",

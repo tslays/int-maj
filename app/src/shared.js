@@ -4,6 +4,7 @@
  */
 
 import { Board } from "./board.js";
+import { describePages } from "./pages.js";
 
 export const SEATS = ["E", "S", "W", "N"];
 export const WIND_NAME = { E: "East", S: "South", W: "West", N: "North" };
@@ -70,6 +71,17 @@ export function faceChip(key) {
   if (key === "dW") chip.classList.add("chip-white");
   chip.append(image);
   return chip;
+}
+
+/** Where a hand is printed, worded for the rules the hand on the table is played under. */
+export function bookPages(pages) {
+  return describePages(pages, companionRules());
+}
+
+/** True when the hand on the table is played with the Companion's hands only. */
+export function companionRules() {
+  const set = state.payload?.houseRules?.handSet;
+  return set === "companion" || set === "companion-pictured";
 }
 
 export function toast(text) {

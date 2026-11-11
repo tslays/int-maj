@@ -33,7 +33,7 @@ interface ClosestHandPayload {
   readonly name: string;
   readonly away: number;
   readonly need: readonly string[];
-  readonly pages: readonly number[];
+  readonly pages: { readonly companion: readonly number[]; readonly illustrated: readonly number[] };
 }
 
 interface ApiError {
@@ -135,7 +135,7 @@ describe("table API", () => {
       assert.equal(typeof hand.name, "string");
       assert.equal(hand.need.length, hand.away);
       assert.ok(hand.need.every((key) => TILE_KEY.test(key)));
-      assert.ok(hand.pages.length > 0);
+      assert.ok(hand.pages.companion.length + hand.pages.illustrated.length > 0);
       if (index > 0) assert.ok(hands[index - 1]!.away <= hand.away);
     }
     assert.ok(hands.every((hand) => hand.away <= 6), "only hands within reach are named");
@@ -155,7 +155,7 @@ describe("table API", () => {
 
     const open = call<Record<string, unknown>>("GET", "/api/hand?pattern=three-great-scholars");
     assert.equal(open.body.concealedOnly, false);
-    assert.equal(open.body.exposedPoints, 1000);
+    assert.equal(open.body.exposedPoints, 1500);
 
     assert.equal(call<ApiError>("GET", "/api/hand").status, 400);
     assert.equal(call<ApiError>("GET", "/api/hand?pattern=nope").status, 404);

@@ -21,16 +21,17 @@ export const TIER_POINTS: Readonly<Record<Tier, number | null>> = Object.freeze(
 });
 
 /**
- * Printed fishing values, one per winning tier. The Illustrated pages print
- * fractions of the limit: half 200, limit 400, double 500. Middle 600 belongs
- * only to Companion hands; a Companion double hand keeps its printed 800.
- * `calculate` has no fixed fishing figure because the hand score is computed.
+ * Printed fishing values, one per winning tier, as the Companion prints them
+ * (C p. 4): half 200, limit 400, middle 600, double 800. The Illustrated book
+ * prints 500 for a double limit; the Companion's figure governs (the owner's
+ * ruling, rules/RULES.md Part III). `calculate` has no fixed fishing figure
+ * because the hand score is computed.
  */
 export const TIER_FISHING: Readonly<Record<Tier, number | null>> = Object.freeze({
   half: 200,
   limit: 400,
   middle: 600,
-  double: 500,
+  double: 800,
   calculate: null,
 });
 
@@ -57,10 +58,16 @@ export interface HandPattern {
   readonly id: string;
   readonly name: string;
   /**
-   * Every printed book page where the hand appears (short list, hand page and
-   * full synopsis). One canonical pattern keeps all references.
+   * Every printed page of *The Mah Jong Player's Companion* where the hand
+   * appears (short list, hand pages and synopsis). Empty for a hand only the
+   * Illustrated book prints.
    */
-  readonly pages: readonly number[];
+  readonly companionPages: readonly number[];
+  /**
+   * The printed page of *The Game of Mah Jong Illustrated* that carries the
+   * hand (rules/RULES.md Part II). Empty for a hand only the Companion prints.
+   */
+  readonly illustratedPages: readonly number[];
   readonly category: PatternCategory;
   /**
    * Value when the hand is concealed. The book's precedence rule is

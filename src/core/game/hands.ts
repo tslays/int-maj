@@ -155,13 +155,8 @@ function tierRank(tier: Tier): number {
   return points === null ? -1 : points;
 }
 
-/** Companion-only double-limit hands keep their printed 800 fishing figure. */
-const COMPANION_DOUBLE_FISHING = new Set(["up-you-go", "down-you-go"]);
-
-function fishingFigure(tier: Tier, patternId: string): number | null {
-  if (tier === "double" && COMPANION_DOUBLE_FISHING.has(patternId)) return 800;
-  if (tier === "calculate") return null;
-  return TIER_FISHING[tier];
+function fishingFigure(tier: Tier): number | null {
+  return tier === "calculate" ? null : TIER_FISHING[tier];
 }
 
 /**
@@ -193,7 +188,7 @@ export function fishingValueFor(
     const value =
       winning.tier === "calculate"
         ? score.points
-        : fishingFigure(winning.tier, winning.pattern.id);
+        : fishingFigure(winning.tier);
     if (value === null) continue;
     const rank = tierRank(winning.tier);
     if (bestTier === null || rank > bestRank) {

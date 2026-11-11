@@ -19,7 +19,11 @@ describe("pattern table schema", () => {
       new Set(PATTERNS.map((pattern) => pattern.id)).size,
       PATTERNS.length,
     );
-    for (const pattern of PATTERNS) assert.ok(pattern.pages.length > 0);
+    for (const pattern of PATTERNS) {
+      // Every hand is printed in at least one book, and the Illustrated-only hands in no other.
+      assert.ok(pattern.companionPages.length + pattern.illustratedPages.length > 0, pattern.id);
+      if (pattern.illustratedOnly === true) assert.equal(pattern.companionPages.length, 0, pattern.id);
+    }
   });
 
   it("records a reading for every provisional pattern", () => {

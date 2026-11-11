@@ -21,6 +21,7 @@ import {
   situationFor,
   stepsFromEvents,
   viewFor,
+  fishingValueFor,
   waitsOf,
 } from "../../src/core/game/index.ts";
 import { planGoals } from "../../src/core/game/bot/plan.ts";
@@ -186,3 +187,38 @@ function drawnResult() {
     reason: "wall exhausted",
   } as unknown as NonNullable<ReturnType<typeof fixture>["result"]>;
 }
+
+describe("the Companion's values govern", () => {
+  const score = (tiles: string) => scoreHand(createHand({ concealed: tiles, selfDrawn: false }));
+
+  it("counts All Pair Jade with two green-dragon pairs and five bamboo pairs (C pp. 23 and 32)", () => {
+    // GG + six bamboo pairs (the Illustrated shape) and GG/GG + five (the Companion's wider one).
+    assert.equal(score("dG dG b2 b2 b3 b3 b4 b4 b6 b6 b8 b8 b8 b8").winning?.pattern.id, "all-pair-jade");
+    assert.equal(score("dG dG dG dG b2 b2 b3 b3 b4 b4 b6 b6 b8 b8").winning?.pattern.id, "all-pair-jade");
+    // Seven pairs, but one is not a green bamboo.
+    assert.notEqual(score("dG dG b2 b2 b3 b3 b4 b4 b6 b6 b8 b8 b7 b7").winning?.pattern.id, "all-pair-jade");
+    // Six pairs only, and no dragon pair at all.
+    assert.notEqual(score("b2 b2 b3 b3 b4 b4 b6 b6 b8 b8 b8 b8 b2 b2").winning?.pattern.id, "all-pair-jade");
+  });
+
+  it("pays the five hands at the Companion's middle limit", () => {
+    for (const id of ["chinese-odds", "sparrows-sanctuary", "three-great-scholars", "four-blessings", "civil-war"]) {
+      const pattern = PATTERNS.find((entry) => entry.id === id)!;
+      assert.equal(pattern.tier, "middle", id);
+    }
+    assert.equal(score("dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 b5").points, 1500);
+  });
+
+  it("fishes for a double-limit hand at 800, whichever book printed the hand (C p. 4)", () => {
+    // Unique Wonder (I p. 38, C p. 44), one tile from complete: the pair is any tile.
+    const state = fixture({
+      hands: { E: "b1 b9 c1 c9 o1 o9 wE wS wW wN dG dR dW", ...OTHERS },
+      wall: LONG_WALL,
+      phase: "draw",
+      turn: "E",
+    });
+    const wait = waitsOf(state, "E");
+    assert.ok(wait.includes("b1"));
+    assert.deepEqual(fishingValueFor(state, "E", wait), { tier: "double", value: 800 });
+  });
+});

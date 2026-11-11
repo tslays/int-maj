@@ -14,12 +14,25 @@
  */
 
 import { PATTERNS } from "../patterns/table.ts";
-import { TIER_POINTS, type Tier } from "../patterns/types.ts";
+import { TIER_POINTS, type HandPattern, type Tier } from "../patterns/types.ts";
 import { situationFor } from "./bot.ts";
 import { completion, KEYS, oddsFor, planGoals } from "./bot/plan.ts";
 import type { GameView } from "./view.ts";
 
 const PATTERN_BY_ID = new Map(PATTERNS.map((pattern) => [pattern.id, pattern]));
+
+/** Where a hand is printed: the printed pages of each of the two books. */
+export interface BookPages {
+  readonly companion: readonly number[];
+  readonly illustrated: readonly number[];
+}
+
+export function pagesOf(pattern: HandPattern | undefined): BookPages {
+  return {
+    companion: [...(pattern?.companionPages ?? [])],
+    illustrated: [...(pattern?.illustratedPages ?? [])],
+  };
+}
 
 export interface ClosestHand {
   readonly pattern: string;
@@ -28,8 +41,8 @@ export interface ClosestHand {
   readonly tier: Tier;
   /** The printed value, or null for a hand whose score is calculated. */
   readonly points: number | null;
-  /** Book pages the hand is printed on. */
-  readonly pages: readonly number[];
+  /** The printed pages of each book the hand is on. */
+  readonly pages: BookPages;
   /**
    * True when the hand exists only concealed: any exposed meld (a called
    * pung, kong or chow) rules it out. Most special hands are like this.
@@ -85,7 +98,7 @@ export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand
         name: pattern.name,
         tier,
         points: TIER_POINTS[tier],
-        pages: pattern.pages,
+        pages: pagesOf(pattern),
         concealedOnly: pattern.exposedTier === null,
         away: need.length,
         need,
@@ -104,7 +117,7 @@ export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand
 export interface HandDetail {
   readonly pattern: string;
   readonly name: string;
-  readonly pages: readonly number[];
+  readonly pages: BookPages;
   /** What the hand is made of, in plain words. */
   readonly description: string;
   /** Concealed-only: no exposed meld is allowed at any point. */
@@ -125,7 +138,7 @@ export function handDetail(id: string): HandDetail | null {
   return {
     pattern: pattern.id,
     name: pattern.name,
-    pages: pattern.pages,
+    pages: pagesOf(pattern),
     description: pattern.description,
     concealedOnly: pattern.exposedTier === null,
     requiresSelfDrawn: pattern.requiresSelfDrawn,

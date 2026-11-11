@@ -19,7 +19,7 @@ import { checkHand, summarizeMatch, type MatchSummary } from "../core/check.ts";
 import { tileKey } from "../core/tiles.ts";
 import type { Action } from "../core/game/actions.ts";
 import { chooseAction } from "../core/game/bot.ts";
-import { closestHands, type ClosestHand } from "../core/game/closest.ts";
+import { closestHands, pagesOf, type BookPages, type ClosestHand } from "../core/game/closest.ts";
 import type { Event } from "../core/game/events.ts";
 import { isApplyError } from "../core/game/draft.ts";
 import { ledgerTotals } from "../core/game/settle.ts";
@@ -186,8 +186,8 @@ export interface OutcomePayload {
    * so the result screen can explain the hand instead of only naming it.
    */
   readonly patternDescription: string | null;
-  /** The book pages the combination is printed on. */
-  readonly patternPages: readonly number[];
+  /** The printed pages of each book the combination is on. */
+  readonly patternPages: BookPages;
   readonly ledger: readonly LedgerEntry[];
   /** Ledger entries whose reason names a fishing settlement. */
   readonly fishing: readonly LedgerEntry[];
@@ -425,7 +425,7 @@ function outcomeFor(session: WebSession, view: GameView): OutcomePayload | null 
         ? scored.matches.map((id) => ({ id, name: PATTERN_NAMES.get(id) ?? id }))
         : [],
     patternDescription: PATTERN_BY_ID.get(result.patternId ?? "")?.description ?? null,
-    patternPages: [...(PATTERN_BY_ID.get(result.patternId ?? "")?.pages ?? [])],
+    patternPages: pagesOf(PATTERN_BY_ID.get(result.patternId ?? "")),
     ledger: state.ledger,
     fishing: state.ledger.filter((entry) => entry.reason.startsWith("fishing")),
     totals: totals.totals,

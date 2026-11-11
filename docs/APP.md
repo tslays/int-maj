@@ -238,7 +238,10 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   (`houseRules`), `/api/house-rules` names the hands each hand set leaves out, and a
   problem report carries the rules so it replays. The one rule so far is which hands are in play
   (all, the Companion's, or the Companion's with sample pictures); see
-  `rules/RULES.md` Part III §5.
+  `rules/RULES.md` Part III §5. Hand values are the Companion's in every set;
+  in the two Companion sets the hand sheet and result card name only Companion
+  pages (`pages.js`) and the payment explanations drop their Illustrated page
+  citations (`explainSettlement({ cite: false })`).
 - **Report a problem.** The Report button in Options (accessible name "Report a
   problem") opens a sheet of that title with an optional
   one-line note; Send report hands the text to `navigator.share` (the iOS
