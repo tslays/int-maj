@@ -33,7 +33,7 @@ interface ClosestHandPayload {
   readonly name: string;
   readonly away: number;
   readonly need: readonly string[];
-  readonly pages: readonly number[];
+  readonly pages: { readonly illustrated: readonly number[]; readonly companion: readonly number[] };
 }
 
 interface ApiError {
@@ -135,7 +135,7 @@ describe("table API", () => {
       assert.equal(typeof hand.name, "string");
       assert.equal(hand.need.length, hand.away);
       assert.ok(hand.need.every((key) => TILE_KEY.test(key)));
-      assert.ok(hand.pages.length > 0);
+      assert.ok(hand.pages.illustrated.length + hand.pages.companion.length > 0);
       if (index > 0) assert.ok(hands[index - 1]!.away <= hand.away);
     }
     assert.ok(hands.every((hand) => hand.away <= 6), "only hands within reach are named");

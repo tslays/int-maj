@@ -3,6 +3,7 @@
  * Hints toggle in the menu.
  */
 
+import { bookPages } from "./pages.js";
 import { $, faceChip, request, showToggle, state, storage } from "./shared.js";
 
 /* --------------------------------------------------------- closest hands */
@@ -210,7 +211,7 @@ async function openHandDetail(hand) {
   }
   card.append(
     detailLine(hand.away === 0 ? "Your hand" : `You still need (${hand.away})`, need),
-    detailLine("In the book", detail.pages.length > 1 ? `pages ${detail.pages.join(", ")}` : `page ${detail.pages[0]}`),
+    detailLine("In the books", bookPages(detail.pages)),
   );
 
   sheet.replaceChildren(card);

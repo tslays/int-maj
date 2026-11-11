@@ -52,15 +52,28 @@ export interface MatchContext {
 
 export type PatternPredicate = (context: MatchContext) => boolean;
 
+/**
+ * Where a hand is printed, book by book. The two books number their pages
+ * independently, so a page number means nothing without its book: every
+ * reference shown to a player names the book.
+ */
+export interface PageRefs {
+  /** Pages of *The Game of Mah Jong Illustrated* (primary). */
+  readonly illustrated: readonly number[];
+  /** Pages of *The Mah Jong Player's Companion* (supplement). */
+  readonly companion: readonly number[];
+}
+
 export interface HandPattern {
   /** Stable kebab-case identifier. */
   readonly id: string;
   readonly name: string;
   /**
-   * Every printed book page where the hand appears (short list, hand page and
-   * full synopsis). One canonical pattern keeps all references.
+   * Every printed page where the hand appears, by book: the Illustrated hand
+   * page (`rules/RULES.md` Part II) and the Companion's short list, hand page
+   * and synopsis. One canonical pattern keeps all references.
    */
-  readonly pages: readonly number[];
+  readonly pages: PageRefs;
   readonly category: PatternCategory;
   /**
    * Value when the hand is concealed. The book's precedence rule is

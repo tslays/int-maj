@@ -47,7 +47,7 @@ export function ledgerTotals(ledger) {
   return totals;
 }
 
-/** The book's counters: every player starts with 16,000 points (p. 23). */
+/** The book's counters: every player starts with 16,000 points (Illustrated p. 23). */
 export const STARTING_POINTS = 16000;
 
 export function scores() {
