@@ -38,8 +38,8 @@ const PRINTED: Readonly<
   "chow-chow": ["half", null, 500],
   professors: ["half", null, 500],
   "little-brother": ["half", null, 500],
-  "ods-evens": ["middle", "middle", 1500],
-  robin: ["half", "half", 500],
+  "ods-evens": ["middle", null, 1500],
+  robin: ["half", null, 500],
   dragonfly: ["limit", "half", 1000],
   "ordinary-mahjong": ["calculate", "calculate", null],
   "all-honour-hand": ["calculate", "calculate", null],
@@ -48,8 +48,8 @@ const PRINTED: Readonly<
   "numbers-doubled": ["middle", "middle", 1500],
   "dragons-run": ["middle", null, 1500],
   "chinese-odds": ["limit", "limit", 1000],
-  "up-you-go": ["double", "double", 2000],
-  "down-you-go": ["double", "double", 2000],
+  "up-you-go": ["double", null, 2000],
+  "down-you-go": ["double", null, 2000],
 };
 
 describe("printed tier table", () => {

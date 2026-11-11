@@ -89,7 +89,7 @@ const TABLE = {
 
   announce: {
     title: "Your turn to declare fishing",
-    seed: "offer-announce-8",
+    seed: "offer-announce-v11-2",
     at: (view) =>
       view.phase === "announce" &&
       view.turn === view.seat &&
@@ -98,7 +98,7 @@ const TABLE = {
 
   ron: {
     title: "A winning tile in the claim window",
-    seed: "ron-v5-14",
+    seed: "ron-v11-3",
     at: (view) =>
       view.phase === "claim" &&
       view.turn === view.seat &&
@@ -123,7 +123,7 @@ const TABLE = {
 
   result: {
     title: "The result panel with payments and fishing",
-    seed: "result-v5-76",
+    seed: "result-v11-91",
     at: (_view, state) =>
       state.result !== null &&
       state.result.kind === "win" &&
