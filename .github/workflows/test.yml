@@ -14,10 +14,14 @@ on:
 permissions:
   contents: read
 
-# A newer push supersedes a run still going for the same branch.
+# A newer push to a pull request supersedes a run still going for it. Runs on
+# main and on tags are never cancelled: a scheduled or manual run on main used
+# to share this group with the push run, and cancelled that push's deploy
+# halfway, leaving int-dev on the previous build. Each kind of run has its own
+# group, and the deploy jobs below add their own on top.
 concurrency:
-  group: test-${{ github.ref }}
-  cancel-in-progress: true
+  group: test-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
