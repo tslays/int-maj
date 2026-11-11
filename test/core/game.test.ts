@@ -548,9 +548,9 @@ describe("claims", () => {
     assert.deepEqual(
       second.state.ledger.map((entry) => [entry.from, entry.to, entry.points]),
       [
-        ["E", "S", 2000],
-        ["W", "S", 1000],
-        ["N", "S", 1000],
+        ["E", "S", 3000],
+        ["W", "S", 1500],
+        ["N", "S", 1500],
       ],
     );
   });

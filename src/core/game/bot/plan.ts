@@ -78,6 +78,8 @@ export interface Situation {
   readonly seasons: readonly string[];
   /** Multiplier on fixed-tier (special) hand values: a bot's ambition. */
   readonly ambition: number;
+  /** House rule: hands this table plays without; never a goal. */
+  readonly excluded?: readonly string[];
 }
 
 interface Target {
@@ -316,6 +318,7 @@ function scoredValue(
     situation.prevailingWind,
     situation.flowers.join(""),
     situation.seasons.join(""),
+    (situation.excluded ?? []).join(","),
   ].join("|");
   const cached = VALUE_CACHE.get(key);
   if (cached !== undefined) return cached.value > 0 ? cached : null;
@@ -336,6 +339,7 @@ function scoredValue(
         seatWind: situation.seatWind,
         prevailingWind: situation.prevailingWind,
       }),
+      { excluded: situation.excluded },
     );
     return result.winning === null ? null : { points: result.points ?? 0, pattern: result.winning.pattern.id };
   };
@@ -375,6 +379,7 @@ export function planGoals(situation: Situation): Goal[] {
   const goals: Goal[] = [];
 
   for (const target of specials()) {
+    if (situation.excluded?.includes(target.pattern) === true) continue;
     const tier = concealed ? target.tier : target.exposedTier;
     if (tier === null) continue;
     const goal = goalFrom(

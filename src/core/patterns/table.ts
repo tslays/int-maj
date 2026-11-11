@@ -274,16 +274,16 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     name: "Three Great Scholars",
     pages: { illustrated: [49], companion: [33, 49] },
     category: "honour",
-    tier: "limit",
-    exposedTier: "limit",
+    tier: "middle",
+    exposedTier: "middle",
     requiresSelfDrawn: false,
     description:
       "Pungs/kongs of all three dragons, plus one pung/kong or chow and a " +
       "pair; the pair is in the fourth set's suit or is a wind pair.",
     source: "Synopsis p. 58; short-list tier convention.",
     notes:
-      "The Illustrated p. 49 prints LIMIT; the Companion's MIDDLE LIMIT " +
-      "(C p. 58) is superseded (AUDIT C8). Exposed dragon pungs are allowed.",
+      "MIDDLE LIMIT, exposed allowed (C p. 33). The Illustrated book prints " +
+      "LIMIT; the Companion's value governs (rules/RULES.md Part III).",
     // The three dragon pungs, one more set in a suit, and a pair of that suit or of a wind.
     groups: groupReadings(() =>
       SUITS.flatMap((suit) =>
@@ -1331,16 +1331,17 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     name: "Civil War",
     pages: { illustrated: [53], companion: [30, 53] },
     category: "honour",
-    tier: "double",
-    exposedTier: "double",
+    tier: "middle",
+    exposedTier: "middle",
     requiresSelfDrawn: false,
     description:
       "Pungs/kongs of North and South Winds, plus 1, 1, 6, 8 in one suit and " +
       "1, 5, 6, 8 in another suit (1861 and 1865).",
     source: "Illustration p. 30.",
     notes:
-      "The p. 30 illustration shows NNN, SSS and 1,8,6,1 in one suit plus the " +
-      "leading 1 of the second; the synopsis prints 1861 and 1865.",
+      "MIDDLE LIMIT, exposed allowed (C p. 30). The Illustrated book prints " +
+      "DOUBLE LIMIT. The illustration shows NNN, SSS and 1,8,6,1 in one suit " +
+      "plus the leading 1 of the second; the synopsis prints 1861 and 1865.",
     match: ({ shape }) => {
       for (const first of SUITS) {
         for (const second of SUITS) {
@@ -1369,8 +1370,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     name: "The Four Blessings",
     pages: { illustrated: [49], companion: [30, 49] },
     category: "honour",
-    tier: "limit",
-    exposedTier: "limit",
+    tier: "middle",
+    exposedTier: "middle",
     requiresSelfDrawn: false,
     description: "Pungs/kongs of all four winds plus any pair.",
     source: "Synopsis p. 56; illustration p. 30.",
@@ -1396,7 +1397,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     source: "Synopsis pp. 58 and 60; illustrations pp. 32 and 52.",
     notes:
       "A four-of-a-kind counts as two pairs, which is how six pairs of green " +
-      "Bamboos are possible from five ranks.",
+      "Bamboos are possible from five ranks. The Illustrated book prints only " +
+      "the one-dragon-pair shape; the Companion's wider reading governs.",
     match: ({ shape }) => {
       if (!isSevenPairs(shape)) return false;
       if (shapeKeys(shape).some((key) => !isBamboo(key) && key !== "dG")) {
@@ -1407,7 +1409,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       for (const rank of GREEN_BAMBOO_RANKS) {
         bambooPairs += Math.floor(rankCount(shape, "bamboo", rank) / 2);
       }
-      return dragonPairs === 1 && bambooPairs === 6;
+      // GG + six bamboo pairs, or GG/GG + five (C pp. 23 and 32); seven pairs either way.
+      return (dragonPairs === 1 && bambooPairs === 6) || (dragonPairs === 2 && bambooPairs === 5);
     },
   },
   {
@@ -1878,6 +1881,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "ods-evens",
+    companionUnillustrated: true,
     name: "Odds & Evens",
     pages: { illustrated: [], companion: [60] },
     category: "suit",
@@ -1906,6 +1910,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "robin",
+    companionUnillustrated: true,
     name: "Robin",
     pages: { illustrated: [], companion: [60] },
     category: "chow",
@@ -1962,16 +1967,14 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     name: "Sparrow's Sanctuary",
     pages: { illustrated: [44], companion: [21, 44, 49, 53] },
     category: "suit",
-    tier: "limit",
+    tier: "middle",
     exposedTier: null,
     requiresSelfDrawn: false,
     description:
       "Two pairs of 1 Bamboo (a kong) plus a pair of each green Bamboo " +
       "(2, 3, 4, 6, 8).",
     source: "Short list p. 6; synopsis p. 60.",
-    notes:
-      "limit/limit is assumed " +
-      "from the other pair-jade hands.",
+    notes: "MIDDLE LIMIT, concealed (C pp. 21 and 49). The Illustrated book prints LIMIT.",
     match: ({ shape }) => {
       if (!isSevenPairs(shape)) return false;
       if (shapeKeys(shape).some((key) => !isBamboo(key))) return false;
@@ -2049,6 +2052,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "blue-mountains",
+    companionUnillustrated: true,
     name: "Blue Mountains",
     pages: { illustrated: [], companion: [60] },
     category: "suit",
@@ -2074,6 +2078,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "white-elephant",
+    companionUnillustrated: true,
     name: "White Elephant",
     pages: { illustrated: [], companion: [60] },
     category: "suit",
@@ -2101,6 +2106,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "driven-snow",
+    companionUnillustrated: true,
     name: "Driven Snow",
     pages: { illustrated: [], companion: [60] },
     category: "suit",
@@ -2128,6 +2134,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "dragons-scales",
+    companionUnillustrated: true,
     name: "Dragon's Scales",
     pages: { illustrated: [], companion: [60] },
     category: "suit",
@@ -2223,6 +2230,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "up-you-go",
+    companionUnillustrated: true,
     name: "Up You Go",
     pages: { illustrated: [], companion: [57] },
     category: "plain",
@@ -2271,6 +2279,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "down-you-go",
+    companionUnillustrated: true,
     name: "Down You Go",
     pages: { illustrated: [], companion: [57] },
     category: "plain",
@@ -2399,8 +2408,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     name: "Chinese Odds",
     pages: { illustrated: [40], companion: [40, 49] },
     category: "suit",
-    tier: "limit",
-    exposedTier: "limit",
+    tier: "middle",
+    exposedTier: "middle",
     requiresSelfDrawn: false,
     description:
       "Four pungs/kongs of odd numbers plus an odd pair, all in one suit.",
@@ -2422,6 +2431,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "dragons-run",
+    companionUnillustrated: true,
     name: "Dragon's Run",
     pages: { illustrated: [], companion: [59] },
     category: "run",
@@ -2457,6 +2467,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     description:
       "Any one suit, as many chows or pungs as desired, winds/dragons may be included, plus a pair; every tile from the wall including the last; no kongs.",
     source: "Illustrated hand 11, p. 38.",
+    illustratedOnly: true,
     match: ({ hand, shape }) =>
       hand.selfDrawn &&
       shape.total === 14 &&
@@ -2478,6 +2489,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     description:
       "Four kongs and a pair, all in one suit; winds, dragons or both may be included.",
     source: "Illustrated special-hand list, p. 30.",
+    illustratedOnly: true,
     match: ({ shape }) =>
       usedSuits(shape).length <= 1 &&
       decomposeStandard(shape).some(
@@ -2497,6 +2509,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     description:
       "Four pungs and a pair in any of the three suits; winds, dragons or both may be included; every tile including the last from the wall.",
     source: "Illustrated special-hand list, p. 30.",
+    illustratedOnly: true,
     groups: groupReadings(() => [[...repeat(pungOnlyGroup(everyTile), 4), pairGroup(everyTile)]]),
     match: ({ hand, shape }) =>
       hand.selfDrawn &&
@@ -2526,3 +2539,32 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
 
 ]);
+
+/**
+ * The hands only the Illustrated book prints: the Companion's catalogue does
+ * not have them.
+ */
+export const ILLUSTRATED_ONLY_HANDS: readonly string[] = Object.freeze(
+  PATTERNS.filter((pattern) => pattern.illustratedOnly === true).map((pattern) => pattern.id),
+);
+
+/** The hands the Companion prints without a sample picture (its "N/I" hands). */
+export const COMPANION_UNILLUSTRATED_HANDS: readonly string[] = Object.freeze(
+  PATTERNS.filter((pattern) => pattern.companionUnillustrated === true).map((pattern) => pattern.id),
+);
+
+/**
+ * The hand sets a table can play, widest first, as the hands each one leaves
+ * out. Each set is the one before it with more left out:
+ *   all                 every hand either book prints
+ *   companion           the Companion's catalogue: no Illustrated-only hand
+ *   companion-pictured  the Companion's hands that have a sample picture
+ */
+export const HAND_SETS = ["all", "companion", "companion-pictured"] as const;
+export type HandSet = (typeof HAND_SETS)[number];
+
+export const HAND_SET_EXCLUDED: Readonly<Record<HandSet, readonly string[]>> = Object.freeze({
+  all: Object.freeze([] as string[]),
+  companion: ILLUSTRATED_ONLY_HANDS,
+  "companion-pictured": Object.freeze([...ILLUSTRATED_ONLY_HANDS, ...COMPANION_UNILLUSTRATED_HANDS]),
+});

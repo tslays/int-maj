@@ -42,9 +42,16 @@ Two printed sources form the framework; they are not peers.
    leave open.
 4. Any later explicit source designation from the owner.
 
-A Companion rule that contradicts the Illustrated page is not a house rule and
-not a variant to preserve: the Illustrated reading replaces it, and the
-Companion's version is recorded as superseded in `rules/AUDIT.md`. Where the
+**Owner ruling, 2026-11-11 (item 4 above):** for the special-hand catalogue —
+which hands exist, their composition, tier and fishing figure — the Companion
+governs wherever both books print a hand. The rules of play and everything
+else stay with the Illustrated book. A table may also play with the
+Companion's hands only (`rules/RULES.md` Part III §5).
+
+Apart from that ruling, a Companion rule that contradicts the Illustrated page
+is not a house rule and not a variant to preserve: the Illustrated reading
+replaces it, and the Companion's version is recorded as superseded in
+`rules/AUDIT.md`. Where the
 Companion adds something the Illustrated book does not print (extra hands,
 extra tiers), it stands as an extension and is tagged as such in
 `rules/RULES.md`.

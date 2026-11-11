@@ -72,6 +72,16 @@ export function faceChip(key) {
   return chip;
 }
 
+/** The hand set the hand on the table was dealt under (every hand before a game). */
+export function handSetInForce() {
+  return state.payload?.houseRules?.handSet ?? "all";
+}
+
+/** True when the hand on the table is played with the Companion's hands only. */
+export function companionRules() {
+  return handSetInForce() !== "all";
+}
+
 export function toast(text) {
   const element = $("#toast");
   element.textContent = text;

@@ -157,6 +157,8 @@ export interface NextDealEvent extends EventBase {
   readonly type: "NextDeal";
   readonly dealer: Seat;
   readonly hand: number;
+  /** Present when a house rule changed with this deal: the new list. */
+  readonly excludedHands?: readonly string[];
 }
 
 export type Event =

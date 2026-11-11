@@ -163,6 +163,12 @@ export interface GameState {
   readonly tournament?: boolean;
   /** R105(7): selected special hands, at most fourteen. */
   readonly specialHands?: readonly string[];
+  /**
+   * House rule: hands this table plays without. They are no win, no wait and
+   * no fishing hand for anyone; a hand that also makes another pattern scores
+   * as that one. Set at the deal, so it never changes inside a hand.
+   */
+  readonly excludedHands?: readonly string[];
   /** R105(8): recent winning pattern ids, newest last. */
   readonly recentSpecialHands?: readonly string[];
   /** R103: four blank jokers or four 2 Bamboos. */

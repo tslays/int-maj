@@ -173,4 +173,18 @@ describe("closest hands", () => {
       assert.ok(!hands.some((hand) => hand.pattern === "crazy-chows"));
     });
   });
+
+  it("leaves out a hand the table has excluded by house rule, however near it is", () => {
+    const THIRTEEN = "c3 o4 b5 c4 b5 o6 o3 b4 c5 b7 o8 c9 o7";
+    const others = {
+      S: "wE wE wE wS wS wS wW wW wW wN wN wN dR",
+      W: "dG dG dG dW dW dW dR dR dR b1 b1 b1 b9",
+      N: "b9 b9 b9 c1 c1 c1 c9 c9 c9 o1 o1 o1 o9",
+    };
+    const base = { hands: { E: THIRTEEN, ...others }, wall: LONG_WALL, phase: "draw", turn: "E" } as const;
+    const shown = (excluded?: readonly string[]) =>
+      closestHands(viewFor(fixture({ ...base, excludedHands: excluded }), "E"), 100).map((hand) => hand.pattern);
+    assert.ok(shown().includes("crazy-chows"));
+    assert.ok(!shown(["crazy-chows"]).includes("crazy-chows"));
+  });
 });
