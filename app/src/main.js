@@ -11,6 +11,7 @@
 
 import { createLocalApi } from "../engine/table/local.js";
 import { clearSelection, goulashKeys, installInput, resetGoulash } from "./input.js";
+import { refreshGoulash } from "./goulash.js";
 import { refreshHints } from "./hints.js";
 import { installMenu } from "./menu.js";
 import "./report.js";
@@ -69,6 +70,7 @@ async function apply(next, { animated = true } = {}) {
   refreshConsole(before?.view ?? next.view);
   const calls = await board.reconcile(next, { animated });
   refreshConsole();
+  refreshGoulash();
   const announcements = [];
   for (const call of calls) {
     announcements.push(callOut(call.seat, CALL_WORD[call.kind] ?? call.kind));
@@ -229,6 +231,7 @@ function showChoices({ chime = true } = {}) {
 
   if (legal.some((action) => action.type === "GoulashExchange")) {
     resetGoulash();
+    refreshGoulash();
     const confirm = button("Pass 3 tiles", "claim", () => {
       const keys = goulashKeys().sort();
       const action = legal.find(
