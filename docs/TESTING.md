@@ -15,16 +15,16 @@ The message to paste to the club, then the known limits. It stands alone.
 > **How it works:** tap a tile in your hand and tap it again to throw it (or
 > hold it and swipe up). Claims, kongs, fishing and Mah Jong appear as buttons.
 > The Hints panel lists the hands you are closest to; tap a row to see that
-> hand. The menu has New game, Calls, Sort, Hints, Sound and Help. The game
+> hand. The menu has New game, Calls, Sort, Hints and Options (sound, house rules, help, report). The game
 > saves after every move and resumes where you left off. On an iPhone the
-> silent switch mutes the game; flip it off (or use the menu's Sound button).
+> silent switch mutes the game; flip it off (or use the Sound switch in Options).
 >
 > **What we would like to hear:** Is it clear what to do and whose turn it is?
 > Do the buttons and the swipe feel right on your phone? Does any score or
 > result surprise you? Do the bots play sensibly? Did anything break or look
 > wrong?
 >
-> **To send a report:** tap Report in the menu, type a line about
+> **To send a report:** open Options, tap Report, type a line about
 > what you saw (optional) and tap Send report. The share sheet opens; pick
 > Messages or Mail. If your device has no share sheet, the report is copied
 > and you paste it into your message. It holds the build, your device and

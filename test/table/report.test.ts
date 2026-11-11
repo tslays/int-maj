@@ -87,3 +87,69 @@ describe("problem report", () => {
     assert.ok(text !== null && isReportText(text));
   });
 });
+
+describe("house rules at the table", () => {
+  const COMPANION_ONLY = { companionHandsOnly: true };
+  const LEFT_OUT = ["all-kong", "buried-treasure", "mixed-pung"];
+
+  it("deals a game under the rule and says so in every payload", async () => {
+    const api = createLocalApi(null);
+    const dealt = (await api.request("/api/new", { seed: "house-1", houseRules: COMPANION_ONLY })) as {
+      houseRules: { companionHandsOnly: boolean };
+      view: { excludedHands: string[] };
+    };
+    assert.equal(dealt.houseRules.companionHandsOnly, true);
+    assert.deepEqual([...dealt.view.excludedHands].sort(), LEFT_OUT);
+
+    const plain = (await api.request("/api/new", { seed: "house-1" })) as typeof dealt;
+    assert.equal(plain.houseRules.companionHandsOnly, false);
+    assert.deepEqual(plain.view.excludedHands, []);
+
+    await assert.rejects(api.request("/api/new", { seed: "x", houseRules: { companionHandsOnly: "yes" } }));
+    const offered = (await api.request("/api/house-rules")) as { companionHandsOnly: { hands: string[] } };
+    assert.deepEqual(offered.companionHandsOnly.hands, [
+      "Buried Treasure (Concealed Mah Jong)",
+      "All Kong",
+      "Mixed Pung",
+    ]);
+  });
+
+  it("changes the rule only at the next deal, and the report replays it", () => {
+    const store = new GameStore();
+    const { session } = store.create("house-2", COMPANION_ONLY);
+    playOut(store, session.id);
+    assert.deepEqual([...(store.state(session.id)!.excludedHands ?? [])].sort(), LEFT_OUT);
+
+    // Same rules: an ordinary step. Changed rules: the step carries the new list.
+    const next = store.next(session.id, { companionHandsOnly: false });
+    assert.ok(!("error" in next));
+    assert.deepEqual(next.session.steps.at(-1), { type: "NextHand", excludedHands: [] });
+    assert.equal(store.state(session.id)!.excludedHands, undefined);
+    playOut(store, session.id);
+
+    const live = store.get(session.id)!;
+    const text = buildReport(live, INFO);
+    assert.match(text, /^House rules: \(none\)$/m);
+    const parsed = parseReport(text);
+    assert.ok(!("error" in parsed));
+    assert.deepEqual([...(parsed.excludedHands ?? [])].sort(), LEFT_OUT);
+    assert.equal(JSON.stringify(replayReport(parsed).state), JSON.stringify(live.state));
+
+    // A saved game keeps its rules through a restore.
+    const restored = new GameStore().restore(JSON.parse(JSON.stringify(store.snapshot(session.id))));
+    assert.ok(!("error" in restored));
+    assert.equal(JSON.stringify(restored.session.state), JSON.stringify(live.state));
+  });
+
+  it("keeps the rule when the next hand is dealt without naming one", () => {
+    const store = new GameStore();
+    const { session } = store.create("house-3", COMPANION_ONLY);
+    playOut(store, session.id);
+    const state = store.state(session.id)!;
+    if (state.gameOver === true) return;
+    const next = store.next(session.id);
+    assert.ok(!("error" in next));
+    assert.deepEqual(next.session.steps.at(-1), { type: "NextHand" });
+    assert.deepEqual([...(next.session.state.excludedHands ?? [])].sort(), LEFT_OUT);
+  });
+});

@@ -2,6 +2,7 @@
  * The result card after a hand and the final standings after the last one.
  */
 
+import { houseRules } from "./options.js";
 import { explainSettlement } from "./settlement.js";
 import { sound } from "./sound.js";
 import { rankSeats, winnerLine } from "./standings.js";
@@ -203,7 +204,7 @@ function renderOutcome(outcome) {
     panel.replaceChildren();
     state.busy = true;
     try {
-      await apply(await request("/api/next", { game: state.payload.game }), { animated: false });
+      await apply(await request("/api/next", { game: state.payload.game, houseRules: houseRules() }), { animated: false });
     } catch (error) {
       toast(error.message);
     } finally {

@@ -1194,6 +1194,23 @@ These Companion statements conflict with Part I or Part II and are recorded in
 - No player may win with the same hand in consecutive games `[C p. 62]`;
   Part I R105 permits the same Special Hand for up to two consecutive turns.
 
+## 5. House rules of this table
+
+Neither book prints these. They are options a table may switch on; with every
+one off, the game is exactly Parts I-III. A hand keeps the rules it was dealt
+under: a change takes effect with the next deal.
+
+- **Companion hands only** `[A]`. The table plays the Companion's catalogue:
+  the three hands that only the Illustrated book prints — Concealed Mah Jong
+  (Buried Treasure) `[I p. 38]`, All Kong and Mixed Pung `[I p. 30]`
+  (`rules/AUDIT.md`, "Missing from the table") — are left out. A left-out hand
+  is no winning hand, no wait and no fishing hand for any player, and it is
+  not hinted. Tiles that also make another catalogue hand score as that hand;
+  tiles that make only a left-out hand (four pungs across three suits, say)
+  are not Mah Jong. Nothing else changes: the Illustrated tiers, fishing
+  figures and rules of play of Parts I-III still govern. In the table:
+  `illustratedOnly` on the pattern, `excludedHands` on the game.
+
 # Appendix — evidence
 
 - `rules/archive/PRIMARY-RULES.md` — the raw Milestone A extraction (this framework's

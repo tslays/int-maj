@@ -38,7 +38,7 @@ import {
 import { viewFor, type GameView, type PlayerView } from "../core/game/view.ts";
 import type { Wind } from "../core/tiles.ts";
 import type { Tier } from "../core/patterns/types.ts";
-import { PATTERNS } from "../core/patterns/table.ts";
+import { ILLUSTRATED_ONLY_HANDS, PATTERNS } from "../core/patterns/table.ts";
 
 /** The web table always seats you at East, and deals to you. */
 const SEAT: Seat = "E";
@@ -50,9 +50,47 @@ const PATTERN_BY_ID: ReadonlyMap<string, (typeof PATTERNS)[number]> = new Map(
   PATTERNS.map((pattern) => [pattern.id, pattern]),
 );
 
+/**
+ * The house rules a table can agree on. They are fixed for a hand at its
+ * deal: a change asked for mid-hand takes effect with the next deal.
+ */
+export interface HouseRules {
+  /**
+   * Play with the Companion's catalogue only: the hands that only the
+   * Illustrated book prints are no hand for anyone, and never hinted.
+   */
+  readonly companionHandsOnly: boolean;
+}
+
+export const DEFAULT_HOUSE_RULES: HouseRules = Object.freeze({ companionHandsOnly: false });
+
+/** The engine's exclusion list for a set of house rules. */
+export function excludedHandsFor(rules: HouseRules): readonly string[] {
+  return rules.companionHandsOnly ? ILLUSTRATED_ONLY_HANDS : [];
+}
+
+/** The house rules on offer, with the names of the hands each leaves out. */
+export function houseRulesPayload(): {
+  readonly companionHandsOnly: { readonly hands: readonly string[] };
+} {
+  return {
+    companionHandsOnly: {
+      hands: ILLUSTRATED_ONLY_HANDS.map((id) => PATTERN_NAMES.get(id) ?? id),
+    },
+  };
+}
+
+/** The house rules a hand is being played under, read back from its state. */
+export function houseRulesOf(state: GameState): HouseRules {
+  const excluded = state.excludedHands ?? [];
+  return { companionHandsOnly: ILLUSTRATED_ONLY_HANDS.every((id) => excluded.includes(id)) };
+}
+
 export interface WebSession {
   readonly id: string;
   readonly seed: string | number;
+  /** The exclusion list hand 1 was dealt with; a replay from the seed needs it. */
+  readonly excludedAtStart?: readonly string[];
   /** The human's fixed seat. The web table seats you at East. */
   readonly seat: Seat;
   readonly state: GameState;
@@ -199,14 +237,18 @@ export interface StatePayload {
    * scorecard, so a resumed game keeps its scores.
    */
   readonly scoresBefore: Readonly<Record<Seat, number>>;
+  /** The house rules this hand is played under. */
+  readonly houseRules: HouseRules;
 }
 
-function startSession(id: string, seed: string | number): WebSession {
+function startSession(id: string, seed: string | number, rules: HouseRules): WebSession {
   // You are East and the deal is yours, so the first discard is yours too.
-  const { state, events } = newGame(seed, { dealer: SEAT });
+  const excludedAtStart = excludedHandsFor(rules);
+  const { state, events } = newGame(seed, { dealer: SEAT, excludedHands: excludedAtStart });
   return {
     id,
     seed,
+    excludedAtStart,
     seat: SEAT,
     state,
     steps: [],
@@ -260,13 +302,13 @@ export function isDone(update: StepUpdate): update is { readonly done: true } {
  * The checker's input for one seat: exposed melds in parentheses, then the
  * concealed hand — the same string a player would type at the table.
  */
-export function handCheck(player: PlayerView) {
+export function handCheck(player: PlayerView, excluded: readonly string[] = []) {
   const melds = player.melds.map((meld) => `(${meld.tiles.join(" ")})`);
-  return checkHand([...melds, ...player.hand].join(" "));
+  return checkHand([...melds, ...player.hand].join(" "), excluded);
 }
 
-function checkerFor(player: PlayerView): CheckerPayload {
-  const result = handCheck(player);
+function checkerFor(player: PlayerView, excluded: readonly string[]): CheckerPayload {
+  const result = handCheck(player, excluded);
   if (result.size === 13) {
     return {
       size: 13,
@@ -407,9 +449,10 @@ export function statePayload(session: WebSession): StatePayload {
       front: session.state.wall.front,
       size: session.state.wall.tiles.length,
     },
-    checker: checkerFor(view.player),
+    checker: checkerFor(view.player, view.excludedHands),
     outcome: outcomeFor(session, view),
     scoresBefore: session.handStart.scoresBefore,
+    houseRules: houseRulesOf(session.state),
   };
 }
 
@@ -438,6 +481,8 @@ export interface SessionSnapshot {
   readonly seed: string | number;
   readonly steps: readonly ReplayStep[];
   readonly humanSteps: readonly number[];
+  /** The exclusion list hand 1 was dealt with (a house rule); absent means none. */
+  readonly excludedHands?: readonly string[];
   /** The current hand's checkpoint; without it, restore replays from the seed. */
   readonly handStart?: {
     readonly step: number;
@@ -455,6 +500,8 @@ export function isSessionSnapshot(value: unknown): value is SessionSnapshot {
     Array.isArray(record.steps) &&
     Array.isArray(record.humanSteps) &&
     record.humanSteps.every((index) => Number.isInteger(index)) &&
+    (record.excludedHands === undefined ||
+      (Array.isArray(record.excludedHands) && record.excludedHands.every((id) => typeof id === "string"))) &&
     (record.handStart === undefined || isHandStartRecord(record.handStart, record.steps.length))
   );
 }
@@ -489,9 +536,9 @@ export class GameStore {
     this.defaultSeed = options.defaultSeed ?? "web";
   }
 
-  create(seed: string | number = this.defaultSeed): SessionUpdate {
+  create(seed: string | number = this.defaultSeed, rules: HouseRules = DEFAULT_HOUSE_RULES): SessionUpdate {
     const id = `g${++this.nextId}`;
-    const session = startSession(id, seed);
+    const session = startSession(id, seed, rules);
     this.sessions.set(id, session);
     return { session, events: [...session.events] };
   }
@@ -520,6 +567,9 @@ export class GameStore {
       seed: session.seed,
       steps: session.steps,
       humanSteps: session.humanSteps,
+      ...(session.excludedAtStart === undefined || session.excludedAtStart.length === 0
+        ? {}
+        : { excludedHands: session.excludedAtStart }),
       handStart: {
         step: session.handStart.step,
         state: session.handStart.state,
@@ -563,8 +613,9 @@ export class GameStore {
           scoresBefore: { ...snapshot.handStart.scoresBefore },
         };
       } else {
-        replayed = replaySteps(snapshot.seed, snapshot.steps, { dealer: SEAT });
-        const start = newGame(snapshot.seed, { dealer: SEAT });
+        const options = { dealer: SEAT, excludedHands: snapshot.excludedHands ?? [] };
+        replayed = replaySteps(snapshot.seed, snapshot.steps, options);
+        const start = newGame(snapshot.seed, options);
         handStart = {
           step: 0,
           eventIndex: start.events.length,
@@ -582,6 +633,7 @@ export class GameStore {
     const session: WebSession = {
       id,
       seed: snapshot.seed,
+      excludedAtStart: snapshot.excludedHands ?? [],
       seat: SEAT,
       state: replayed.state,
       steps: [...steps],
@@ -655,7 +707,12 @@ export class GameStore {
     return { session: next, events: [] };
   }
 
-  next(id: string): SessionUpdate | { readonly error: string } {
+  /**
+   * Deal the next hand. `rules` are the house rules the player has set now:
+   * when they differ from the finished hand's, the new hand is dealt under
+   * them and the step records the change, so a replay deals it the same way.
+   */
+  next(id: string, rules?: HouseRules): SessionUpdate | { readonly error: string } {
     const session = this.sessions.get(id);
     if (session === undefined) return { error: `unknown game: ${id}` };
     if (session.state.phase !== "finished") {
@@ -663,11 +720,17 @@ export class GameStore {
     }
     if (endsGame(session.state)) return { error: "the game is over" };
     const before = session.events.length;
-    const dealt = nextHand(session.state);
+    const current = session.state.excludedHands ?? [];
+    const wanted = rules === undefined ? current : excludedHandsFor(rules);
+    const changed = wanted.length !== current.length || wanted.some((hand) => !current.includes(hand));
+    const dealt = nextHand(session.state, changed ? { excludedHands: wanted } : {});
     const finished = ledgerTotals(session.state).totals;
     const scores = { ...session.handStart.scoresBefore };
     for (const seat of SEATS) scores[seat] += finished[seat];
-    const steps: ReplayStep[] = [...session.steps, { type: "NextHand" }];
+    const steps: ReplayStep[] = [
+      ...session.steps,
+      changed ? { type: "NextHand", excludedHands: [...wanted] } : { type: "NextHand" },
+    ];
     const events = [...session.events, ...dealt.events];
     const next: WebSession = {
       ...session,

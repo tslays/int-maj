@@ -72,6 +72,7 @@ export function buildHand(
 export const ORDINARY_PATTERNS = new Set(["ordinary-mahjong", "chinese-ordinary"]);
 
 export function allowedPattern(state: GameState, patternId: string): boolean {
+  if (state.excludedHands?.includes(patternId) === true) return false;
   if (
     state.specialHands !== undefined &&
     !ORDINARY_PATTERNS.has(patternId) &&
@@ -114,7 +115,10 @@ export function handIsComplete(state: GameState, seat: Seat, winningTile: string
   if (effectiveCount(player) !== 14) return null;
   const hand = buildHand(state, seat, { winningTile, selfDrawn: true });
   if (hand === null) return null;
-  const score = scoreHand(hand, { limit: state.limit ?? DEFAULT_LIMIT });
+  const score = scoreHand(hand, {
+    limit: state.limit ?? DEFAULT_LIMIT,
+    excluded: state.excludedHands,
+  });
   if (score.winning === null || !allowedPattern(state, score.winning.pattern.id)) return null;
   return score;
 }
@@ -180,7 +184,10 @@ export function fishingValueFor(
       selfDrawn: true,
     });
     if (hand === null) continue;
-    const score = scoreHand(hand, { withoutMahJongBonus: true });
+    const score = scoreHand(hand, {
+      withoutMahJongBonus: true,
+      excluded: state.excludedHands,
+    });
     const winning = score.winning;
     if (winning === null) continue;
     const value =

@@ -222,11 +222,24 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.waitForSelector("#closest", { state: "hidden", timeout: 5000 });
   await page.click("#hints");
   await page.waitForSelector("#closest:not([hidden])", { timeout: 5000 });
+  await page.click("#options");
+  await page.waitForSelector("#options-sheet:not([hidden])", { timeout: 5000 });
   await page.click("#help");
   await page.waitForSelector("#help-sheet:not([hidden])", { timeout: 5000 });
   await page.click("#help-close");
   await page.waitForSelector("#help-sheet", { state: "hidden", timeout: 5000 });
-  console.log("  ok  hints toggle, help sheet");
+  // A house rule set mid-hand waits for the next deal; the hand on the table keeps its rules.
+  await page.click("#rule-companion");
+  await page.waitForSelector("#rule-companion[aria-pressed=true]", { timeout: 5000 });
+  await page.waitForSelector("#rule-companion-pending:not([hidden])", { timeout: 5000 });
+  if ((await page.textContent("#rule-companion-hands"))!.includes("Mixed Pung") === false) {
+    throw new Error("the options sheet does not name the hands the house rule leaves out");
+  }
+  await page.click("#rule-companion");
+  await page.waitForSelector("#rule-companion-pending", { state: "hidden", timeout: 5000 });
+  await page.click("#options-close");
+  await page.waitForSelector("#options-sheet", { state: "hidden", timeout: 5000 });
+  console.log("  ok  hints toggle, options sheet, help sheet, house rule switch");
 
   // Play on against the bots through the same door the buttons use.
   const wallAtStart = payload.wall.remaining;

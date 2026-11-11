@@ -85,6 +85,8 @@ export interface GameView {
   readonly fishingTier: Tier | null;
   /** During a Goulash: which of the three exchanges, and your partner in it. */
   readonly goulash: { readonly stage: 0 | 1 | 2; readonly partner: Seat } | null;
+  /** House rule: hands this table plays without (public, the same for every seat). */
+  readonly excludedHands: readonly string[];
 }
 
 function copyMelds(melds: readonly MeldState[]): MeldState[] {
@@ -153,5 +155,6 @@ export function viewFor(state: GameState, seat: Seat): GameView {
       state.phase === "exchange"
         ? { stage: state.goulashStage ?? 0, partner: goulashPartner(state.goulashStage ?? 0, seat) }
         : null,
+    excludedHands: [...(state.excludedHands ?? [])],
   };
 }

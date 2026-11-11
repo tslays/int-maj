@@ -75,9 +75,7 @@
       <button class="ghost on" id="calls" type="button" aria-pressed="true"><span>Calls</span></button>
       <button class="ghost on" id="sort" type="button" aria-pressed="true"><span>Sort</span></button>
       <button class="ghost on" id="hints" type="button" aria-pressed="true"><span>Hints</span></button>
-      <button class="ghost on" id="sound" type="button" aria-pressed="true"><span>Sound</span></button>
-      <button class="ghost" id="report" type="button" aria-label="Report a problem"><span>Report</span></button>
-      <button class="ghost" id="help" type="button"><span>Help</span></button>
+      <button class="ghost" id="options" type="button"><span>Options</span></button>
       <small class="build-label" id="build-label"></small>
     </nav>
     <script type="module">
@@ -87,6 +85,41 @@
     <div class="actions" id="actions"></div>
     <aside class="closest" id="closest" aria-live="polite" hidden></aside>
     <div class="hand-detail" id="hand-detail" hidden></div>
+    <div class="hand-detail" id="options-sheet" hidden>
+      <div class="detail-card help-card" role="dialog" aria-modal="true" aria-label="Options">
+        <button class="detail-close" id="options-close" type="button" aria-label="Close">&times;</button>
+        <h2>Options</h2>
+        <div class="detail-line option-row">
+          <div>
+            <h3>Sound</h3>
+            <p>On an iPhone the silent switch also mutes it.</p>
+          </div>
+          <button class="ghost on" id="sound" type="button" aria-pressed="true" aria-label="Sound"><span>On</span></button>
+        </div>
+        <div class="detail-line">
+          <h3>House rules</h3>
+          <div class="option-row">
+            <div>
+              <p><b>Companion hands only</b></p>
+              <p class="option-note">
+                Play with the hands of <i>The Mah Jong Player's Companion</i> alone. The hands that only
+                <i>The Game of Mah Jong Illustrated</i> prints<span id="rule-companion-hands"></span> are left
+                out: nobody can go Mah Jong or fish with them, you or the other players, and Hints no longer
+                lists them.
+              </p>
+              <p class="option-note option-pending" id="rule-companion-pending" hidden>
+                Takes effect with the next hand.
+              </p>
+            </div>
+            <button class="ghost" id="rule-companion" type="button" aria-pressed="false" aria-label="Companion hands only"><span>Off</span></button>
+          </div>
+        </div>
+        <div class="detail-line option-buttons">
+          <button class="ghost" id="help" type="button"><span>Help</span></button>
+          <button class="ghost" id="report" type="button" aria-label="Report a problem"><span>Report</span></button>
+        </div>
+      </div>
+    </div>
     <div class="hand-detail" id="help-sheet" hidden>
       <div class="detail-card help-card" role="dialog" aria-modal="true" aria-label="How to play">
         <button class="detail-close" id="help-close" type="button" aria-label="Close">&times;</button>
@@ -116,8 +149,15 @@
             <li><b>Calls</b> off: you are no longer asked about discards.</li>
             <li><b>Sort</b> keeps your hand in order.</li>
             <li><b>Hints</b> shows or hides the closest-hands panel.</li>
-            <li><b>Sound</b> turns the sound on or off. On an iPhone the silent switch also mutes it.</li>
+            <li><b>Options</b> holds the sound, the house rules, this help and Report a problem.</li>
           </ul>
+        </div>
+        <div class="detail-line">
+          <h3>House rules</h3>
+          <p>
+            Options has the table's house rules. A change never touches the hand being played: it takes
+            effect with the next hand, for you and for the other players alike.
+          </p>
         </div>
         <div class="detail-line">
           <h3>Saving</h3>
@@ -133,7 +173,7 @@
         <div class="detail-line" id="help-report">
           <h3>Report a problem</h3>
           <p>
-            Tap Report in the menu, add a line about what you saw if you like, and send it. It shares the
+            Open Options and tap Report, add a line about what you saw if you like, and send it. It shares the
             build, your device and every move of this game, so the hand can be replayed.
           </p>
         </div>

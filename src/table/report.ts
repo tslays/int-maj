@@ -15,7 +15,7 @@
 
 import { replaySteps, type ApplyOk, type ReplayStep } from "../core/game/index.ts";
 import { SEATS, type Seat } from "../core/game/state.ts";
-import type { WebSession } from "./session.ts";
+import { houseRulesOf, type WebSession } from "./session.ts";
 
 export const REPORT_FORMAT = "int-maj-report/1";
 export const REPLAY_BEGIN = "-----BEGIN REPLAY-----";
@@ -35,6 +35,8 @@ export interface ReportReplay {
   readonly format: typeof REPORT_FORMAT;
   readonly seed: string | number;
   readonly dealer: Seat;
+  /** The house-rule exclusion list hand 1 was dealt with; absent means none. */
+  readonly excludedHands?: readonly string[];
   readonly steps: readonly ReplayStep[];
   /** Indices in `steps` that the human chose. */
   readonly humanSteps: readonly number[];
@@ -53,6 +55,9 @@ export function buildReport(session: WebSession, info: ReportInfo): string {
     format: REPORT_FORMAT,
     seed: session.seed,
     dealer: session.seat,
+    ...(session.excludedAtStart === undefined || session.excludedAtStart.length === 0
+      ? {}
+      : { excludedHands: session.excludedAtStart }),
     steps: session.steps,
     humanSteps: session.humanSteps,
   };
@@ -63,6 +68,7 @@ export function buildReport(session: WebSession, info: ReportInfo): string {
     `Build: ${oneLine(info.build, 40)}`,
     `User agent: ${oneLine(info.userAgent, 300)}`,
     `Hand: ${session.state.handNumber} (${session.state.phase})`,
+    `House rules: ${houseRulesOf(session.state).companionHandsOnly ? "Companion hands only" : "(none)"}`,
     `Decisions: ${session.steps.length} (yours: ${session.humanSteps.length})`,
     `Note: ${note === "" ? "(none)" : note}`,
     "",
@@ -92,7 +98,13 @@ export function parseReport(text: string): ReportReplay | { readonly error: stri
   if (record.format !== REPORT_FORMAT) return { error: "unknown report format" };
   if (typeof record.seed !== "string" && typeof record.seed !== "number") return { error: "report has no seed" };
   if (!SEATS.includes(record.dealer as Seat)) return { error: "report has no dealer" };
-  const { steps, humanSteps } = record;
+  const { steps, humanSteps, excludedHands } = record;
+  if (
+    excludedHands !== undefined &&
+    !(Array.isArray(excludedHands) && excludedHands.every((id) => typeof id === "string"))
+  ) {
+    return { error: "report has a malformed excluded-hands list" };
+  }
   if (
     !Array.isArray(steps) ||
     !steps.every((step) => typeof step === "object" && step !== null && typeof (step as { type?: unknown }).type === "string")
@@ -106,6 +118,7 @@ export function parseReport(text: string): ReportReplay | { readonly error: stri
     format: REPORT_FORMAT,
     seed: record.seed,
     dealer: record.dealer as Seat,
+    ...(excludedHands === undefined ? {} : { excludedHands: excludedHands as string[] }),
     steps: steps as ReplayStep[],
     humanSteps: humanSteps as number[],
   };
@@ -113,5 +126,8 @@ export function parseReport(text: string): ReportReplay | { readonly error: stri
 
 /** Replay a report's decisions from its seed; throws if they no longer replay. */
 export function replayReport(report: ReportReplay): ApplyOk {
-  return replaySteps(report.seed, report.steps, { dealer: report.dealer });
+  return replaySteps(report.seed, report.steps, {
+    dealer: report.dealer,
+    ...(report.excludedHands === undefined ? {} : { excludedHands: report.excludedHands }),
+  });
 }

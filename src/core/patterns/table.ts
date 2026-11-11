@@ -2395,6 +2395,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     description:
       "Any one suit, as many chows or pungs as desired, winds/dragons may be included, plus a pair; every tile from the wall including the last; no kongs.",
     source: "Illustrated hand 11, p. 38.",
+    illustratedOnly: true,
     match: ({ hand, shape }) =>
       hand.selfDrawn &&
       shape.total === 14 &&
@@ -2416,6 +2417,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     description:
       "Four kongs and a pair, all in one suit; winds, dragons or both may be included.",
     source: "Illustrated special-hand list, p. 30.",
+    illustratedOnly: true,
     match: ({ shape }) =>
       usedSuits(shape).length <= 1 &&
       decomposeStandard(shape).some(
@@ -2435,6 +2437,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     description:
       "Four pungs and a pair in any of the three suits; winds, dragons or both may be included; every tile including the last from the wall.",
     source: "Illustrated special-hand list, p. 30.",
+    illustratedOnly: true,
     match: ({ hand, shape }) =>
       hand.selfDrawn &&
       shape.kongCount === 0 &&
@@ -2463,3 +2466,11 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
 
 ]);
+
+/**
+ * The hands only the Illustrated book prints. The "Companion hands only"
+ * house rule passes these ids as a game's `excludedHands`.
+ */
+export const ILLUSTRATED_ONLY_HANDS: readonly string[] = Object.freeze(
+  PATTERNS.filter((pattern) => pattern.illustratedOnly === true).map((pattern) => pattern.id),
+);
