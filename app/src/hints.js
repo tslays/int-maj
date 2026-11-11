@@ -154,6 +154,53 @@ function detailLine(label, ...content) {
   return line;
 }
 
+/** A card the book prints in place of a tile, such as "Any tile paired". */
+function anyChip(words) {
+  const chip = document.createElement("span");
+  chip.className = "chip chip-any";
+  chip.textContent = words;
+  return chip;
+}
+
+/** One printed picture: the book's tiles in the book's order and grouping. */
+function sampleFigure(sample) {
+  const figure = document.createElement("figure");
+  figure.className = "detail-sample";
+  const tiles = document.createElement("div");
+  tiles.className = "sample-tiles";
+  for (const group of sample.groups) {
+    const set = document.createElement("span");
+    set.className = "sample-group";
+    for (const tile of group) set.append(typeof tile === "string" ? faceChip(tile) : anyChip(tile.any));
+    tiles.append(set);
+  }
+  const caption = document.createElement("figcaption");
+  caption.textContent = `${sample.book}, p. ${sample.page}${sample.label === null ? "" : ` \u00b7 ${sample.label}`}`;
+  figure.append(tiles, caption);
+  if (sample.note !== null) {
+    const note = document.createElement("p");
+    note.className = "sample-note";
+    note.textContent = sample.note;
+    figure.append(note);
+  }
+  return figure;
+}
+
+function sampleSection(samples) {
+  const line = document.createElement("div");
+  line.className = "detail-line";
+  const heading = document.createElement("h3");
+  heading.textContent = "The hand in the book";
+  line.append(heading);
+  if (samples.length === 0) {
+    const none = document.createElement("p");
+    none.textContent = "The book lists this hand without a picture.";
+    line.append(none);
+  }
+  for (const sample of samples) line.append(sampleFigure(sample));
+  return line;
+}
+
 /**
  * The sheet for one hand. `progress` is the hand's closest-hands entry (how
  * many tiles away, which ones), or null when the hand is out of reach or no
@@ -195,7 +242,7 @@ export async function openHandDetail(pattern, progress = null) {
       "though it pays less than playing it concealed.";
   banner.append(playIcon(detail.concealedOnly), bannerTitle, bannerText);
 
-  card.append(close, heading, banner, detailLine("What it is", detail.description));
+  card.append(close, heading, banner, detailLine("What it is", detail.description), sampleSection(detail.samples));
   if (detail.requiresSelfDrawn) {
     card.append(detailLine("Self-drawn", "Every tile, the winning one included, must come from the wall."));
   }
@@ -209,10 +256,13 @@ export async function openHandDetail(pattern, progress = null) {
   payLine.lastChild.append(document.createElement("br"), pays[1]);
   card.append(payLine);
 
-  const example = document.createElement("span");
-  example.className = "closest-need detail-need";
-  for (const key of detail.example) example.append(faceChip(key));
-  card.append(detailLine("For example", example));
+  // The book's own picture is the example; only a hand it does not picture gets a made-up one.
+  if (detail.samples.length === 0) {
+    const example = document.createElement("span");
+    example.className = "closest-need detail-need";
+    for (const key of detail.example) example.append(faceChip(key));
+    card.append(detailLine("For example", example));
+  }
 
   if (progress !== null) {
     const need = document.createElement("span");

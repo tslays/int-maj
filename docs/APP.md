@@ -83,8 +83,8 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   `shared.js` (the one mutable `state` - api, latest answer, busy, calls
   off - plus the board, storage, `request`, `toast`, `faceChip` and other
   small helpers), `input.js` (hand input: tap, lift, drag, swipe-to-throw,
-  the goulash picks), `hints.js` (closest-hands panel, hand sheet and the Hints
-  toggle), `handbook.js` (the index of all hands), `result.js` (the result card and the final standings), `menu.js`
+  the goulash picks), `hints.js` (closest-hands panel, the hand sheet with the
+  book's own sample hand, and the Hints toggle), `handbook.js` (the index of all hands), `result.js` (the result card and the final standings), `menu.js`
   (the Calls, Sort, Sound, New game buttons and the help sheet) and
   `report.js` (report a problem). Modules that need the loop (`input`,
   `result`, `menu`) get its functions from `main.js` through an `installX`

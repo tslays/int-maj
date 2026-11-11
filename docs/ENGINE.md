@@ -8,7 +8,7 @@ rules it follows are `rules/RULES.md`; this page describes its code.
 | --- | --- |
 | `tiles.ts`, `rng.ts`, `wall.ts` | tile keys, the seeded RNG, the wall and the deal |
 | `hand.ts`, `shape.ts`, `decompose.ts` | hands, tile counts, standard decompositions |
-| `patterns/` | the hand catalogue as data (`table.ts`), its predicates and types |
+| `patterns/` | the hand catalogue as data (`table.ts`), its predicates and types, and the sample hand each book pictures (`samples.ts`) |
 | `match.ts`, `score.ts`, `fishing.ts` | matching a hand, ground score and doubles, fishing |
 | `check.ts` | the table-side checker behind `npm run check` |
 | `game/` | the turn engine: state, actions, events, legal moves, reducer, replay, bot, text (modules below) |
