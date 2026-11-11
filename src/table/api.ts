@@ -8,7 +8,9 @@
  *
  *   GET  /api/state?game=     one seat's view, legal actions and wait panel
  *   GET  /api/closest?game=   the catalogue hands your tiles are nearest to
+ *                             (`&limit=` up to 100 instead of the default three)
  *   GET  /api/hand?pattern=   one catalogue hand's conditions (concealed or open)
+ *   GET  /api/hands           the whole catalogue with the book's headings, for the index
  *   GET  /api/scenario?state= a fixed review board (turn, claim, win, ...)
  *   POST /api/new             deal a game from `{ seed }`
  *   POST /api/move            apply `{ game, action }`, return events as text
@@ -17,7 +19,7 @@
  *   POST /api/next            deal the next hand after a finished one
  */
 
-import { handDetail } from "../core/game/closest.ts";
+import { handDetail, handIndex } from "../core/game/closest.ts";
 import { describeEventFor } from "../core/game/describe.ts";
 import type { Action } from "../core/game/actions.ts";
 import {
@@ -141,8 +143,14 @@ function routeGet(context: ApiContext, request: ApiRequest): ApiResponse | null 
     if (id === null || id.length === 0) return fail(400, "game is required");
     const session = store.get(id);
     if (session === undefined) return fail(404, `unknown game: ${id}`);
-    return ok(closestPayload(session), request.query.has("pretty"));
+    const limit = Number(request.query.get("limit") ?? "");
+    return ok(
+      closestPayload(session, Number.isInteger(limit) && limit > 0 ? Math.min(limit, 100) : undefined),
+      request.query.has("pretty"),
+    );
   }
+
+  if (request.path === "/api/hands") return ok(handIndex(), request.query.has("pretty"));
 
   if (request.path === "/api/hand") {
     const id = request.query.get("pattern");

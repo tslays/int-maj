@@ -84,7 +84,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   off - plus the board, storage, `request`, `toast`, `faceChip` and other
   small helpers), `input.js` (hand input: tap, lift, drag, swipe-to-throw,
   the goulash picks), `hints.js` (closest-hands panel, hand sheet and the Hints
-  toggle), `result.js` (the result card and the final standings), `menu.js`
+  toggle), `handbook.js` (the index of all hands), `result.js` (the result card and the final standings), `menu.js`
   (the Calls, Sort, Sound, New game buttons and the help sheet) and
   `report.js` (report a problem). Modules that need the loop (`input`,
   `result`, `menu`) get its functions from `main.js` through an `installX`
@@ -125,6 +125,31 @@ when exposed melds are allowed. Tapping a row opens the hand's sheet
 (`GET /api/hand`): the same icon with the words, what it means for calling
 discards, the hand's composition, what it pays concealed and exposed, whether
 it must be self-drawn, the tiles you still need and its book pages. Close it with the cross, the backdrop or Escape.
+
+Above the panel, **All hands** opens the index of every catalogue hand
+(`app/src/handbook.js`, `GET /api/hands`), so nobody has to reach for either
+book. It stays there with Hints off. Each card shows the hand's name, value, an
+example in tiles, its composition and the concealed/exposed icon; tapping it
+opens the same hand sheet, which also lists the example and the page in each
+book. The rail on the left filters by:
+
+- **Kind of hand**: the headings of the Companion's "Full synopsis of special
+  hands" (C pp. 56-61) - Runs, Chows, Pairs, Pungs & Kongs, Winds, Dragons,
+  All Honours, Winds &/or Dragons with Suits, One/Two/Three Suits and the
+  Bamboo, Circle and Character suits - with the hands in the book's order. A
+  hand the book files under several headings is under each. The transcription
+  is `src/core/patterns/reference.ts`. All Kong and Mixed Pung (Illustrated
+  p. 30, not in the synopsis) are filed under Pungs & Kongs by composition;
+  Buried Treasure and the Chinese ordinary hand have no heading and sit under
+  "Other".
+- **Value** (the concealed tier), **Play** (concealed only or exposed allowed)
+  and **Book** (printed in the Illustrated book, or only in the Companion).
+
+The search box matches every typed word against the name, composition,
+headings, value and book of a hand ("dragon pairs", "1-9 wind"). While a hand
+is being played, cards within reach of your tiles carry "n to go"
+(`/api/closest?limit=100`), the sheet lists the tiles still needed, and
+**Order** can sort the nearest hands first.
 
 ## Sound
 
@@ -180,8 +205,9 @@ tiles of the other seats, and their hand counts only.
 | Route | Body / query | Returns |
 | --- | --- | --- |
 | `GET /api/state` | `game=<id>` | the view, legal actions, wall count, per-seat table, ledger, wait panel, result and `scoresBefore` |
-| `GET /api/closest` | `game=<id>` | the catalogue hands your tiles are nearest to (`closestHands`), at most three |
-| `GET /api/hand` | `pattern=<id>` | one catalogue hand's conditions: composition, concealed-only, self-drawn, concealed and open value (`handDetail`) |
+| `GET /api/closest` | `game=<id>` | the catalogue hands your tiles are nearest to (`closestHands`), at most three; `limit=<n>` raises that to at most 100 |
+| `GET /api/hand` | `pattern=<id>` | one catalogue hand's conditions: composition, concealed-only, self-drawn, concealed and open value, its example, book headings and the page in each book (`handDetail`) |
+| `GET /api/hands` | - | the whole catalogue for the index: every hand as above, and the book's headings with their hands in book order (`handIndex`) |
 | `GET /api/scenario` | `state=<name>` | one fixed review board and its events |
 | `POST /api/new` | `{ "seed": "..." }` | a new game and its first state |
 | `POST /api/move` | `{ "game": "...", "action": {...} }` | the new state plus `events` as text lines |

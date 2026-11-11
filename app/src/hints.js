@@ -1,6 +1,7 @@
 /**
  * The closest-hands panel (top right), the hand sheet behind it and the
- * Hints toggle in the menu.
+ * Hints toggle in the menu. The hand sheet also serves the index of all
+ * hands (`handbook.js`).
  */
 
 import { bookPages } from "./pages.js";
@@ -29,8 +30,9 @@ let hintsFor = null; // the tiles the panel was last built for
 export async function refreshHints(force = false) {
   const panel = $("#closest");
   if (!hintsOn || state.payload === null || state.payload.outcome !== null || state.payload.view.phase === "finished") {
+    // A sheet opened from the panel goes with it; one opened from the index stays.
+    if (!panel.hidden) closeHandDetail();
     panel.hidden = true;
-    closeHandDetail();
     hintsFor = null;
     return;
   }
@@ -46,7 +48,7 @@ export async function refreshHints(force = false) {
   }
 }
 
-const TIER_LABEL = {
+export const TIER_LABEL = {
   half: "Half limit",
   limit: "Limit",
   middle: "Middle limit",
@@ -54,7 +56,7 @@ const TIER_LABEL = {
   calculate: "Calculated score",
 };
 
-function worth(tier, points) {
+export function worth(tier, points) {
   return points === null ? TIER_LABEL[tier] : `${TIER_LABEL[tier]} · ${points.toLocaleString("en")}`;
 }
 
@@ -62,7 +64,7 @@ function worth(tier, points) {
  * Open eye: exposed melds are fine. Closed eye: concealed only. Drawn in
  * the text colour so it stays quiet; the words appear on the hand's sheet.
  */
-function playIcon(concealedOnly) {
+export function playIcon(concealedOnly) {
   const ns = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(ns, "svg");
   svg.setAttribute("viewBox", "0 0 24 24");
@@ -124,7 +126,7 @@ function renderHints(hands) {
     }
     meta.append(progress, playIcon(hand.concealedOnly));
     row.append(name, meta);
-    row.addEventListener("click", () => void openHandDetail(hand));
+    row.addEventListener("click", () => void openHandDetail(hand.pattern, hand));
     item.append(row);
     list.append(item);
   }
@@ -152,10 +154,15 @@ function detailLine(label, ...content) {
   return line;
 }
 
-async function openHandDetail(hand) {
+/**
+ * The sheet for one hand. `progress` is the hand's closest-hands entry (how
+ * many tiles away, which ones), or null when the hand is out of reach or no
+ * hand is being played.
+ */
+export async function openHandDetail(pattern, progress = null) {
   let detail;
   try {
-    detail = await request(`/api/hand?pattern=${encodeURIComponent(hand.pattern)}`);
+    detail = await request(`/api/hand?pattern=${encodeURIComponent(pattern)}`);
   } catch {
     return;
   }
@@ -202,17 +209,22 @@ async function openHandDetail(hand) {
   payLine.lastChild.append(document.createElement("br"), pays[1]);
   card.append(payLine);
 
-  const need = document.createElement("span");
-  need.className = "closest-need detail-need";
-  if (hand.away === 0) {
-    need.textContent = "Complete: you can declare it.";
-  } else {
-    for (const key of hand.need) need.append(faceChip(key));
+  const example = document.createElement("span");
+  example.className = "closest-need detail-need";
+  for (const key of detail.example) example.append(faceChip(key));
+  card.append(detailLine("For example", example));
+
+  if (progress !== null) {
+    const need = document.createElement("span");
+    need.className = "closest-need detail-need";
+    if (progress.away === 0) {
+      need.textContent = "Complete: you can declare it.";
+    } else {
+      for (const key of progress.need) need.append(faceChip(key));
+    }
+    card.append(detailLine(progress.away === 0 ? "Your hand" : `You still need (${progress.away})`, need));
   }
-  card.append(
-    detailLine(hand.away === 0 ? "Your hand" : `You still need (${hand.away})`, need),
-    detailLine("In the books", bookPages(detail.pages)),
-  );
+  card.append(detailLine("In the books", bookPages(detail.pages)));
 
   sheet.replaceChildren(card);
   sheet.hidden = false;

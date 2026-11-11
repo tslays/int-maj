@@ -144,6 +144,24 @@ describe("table API", () => {
     assert.equal(call<ApiError>("GET", "/api/closest?game=missing").status, 404);
   });
 
+  it("lists more closest hands on request, and the whole catalogue for the index", async () => {
+    const created = await post<ApiPayload>("/api/new", { seed: "api-closest" });
+    const game = encodeURIComponent(created.body.game);
+    const three = call<{ hands: ClosestHandPayload[] }>("GET", `/api/closest?game=${game}`).body.hands;
+    const all = call<{ hands: ClosestHandPayload[] }>("GET", `/api/closest?game=${game}&limit=100`).body.hands;
+    assert.ok(all.length > three.length);
+    assert.deepEqual(all.slice(0, three.length), three);
+
+    const index = call<{ groups: { id: string; hands: string[] }[]; hands: { pattern: string; example: string[] }[] }>(
+      "GET",
+      "/api/hands",
+    );
+    assert.equal(index.status, 200);
+    assert.equal(index.body.hands.length, 89);
+    assert.ok(index.body.groups.some((group) => group.id === "pairs" && group.hands.includes("knitting")));
+    assert.ok(index.body.hands.every((hand) => hand.example.every((key) => TILE_KEY.test(key))));
+  });
+
   it("tells a player whether a hand is concealed only, and explains it", () => {
     const snake = call<Record<string, unknown>>("GET", "/api/hand?pattern=wriggly-snake");
     assert.equal(snake.status, 200);
