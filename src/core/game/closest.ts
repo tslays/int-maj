@@ -14,8 +14,8 @@
  */
 
 import { PATTERNS } from "../patterns/table.ts";
-import { EDITORIAL_ROWS, EXAMPLES, ILLUSTRATED_PAGES, SYNOPSIS } from "../patterns/reference.ts";
-import { TIER_POINTS, type HandPattern, type Tier } from "../patterns/types.ts";
+import { EDITORIAL_ROWS, EXAMPLES, SYNOPSIS } from "../patterns/reference.ts";
+import { TIER_POINTS, type HandPattern, type PageRefs, type Tier } from "../patterns/types.ts";
 import { situationFor } from "./bot.ts";
 import { completion, KEYS, oddsFor, planGoals } from "./bot/plan.ts";
 import type { GameView } from "./view.ts";
@@ -29,8 +29,8 @@ export interface ClosestHand {
   readonly tier: Tier;
   /** The printed value, or null for a hand whose score is calculated. */
   readonly points: number | null;
-  /** Book pages the hand is printed on. */
-  readonly pages: readonly number[];
+  /** Book pages the hand is printed on, by book. */
+  readonly pages: PageRefs;
   /**
    * True when the hand exists only concealed: any exposed meld (a called
    * pung, kong or chow) rules it out. Most special hands are like this.
@@ -105,14 +105,8 @@ export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand
 export interface HandDetail {
   readonly pattern: string;
   readonly name: string;
-  /** Every page the pattern table cites, either book (kept for older clients). */
-  readonly pages: readonly number[];
-  /** Printed pages in *The Game of Mah Jong Illustrated*; empty when it does not print the hand. */
-  readonly illustratedPages: readonly number[];
-  /** Pages the Companion's synopsis cites for the hand, ascending. */
-  readonly companionPages: readonly number[];
-  /** The synopsis page that lists a hand the Companion does not illustrate (N/I), else null. */
-  readonly synopsisPage: number | null;
+  /** Book pages the hand is printed on, by book (the same references as the hand's sheet). */
+  readonly pages: PageRefs;
   /** The book headings the hand is filed under (`HandGroup.id`), in book order. */
   readonly groups: readonly string[];
   /** One complete example, as tile keys in reading order. */
@@ -156,20 +150,10 @@ function buildGroups(): HandGroup[] {
 const GROUPS: readonly HandGroup[] = buildGroups();
 
 function detailOf(pattern: HandPattern): HandDetail {
-  const rows = SYNOPSIS.flatMap((heading) =>
-    heading.rows.filter(([, id]) => id === pattern.id).map(([page]) => ({ page, synopsis: heading.page })),
-  );
-  const companionPages = [...new Set(rows.flatMap((row) => (row.page === null ? [] : [row.page])))].sort(
-    (a, b) => a - b,
-  );
-  const unillustrated = rows.find((row) => row.page === null && row.synopsis !== 61);
   return {
     pattern: pattern.id,
     name: pattern.name,
     pages: pattern.pages,
-    illustratedPages: ILLUSTRATED_PAGES[pattern.id] ?? [],
-    companionPages,
-    synopsisPage: companionPages.length === 0 && unillustrated !== undefined ? unillustrated.synopsis : null,
     groups: GROUPS.filter((group) => group.hands.includes(pattern.id)).map((group) => group.id),
     example: (EXAMPLES[pattern.id] ?? "").split(" ").filter((key) => key.length > 0),
     description: pattern.description,

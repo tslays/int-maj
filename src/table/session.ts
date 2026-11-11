@@ -37,7 +37,7 @@ import {
 } from "../core/game/state.ts";
 import { viewFor, type GameView, type PlayerView } from "../core/game/view.ts";
 import type { Wind } from "../core/tiles.ts";
-import type { Tier } from "../core/patterns/types.ts";
+import type { PageRefs, Tier } from "../core/patterns/types.ts";
 import { PATTERNS } from "../core/patterns/table.ts";
 
 /** The web table always seats you at East, and deals to you. */
@@ -145,8 +145,8 @@ export interface OutcomePayload {
    * so the result screen can explain the hand instead of only naming it.
    */
   readonly patternDescription: string | null;
-  /** The book pages the combination is printed on. */
-  readonly patternPages: readonly number[];
+  /** The book pages the combination is printed on, by book; null without one. */
+  readonly patternPages: PageRefs | null;
   readonly ledger: readonly LedgerEntry[];
   /** Ledger entries whose reason names a fishing settlement. */
   readonly fishing: readonly LedgerEntry[];
@@ -380,7 +380,7 @@ function outcomeFor(session: WebSession, view: GameView): OutcomePayload | null 
         ? scored.matches.map((id) => ({ id, name: PATTERN_NAMES.get(id) ?? id }))
         : [],
     patternDescription: PATTERN_BY_ID.get(result.patternId ?? "")?.description ?? null,
-    patternPages: [...(PATTERN_BY_ID.get(result.patternId ?? "")?.pages ?? [])],
+    patternPages: PATTERN_BY_ID.get(result.patternId ?? "")?.pages ?? null,
     ledger: state.ledger,
     fishing: state.ledger.filter((entry) => entry.reason.startsWith("fishing")),
     totals: totals.totals,

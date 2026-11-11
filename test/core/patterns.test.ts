@@ -19,7 +19,12 @@ describe("pattern table schema", () => {
       new Set(PATTERNS.map((pattern) => pattern.id)).size,
       PATTERNS.length,
     );
-    for (const pattern of PATTERNS) assert.ok(pattern.pages.length > 0);
+    for (const pattern of PATTERNS) {
+      assert.ok(
+        pattern.pages.illustrated.length + pattern.pages.companion.length > 0,
+        `${pattern.id} cites no page in either book`,
+      );
+    }
   });
 
   it("records a reading for every provisional pattern", () => {
@@ -213,17 +218,16 @@ describe("Three Great Scholars", () => {
 });
 
 describe("Up You Go concealed kong", () => {
-  it("accepts an exposed non-kong meld", () => {
+  it("rejects an exposed pung: the synopsis row has no red dot (C p. 4)", () => {
     const hand = createHand({
       concealed: "wE wS wW wN b2 b4 b4 b8 b8 b8 b8",
       melds: [meld({ kind: "pung", tiles: "b6 b6 b6", exposed: true })],
       selfDrawn: true,
     });
-    const match = matchHand(hand).find(
-      (entry) => entry.pattern.id === "up-you-go",
+    assert.equal(
+      matchHand(hand).some((entry) => entry.pattern.id === "up-you-go"),
+      false,
     );
-    assert.ok(match);
-    assert.equal(match!.tier, "double");
   });
 
   it("rejects an exposed kong of the required tile", () => {

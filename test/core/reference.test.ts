@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { handDetail, handIndex } from "../../src/core/game/index.ts";
-import { EDITORIAL_ROWS, EXAMPLES, ILLUSTRATED_PAGES, SYNOPSIS } from "../../src/core/patterns/reference.ts";
+import { EDITORIAL_ROWS, EXAMPLES, SYNOPSIS } from "../../src/core/patterns/reference.ts";
 import { PATTERNS } from "../../src/core/patterns/table.ts";
 import { FIXTURES } from "./catalogue.test.ts";
 
@@ -20,7 +20,6 @@ describe("hand index", () => {
       for (const id of ids) assert.ok(IDS.has(id), `${heading.name}: unknown hand ${id}`);
       assert.equal(new Set(ids).size, ids.length, `${heading.name} repeats a hand`);
     }
-    for (const id of Object.keys(ILLUSTRATED_PAGES)) assert.ok(IDS.has(id), `unknown hand ${id}`);
     for (const key of Object.keys(EDITORIAL_ROWS)) assert.ok(SYNOPSIS.some((heading) => heading.id === key));
   });
 
@@ -39,23 +38,22 @@ describe("hand index", () => {
 
   it("splits the catalogue between the books as the framework counts it: 54 and 35", () => {
     const { hands } = handIndex();
-    assert.equal(hands.filter((hand) => hand.illustratedPages.length > 0).length, 54);
-    assert.equal(hands.filter((hand) => hand.illustratedPages.length === 0).length, 35);
+    assert.equal(hands.filter((hand) => hand.pages.illustrated.length > 0).length, 54);
+    assert.equal(hands.filter((hand) => hand.pages.illustrated.length === 0).length, 35);
     for (const hand of hands) {
-      const printed = hand.illustratedPages.length > 0 || hand.companionPages.length > 0 || hand.synopsisPage !== null;
+      const printed = hand.pages.illustrated.length > 0 || hand.pages.companion.length > 0;
       assert.ok(printed, `${hand.pattern} has no page in either book`);
     }
   });
 
   it("reads pages per book", () => {
     const snake = handDetail("wriggly-snake")!;
-    assert.deepEqual(snake.illustratedPages, [38]);
-    assert.deepEqual(snake.companionPages, [10, 27]);
+    assert.deepEqual(snake.pages.illustrated, [38]);
+    assert.deepEqual(snake.pages.companion, [10, 27]);
     assert.deepEqual(snake.groups, ["runs", "winds"]);
     const robin = handDetail("robin")!;
-    assert.deepEqual(robin.illustratedPages, []);
-    assert.deepEqual(robin.companionPages, []);
-    assert.equal(robin.synopsisPage, 60, "not illustrated: the synopsis row is the reference");
+    assert.deepEqual(robin.pages.illustrated, []);
+    assert.deepEqual(robin.pages.companion, [60], "not illustrated, but the synopsis page is cited");
     assert.deepEqual(handDetail("all-kong")!.groups, ["pungs"]);
   });
 

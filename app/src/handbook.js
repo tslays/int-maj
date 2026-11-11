@@ -9,7 +9,8 @@
  * (`GET /api/closest?limit=`), and the list can be sorted by that.
  */
 
-import { bookLines, openHandDetail, playIcon, TIER_LABEL } from "./hints.js";
+import { openHandDetail, playIcon, TIER_LABEL } from "./hints.js";
+import { bookPages } from "./pages.js";
 import { $, faceChip, request, state } from "./shared.js";
 
 let catalogue = null; // { groups, hands }, fetched once
@@ -39,7 +40,7 @@ function haystack(hand) {
       hand.concealedPoints ?? "",
       hand.concealedOnly ? "concealed only" : "exposed or concealed",
       hand.requiresSelfDrawn ? "self-drawn wall" : "",
-      ...bookLines(hand),
+      bookPages(hand.pages),
     ].join(" "),
   );
 }
@@ -49,8 +50,8 @@ function matches(hand) {
   if (filter.tier !== "all" && hand.concealedTier !== filter.tier) return false;
   if (filter.play === "concealed" && !hand.concealedOnly) return false;
   if (filter.play === "exposed" && hand.concealedOnly) return false;
-  if (filter.book === "illustrated" && hand.illustratedPages.length === 0) return false;
-  if (filter.book === "companion" && hand.illustratedPages.length > 0) return false;
+  if (filter.book === "illustrated" && hand.pages.illustrated.length === 0) return false;
+  if (filter.book === "companion" && hand.pages.illustrated.length > 0) return false;
   const words = plain(filter.text).split(/\s+/).filter((word) => word.length > 0);
   return words.every((word) => hand.search.includes(word));
 }
@@ -190,8 +191,8 @@ function renderFilters() {
     ]),
     choices("Book", "book", [
       ["all", "Both books"],
-      ["illustrated", "Illustrated", count((hand) => hand.illustratedPages.length > 0)],
-      ["companion", "Companion only", count((hand) => hand.illustratedPages.length === 0)],
+      ["illustrated", "Illustrated", count((hand) => hand.pages.illustrated.length > 0)],
+      ["companion", "Companion only", count((hand) => hand.pages.illustrated.length === 0)],
     ]),
   );
   const rail = $("#index-filters");

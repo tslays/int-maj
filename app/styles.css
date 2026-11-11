@@ -923,18 +923,80 @@ button {
   color: var(--muted);
 }
 
-#report-note {
-  width: 100%;
+/* The report sheet. A phone's keyboard covers the lower half of the page (most
+   of it in landscape), so report.js keeps the sheet on the part still visible
+   and the card is short: the note and Send side by side, at the top. */
+#report-sheet {
   box-sizing: border-box;
-  margin-top: 8px;
+  inset: var(--report-top, 0px) 0 auto 0;
+  height: var(--report-height, 100%);
+  padding-bottom: 6px;
+}
+@media (pointer: coarse) {
+  #report-sheet {
+    align-items: start;
+  }
+}
+.report-card {
+  width: min(520px, 100%);
+}
+.report-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+#report-note {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 8px;
   font: inherit;
   font-size: 16px; /* iOS Safari zooms into fields below 16px */
+  line-height: 1.3;
   color: inherit;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 8px;
   resize: none;
+}
+#report-send {
+  flex: none;
+  min-width: 76px;
+}
+#report-send:disabled {
+  opacity: 0.55;
+}
+.report-status {
+  margin-top: 8px;
+}
+.report-status.bad {
+  color: #f0b27a;
+}
+#report-share {
+  margin-top: 8px;
+}
+.report-fine {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+/* Barely any room above the keyboard: only the title, the note and Send. */
+#report-sheet.tight {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.tight .report-card {
+  padding: 8px 12px;
+}
+.tight .report-card h2 {
+  margin-bottom: 6px;
+  font-size: 15px;
+}
+.tight .detail-close {
+  top: 0;
+}
+.tight .report-fine {
+  display: none;
 }
 .toast {
   position: fixed;

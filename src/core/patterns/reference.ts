@@ -9,9 +9,6 @@
  *     hands" [C pp. 56-61], each with its rows in printed order and the page
  *     the row points to (`null` where the book prints N/I, not illustrated).
  *     A hand filed under several headings is listed under each, as printed.
- *   - `ILLUSTRATED_PAGES`: the printed page of every hand in *The Game of Mah
- *     Jong Illustrated*, from rules/RULES.md Part II. A hand absent from this
- *     map is printed only in the Companion.
  *   - `EXAMPLES`: one complete example of each hand, the same tiles as the
  *     positive fixture in test/core/catalogue.test.ts.
  *
@@ -317,64 +314,6 @@ export const SYNOPSIS: readonly SynopsisHeading[] = [
  */
 export const EDITORIAL_ROWS: Readonly<Record<string, readonly string[]>> = {
   pungs: ["all-kong", "mixed-pung"],
-};
-
-/** Printed pages in *The Game of Mah Jong Illustrated* (rules/RULES.md Part II). */
-export const ILLUSTRATED_PAGES: Readonly<Record<string, readonly number[]>> = {
-  "ordinary-mahjong": [34],
-  "purity-hand": [34],
-  "heavenly-twins": [34],
-  "all-pair": [34],
-  "gates-of-heaven": [36],
-  "run-pung-pair": [36],
-  "gerties-garter": [37],
-  knitting: [37],
-  "triple-knitting": [37],
-  "wriggly-snake": [38],
-  "buried-treasure": [38],
-  "unique-wonder": [38],
-  "all-pair-honours": [38],
-  "all-honour-hand": [38],
-  "heads-and-tails": [40],
-  "chinese-odds": [40],
-  dragonfly: [40],
-  "windy-chow": [41],
-  "windy-ones": [42],
-  "windy-nines": [42],
-  "gretas-garden": [43],
-  "gretas-dragon": [43],
-  "sparrows-sanctuary": [44],
-  "all-pair-jade": [44],
-  "imperial-jade": [44],
-  "lily-of-the-valley": [44],
-  "all-pair-ruby-jade": [46],
-  "ruby-jade": [46],
-  "royal-ruby": [46],
-  "red-lily": [46],
-  "red-lantern": [48],
-  "windy-dragons": [48],
-  "all-winds-and-dragons": [48],
-  "three-great-scholars": [49],
-  "four-blessings": [49],
-  "dragons-tail": [52],
-  "dragons-breath": [53],
-  windfall: [53],
-  "civil-war": [53],
-  "red-waratah": [54],
-  lillypilly: [54],
-  "seven-brothers": [55],
-  "three-sisters": [55],
-  "green-jade": [56],
-  "red-coral": [56],
-  "white-opal": [56],
-  "five-odd-honours": [56],
-  "hachi-ban": [57],
-  "confused-gates": [57],
-  "chow-mein": [58],
-  "chop-suey": [58],
-  "all-kong": [30],
-  "mixed-pung": [30],
-  "chinese-ordinary": [28, 62],
 };
 
 /** One complete example of each hand, as tile keys in reading order. */

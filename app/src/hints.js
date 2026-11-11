@@ -4,6 +4,7 @@
  * hands (`handbook.js`).
  */
 
+import { bookPages } from "./pages.js";
 import { $, faceChip, request, showToggle, state, storage } from "./shared.js";
 
 /* --------------------------------------------------------- closest hands */
@@ -153,18 +154,6 @@ function detailLine(label, ...content) {
   return line;
 }
 
-/** Where the hand is printed, one entry per book. */
-export function bookLines(detail) {
-  const pages = (list) => `${list.length > 1 ? "pp." : "p."} ${list.join(", ")}`;
-  const lines = [];
-  if (detail.illustratedPages.length > 0) lines.push(`The Game of Mah Jong Illustrated, ${pages(detail.illustratedPages)}`);
-  if (detail.companionPages.length > 0) lines.push(`The Mah Jong Player's Companion, ${pages(detail.companionPages)}`);
-  else if (detail.synopsisPage !== null) {
-    lines.push(`The Mah Jong Player's Companion, synopsis p. ${detail.synopsisPage} (not illustrated)`);
-  }
-  return lines;
-}
-
 /**
  * The sheet for one hand. `progress` is the hand's closest-hands entry (how
  * many tiles away, which ones), or null when the hand is out of reach or no
@@ -235,10 +224,7 @@ export async function openHandDetail(pattern, progress = null) {
     }
     card.append(detailLine(progress.away === 0 ? "Your hand" : `You still need (${progress.away})`, need));
   }
-  const books = bookLines(detail);
-  const bookLine = detailLine(books.length > 1 ? "In the books" : "In the book", books[0] ?? "");
-  for (const line of books.slice(1)) bookLine.lastChild.append(document.createElement("br"), line);
-  card.append(bookLine);
+  card.append(detailLine("In the books", bookPages(detail.pages)));
 
   sheet.replaceChildren(card);
   sheet.hidden = false;
