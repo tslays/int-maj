@@ -50,6 +50,10 @@ import {
   chowSuit,
   distinctPairsGroup,
   exactGroup,
+  groupPattern,
+  groupReadings,
+  type Group,
+  type KeyPredicate,
   isOneSuit,
   isPungSet,
   matchesGroups,
@@ -69,6 +73,7 @@ import {
   setSuitOf,
   shapeKeys,
   singleGroup,
+  standardPattern,
   suitIsExactRanks,
   suitIsExactRun,
 } from "./predicates.ts";
@@ -146,31 +151,31 @@ function tripleKnitting(shape: HandShape): boolean {
 /**
  * Big Robert: one four-tile run in each suit plus an honour pair. The book
  * scores the same-numbers version at limit and every other version at half
- * limit; the two predicates are mutually exclusive.
+ * limit; the two readings are mutually exclusive.
  */
-function bigRobert(shape: HandShape, sameNumbers: boolean): boolean {
+function bigRobertReadings(sameNumbers: boolean): Group[][] {
+  const honourPair = pairGroup((key) => isWind(key) || isDragon(key));
+  const readings: Group[][] = [];
   for (let bambooStart = 1; bambooStart <= 6; bambooStart++) {
     for (let characterStart = 1; characterStart <= 6; characterStart++) {
       for (let circleStart = 1; circleStart <= 6; circleStart++) {
-        const same =
-          bambooStart === characterStart && characterStart === circleStart;
+        const same = bambooStart === characterStart && characterStart === circleStart;
         if (same !== sameNumbers) continue;
-        if (
-          matchesGroups(shape, [
-            runGroup("bamboo", bambooStart, 4),
-            runGroup("characters", characterStart, 4),
-            runGroup("circles", circleStart, 4),
-            pairGroup((key) => isWind(key) || isDragon(key)),
-          ])
-        ) {
-          return true;
-        }
+        readings.push([
+          runGroup("bamboo", bambooStart, 4),
+          runGroup("characters", characterStart, 4),
+          runGroup("circles", circleStart, 4),
+          honourPair,
+        ]);
       }
     }
   }
-  return false;
+  return readings;
 }
 const DRAGON_KEYS = ["dR", "dG", "dW"] as const;
+const repeat = (group: Group, times: number): Group[] => Array.from({ length: times }, () => group);
+const suitedIn = (suit: Suit): KeyPredicate => (key) => key[0] === suitTileKey(suit, 1)[0];
+const everyTile: KeyPredicate = () => true;
 const pungWind = (set: Parameters<typeof isPungSet>[0]) => isPungSet(set) && isWind(set.tile);
 const pungDragon = (set: Parameters<typeof isPungSet>[0]) => isPungSet(set) && isDragon(set.tile);
 const honourPung = (set: Parameters<typeof isPungSet>[0]) => isPungSet(set) && isHonourKey(set.tile);
@@ -251,6 +256,14 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "At least one suited pair is required; seven pairs of honours alone is " +
       "All Pair Honours.",
+    // Seven pairs in one suit, at least one of them suited, the rest honours.
+    groups: groupReadings(() =>
+      SUITS.flatMap((suit) =>
+        [1, 2, 3, 4, 5, 6, 7].map((suited) => [
+          ...repeat(pairGroup(suitedIn(suit)), suited),
+          ...repeat(pairGroup(isHonourKey), 7 - suited),
+        ]),
+      )),
     match: ({ shape }) => {
       if (!isSevenPairs(shape)) return false;
       return usedSuits(shape).length === 1 && shape.suitedTotal >= 2;
@@ -271,6 +284,17 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The Illustrated p. 49 prints LIMIT; the Companion's MIDDLE LIMIT " +
       "(C p. 58) is superseded (AUDIT C8). Exposed dragon pungs are allowed.",
+    // The three dragon pungs, one more set in a suit, and a pair of that suit or of a wind.
+    groups: groupReadings(() =>
+      SUITS.flatMap((suit) =>
+        [runGroup(suit, "any", 3), pungGroup(suitedIn(suit))].flatMap((set) =>
+          [suitedIn(suit), isWind].map((pair) => [
+            ...DRAGON_KEYS.map((dragon) => pungGroup((key) => key === dragon)),
+            set,
+            pairGroup(pair),
+          ]),
+        ),
+      )),
     match: ({ shape }) => {
       if (
         dragonCount(shape, "green") < 3 ||
@@ -310,6 +334,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The p. 15 hand page prints HALF LIMIT (Concealed). exposedTier null " +
       "and the no-meld check encode the concealed-only requirement.",
+    groups: groupReadings(() =>
+      SUITS.map((suit) => [...repeat(runGroup(suit, "any", 3), 4), pairGroup(suitedIn(suit))])),
     match: ({ shape, hand }) =>
       hand.melds.length === 0 &&
       shape.total === 14 &&
@@ -544,15 +570,17 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       "The two illustrated " +
       "versions on p. 40 differ only in the suit of the run; they are one " +
       "shape.",
-    match: ({ shape }) =>
-      SUITS.some((suit) =>
-        matchesStandard(shape, isSuitedKey, [
+    ...standardPattern(() =>
+      SUITS.map((suit) => ({
+        pair: isSuitedKey,
+        sets: [
           chowSuit(suit, [1]),
           chowSuit(suit, [4]),
           chowSuit(suit, [7]),
           honourPung,
-        ]),
-      ),
+        ],
+      })),
+    ),
   },
   {
     id: "dragons-tail",
@@ -792,7 +820,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       "The hand page prints 'LIMIT for same numbers (Otherwise) HALF LIMIT'; " +
       "the mixed-numbers version is the separate big-robert-mixed pattern. " +
       "The exposed values are cropped; half is assumed for both.",
-    match: ({ shape }) => bigRobert(shape, true),
+    ...groupPattern(() => bigRobertReadings(true)),
   },
   {
     id: "big-robert-mixed",
@@ -810,7 +838,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "Scoring variant of Big Robert: half limit when the three four-tile runs " +
       "do not share the same numbers. Mutually exclusive with big-robert.",
-    match: ({ shape }) => bigRobert(shape, false),
+    ...groupPattern(() => bigRobertReadings(false)),
   },
   {
     id: "moon-at-bottom-of-well",
@@ -861,14 +889,13 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       "'Mixed chow' is read from " +
       "the Crazy Chows illustration (p. 16): three consecutive numbers, one " +
       "tile from each suit. limit/half is assumed.",
-    match: ({ shape }) =>
-      matchesGroups(shape, [
-        runGroup("bamboo", "any", 3),
-        runGroup("characters", "any", 3),
-        runGroup("circles", "any", 3),
-        mixedChowGroup(),
-        pairGroup(isSuitedKey),
-      ]),
+    ...groupPattern(() => [
+      runGroup("bamboo", "any", 3),
+      runGroup("characters", "any", 3),
+      runGroup("circles", "any", 3),
+      mixedChowGroup(),
+      pairGroup(isSuitedKey),
+    ]),
   },
   {
     id: "crazy-chows",
@@ -885,14 +912,13 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The four mixed chows are clear on p. 16; the pair is cropped. Read as " +
       "the book's 'mixed pair': same number, two different suits.",
-    match: ({ shape }) =>
-      matchesGroups(shape, [
-        mixedChowGroup(),
-        mixedChowGroup(),
-        mixedChowGroup(),
-        mixedChowGroup(),
-        mixedPairGroup(),
-      ]),
+    ...groupPattern(() => [
+      mixedChowGroup(),
+      mixedChowGroup(),
+      mixedChowGroup(),
+      mixedChowGroup(),
+      mixedPairGroup(),
+    ]),
   },
   {
     id: "little-robert",
@@ -906,13 +932,15 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       "One chow in each suit, one pung/kong in any suit, and a pair in any " +
       "suit.",
     source: "Short list p. 6; synopsis p. 56; illustration p. 16.",
-    match: ({ shape }) =>
-      matchesStandard(shape, () => true, [
+    ...standardPattern(() => ({
+      pair: () => true,
+      sets: [
         chowSuit("bamboo"),
         chowSuit("characters"),
         chowSuit("circles"),
         anyPung,
-      ]),
+      ],
+    })),
   },
   {
     id: "windy-chow",
@@ -927,14 +955,13 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     source: "Short list p. 6; synopsis p. 56; illustrations pp. 18 and 26.",
     notes:
       "The p. 18 and p. 26 printings are one shape and are deduped.",
-    match: ({ shape }) =>
-      matchesGroups(shape, [
-        runGroup("bamboo", "any", 3),
-        runGroup("characters", "any", 3),
-        runGroup("circles", "any", 3),
-        exactGroup(WIND_KEYS),
-        singleGroup(isWind),
-      ]),
+    ...groupPattern(() => [
+      runGroup("bamboo", "any", 3),
+      runGroup("characters", "any", 3),
+      runGroup("circles", "any", 3),
+      exactGroup(WIND_KEYS),
+      singleGroup(isWind),
+    ]),
   },
   {
     id: "chop-suey",
@@ -950,14 +977,13 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The p. 18 and p. 26 printings are one shape. Exposed value is cropped; " +
       "half is assumed.",
-    match: ({ shape }) =>
-      matchesGroups(shape, [
-        runGroup("bamboo", 1, 3),
-        runGroup("characters", 1, 3),
-        runGroup("circles", 1, 3),
-        exactGroup(WIND_KEYS),
-        singleGroup(isWind),
-      ]),
+    ...groupPattern(() => [
+      runGroup("bamboo", 1, 3),
+      runGroup("characters", 1, 3),
+      runGroup("circles", 1, 3),
+      exactGroup(WIND_KEYS),
+      singleGroup(isWind),
+    ]),
   },
   {
     id: "chow-mein",
@@ -973,14 +999,13 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The p. 18 and p. 26 printings are one shape. Exposed value is cropped; " +
       "half is assumed.",
-    match: ({ shape }) =>
-      matchesGroups(shape, [
-        runGroup("bamboo", 7, 3),
-        runGroup("characters", 7, 3),
-        runGroup("circles", 7, 3),
-        exactGroup(WIND_KEYS),
-        singleGroup(isWind),
-      ]),
+    ...groupPattern(() => [
+      runGroup("bamboo", 7, 3),
+      runGroup("characters", 7, 3),
+      runGroup("circles", 7, 3),
+      exactGroup(WIND_KEYS),
+      singleGroup(isWind),
+    ]),
   },
   {
     id: "hovering-angel",
@@ -997,13 +1022,15 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "'OWN Wind' uses the hand's " +
       "seat wind.",
-    match: ({ shape }) =>
-      matchesStandard(shape, isDragon, [
+    ...standardPattern((own) => ({
+      pair: isDragon,
+      sets: [
         chowSuit("bamboo"),
         chowSuit("characters"),
         chowSuit("circles"),
-        (set) => isPungSet(set) && set.tile === ownWindKey(shape),
-      ]),
+        (set) => isPungSet(set) && set.tile === own,
+      ],
+    })),
   },
   {
     id: "little-brother",
@@ -1020,13 +1047,15 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "'OWN Wind' uses the hand's " +
       "seat wind.",
-    match: ({ shape }) =>
-      matchesStandard(shape, (key) => key === ownWindKey(shape), [
+    ...standardPattern((own) => ({
+      pair: (key) => key === own,
+      sets: [
         chowSuit("bamboo"),
         chowSuit("characters"),
         chowSuit("circles"),
         anyChow,
-      ]),
+      ],
+    })),
   },
   {
     id: "apple-blossom",
@@ -1042,14 +1071,13 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     source: "Synopsis pp. 56 and 58.",
     notes:
       "p. 33 repeats the synopsis.",
-    match: ({ shape }) =>
-      matchesGroups(shape, [
-        mixedChowGroup(),
-        mixedChowGroup(),
-        mixedChowGroup(),
-        pungGroup((key) => key === "dW"),
-        pairGroup((key) => key === "dG"),
-      ]),
+    ...groupPattern(() => [
+      mixedChowGroup(),
+      mixedChowGroup(),
+      mixedChowGroup(),
+      pungGroup((key) => key === "dW"),
+      pairGroup((key) => key === "dG"),
+    ]),
   },
   {
     id: "professors",
@@ -1066,14 +1094,13 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "'OWN Wind' uses the hand's " +
       "seat wind.",
-    match: ({ shape }) =>
-      matchesGroups(shape, [
-        mixedChowGroup(),
-        mixedChowGroup(),
-        mixedChowGroup(),
-        exactGroup(DRAGON_KEYS),
-        pairGroup((key) => key === ownWindKey(shape)),
-      ]),
+    ...groupPattern((own) => [
+      mixedChowGroup(),
+      mixedChowGroup(),
+      mixedChowGroup(),
+      exactGroup(DRAGON_KEYS),
+      pairGroup((key) => key === own),
+    ]),
   },
   {
     id: "knitting",
@@ -1138,6 +1165,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The p. 22 and p. 44 printings are one shape. Terminals may come from " +
       "any suit.",
+    groups: groupReadings(() => [repeat(pairGroup((key) => isTerminalKey(key) || isHonourKey(key)), 7)]),
     match: ({ shape }) =>
       isSevenPairs(shape) &&
       shapeKeys(shape).every(
@@ -1159,6 +1187,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "Concealed-only: no melds and a self-drawn winning tile. Distinct from " +
       "Heavenly Twins, which is seven pairs in one suit.",
+    groups: groupReadings(() => [repeat(pairGroup(everyTile), 7)]),
     match: ({ shape, hand }) =>
       hand.melds.length === 0 && isSevenPairs(shape),
   },
@@ -1174,14 +1203,13 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       "Five pairs in one suit, one of each dragon, and one extra dragon that " +
       "pairs with one of them.",
     source: "Short list p. 6; synopsis p. 58; illustration p. 24.",
-    match: ({ shape }) =>
-      SUITS.some((suit) =>
-        matchesGroups(shape, [
-          pairsInSuitGroup(suit, 5),
-          exactGroup(DRAGON_KEYS),
-          singleGroup(isDragon),
-        ]),
-      ),
+    ...groupPattern(() =>
+      SUITS.map((suit) => [
+        pairsInSuitGroup(suit, 5),
+        exactGroup(DRAGON_KEYS),
+        singleGroup(isDragon),
+      ]),
+    ),
   },
   {
     id: "windfall",
@@ -1193,13 +1221,9 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     requiresSelfDrawn: false,
     description: "Five pairs in one suit and one of each wind.",
     source: "Short list p. 6; illustration p. 24.",
-    match: ({ shape }) =>
-      SUITS.some((suit) =>
-        matchesGroups(shape, [
-          pairsInSuitGroup(suit, 5),
-          exactGroup(WIND_KEYS),
-        ]),
-      ),
+    ...groupPattern(() =>
+      SUITS.map((suit) => [pairsInSuitGroup(suit, 5), exactGroup(WIND_KEYS)]),
+    ),
   },
   {
     id: "dragonette",
@@ -1218,30 +1242,19 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       "the visible tiles show ESWN and a Green Dragon. The most conservative " +
       "14-tile reading pairs one of the three dragons (the cut tiles), not an " +
       "arbitrary tile.",
-    match: ({ shape }) => {
-      for (const suit of SUITS) {
-        const prefix = suitTileKey(suit, 1)[0];
+    ...groupPattern(() =>
+      SUITS.map((suit) => {
         const suitPair = (key: string) =>
-          isSuitedKey(key) &&
-          key[0] === prefix &&
-          Number(key[1]) >= 2 &&
-          Number(key[1]) <= 8;
-        if (!shapeKeys(shape).every((key) => suitPair(key) || isWind(key) || isDragon(key))) {
-          continue;
-        }
-        if (
-          matchesGroups(shape, [
-            distinctPairsGroup(3, suitPair),
-            exactGroup(WIND_KEYS),
-            exactGroup(DRAGON_KEYS),
-            singleGroup(isDragon),
-          ])
-        ) {
-          return true;
-        }
-      }
-      return false;
-    },
+          suitedIn(suit)(key) && Number(key[1]) >= 2 && Number(key[1]) <= 8;
+        return [
+          distinctPairsGroup(3, suitPair),
+          exactGroup(WIND_KEYS),
+          exactGroup(DRAGON_KEYS),
+          singleGroup(isDragon),
+        ];
+      }),
+    ),
+
   },
   {
     id: "windy-ones",
@@ -1258,14 +1271,13 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The p. 28 and p. 45 printings are one shape. Exposed value is cropped; " +
       "half is assumed.",
-    match: ({ shape }) =>
-      matchesGroups(shape, [
-        exactGroup(WIND_KEYS),
-        singleGroup(isWind),
-        pungGroup((key) => key === "b1"),
-        pungGroup((key) => key === "c1"),
-        pungGroup((key) => key === "o1"),
-      ]),
+    ...groupPattern(() => [
+      exactGroup(WIND_KEYS),
+      singleGroup(isWind),
+      pungGroup((key) => key === "b1"),
+      pungGroup((key) => key === "c1"),
+      pungGroup((key) => key === "o1"),
+    ]),
   },
   {
     id: "windy-nines",
@@ -1282,14 +1294,13 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The p. 28 and p. 45 printings are one shape. Exposed value is cropped; " +
       "half is assumed.",
-    match: ({ shape }) =>
-      matchesGroups(shape, [
-        exactGroup(WIND_KEYS),
-        singleGroup(isWind),
-        pungGroup((key) => key === "b9"),
-        pungGroup((key) => key === "c9"),
-        pungGroup((key) => key === "o9"),
-      ]),
+    ...groupPattern(() => [
+      exactGroup(WIND_KEYS),
+      singleGroup(isWind),
+      pungGroup((key) => key === "b9"),
+      pungGroup((key) => key === "c9"),
+      pungGroup((key) => key === "o9"),
+    ]),
   },
   {
     id: "windvane",
@@ -1307,14 +1318,13 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       "The sidebar reads 'One of each Wind' and 'Pung/K in each suit'; the " +
       "14th tile is read as a second copy of a wind, matching Windy Ones and " +
       "Windy Nines. Exposed half is assumed.",
-    match: ({ shape }) =>
-      matchesGroups(shape, [
-        exactGroup(WIND_KEYS),
-        singleGroup(isWind),
-        pungGroup(isBamboo),
-        pungGroup(isCharacters),
-        pungGroup(isCircles),
-      ]),
+    ...groupPattern(() => [
+      exactGroup(WIND_KEYS),
+      singleGroup(isWind),
+      pungGroup(isBamboo),
+      pungGroup(isCharacters),
+      pungGroup(isCircles),
+    ]),
   },
   {
     id: "civil-war",
@@ -1364,14 +1374,13 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     requiresSelfDrawn: false,
     description: "Pungs/kongs of all four winds plus any pair.",
     source: "Synopsis p. 56; illustration p. 30.",
-    match: ({ shape }) =>
-      matchesGroups(shape, [
-        pungGroup((key) => key === "wE"),
-        pungGroup((key) => key === "wS"),
-        pungGroup((key) => key === "wW"),
-        pungGroup((key) => key === "wN"),
-        pairGroup(() => true),
-      ]),
+    ...groupPattern(() => [
+      pungGroup((key) => key === "wE"),
+      pungGroup((key) => key === "wS"),
+      pungGroup((key) => key === "wW"),
+      pungGroup((key) => key === "wN"),
+      pairGroup(() => true),
+    ]),
   },
   {
     id: "all-pair-jade",
@@ -1416,6 +1425,13 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The red and green Bamboo sets together cover every Bamboo rank, so the " +
       "five Bamboo pairs may use any rank.",
+    groups: groupReadings(() => [
+      [
+        pairGroup((key) => key === "dR"),
+        pairGroup((key) => key === "dG"),
+        ...repeat(pairGroup(isBamboo), 5),
+      ],
+    ]),
     match: ({ shape }) => {
       if (!isSevenPairs(shape)) return false;
       if (
@@ -1483,13 +1499,15 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     source: "Synopsis p. 58; illustration p. 34.",
     notes:
       "The p. 34 hand page prints LIMIT (Exposed).",
-    match: ({ shape }) =>
-      matchesStandard(shape, (key) => key === "dG", [
+    ...standardPattern(() => ({
+      pair: (key) => key === "dG",
+      sets: [
         pungOf("dR"),
         pungOnlySuit("bamboo", RED_BAMBOO_RANKS),
         pungOnlySuit("circles"),
         pungOnlySuit("characters"),
-      ]),
+      ],
+    })),
   },
   {
     id: "green-jade",
@@ -1506,13 +1524,15 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "limit/limit is " +
       "assumed from the Pungs of Dragons family.",
-    match: ({ shape }) =>
-      matchesStandard(shape, isBamboo, [
+    ...standardPattern(() => ({
+      pair: isBamboo,
+      sets: [
         pungOf("dG"),
         pungSuit("bamboo"),
         pungSuit("bamboo"),
         pungSuit("bamboo"),
-      ]),
+      ],
+    })),
   },
   {
     id: "red-coral",
@@ -1529,13 +1549,15 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "limit/limit is assumed " +
       "from the Pungs of Dragons family.",
-    match: ({ shape }) =>
-      matchesStandard(shape, isCharacters, [
+    ...standardPattern(() => ({
+      pair: isCharacters,
+      sets: [
         pungOf("dR"),
         pungSuit("characters"),
         pungSuit("characters"),
         pungSuit("characters"),
-      ]),
+      ],
+    })),
   },
   {
     id: "white-opal",
@@ -1552,13 +1574,15 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "limit/limit is assumed " +
       "from the Pungs of Dragons family.",
-    match: ({ shape }) =>
-      matchesStandard(shape, isCircles, [
+    ...standardPattern(() => ({
+      pair: isCircles,
+      sets: [
         pungOf("dW"),
         pungSuit("circles"),
         pungSuit("circles"),
         pungSuit("circles"),
-      ]),
+      ],
+    })),
   },
   {
     id: "imperial-jade",
@@ -1648,13 +1672,15 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The tier label is cropped on p. 36; double/double is assumed from " +
       "Imperial Jade and Lily of the Valley.",
-    match: ({ shape }) =>
-      matchesStandard(shape, (key) => key === "dW", [
+    ...standardPattern(() => ({
+      pair: (key) => key === "dW",
+      sets: [
         pungOf("dG"),
         pungSuit("circles"),
         pungSuit("circles"),
         pungSuit("circles"),
-      ]),
+      ],
+    })),
   },
   {
     id: "sunrise",
@@ -1671,13 +1697,15 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The sidebar is cropped after 'Pung/K in each suit-no'; read as no 1s " +
       "or 9s, matching the illustrated middle tiles.",
-    match: ({ shape }) =>
-      matchesStandard(shape, (key) => key === "dW", [
+    ...standardPattern(() => ({
+      pair: (key) => key === "dW",
+      sets: [
         pungOf("wE"),
         pungSuit("bamboo", [2, 3, 4, 5, 6, 7, 8]),
         pungSuit("characters", [2, 3, 4, 5, 6, 7, 8]),
         pungSuit("circles", [2, 3, 4, 5, 6, 7, 8]),
-      ]),
+      ],
+    })),
   },
   {
     id: "sunset",
@@ -1694,13 +1722,15 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The sidebar is cropped after 'Pung/K in each suit-no'; read as no 1s " +
       "or 9s, matching the illustrated middle tiles.",
-    match: ({ shape }) =>
-      matchesStandard(shape, (key) => key === "dR", [
+    ...standardPattern(() => ({
+      pair: (key) => key === "dR",
+      sets: [
         pungOf("wW"),
         pungSuit("bamboo", [2, 3, 4, 5, 6, 7, 8]),
         pungSuit("characters", [2, 3, 4, 5, 6, 7, 8]),
         pungSuit("circles", [2, 3, 4, 5, 6, 7, 8]),
-      ]),
+      ],
+    })),
   },
   {
     id: "unique-wonder",
@@ -1761,15 +1791,14 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     source: "Synopsis p. 58; illustration p. 46.",
     notes:
       "The p. 46 hand page prints LIMIT (Exposed).",
-    match: ({ shape }) =>
-      matchesGroups(shape, [
-        pairGroup((key) => key === "wE"),
-        pairGroup((key) => key === "wS"),
-        pairGroup((key) => key === "wW"),
-        pairGroup((key) => key === "wN"),
-        pungOnlyGroup(isDragon),
-        pungOnlyGroup(isDragon),
-      ]),
+    ...groupPattern(() => [
+      pairGroup((key) => key === "wE"),
+      pairGroup((key) => key === "wS"),
+      pairGroup((key) => key === "wW"),
+      pairGroup((key) => key === "wN"),
+      pungOnlyGroup(isDragon),
+      pungOnlyGroup(isDragon),
+    ]),
   },
   {
     id: "all-winds-and-dragons",
@@ -1818,6 +1847,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     description:
       "Seven pairs in one suit, with no winds or dragons.",
     source: "Short list p. 6; illustration p. 48.",
+    groups: groupReadings(() => SUITS.map((suit) => repeat(pairGroup(suitedIn(suit)), 7))),
     match: ({ shape }) =>
       isSevenPairs(shape) &&
       usedSuits(shape).length === 1 &&
@@ -1891,6 +1921,19 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       "chow distribution of 1 / 2 / 1 with the pair in the single-chow suit: " +
       "3 + 6 + 5 = 14. Concealed-only: the synopsis row carries no red dot (p. 4: the dots " +
       "mark the hands whose pungs may be exposed).",
+    // Chows 1 / 2 / 1 over the three suits; the pair is in the suit with one chow.
+    groups: groupReadings(() =>
+      SUITS.flatMap((paired) =>
+        SUITS.filter((single) => single !== paired).map((single) => {
+          const double = SUITS.find((suit) => suit !== paired && suit !== single)!;
+          return [
+            runGroup(paired, "any", 3),
+            runGroup(single, "any", 3),
+            ...repeat(runGroup(double, "any", 3), 2),
+            pairGroup(suitedIn(paired)),
+          ];
+        }),
+      )),
     match: ({ shape }) =>
       decomposeStandard(shape).some((decomposition) => {
         if (!decomposition.sets.every((set) => set.kind === "chow")) {
@@ -1950,13 +1993,15 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       "Pungs/kongs of Red and Green Dragons, one red-Bamboo pung/kong, one " +
       "green-Bamboo pung/kong, and a red or green Bamboo pair.",
     source: "Synopsis pp. 58 and 60; illustration p. 54.",
-    match: ({ shape }) =>
-      matchesStandard(shape, isBamboo, [
+    ...standardPattern(() => ({
+      pair: isBamboo,
+      sets: [
         pungOf("dR"),
         pungOf("dG"),
         pungSuit("bamboo", RED_BAMBOO_RANKS),
         pungSuit("bamboo", GREEN_BAMBOO_RANKS),
-      ]),
+      ],
+    })),
   },
   {
     id: "red-lily",
@@ -1970,13 +2015,15 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       "Pungs/kongs of Red and White Dragons, two red-Bamboo pungs/kongs, and " +
       "a red-Bamboo pair.",
     source: "Synopsis pp. 58 and 60; illustration p. 54.",
-    match: ({ shape }) =>
-      matchesStandard(shape, isRedBamboo, [
+    ...standardPattern(() => ({
+      pair: isRedBamboo,
+      sets: [
         pungOf("dR"),
         pungOf("dW"),
         pungSuit("bamboo", RED_BAMBOO_RANKS),
         pungSuit("bamboo", RED_BAMBOO_RANKS),
-      ]),
+      ],
+    })),
   },
   {
     id: "royal-ruby",
@@ -1990,13 +2037,15 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       "Pung/kong of Red Dragons, three red-Bamboo pungs/kongs, and a " +
       "red-Bamboo pair; no chow is allowed.",
     source: "Synopsis pp. 58 and 60; illustration p. 54.",
-    match: ({ shape }) =>
-      matchesStandard(shape, isRedBamboo, [
+    ...standardPattern(() => ({
+      pair: isRedBamboo,
+      sets: [
         pungOf("dR"),
         pungSuit("bamboo", RED_BAMBOO_RANKS),
         pungSuit("bamboo", RED_BAMBOO_RANKS),
         pungSuit("bamboo", RED_BAMBOO_RANKS),
-      ]),
+      ],
+    })),
   },
   {
     id: "blue-mountains",
@@ -2013,13 +2062,15 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The blue-circle ranks are printed in the synopsis; limit/limit is " +
       "assumed from the White Opal family.",
-    match: ({ shape }) =>
-      matchesStandard(shape, (key) => isCircles(key) && BLUE_CIRCLE_RANKS.includes(Number(key[1])), [
+    ...standardPattern(() => ({
+      pair: (key) => isCircles(key) && BLUE_CIRCLE_RANKS.includes(Number(key[1])),
+      sets: [
         pungOf("dG"),
         pungSuit("circles"),
         pungSuit("circles"),
         pungSuit("circles"),
-      ]),
+      ],
+    })),
   },
   {
     id: "white-elephant",
@@ -2038,13 +2089,15 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       "The synopsis says only 'Three P/K'; the Circle Suit context and the " +
       "even-Circle pair are read conservatively as three Circle pungs, " +
       "matching White Opal.",
-    match: ({ shape }) =>
-      matchesStandard(shape, (key) => isEvenCircle(key), [
+    ...standardPattern(() => ({
+      pair: (key) => isEvenCircle(key),
+      sets: [
         pungOf("dW"),
         pungSuit("circles"),
         pungSuit("circles"),
         pungSuit("circles"),
-      ]),
+      ],
+    })),
   },
   {
     id: "driven-snow",
@@ -2063,13 +2116,15 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       "The synopsis says only 'Three P/K'; the Character Suit context and the " +
       "odd-Character pair are read conservatively as three Character pungs, " +
       "matching Red Coral.",
-    match: ({ shape }) =>
-      matchesStandard(shape, (key) => isOddCharacter(key), [
+    ...standardPattern(() => ({
+      pair: (key) => isOddCharacter(key),
+      sets: [
         pungOf("dW"),
         pungSuit("characters"),
         pungSuit("characters"),
         pungSuit("characters"),
-      ]),
+      ],
+    })),
   },
   {
     id: "dragons-scales",
@@ -2088,13 +2143,15 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       "The synopsis says only 'Three P/K'; the Character Suit context and the " +
       "even-Character pair are read conservatively as three Character pungs, " +
       "matching Red Coral.",
-    match: ({ shape }) =>
-      matchesStandard(shape, (key) => isEvenCharacter(key), [
+    ...standardPattern(() => ({
+      pair: (key) => isEvenCharacter(key),
+      sets: [
         pungOf("dR"),
         pungSuit("characters"),
         pungSuit("characters"),
         pungSuit("characters"),
-      ]),
+      ],
+    })),
   },
   {
     id: "dragonfly",
@@ -2110,14 +2167,13 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "limit/limit is assumed " +
       "from the neighbouring dragon hands.",
-    match: ({ shape }) =>
-      matchesGroups(shape, [
-        exactGroup(DRAGON_KEYS),
-        pungGroup(isBamboo),
-        pungGroup(isCharacters),
-        pungGroup(isCircles),
-        pairGroup(isSuitedKey),
-      ]),
+    ...groupPattern(() => [
+      exactGroup(DRAGON_KEYS),
+      pungGroup(isBamboo),
+      pungGroup(isCharacters),
+      pungGroup(isCircles),
+      pairGroup(isSuitedKey),
+    ]),
   },
   {
     id: "three-sisters",
@@ -2134,14 +2190,13 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The synopsis prints 1000/400; exposed half is assumed from the Windy " +
       "Ones pattern.",
-    match: ({ shape }) =>
-      matchesGroups(shape, [
-        exactGroup(WIND_KEYS),
-        singleGroup(isWind),
-        pungGroup((key) => key === "b3"),
-        pungGroup((key) => key === "c3"),
-        pungGroup((key) => key === "o3"),
-      ]),
+    ...groupPattern(() => [
+      exactGroup(WIND_KEYS),
+      singleGroup(isWind),
+      pungGroup((key) => key === "b3"),
+      pungGroup((key) => key === "c3"),
+      pungGroup((key) => key === "o3"),
+    ]),
   },
   {
     id: "seven-brothers",
@@ -2158,14 +2213,13 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The synopsis prints 1000/400; exposed half is assumed from the Windy " +
       "Ones pattern.",
-    match: ({ shape }) =>
-      matchesGroups(shape, [
-        exactGroup(WIND_KEYS),
-        singleGroup(isWind),
-        pungGroup((key) => key === "b7"),
-        pungGroup((key) => key === "c7"),
-        pungGroup((key) => key === "o7"),
-      ]),
+    ...groupPattern(() => [
+      exactGroup(WIND_KEYS),
+      singleGroup(isWind),
+      pungGroup((key) => key === "b7"),
+      pungGroup((key) => key === "c7"),
+      pungGroup((key) => key === "o7"),
+    ]),
   },
   {
     id: "up-you-go",
@@ -2443,6 +2497,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     description:
       "Four pungs and a pair in any of the three suits; winds, dragons or both may be included; every tile including the last from the wall.",
     source: "Illustrated special-hand list, p. 30.",
+    groups: groupReadings(() => [[...repeat(pungOnlyGroup(everyTile), 4), pairGroup(everyTile)]]),
     match: ({ hand, shape }) =>
       hand.selfDrawn &&
       shape.kongCount === 0 &&

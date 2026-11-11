@@ -1,24 +1,31 @@
 /**
  * The "closest hands" helper: which catalogue hands one seat is nearest to.
  *
- * It reads the same plan the bots use (bot/plan.ts): every special hand from
- * the generated target table, and every ordinary or pair hand assembled
- * around the seat's own tiles and priced by the real scorer. For each
- * catalogue pattern it keeps the closest version - fewest tiles still
- * missing, then the best chance of collecting them times what the hand pays -
- * and drops versions the seat can no longer finish because the copies it
- * needs are already in sight (discarded or exposed).
+ * Two sources, one answer per catalogue pattern: its closest version - fewest
+ * tiles still missing, then the best chance of collecting them times what the
+ * hand pays - leaving out versions the seat can no longer finish because the
+ * copies it needs are already in sight (discarded or exposed).
+ *
+ *   - A hand declared as groups (`HandPattern.groups`: most chow, dragon and
+ *     one-suit hands) is searched exactly: reach.ts finds the partition of
+ *     the seat's tiles nearest to it, however many versions the hand has.
+ *     A sample of its versions would overstate the distance whenever the
+ *     seat's own version is not in the sample.
+ *   - The other hands come from the plan the bots use (bot/plan.ts): the
+ *     generated table of special hands, and every ordinary or pair hand
+ *     assembled around the seat's own tiles and priced by the real scorer.
  *
  * Only the seat's own `GameView` goes in, so nothing here can reveal another
  * player's concealed tiles. Pure and deterministic.
  */
 
 import { BOOK_TITLE, samplesFor, type SampleTile } from "../patterns/samples.ts";
+import { nearest, reachCache, type ReachCache } from "../patterns/reach.ts";
 import { PATTERNS } from "../patterns/table.ts";
 import { EDITORIAL_ROWS, EXAMPLES, SYNOPSIS } from "../patterns/reference.ts";
 import { TIER_POINTS, type HandPattern, type PageRefs, type Tier } from "../patterns/types.ts";
 import { situationFor } from "./bot.ts";
-import { completion, KEYS, oddsFor, planGoals } from "./bot/plan.ts";
+import { completion, KEYS, MAX_MISSING, oddsFor, planGoals, type Goal, type Situation } from "./bot/plan.ts";
 import type { GameView } from "./view.ts";
 
 const PATTERN_BY_ID = new Map(PATTERNS.map((pattern) => [pattern.id, pattern]));
@@ -48,14 +55,80 @@ export interface ClosestHand {
 /** Hands shown by default: enough to compare, few enough for a phone. */
 export const CLOSEST_SHOWN = 3;
 
+/** Versions of one hand kept when several are equally near: the likeliest is shown. */
+const VERSIONS_KEPT = 64;
+
+/**
+ * The nearest version of a group-declared hand to the seat's tiles, within
+ * `budget` missing tiles, or null.
+ */
+function exactVersion(
+  pattern: HandPattern,
+  tier: Tier,
+  situation: Situation,
+  odds: ReturnType<typeof oddsFor>,
+  budget: number,
+  cache: ReachCache,
+): { hand: ClosestHand; rank: number } | null {
+  const reach = nearest({
+    alternatives: pattern.groups!(`w${situation.seatWind}`),
+    held: situation.hand,
+    spare: situation.unseen,
+    melds: situation.melds.map((meld) => meld.tiles),
+    budget,
+    keep: VERSIONS_KEPT,
+    cache,
+  });
+  if (reach === null) return null;
+  const value = TIER_POINTS[tier] ?? 0;
+  let chosen: { goal: Goal; chance: number } | null = null;
+  for (const wants of reach.wants) {
+    const keys: number[] = [];
+    wants.forEach((count, index) => {
+      if (count > 0) keys.push(index);
+    });
+    const goal: Goal = { need: wants, keys, value, selfDrawnOnly: pattern.requiresSelfDrawn, pattern: pattern.id };
+    const chance = completion(goal, situation.hand, odds);
+    if (chosen === null || chance > chosen.chance) chosen = { goal, chance };
+  }
+  const { goal, chance } = chosen!;
+  const need: string[] = [];
+  for (const key of goal.keys) {
+    for (let copy = goal.need[key]! - situation.hand[key]!; copy > 0; copy--) need.push(KEYS[key]!);
+  }
+  return {
+    rank: chance * value,
+    hand: {
+      pattern: pattern.id,
+      name: pattern.name,
+      tier,
+      points: TIER_POINTS[tier],
+      pages: pattern.pages,
+      concealedOnly: pattern.exposedTier === null,
+      away: reach.missing,
+      need,
+      chance: Math.round(chance * 1000) / 1000,
+    },
+  };
+}
+
 export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand[] {
   // The player's own planner, without any bot's taste for special hands.
   const situation = { ...situationFor(view, view.seat), ambition: 1 };
   const odds = oddsFor(situation);
   const concealed = situation.melds.every((meld) => !meld.exposed);
 
+  // Hands with a fixed value that are declared as groups: searched exactly below.
+  const exact: { pattern: HandPattern; tier: Tier }[] = [];
+  for (const pattern of PATTERNS) {
+    const tier = concealed ? pattern.tier : pattern.exposedTier;
+    if (pattern.groups !== undefined && tier !== null && tier !== "calculate") exact.push({ pattern, tier });
+  }
+  const exactIds = new Set(exact.map((entry) => entry.pattern.id));
+
   const best = new Map<string, { hand: ClosestHand; rank: number }>();
   for (const goal of planGoals(situation)) {
+    if (exactIds.has(goal.pattern)) continue;
     const pattern = PATTERN_BY_ID.get(goal.pattern);
     if (pattern === undefined) continue;
     const tier = concealed ? pattern.tier : pattern.exposedTier;
@@ -93,6 +166,22 @@ export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand
         need,
         chance: Math.round(chance * 1000) / 1000,
       },
+    });
+  }
+
+  // Nearest first, widening the search a tile at a time, and stopping once
+  // enough hands are within reach: a hand not found by then is further than
+  // all of them and cannot be among those shown.
+  let pending = exact;
+  const cache = reachCache();
+  const within = (tiles: number): number =>
+    [...best.values()].filter((entry) => entry.hand.away <= tiles).length;
+  for (let budget = 0; budget <= MAX_MISSING && pending.length > 0 && within(budget - 1) < limit; budget++) {
+    pending = pending.filter(({ pattern, tier }) => {
+      const found = exactVersion(pattern, tier, situation, odds, budget, cache);
+      if (found === null) return true;
+      best.set(pattern.id, found);
+      return false;
     });
   }
 

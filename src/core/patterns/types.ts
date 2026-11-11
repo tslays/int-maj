@@ -5,6 +5,7 @@
 
 import type { Hand } from "../hand.ts";
 import type { HandShape } from "../shape.ts";
+import type { Group } from "./predicates.ts";
 
 export type Tier = "half" | "limit" | "middle" | "double" | "calculate";
 
@@ -105,4 +106,12 @@ export interface HandPattern {
   /** Transcription uncertainty or assumption; also recorded in rules/archive/NOTES.md. */
   readonly notes?: string;
   readonly match: PatternPredicate;
+  /**
+   * The hand as a partition into groups, for the patterns that are one: the
+   * alternative readings for a hand whose own wind is the argument (`"wE"`
+   * ...). `match` is derived from it, so a pattern states its structure once;
+   * `closestHands` reads it to say how near a player's tiles are, exactly.
+   * Absent for hands no group list describes.
+   */
+  readonly groups?: (ownWind: string) => readonly (readonly Group[])[];
 }
