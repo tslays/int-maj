@@ -221,9 +221,24 @@ hands won, calls and fishing per hand and the time per decision. On
 wins special hands, 1.1 calls and 1.2 fishing declarations per hand, about
 9 ms per decision.
 
-The same plan powers the player's "closest hands" helper
-(`src/core/game/closest.ts`): `closestHands(view)` names the catalogue hands a
-seat's own tiles are nearest to - for each pattern its closest version,
-fewest tiles missing first, then the best chance times the value - with the
-missing tiles, and drops a version whose missing copies are all in sight. It
-reads only that seat's `GameView`.
+The player's "closest hands" helper (`src/core/game/closest.ts`):
+`closestHands(view)` names the catalogue hands a seat's own tiles are nearest
+to - for each pattern its closest version, fewest tiles missing first, then
+the best chance times the value - with the missing tiles, and drops a version
+whose missing copies are all in sight. It reads only that seat's `GameView`.
+
+The distance it shows must be exact, so it does not come from the bots' sample
+of hands. A hand declared as groups (`HandPattern.groups`: a partition into
+"a mixed chow", "a pung of a dragon", "a pair of the own wind", ...; `match`
+is derived from the same declaration for the hands that are only that, and
+`predicates.ts` has `groupPattern` and `standardPattern` for the two forms) is
+searched exactly by `src/core/patterns/reach.ts`: the partition nearest to the
+seat's tiles, pruned only by a tile budget, with declared melds as fixed
+groups and only tiles that can still arrive. The other hands (a handful of
+rigid ones, the wriggly and knitting families) use the bots' plan as before.
+Sampling was the bug behind a player's report that Crazy Chows said "4 to go"
+with one tile missing: the sample (`scripts/bot-targets.ts` stops at 160 hands
+per pattern) held far fewer than the hand's versions, so the seat's own was
+usually not in it. `test/core/reach.test.ts` therefore compares the search with
+brute force through every declared pattern's own matcher, and fails any
+pattern whose sample reached the cap without declaring groups.
