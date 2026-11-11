@@ -150,7 +150,7 @@ function missing(need: Counts, keys: readonly number[], hand: Counts): number {
 }
 
 /** Hands further than this from completion are not worth tracking. */
-const MAX_MISSING = 6;
+export const MAX_MISSING = 6;
 
 function goalFrom(
   counts: Counts,

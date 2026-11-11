@@ -30,7 +30,12 @@ import { normalizeHand } from "../src/core/shape.ts";
 import { PATTERNS } from "../src/core/patterns/table.ts";
 import { PLAY_TILE_KEYS } from "../src/core/tiles.ts";
 
-/** Most hands kept per pattern; rigid patterns have far fewer. */
+/**
+ * Most hands kept per pattern; rigid patterns have far fewer. A flexible hand
+ * (Crazy Chows has thousands of versions) is cut off here, so this list is a
+ * sample the bots plan from, never a measure: a hand that reaches the cap must
+ * declare `groups` (test/core/reach.test.ts), which is what the hints search.
+ */
 const CAP = 160;
 
 const catalogue = readFileSync(new URL("../test/core/catalogue.test.ts", import.meta.url), "utf8");

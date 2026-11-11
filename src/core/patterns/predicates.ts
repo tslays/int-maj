@@ -13,6 +13,7 @@ import {
   type StandardSet,
 } from "../decompose.ts";
 import {
+  PLAY_TILE_KEYS,
   SUITS,
   isHonourKey,
   parseTile,
@@ -26,6 +27,7 @@ import {
   usedSuits,
   type HandShape,
 } from "../shape.ts";
+import type { HandPattern } from "./types.ts";
 
 export type SetFilter = (set: StandardSet) => boolean;
 export type KeyPredicate = (key: string) => boolean;
@@ -470,6 +472,94 @@ export const CORRESPONDING_DRAGON: Readonly<Record<Suit, Dragon>> = Object.freez
 
 export function ownWindKey(shape: HandShape): string {
   return `w${shape.hand.seatWind}`;
+}
+
+// ---------------------------------------------------------------------------
+// Hands declared as groups. The same declaration answers two questions: is a
+// finished hand this pattern (`match`), and how near are some tiles to it
+// (`groups`, read by reach.ts). A pattern states its groups once.
+
+/** One reading of a hand as groups, or several alternative readings. */
+export type GroupLayout = readonly Group[] | readonly (readonly Group[])[];
+
+/** A layout built for the hand's own wind (`"wE"` ...); most layouts ignore it. */
+export type GroupLayoutFor = (ownWind: string) => GroupLayout;
+
+function alternativesOf(layout: GroupLayout): readonly (readonly Group[])[] {
+  return layout.length > 0 && Array.isArray(layout[0])
+    ? (layout as readonly (readonly Group[])[])
+    : [layout as readonly Group[]];
+}
+
+/** A layout built once per own wind: groups are stateless, so they are shared. */
+function memoised<T>(build: (ownWind: string) => T): (ownWind: string) => T {
+  const built = new Map<string, T>();
+  return (ownWind) => {
+    let value = built.get(ownWind);
+    if (value === undefined) {
+      value = build(ownWind);
+      built.set(ownWind, value);
+    }
+    return value;
+  };
+}
+
+/** The readings of a layout, built once per own wind (what `HandPattern.groups` holds). */
+export function groupReadings(layout: GroupLayoutFor): NonNullable<HandPattern["groups"]> {
+  return memoised((ownWind) => alternativesOf(layout(ownWind)));
+}
+
+/** A pattern that is a partition of the hand into these groups (or any one of several readings). */
+export function groupPattern(layout: GroupLayoutFor): Pick<HandPattern, "groups" | "match"> {
+  const groups = groupReadings(layout);
+  return {
+    groups,
+    match: ({ shape }) => groups(ownWindKey(shape)).some((reading) => matchesGroups(shape, reading)),
+  };
+}
+
+const ALL_SETS: readonly StandardSet[] = [
+  ...PLAY_TILE_KEYS.map((key): StandardSet => ({ kind: "pung", tile: key })),
+  ...SUITS.flatMap((suit) =>
+    Array.from({ length: 7 }, (_, index): StandardSet => ({ kind: "chow", suit, start: index + 1 })),
+  ),
+];
+
+function setKeys(set: StandardSet): string[] {
+  if (set.kind === "chow") return [0, 1, 2].map((offset) => suitTileKey(set.suit, set.start + offset));
+  return [set.tile, set.tile, set.tile];
+}
+
+/** The pair and four set filters of a standard hand, as groups: the sets each filter accepts. */
+export function standardGroups(pair: KeyPredicate, sets: readonly SetFilter[]): Group[] {
+  return [
+    pairGroup(pair),
+    ...sets.map((filter): Group => {
+      const options = ALL_SETS.filter((set) => filter(set)).map(setKeys);
+      return { options: () => options };
+    }),
+  ];
+}
+
+/** What `matchesStandard` takes: the pair's test and the four sets' filters. */
+export interface StandardLayout {
+  readonly pair: KeyPredicate;
+  readonly sets: readonly SetFilter[];
+}
+
+/** A pattern that is four sets and a pair matching these filters (or any one of several such readings). */
+export function standardPattern(
+  layout: (ownWind: string) => StandardLayout | readonly StandardLayout[],
+): Pick<HandPattern, "groups" | "match"> {
+  const readings = memoised((ownWind): readonly StandardLayout[] => {
+    const built = layout(ownWind);
+    return Array.isArray(built) ? (built as readonly StandardLayout[]) : [built as StandardLayout];
+  });
+  return {
+    groups: memoised((ownWind) => readings(ownWind).map(({ pair, sets }) => standardGroups(pair, sets))),
+    match: ({ shape }) =>
+      readings(ownWindKey(shape)).some(({ pair, sets }) => matchesStandard(shape, pair, sets)),
+  };
 }
 
 export function isOneSuit(shape: HandShape): boolean {
