@@ -219,8 +219,7 @@ it, and misjudges discards by up to 80 %. The misjudgement is a hash of the
 view and the tile, never a random source, so a level stays deterministic. In
 120 bot-only hands (two seats at a level against two at Hard, same deals,
 2026-11-12) the two seats netted +12,400 at Hard, -10,900 at Medium and
--39,800 at Easy. The bot
-never sees another seat's hand. `node scripts/bot-targets.ts` regenerates the
+-39,800 at Easy. The bot never sees another seat's hand. `node scripts/bot-targets.ts` regenerates the
 target table from the catalogue fixtures; every target is re-checked against
 its pattern in `test/core/bot-targets.test.ts`.
 

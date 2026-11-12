@@ -7,6 +7,8 @@
  * unit does not matter), so a new animation only has to call it.
  */
 
+import { browserStorage, storedString } from "./prefs.js";
+
 export const PACE_KEY = "int-maj.pace";
 
 /** `factor` multiplies every duration: under 1 is quicker, over 1 is slower. */
@@ -16,23 +18,10 @@ export const PACES = [
   { id: "faster", label: "Faster", factor: 0.6 },
 ];
 
-function browserStorage() {
-  try {
-    return globalThis.localStorage ?? null;
-  } catch {
-    return null;
-  }
-}
-
 export function createPace({ storage = browserStorage } = {}) {
-  const store = () => (typeof storage === "function" ? storage() : storage);
+  const stored = storedString(PACE_KEY, storage);
   const find = (id) => PACES.find((entry) => entry.id === id);
-  let current = PACES[1];
-  try {
-    current = find(store()?.getItem(PACE_KEY)) ?? current;
-  } catch {
-    // Unreadable: Normal.
-  }
+  let current = find(stored.read()) ?? PACES[1];
 
   return {
     get id() {
@@ -46,11 +35,7 @@ export function createPace({ storage = browserStorage } = {}) {
       const next = find(id);
       if (next === undefined) return false;
       current = next;
-      try {
-        store()?.setItem(PACE_KEY, next.id);
-      } catch {
-        // Storage refused: the choice lasts until the page is closed.
-      }
+      stored.write(next.id);
       return true;
     },
     scale(value) {

@@ -7,36 +7,21 @@
  * and a player who wants to get straight to the tiles turns it off.
  */
 
-export const OPENING_KEY = "int-maj.opening";
+import { browserStorage, storedString } from "./prefs.js";
 
-function browserStorage() {
-  try {
-    return globalThis.localStorage ?? null;
-  } catch {
-    return null;
-  }
-}
+export const OPENING_KEY = "int-maj.opening";
 
 /** On unless the player turned it off; remembered under `OPENING_KEY`. */
 export function createOpeningPref({ storage = browserStorage } = {}) {
-  const store = () => (typeof storage === "function" ? storage() : storage);
-  let on = true;
-  try {
-    on = store()?.getItem(OPENING_KEY) !== "off";
-  } catch {
-    // Unreadable: on.
-  }
+  const stored = storedString(OPENING_KEY, storage);
+  let on = stored.read() !== "off";
   return {
     get enabled() {
       return on;
     },
     set(value) {
       on = Boolean(value);
-      try {
-        store()?.setItem(OPENING_KEY, on ? "on" : "off");
-      } catch {
-        // Storage refused: the choice lasts until the page is closed.
-      }
+      stored.write(on ? "on" : "off");
     },
   };
 }
