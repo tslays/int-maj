@@ -716,6 +716,28 @@ export class GameStore {
   }
 
   /**
+   * Play the current hand again from its deal: the same wall and the same
+   * tiles, the decisions of this attempt dropped, the scores from before the
+   * hand kept. It works in a finished hand too (that is its use), and in the
+   * last hand of a game. The abandoned attempt leaves no trace in the step
+   * log, so a report or a save replays only the attempt now being played.
+   */
+  retry(id: string): SessionUpdate | { readonly error: string } {
+    const session = this.sessions.get(id);
+    if (session === undefined) return { error: `unknown game: ${id}` };
+    const { handStart } = session;
+    const next: WebSession = {
+      ...session,
+      state: handStart.state,
+      steps: session.steps.slice(0, handStart.step),
+      humanSteps: session.humanSteps.filter((index) => index < handStart.step),
+      events: session.events.slice(0, handStart.eventIndex),
+    };
+    this.sessions.set(id, next);
+    return { session: next, events: [] };
+  }
+
+  /**
    * Deal the next hand. `rules` are the house rules the player has set now:
    * when they differ from the finished hand's, the new hand is dealt under
    * them and the step records the change, so a replay deals it the same way.

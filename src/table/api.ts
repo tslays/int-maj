@@ -18,6 +18,7 @@
  *   POST /api/move            apply `{ game, action }`, return events as text
  *   POST /api/step            the next single bot decision, or `{ done }`
  *   POST /api/undo            replay to before the previous human decision
+ *   POST /api/retry           play the current hand again from its deal
  *   POST /api/next            deal the next hand after a finished one, under
  *                             `{ houseRules }` when they are given
  *
@@ -238,6 +239,20 @@ function routePost(context: ApiContext, request: ApiRequest): ApiResponse | null
       events: [
         ...update.session.events.flatMap((event) => describeEventFor(event, update.session.seat).split("\n")),
         "Undid the previous decision.",
+      ],
+      replaceLog: true,
+    });
+  }
+
+  if (request.path === "/api/retry") {
+    const game = requireString(body, "game");
+    const update = store.retry(game);
+    if ("error" in update) return fail(400, update.error);
+    return ok({
+      ...statePayload(update.session),
+      events: [
+        ...update.session.events.flatMap((event) => describeEventFor(event, update.session.seat).split("\n")),
+        "Playing this hand again.",
       ],
       replaceLog: true,
     });

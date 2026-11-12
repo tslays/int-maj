@@ -216,9 +216,42 @@ function renderOutcome(outcome) {
     void run();
   });
   side.append(next);
+  side.append(againLink(panel));
   card.append(main, side);
   panel.replaceChildren(card);
   panel.hidden = false;
+}
+
+/**
+ * A quiet text link under the main button: play this hand again from its
+ * deal, to try other hands or another line of play. The same wall and tiles,
+ * the scores from before the hand kept; the result just shown is dropped.
+ */
+function againLink(panel) {
+  const link = document.createElement("button");
+  link.type = "button";
+  link.className = "result-again";
+  link.textContent = "Play this hand again";
+  link.title = "Same deal, same tiles. Your scores from before this hand are kept.";
+  link.addEventListener("click", async () => {
+    panel.hidden = true;
+    panel.replaceChildren();
+    state.busy = true;
+    try {
+      // The board rebuilds from the deal; the result card may show again at the end.
+      board.handId = null;
+      panel.dataset.hand = "";
+      standingsOpen(null);
+      hideChoices();
+      await apply(await request("/api/retry", { game: state.payload.game }), { animated: false });
+    } catch (error) {
+      toast(error.message);
+    } finally {
+      state.busy = false;
+    }
+    void run();
+  });
+  return link;
 }
 
 /**

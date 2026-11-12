@@ -104,7 +104,9 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   `result`, `menu`) get its functions from `main.js` through an `installX`
   call, so imports never run in a circle.
 - `app/src/standings.js` ranks the seats by total score for the final standings
-  shown after the last hand's result card (its button reads "Final standings",
+  shown after the last hand's result card; the result card also has a quiet
+  "Play this hand again" link (`POST /api/retry`: same deal, scores from before
+  the hand kept) (its button reads "Final standings",
   the standings carry "New game"). Seats with equal totals share a rank and a
   tie for first names every tied seat a winner: the book says only that the
   highest score wins the game (Illustrated p. 16) and gives no tie-break. The
@@ -256,6 +258,7 @@ tiles of the other seats, and their hand counts only.
 | `POST /api/move` | `{ "game": "...", "action": {...} }` | the new state plus `events` as text lines |
 | `POST /api/step` | `{ "game": "..." }` | the next single bot decision, or `{ "done": true }` |
 | `POST /api/undo` | `{ "game": "..." }` | the state before your previous decision in this hand |
+| `POST /api/retry` | `{ "game": "..." }` | the current hand dealt again: same wall and tiles, scores from before it kept |
 | `POST /api/next` | `{ "game": "..." }` | the next hand after a finished one |
 
 An illegal move answers 400 with the reducer's own wording and changes
