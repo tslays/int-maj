@@ -1,5 +1,5 @@
 /**
- * The Options sheet: sound, the pace, the bot level, dice and dealing, the house rules, and the doors to Help and
+ * The Options sheet: sound, large discards (phones only), the pace, the bot level, dice and dealing, the house rules, and the doors to Help and
  * Report a problem.
  *
  * A house rule is a preference kept on the device. The table fixes a hand's
@@ -7,11 +7,14 @@
  * next hand, and a change made mid-hand shows as pending until then.
  */
 
+import { largeDiscards } from "./large-discards.js";
+import { roundLayersWanted } from "./layout.js";
 import { level } from "./level.js";
 import { openingPref } from "./opening.js";
 import { pace } from "./pace.js";
 import { sound } from "./sound.js";
 import { $, request, state, storage } from "./shared.js";
+import { viewport } from "./stage.js";
 
 const RULES_KEY = "int-maj:house-rules";
 const HAND_SETS = ["all", "companion", "companion-pictured"];
@@ -64,6 +67,16 @@ function showSound() {
   button.firstElementChild.textContent = on ? "On" : "Off";
 }
 
+/* Large discards: only a phone shows them, so only a phone offers the switch. */
+function showLargeDiscards() {
+  $("#large-discards-row").hidden = !roundLayersWanted(viewport.width, viewport.height);
+  const on = largeDiscards.on;
+  const button = $("#large-discards");
+  button.classList.toggle("on", on);
+  button.setAttribute("aria-pressed", String(on));
+  button.firstElementChild.textContent = on ? "On" : "Off";
+}
+
 function showPace() {
   for (const button of document.querySelectorAll("#pace [data-pace]")) {
     button.setAttribute("aria-checked", String(button.dataset.pace === pace.id));
@@ -99,6 +112,7 @@ function closeOptions() {
 
 export function installOptions() {
   showSound();
+  showLargeDiscards();
   showPace();
   showLevel();
   showOpening();
@@ -106,6 +120,7 @@ export function installOptions() {
 
   $("#options").addEventListener("click", () => {
     showSound();
+    showLargeDiscards();
     showRules();
     void nameHands();
     $("#options-sheet").hidden = false;
@@ -125,6 +140,12 @@ export function installOptions() {
     sound.setMuted(!sound.muted);
     showSound();
     sound.cue("press"); // heard only when sound has just been turned on
+  });
+
+  /* Large discards: on by default; the table follows at once, mid-round too. */
+  $("#large-discards").addEventListener("click", () => {
+    largeDiscards.set(!largeDiscards.on);
+    showLargeDiscards();
   });
 
   /* Dice and dealing: takes effect with the next deal. */

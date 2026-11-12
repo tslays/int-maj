@@ -218,6 +218,33 @@ export function makeTile(key, { shadows = true } = {}) {
   return tile;
 }
 
+/* The round layer (board-round.js): a tile's face printed on a flat ivory
+   card with a thin edge, in the tile's own frame and laid out like its face
+   (at z = D / 2), so it can lie on top of the tile and scale about its centre. */
+const layerCardGeometry = new THREE.ShapeGeometry(roundedRect(W, H, RADIUS), 6);
+const layerEdgeGeometry = new THREE.ShapeGeometry(roundedRect(W + 0.08, H + 0.08, RADIUS + 0.04), 6);
+const layerCard = new THREE.MeshStandardMaterial({ color: 0xf6f4ee, roughness: 0.5 });
+export const layerEdge = {
+  plain: new THREE.MeshBasicMaterial({ color: 0x14302c, transparent: true, opacity: 0.55, depthWrite: false }),
+  latest: new THREE.MeshBasicMaterial({ color: 0x62f2ea, transparent: true, opacity: 0.9, depthWrite: false }),
+};
+
+/** A flat face layer for the tile `key`: { group, edge } (the edge's material marks the latest). */
+export function makeFaceLayer(key) {
+  const group = new THREE.Group();
+  const edge = new THREE.Mesh(layerEdgeGeometry, layerEdge.plain);
+  const card = new THREE.Mesh(layerCardGeometry, layerCard);
+  const face = new THREE.Mesh(faceGeometry, faceMaterial(key));
+  edge.position.z = D / 2 - 0.006;
+  card.position.z = D / 2 - 0.003;
+  // The face plane already sits at D / 2 + 0.004 in its geometry.
+  edge.renderOrder = 2;
+  card.renderOrder = face.renderOrder = 3;
+  group.add(edge, card, face);
+  group.name = "layer";
+  return { group, edge };
+}
+
 /** Small irregularity so tiles on the felt look placed by a hand. */
 export function jitter(seed, amount) {
   const value = Math.sin(seed * 12.9898) * 43758.5453;
