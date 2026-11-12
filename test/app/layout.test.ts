@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 // @ts-expect-error - a plain browser module without type declarations
-import { breakFor, DRAWN_SLIDE, handTileStart, wallLook, wallPlan, discardRect, discardSlot, frameRect, handRects, latestPlate, pondExtent, pondPad, meldLayout, meldRects, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
+import { breakFor, DRAWN_SLIDE, handTileStart, wallLook, wallPlan, discardRect, discardSlot, frameRect, handRects, latestPlate, pondExtent, pondPad, meldLayout, ROUND_LAYER, roundLayersWanted, roundLayerZ, meldRects, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
 
 interface Rect {
   readonly minX: number;
@@ -375,5 +375,25 @@ describe("pond extent (the zoomed view's square)", () => {
     assert.equal(pondExtent([18, 18, 18, 18]), rows);
     assert.ok(pondExtent([18, 19, 18, 18]) > rows);
     assert.ok(pondExtent([18, 26, 18, 18]) >= pondExtent([18, 19, 18, 18]));
+  });
+});
+
+describe("round layers (phones)", () => {
+  it("are on for every iPhone held sideways and off from the smallest iPad up", () => {
+    for (const [width, height] of [[667, 375], [844, 390], [932, 430], [956, 440], [390, 844]]) assert.ok(roundLayersWanted(width, height), `${width}x${height}`);
+    for (const [width, height] of [[1133, 744], [1180, 820], [1366, 1024], [1280, 800], [1920, 1080]]) assert.ok(!roundLayersWanted(width, height), `${width}x${height}`);
+  });
+
+  it("lie above their tile's face at every size of the expansion, a later one above an earlier one", () => {
+    const D = 0.78;
+    for (const scale of [1, 1.5, ROUND_LAYER.SCALE]) {
+      for (let order = 0; order < 4; order++) {
+        // The card's face sits at D / 2 in the layer's own frame, scaled with it.
+        const face = roundLayerZ(scale, order) + (scale * D) / 2;
+        assert.ok(face > D / 2 + 0.05, `scale ${scale} order ${order}`);
+        if (order > 0) assert.ok(face > roundLayerZ(scale, order - 1) + (scale * D) / 2);
+      }
+    }
+    assert.ok(ROUND_LAYER.SCALE > 1);
   });
 });
