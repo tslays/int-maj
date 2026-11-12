@@ -18,7 +18,7 @@ export const wallMethods = {
    * tiles are the loose tiles, which lie on the dead wall's end column, the one
    * touching the break (two more meshes, `markers`). Nothing on the wall ever moves.
    */
-  buildWall(key, dealer = "E") {
+  buildWall(key, dealer = "E", { closed = false } = {}) {
     const tiles = new Map();
     const at = (entry) => tiles.get(`${entry.rel}:${entry.slot}:${entry.level}`);
     for (let rel = 0; rel < 4; rel++) {
@@ -30,7 +30,7 @@ export const wallMethods = {
         }
       }
     }
-    const { wallSeat, count } = breakFor(key);
+    const { wallSeat, count, dice: breakDice } = breakFor(key);
     const builder = SEATS[(SEATS.indexOf(dealer) + wallSeat) % 4];
     const plan = wallPlan(this.rel(builder), count);
     const markers = { far: null, near: null };
@@ -39,9 +39,15 @@ export const wallMethods = {
       markers[which].visible = false;
       this.frames[plan.rel].add(markers[which]);
     }
-    for (const level of [0, 1]) at({ ...plan.lifted, level }).visible = false; // the break stack is lifted off
+    // The break stack is lifted off: at once, or (a `closed` wall, for the
+    // opening) left standing until `breakWall` lifts it.
+    const lifted = [0, 1].map((level) => at({ ...plan.lifted, level }));
+    if (!closed) for (const tile of lifted) tile.visible = false;
     this.wall = {
       plan,
+      builder,
+      dice: breakDice,
+      lifted: closed ? lifted : [],
       tiles: plan.tiles.map(at),
       markers,
       goneHead: 0,
@@ -50,6 +56,25 @@ export const wallMethods = {
       used: 0,
       extent: [WALL_STACKS, WALL_STACKS, WALL_STACKS, WALL_STACKS],
     };
+  },
+
+  /**
+   * Lift the break stack off a `closed` wall (I p. 19, rule 6), the two tiles
+   * the loose tiles. `animated` false just takes it away. Resolves when it is
+   * done; a wall already broken does nothing.
+   */
+  breakWall(animated) {
+    const lifted = this.wall.lifted;
+    this.wall.lifted = [];
+    return lifted.map((tile) => {
+      const restY = tile.position.y;
+      const done = () => {
+        tile.visible = false;
+        tile.position.y = restY;
+      };
+      if (!animated) return Promise.resolve(done());
+      return tween(tile.position, { y: restY + 1.2 }, 220, easeOutCubic).then(done);
+    });
   },
 
   /**

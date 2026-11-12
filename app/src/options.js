@@ -1,5 +1,5 @@
 /**
- * The Options sheet: sound, the pace, the house rules, and the doors to Help and
+ * The Options sheet: sound, the pace, dice and dealing, the house rules, and the doors to Help and
  * Report a problem.
  *
  * A house rule is a preference kept on the device. The table fixes a hand's
@@ -7,6 +7,7 @@
  * next hand, and a change made mid-hand shows as pending until then.
  */
 
+import { openingPref } from "./opening.js";
 import { pace } from "./pace.js";
 import { sound } from "./sound.js";
 import { $, request, state, storage } from "./shared.js";
@@ -68,6 +69,12 @@ function showPace() {
   }
 }
 
+function showOpening() {
+  for (const button of document.querySelectorAll("#opening-pref [data-opening]")) {
+    button.setAttribute("aria-checked", String((button.dataset.opening === "on") === openingPref.enabled));
+  }
+}
+
 /* The left-out hands are named by the table, never by a list kept here. */
 async function nameHands() {
   try {
@@ -86,6 +93,7 @@ function closeOptions() {
 export function installOptions() {
   showSound();
   showPace();
+  showOpening();
   showRules();
 
   $("#options").addEventListener("click", () => {
@@ -109,6 +117,14 @@ export function installOptions() {
     sound.setMuted(!sound.muted);
     showSound();
     sound.cue("press"); // heard only when sound has just been turned on
+  });
+
+  /* Dice and dealing: takes effect with the next deal. */
+  $("#opening-pref").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-opening]");
+    if (button === null) return;
+    openingPref.set(button.dataset.opening === "on");
+    showOpening();
   });
 
   /* Pace: takes effect at once, the next move already runs at it. */

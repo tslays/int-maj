@@ -257,6 +257,19 @@ report records the first dealer, and `dealtByDice` so a replay from the seed
 throws the same dice; a save from before the dice has neither and was dealt
 to East.
 
+**The opening of a hand** (`app/src/ceremony.js`, `opening.js`) shows what the
+book does before play, quickly: on a new game the four seats throw two dice in
+turn and the highest total is East (a tie is thrown again; the table sends every
+throw in `seatSelection`); then East throws two dice for the wall to break
+(*Illustrated* p. 18-19, rules 5-6; `breakFor` in `layout.js`, which also gives
+the two dice), the break stack lifts, and the tiles are dealt in rounds of four.
+Every later hand repeats the last two steps. It runs about two seconds a hand,
+and a tap, Escape or Enter skips what is left; the hand it ends on is always the
+engine's. **Options, Dice and dealing: Show / Skip** turns all of it off for
+players who want to go straight to play (kept on the device); a resumed game and
+the review boards never show it. `?seed=<text>` pins the first game's seed, for
+tests and bug reports. Presentation only: the engine's draws do not depend on it.
+
 | Route | Body / query | Returns |
 | --- | --- | --- |
 | `GET /api/state` | `game=<id>` | the view, legal actions, wall count, per-seat table, ledger, wait panel, result and `scoresBefore` |

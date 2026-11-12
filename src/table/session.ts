@@ -255,6 +255,24 @@ export interface StatePayload {
   readonly scoresBefore: Readonly<Record<Seat, number>>;
   /** The house rules this hand is played under. */
   readonly houseRules: HouseRules;
+  /**
+   * The dice that picked East, for the opening of a game dealt by them: every
+   * throw (a tie is thrown again), each seat's two dice, oldest first. Public
+   * information. Null after the first hand, and for a game with no throw on
+   * record (one saved before the dice, or a review board).
+   */
+  readonly seatSelection: SeatSelectionPayload | null;
+}
+
+export interface SeatSelectionPayload {
+  readonly throws: readonly Readonly<Record<Seat, readonly [number, number]>>[];
+  readonly dealer: Seat;
+}
+
+function seatSelectionOf(state: GameState): SeatSelectionPayload | null {
+  const selection = state.seatSelection;
+  if (state.handNumber !== 1 || selection === undefined || selection.throws === undefined) return null;
+  return { throws: selection.throws, dealer: selection.dealer };
 }
 
 function startSession(id: string, seed: string | number, rules: HouseRules): WebSession {
@@ -473,6 +491,7 @@ export function statePayload(session: WebSession): StatePayload {
     outcome: outcomeFor(session, view),
     scoresBefore: session.handStart.scoresBefore,
     houseRules: houseRulesOf(session.state),
+    seatSelection: seatSelectionOf(session.state),
   };
 }
 

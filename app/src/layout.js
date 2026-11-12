@@ -245,7 +245,7 @@ export const WALL_TILE_COUNT = 4 * TABLE.WALL_STACKS * 2;
  * throw these dice, so the app throws them from the hand's own key: any two
  * dice, always the same for the same hand.
  *
- * Returns `total` (2..12), `wallSeat` (0 East, 1 South, 2 West, 3 North, the
+ * Returns `dice` (the two thrown, which the opening shows), `total` (2..12), `wallSeat` (0 East, 1 South, 2 West, 3 North, the
  * wall's builder counted from the dealer) and `count` (stacks right of the
  * break).
  */
@@ -253,8 +253,9 @@ export function breakFor(key) {
   let h = 2166136261;
   for (const ch of String(key)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
   const die = (n) => 1 + (Math.imul(h ^ (n * 40503), 2654435761) >>> 16) % 6;
-  const total = die(1) + die(2);
-  return { total, wallSeat: (total - 1) % 4, count: total };
+  const dice = [die(1), die(2)];
+  const total = dice[0] + dice[1];
+  return { dice, total, wallSeat: (total - 1) % 4, count: total };
 }
 
 /**

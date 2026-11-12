@@ -10,6 +10,8 @@
  */
 
 import { createLocalApi } from "../engine/table/local.js";
+import { playOpening } from "./ceremony.js";
+import { openingPref } from "./opening.js";
 import { clearSelection, goulashKeys, installInput, resetGoulash } from "./input.js";
 import { refreshGoulash } from "./goulash.js";
 import { refreshHints } from "./hints.js";
@@ -66,12 +68,15 @@ async function callOut(seat, word, hold = 700) {
 let previousFishing = new Set();
 
 /** Hand an answer to the board; announce calls; wait for the animation. */
-async function apply(next, { animated = true } = {}) {
+async function apply(next, { animated = true, opening = false } = {}) {
   const before = state.payload;
   state.payload = next;
+  // A hand's opening (dice, break, deal) is shown when the player wants it;
+  // its winds appear once East is known, not before.
+  const open = opening && openingPref.enabled;
   // Scores and wall update at once; the turn light waits for the move to finish.
-  refreshConsole(before?.view ?? next.view);
-  const calls = await board.reconcile(next, { animated });
+  if (!open) refreshConsole(before?.view ?? next.view);
+  const calls = open ? await playOpening(next, { onSeated: () => refreshConsole() }) : await board.reconcile(next, { animated });
   refreshConsole();
   refreshGoulash();
   const announcements = [];
@@ -292,6 +297,9 @@ function faceChipLarge(key) {
   return chip;
 }
 
+/** `?seed=` pins the first game's seed (tests and bug reports); the next new game is random again. */
+let pinnedSeed = new URLSearchParams(window.location.search).get("seed");
+
 async function newGame() {
   if (state.busy) return;
   state.busy = true;
@@ -299,8 +307,9 @@ async function newGame() {
   $("#result").dataset.hand = "";
   hideChoices();
   try {
-    const seed = `g-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
-    await apply(await request("/api/new", { seed, houseRules: houseRules() }), { animated: false });
+    const seed = pinnedSeed ?? `g-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
+    pinnedSeed = null;
+    await apply(await request("/api/new", { seed, houseRules: houseRules() }), { animated: false, opening: true });
   } catch (error) {
     toast(error.message);
   } finally {

@@ -325,7 +325,7 @@ more players tie for the highest total.
 
 **Assumption.** A tie for the highest total is thrown again, by all four
 players, until one total is highest (`rollForSeats` in `src/core/game/deal.ts`).
-Only the final throw is kept. The web table now plays this for every new game
+Owner ruling (2026-11-12): re-throwing on a tie is fine where nothing is written. Every throw is kept so the opening can show the dice, and the last one decides. The web table now plays this for every new game
 (you keep your place at the bottom; the dice decide who is East and so your
 wind), where it used to deal to you as East; the seed fixes the throw, so a
 saved game or report replays to the same East. Any other tie-break (only the

@@ -138,6 +138,12 @@ describe("seat selection", () => {
       Object.values(rolls).filter((value) => value === rolls[dealer]).length,
       1,
     );
+    // The two dice behind each total are kept, and the last throw decided it.
+    const throws = state.seatSelection.throws!;
+    for (const seat of ["E", "S", "W", "N"] as const) {
+      assert.equal(throws.at(-1)![seat][0] + throws.at(-1)![seat][1], rolls[seat]);
+      assert.ok(throws.every((one) => one[seat].every((die) => Number.isInteger(die) && die >= 1 && die <= 6)));
+    }
     const next = (seat: Seat) => (["E", "S", "W", "N"] as const)[
       (["E", "S", "W", "N"].indexOf(seat) + 1) % 4
     ]!;
@@ -699,5 +705,23 @@ describe("serialisation and views", () => {
     assert.deepEqual(view.legalActions, legalActions(state, "E"));
     const other = (["S", "W", "N"] as const).find((seat) => seat !== state.dealer)!;
     assert.deepEqual(viewFor(state, other).legalActions, []);
+  });
+});
+
+describe("seat selection throws", () => {
+  it("throws again on a tie, keeping every throw, and the same seed throws the same", () => {
+    let tied = 0;
+    for (let n = 0; n < 300; n++) {
+      const { state } = newGame(`tie-${n}`);
+      const throws = state.seatSelection!.throws!;
+      const totals = (one: (typeof throws)[number]) => (["E", "S", "W", "N"] as const).map((seat) => one[seat][0] + one[seat][1]);
+      for (const earlier of throws.slice(0, -1)) {
+        const best = Math.max(...totals(earlier));
+        assert.ok(totals(earlier).filter((total) => total === best).length > 1, "only a tie is thrown again");
+      }
+      if (throws.length > 1) tied += 1;
+      assert.deepEqual(newGame(`tie-${n}`).state.seatSelection, state.seatSelection);
+    }
+    assert.ok(tied > 0, "a tie comes up in 300 games");
   });
 });

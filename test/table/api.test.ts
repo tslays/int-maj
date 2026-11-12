@@ -424,6 +424,22 @@ describe("table API", () => {
     assert.deepEqual([...dealers].sort(), ["E", "N", "S", "W"], "every seat can be East");
   });
 
+  it("hands the browser the dice that picked East, for the first hand only", async () => {
+    const created = await post<ApiPayload>("/api/new", { seed: seedWithDealer("api-dice-payload", "N") });
+    const selection = created.body.seatSelection;
+    assert.ok(selection !== null);
+    assert.equal(selection.dealer, "N");
+    const last = selection.throws.at(-1)!;
+    const totals = (["E", "S", "W", "N"] as const).map((seat) => last[seat][0] + last[seat][1]);
+    assert.equal(totals[3], Math.max(...totals), "the last throw made North East");
+    assert.equal(totals.filter((total) => total === totals[3]).length, 1);
+    assert.ok(!JSON.stringify(selection).includes("hand"), "only dice, nothing from a hand");
+
+    const game = created.body.game;
+    const human = await stepToHuman(game);
+    assert.deepEqual(human.seatSelection, selection, "still there while the first hand is played");
+  });
+
   it("lets a bot East open the hand, then hands the table to you", async () => {
     const created = await post<ApiPayload>("/api/new", { seed: seedWithDealer("api-bot-east", "W") });
     const game = created.body.game;
