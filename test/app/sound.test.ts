@@ -111,6 +111,7 @@ async function running(extra: Record<string, unknown> = {}) {
 
 const CUES = [
   "clack",
+  "dice",
   "meld",
   "deal",
   "draw",
@@ -158,6 +159,23 @@ describe("sound voices", () => {
       return ctx.sources.length;
     };
     assert.equal(sourcesFor(4), (sourcesFor(2) / 2) * 4);
+  });
+
+  it("dice bounce for as long as they were asked to, and end on a firm knock", () => {
+    const heard = (options: Record<string, number>) => {
+      const ctx = new FakeContext();
+      createVoices(ctx, ctx.destination, () => 0.5).dice(10, options);
+      return ctx.sources.map((source) => source.starts[0]! as number);
+    };
+    const pair = heard({ span: 0.4, count: 2 });
+    const single = heard({ span: 0.4, count: 1 });
+    assert.equal(pair.length, single.length * 2, "each die knocks on its own");
+    assert.ok(Math.max(...pair) >= 10.4 && Math.max(...pair) < 10.4 + 0.1, "the last knock lands at the span");
+    assert.ok(Math.max(...heard({ span: 0.8, count: 2 })) > Math.max(...pair) + 0.3, "a longer throw lasts longer");
+    // The knocks close up: the gaps between a die's bounces shrink.
+    const times = [...new Set(single.map((time) => Math.round(time * 1000)))].sort((a, b) => a - b);
+    assert.ok(times.length >= 6);
+    assert.ok(times[1]! - times[0]! > times[times.length - 2]! - times[times.length - 3]!, "bounces speed up");
   });
 
   it("a tick is far lighter than a clack", () => {

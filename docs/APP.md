@@ -207,6 +207,7 @@ shut:
 | --- | --- | --- |
 | `draw` | a bot takes from the wall; your drawn tile slides in | soft, low brush and tap (centroid about 330 Hz) |
 | `clack` | a discard lands (yours, then each bot's, panned to its side; the opposite seat is darker and quieter) | the base beat: a weighty plastic tile on smooth felt, a low round thump (centroid about 300 Hz, top end rolled off), nearly the same each time, never sharp; the chimes and ticks are the bright sounds, so the two kinds stay apart |
+| `dice` | each throw of the opening: the seats' throw for East, East's throw for the wall (as long as the dice tumble on screen) | two small hard cubes bouncing on felt: dry, brighter than a tile (a short knock near 1 kHz, a click above it), the bounces closing up and softening, then one firmer knock as the dice land; a pair is a few hundredths apart |
 | `meld` | a call's tiles drop together; a claimed discard arrives with its own clack | 3-4 clacks a hair apart |
 | `tick` | a hand tile under the mouse, or your first tap on it (pitch follows its place in the hand); `swap` when a dragged tile trades places with one it passes | very quiet click |
 | `lift` | the moment you throw a tile | short low pluck, before the clack |
@@ -263,7 +264,7 @@ turn and the highest total is East (a tie is thrown again; the table sends every
 throw in `seatSelection`); then East throws two dice for the wall to break
 (*Illustrated* p. 18-19, rules 5-6; `breakFor` in `layout.js`, which also gives
 the two dice), the break stack lifts, and the tiles are dealt in rounds of four.
-Every later hand repeats the last two steps. It runs about two seconds a hand,
+Every later hand repeats the last two steps. It follows the Pace setting (the dice's tumbling and their sound too): about two seconds a hand at Faster, three at Normal and four at Slower (`OPENING_SPEED` in `opening.js`),
 and a tap, Escape or Enter skips what is left; the hand it ends on is always the
 engine's. **Options, Dice and dealing: Show / Skip** turns all of it off for
 players who want to go straight to play (kept on the device); a resumed game and

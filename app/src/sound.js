@@ -7,6 +7,7 @@
  *   draw       a soft, low lift of a tile from the wall (a bot's, or yours settling)
  *   clack      a weighty plastic tile landing on felt: a round, low thump (a
  *              little knock and the felt thud under it), the game's base beat
+ *   dice       two dice thrown: bouncing knocks that close up, then settle
  *   meld       the tiles of a call set down together
  *   tick       the very quiet click of a hand tile under your pointer / finger
  *   alert      the bright two-note chime when the game asks you to decide
@@ -145,6 +146,37 @@ export function createVoices(ctx, out, random = Math.random) {
     tone(bus, t, { freq: 150 * k, to: 80, sweep: 0.09, gain: 0.36 * v, decay: 0.1 });
   }
 
+  /**
+   * A small hard die striking felt: higher and drier than a tile, with a
+   * short pitched knock and almost no thud under it.
+   */
+  function dieKnock(t, { v = 1, pan = 0, far = 0 } = {}) {
+    const k = 1 + (random() - 0.5) * 0.2;
+    const bus = lane({ pan, far, top: 5200, gain: 0.8 * (0.9 + random() * 0.2) });
+    burst(bus, t, { freq: 2600 * k, q: 1.1, gain: 0.32 * v, attack: 0.0006, decay: 0.011 });
+    tone(bus, t, { freq: 980 * k, to: 520 * k, sweep: 0.03, gain: 0.45 * v, decay: 0.045 });
+    burst(bus, t, { type: "lowpass", freq: 420, q: 0.7, gain: 0.22 * v, attack: 0.001, decay: 0.04 });
+  }
+
+  /**
+   * Dice thrown and settling: each die bounces on the felt, the knocks coming
+   * closer and softer, and lands with a firmer one at `span` seconds. `count`
+   * dice are a few hundredths apart, so a pair sounds like a pair.
+   */
+  function dice(t, { span = 0.4, count = 2, intensity = 1, pan = 0, far = 0 } = {}) {
+    const hits = 6;
+    const v = clamp(intensity, 0, 1.2);
+    for (let die = 0; die < count; die++) {
+      const lag = die * 0.028;
+      const side = pan + (die - (count - 1) / 2) * 0.12;
+      for (let index = 0; index < hits; index++) {
+        const at = t + lag + span * (1 - Math.pow(1 - index / hits, 1.8)) + random() * 0.01;
+        dieKnock(at, { v: v * (0.3 + 0.5 * Math.pow(1 - index / hits, 0.7)), pan: side, far });
+      }
+      dieKnock(t + lag + span, { v: v * 0.95, pan: side, far });
+    }
+  }
+
   /** Tiles set down together: a call's tiles landing a hair apart. */
   function meld(t, { count = 3, intensity = 0.9, pan = 0, far = 0 } = {}) {
     for (let index = 0; index < count; index++) {
@@ -277,7 +309,7 @@ export function createVoices(ctx, out, random = Math.random) {
     bell(bus, t + 0.16, 659, { gain: 0.2, decay: 0.8 });
   }
 
-  return { clack, meld, deal, draw, tick, swap, lift, press, alert, alertWin, notice, fishing, win, lose, drawn };
+  return { clack, dice, meld, deal, draw, tick, swap, lift, press, alert, alertWin, notice, fishing, win, lose, drawn };
 }
 
 /* --------------------------------------------------------- the engine */

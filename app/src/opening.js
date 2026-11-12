@@ -43,6 +43,19 @@ export function createOpeningPref({ storage = browserStorage } = {}) {
 
 export const openingPref = createOpeningPref();
 
+/**
+ * How long the opening takes at each pace, as a multiple of its Faster timing
+ * (the quick version, about two seconds a hand). Normal is one step slower and
+ * Slower another. The opening's waits, the dice tumbling and the dice sound all
+ * use it, so they follow the Pace setting together.
+ */
+export const OPENING_SPEED = { faster: 1, normal: 1.4, slower: 1.9 };
+
+/** `ms` as the opening plays it at pace `paceId` (an unknown pace plays as Normal). */
+export function openingMs(ms, paceId) {
+  return ms * (OPENING_SPEED[paceId] ?? OPENING_SPEED.normal);
+}
+
 /** Tiles a seat takes in each round of the deal: two pairs (I p. 19, rule 8). */
 const ROUND = 4;
 

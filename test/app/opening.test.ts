@@ -12,7 +12,7 @@ import { createApiContext, routeApi } from "../../src/table/api.ts";
 import { seedWithDealer } from "../helpers/seeds.ts";
 
 // @ts-expect-error - a plain browser module without type declarations
-const { createOpeningPref, dealStages, OPENING_KEY, PIPS } = await import("../../app/src/opening.js");
+const { createOpeningPref, dealStages, openingMs, OPENING_KEY, OPENING_SPEED, PIPS } = await import("../../app/src/opening.js");
 
 function memory(initial: Record<string, string> = {}) {
   const data = new Map(Object.entries(initial));
@@ -97,6 +97,19 @@ describe("the deal's stages", () => {
     const before = JSON.stringify(payload);
     dealStages(payload);
     assert.equal(JSON.stringify(payload), before);
+  });
+});
+
+describe("the opening's speed", () => {
+  it("is the base timing at Faster and slows a step for Normal and again for Slower", async () => {
+    // @ts-expect-error - a plain browser module without type declarations
+    const { PACES } = await import("../../app/src/pace.js");
+    for (const { id } of PACES as { id: string }[]) assert.ok(id in OPENING_SPEED, `${id} has an opening speed`);
+    assert.equal(openingMs(300, "faster"), 300);
+    assert.ok(openingMs(300, "normal") > openingMs(300, "faster"));
+    assert.ok(openingMs(300, "slower") > openingMs(300, "normal"));
+    assert.ok(openingMs(300, "slower") < 2.5 * 300, "slower stays under two and a half times the quick version");
+    assert.equal(openingMs(300, "nonsense"), openingMs(300, "normal"), "an unknown pace plays as Normal");
   });
 });
 

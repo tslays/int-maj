@@ -5,16 +5,19 @@
  * has already decided, so it changes nothing: the hand it ends on is the
  * payload it was given, however it is cut short.
  *
- * It is meant to be quick (about two seconds a hand, a little more for the
- * first throw), and a tap, Escape or Enter skips whatever is left. Players who
+ * It is meant to be quick (about two seconds a hand at Faster, three at Normal and four at
+ * Slower, a little more for the first throw), and a tap, Escape or Enter skips whatever is left. Players who
  * never want it turn it off in Options (`openingPref`, `opening.js`).
  */
 
-import { PIPS, dealStages } from "./opening.js";
+import { PIPS, dealStages, openingMs } from "./opening.js";
 import { pace } from "./pace.js";
 import { board, WIND_NAME } from "./shared.js";
 import { sound } from "./sound.js";
 import { sleep } from "./stage.js";
+
+/** A duration as the opening plays it at the current pace (Faster is the base timing). */
+const stretch = (ms) => openingMs(ms, pace.id);
 
 const WHO = ["You", "Right", "Across", "Left"];
 const EAST_AT = ["You are East.", "East is on your right.", "East is across the table.", "East is on your left."];
@@ -37,7 +40,7 @@ function skipper(layer) {
     get skipped() {
       return skipped;
     },
-    wait: (ms) => (skipped ? Promise.resolve() : Promise.race([sleep(pace.scale(ms)), gate])),
+    wait: (ms) => (skipped ? Promise.resolve() : Promise.race([sleep(stretch(ms)), gate])),
     dispose: () => window.removeEventListener("keydown", onKey),
   };
 }
@@ -62,7 +65,9 @@ async function tumble(dice, faces, ms, run) {
     die.classList.remove("settled");
     die.classList.add("tumbling");
   }
-  const end = performance.now() + pace.scale(ms);
+  const end = performance.now() + stretch(ms);
+  // The dice are heard bouncing for as long as they tumble, and land with the picture.
+  sound.cue("dice", { span: stretch(ms) / 1000, count: dice.length });
   while (!run.skipped && performance.now() < end) {
     for (const die of dice) showFace(die, 1 + Math.floor(Math.random() * 6));
     await run.wait(65);
@@ -72,7 +77,6 @@ async function tumble(dice, faces, ms, run) {
     die.classList.remove("tumbling");
     die.classList.add("settled");
   }
-  if (!run.skipped) sound.cue("clack", { intensity: 0.7 });
 }
 
 /** One row of the card: who throws, their two dice and the total. */
