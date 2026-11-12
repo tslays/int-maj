@@ -126,8 +126,10 @@ Mah Jong, reshuffle and the Goulash exchange appear as buttons when the engine
 offers them. The table is landscape only.
 
 The panel at the top right lists the closest hands: up to three catalogue
-hands your tiles are nearest to, with how many tiles each still needs, its
-value and the missing tiles. It is asked for when your own tiles change and at
+hands your tiles are nearest to. A row and the hand's sheet give the same facts
+in the same order: the hand's name, how it is played (concealed or exposed
+icon), what it pays, then how many tiles you are from it ("3 to go",
+"Complete"). It is asked for when your own tiles change and at
 each of your decisions, and hides on the result card. The menu's Hints button
 turns it off (remembered on the device).
 
@@ -157,11 +159,12 @@ wide, one column): the name with the pin and the close cross at the right; one
 row of chips - the play chip (the same icon with "Concealed only" or "Exposed
 allowed"; tapping it opens the explanation of what it means for calling
 discards and self-drawn wins, which a player needs once), what it pays (one
-value, or concealed and exposed when they differ) and "Self-drawn only"; the
+value, or concealed and exposed when they differ), "Self-drawn only" and, last,
+how far your hand is ("3 to go" or "Complete") when you have the hand in play; the
 book's sample hand first, in its own dashed panel headed "Sample hand from the
 book" (or "Sample hands from the books"), each picture captioned with a badge
 for the book and page (and its version); the hand's composition below it; then,
-set apart by a soft gold edge, "You still need N tiles" with the tiles to
+set apart by a soft gold edge, "Tiles you still need" with the tiles to
 collect, so the book's tiles and yours are never confused. Close it with the cross, the backdrop or Escape.
 
 Above the panel, **All hands** opens the index of every catalogue hand

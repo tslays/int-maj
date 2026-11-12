@@ -141,7 +141,6 @@ function hintRow(hand, { name: label, pinned }) {
   row.type = "button";
   row.className = "closest-item";
   const away = hand === null;
-  const play = away ? null : hand.concealedOnly;
   row.title = away
     ? "More than six tiles away, or no longer possible with the tiles in sight or your exposed melds"
     : hand.concealedOnly
@@ -157,24 +156,25 @@ function hintRow(hand, { name: label, pinned }) {
   name.className = "closest-name";
   if (pinned) name.append(pinIcon());
   name.append(label);
+  // The same order as the hand's sheet: how it is played, what it pays, how far it is.
   const meta = document.createElement("span");
   meta.className = "closest-meta";
-  const progress = document.createElement("span");
+  const piece = (words, className) => {
+    const span = document.createElement("span");
+    if (className) span.className = className;
+    span.textContent = words;
+    return span;
+  };
   if (away) {
-    progress.textContent = "Out of reach";
+    meta.append(piece("Out of reach"));
   } else {
-    const value = hand.points === null ? "calculated" : hand.points.toLocaleString("en");
-    if (hand.away === 0) {
-      const done = document.createElement("span");
-      done.className = "closest-done";
-      done.textContent = "Complete";
-      progress.append(done, ` · ${value}`);
-    } else {
-      progress.textContent = `${hand.away} to go · ${value}`;
-    }
+    meta.append(
+      playIcon(hand.concealedOnly),
+      piece(hand.points === null ? "calculated" : hand.points.toLocaleString("en")),
+      piece("\u00b7"),
+      hand.away === 0 ? piece("Complete", "closest-done") : piece(`${hand.away} to go`),
+    );
   }
-  meta.append(progress);
-  if (play !== null) meta.append(playIcon(play));
   row.append(name, meta);
   return { item, row };
 }
@@ -414,6 +414,12 @@ export async function openHandDetail(pattern, progress = null) {
     facts.append(factChip("Concealed", concealedWorth), factChip("Exposed", exposedWorth));
   }
   if (detail.requiresSelfDrawn) facts.append(factChip(null, "Self-drawn only"));
+  // Last, as in the panel's rows: how far your hand is from it.
+  if (progress !== null) {
+    const far = factChip(null, progress.away === 0 ? "Complete" : `${progress.away} to go`);
+    if (progress.away === 0) far.classList.add("detail-done");
+    facts.append(far);
+  }
 
   const lede = document.createElement("p");
   lede.className = "detail-lede";
@@ -440,7 +446,7 @@ export async function openHandDetail(pattern, progress = null) {
       for (const key of progress.need) need.append(faceChip(key));
     }
     const heading = document.createElement("h3");
-    heading.textContent = progress.away === 0 ? "Your hand" : `You still need ${progress.away} ${progress.away === 1 ? "tile" : "tiles"}`;
+    heading.textContent = progress.away === 0 ? "Your hand" : "Tiles you still need";
     yours.append(heading, need);
     card.append(yours);
   }
