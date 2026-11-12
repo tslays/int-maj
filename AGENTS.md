@@ -97,6 +97,13 @@ The full workflow is `docs/WORKFLOW.md`. The rules every session follows:
   already put it first on PATH, and `npm test` refuses older ones.
 - **Finish pushed:** a cloud container is discarded, so nothing finished may
   stay uncommitted or unpushed.
+- **Always report the pull request:** every reply that mentions a pull request
+  gives its number and full URL (`https://github.com/<owner>/<repo>/pull/<n>`),
+  every time, including follow-ups and status updates, not only the first one.
+  For a visual pull request, also give its preview link for testing
+  (`https://pr-<number>-int-dev.mah-jong.workers.dev`), every time, and say
+  whether it is live yet: it appears only after `Tests and build` passes and
+  the preview job deploys it.
 - Run `npm test` (under a minute) and `npm run typecheck` before every
   commit; Node only strips types, so the type check is the only thing that
   reads them. After changing anything under `app/`, also run `npm run smoke`
