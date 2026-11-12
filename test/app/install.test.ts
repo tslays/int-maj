@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 // @ts-expect-error - a plain browser module without type declarations
-const { installGuide } = await import("../../app/src/install.js");
+const { installGuide, phoneKind } = await import("../../app/src/install.js");
 
 const IPHONE = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko)";
 const UA = {
@@ -45,5 +45,20 @@ describe("installGuide", () => {
     assert.equal(installGuide({ userAgent: UA.safari, platform: "iPhone", maxTouchPoints: 5, standalone: true }), null);
     assert.equal(installGuide({ userAgent: UA.chromeAndroid, maxTouchPoints: 5, standalone: true }), null);
     assert.equal(installGuide({ userAgent: UA.chromeWindows, platform: "Win32", maxTouchPoints: 0 }), null);
+  });
+});
+
+describe("phoneKind", () => {
+  it("names the phone for the orientation-lock hint, installed or not", () => {
+    assert.equal(phoneKind({ userAgent: UA.safari, platform: "iPhone", maxTouchPoints: 5 }), "ios");
+    assert.equal(phoneKind({ userAgent: UA.instagramIos, platform: "iPhone", maxTouchPoints: 5 }), "ios");
+    assert.equal(phoneKind({ userAgent: UA.ipad, platform: "MacIntel", maxTouchPoints: 5 }), "ios");
+    assert.equal(phoneKind({ userAgent: UA.chromeAndroid, platform: "Linux armv81", maxTouchPoints: 5 }), "android");
+    assert.equal(phoneKind({ userAgent: UA.webviewAndroid, platform: "Linux armv81", maxTouchPoints: 5 }), "android");
+  });
+
+  it("names nothing on a computer", () => {
+    assert.equal(phoneKind({ userAgent: UA.chromeWindows, platform: "Win32", maxTouchPoints: 0 }), null);
+    assert.equal(phoneKind({ userAgent: UA.ipad, platform: "MacIntel", maxTouchPoints: 0 }), null);
   });
 });

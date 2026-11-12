@@ -28,6 +28,11 @@
         <line x1="28" y1="51" x2="36" y2="51" />
       </svg>
       Turn your phone sideways to play
+      <p class="rotate-lock" id="rotate-lock">
+        <span data-lock="ios" hidden>Won't turn? Open Control Center and switch off <b>Orientation Lock</b>.</span>
+        <span data-lock="android" hidden>Won't turn? Open Quick Settings and switch on <b>Auto-rotate</b>.</span>
+        <span data-lock="other" hidden>Won't turn? Switch off the screen's rotation lock.</span>
+      </p>
       <div class="install" id="install" hidden>
         <h2>Better as an app</h2>
         <p>Full screen, with its own icon, and it works offline.</p>
@@ -120,6 +125,11 @@
       <div class="detail-card help-card" role="dialog" aria-modal="true" aria-label="Options">
         <button class="detail-close" id="options-close" type="button" aria-label="Close">&times;</button>
         <h2>Options</h2>
+        <div class="detail-line option-row" id="install-row" hidden>
+          <h3>Install app</h3>
+          <p>Full screen, with its own icon, and it works offline.</p>
+          <button class="ghost" id="install-open" type="button"><span>How to install</span></button>
+        </div>
         <div class="detail-line option-row">
           <h3>Sound</h3>
           <p>On an iPhone the silent switch also mutes it.</p>
@@ -229,7 +239,7 @@
             <li><b>Calls</b>: lit, you are asked about every discard you could claim. Off, you are not asked about Pung, Chow or Kong, which cuts the pauses. You are still asked about Mah Jong.</li>
             <li><b>Sort</b>: lit, the game keeps your hand in order. After you have rearranged it by hand, tap it to sort again.</li>
             <li><b>Hints</b>: show or hide the Closest hands panel.</li>
-            <li><b>Options</b>: opens a sheet with the <b>Sound</b> switch (on iPhone the silent switch also mutes it), on a phone <b>Large discards</b> (the tiles thrown this round show a face twice the size until you throw; on to start with), <b>Pace</b> (how quickly the bots play and the tiles move: Slower, Normal or Faster), <b>Bot level</b> (how well the bots play: Easy, Medium or Hard, Medium to start with; Easy bots chase fewer special hands, call almost any discard, never play safe and often throw a useful tile), <b>Dice and dealing</b> (Show or Skip the throw for East, the break of the wall and the deal at the start of a hand; a tap skips it too), the house rules, <b>Report</b> (send a problem to the developers, below) and <b>Help</b>, this sheet. The small label under the menu is the build you are playing.</li>
+            <li><b>Options</b>: opens a sheet with, in a phone's browser, <b>Install app</b> (how to put the game on the home screen), the <b>Sound</b> switch (on iPhone the silent switch also mutes it), on a phone <b>Large discards</b> (the tiles thrown this round show a face twice the size until you throw; on to start with), <b>Pace</b> (how quickly the bots play and the tiles move: Slower, Normal or Faster), <b>Bot level</b> (how well the bots play: Easy, Medium or Hard, Medium to start with; Easy bots chase fewer special hands, call almost any discard, never play safe and often throw a useful tile), <b>Dice and dealing</b> (Show or Skip the throw for East, the break of the wall and the deal at the start of a hand; a tap skips it too), the house rules, <b>Report</b> (send a problem to the developers, below) and <b>Help</b>, this sheet. The small label under the menu is the build you are playing.</li>
           </ul>
           <p>A lit button is on. Hints, Sound, Large discards, Pace, Bot level, Dice and dealing and the house rules are remembered on this device.</p>
         </div>
@@ -282,8 +292,10 @@
         <div class="detail-line">
           <h3>Install on your phone</h3>
           <p>
-            Play with the phone on its side. iPhone: tap Share, then Add to Home Screen. Android: open the
-            browser menu, then Add to Home screen. Installed, it runs full screen and offline.
+            Play with the phone on its side. If it will not turn, switch off its orientation lock (iPhone:
+            Control Center; Android: Auto-rotate in Quick Settings). To install: on iPhone tap Share, then Add
+            to Home Screen; on Android open the browser menu, then Add to Home screen. <b>Options</b> shows the
+            steps for your phone under <b>Install app</b>. Installed, it runs full screen and offline.
           </p>
         </div>
         <div class="detail-line" id="help-report">
@@ -294,6 +306,11 @@
             name or account. Without a connection, <b>Share it instead</b> sends it as a message.
           </p>
         </div>
+      </div>
+    </div>
+    <div class="hand-detail" id="install-sheet" hidden>
+      <div class="detail-card install-card" id="install-body" role="dialog" aria-modal="true" aria-label="Install app">
+        <button class="detail-close" id="install-close" type="button" aria-label="Close">&times;</button>
       </div>
     </div>
     <div class="hand-detail" id="report-sheet" hidden>

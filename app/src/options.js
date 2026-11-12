@@ -132,8 +132,9 @@ export function installOptions() {
     if (event.target === event.currentTarget) closeOptions();
   });
   window.addEventListener("keydown", (event) => {
-    // Help and Report open on top of this sheet; Escape closes the top one first.
-    if (event.key === "Escape" && $("#help-sheet").hidden && $("#report-sheet").hidden) closeOptions();
+    // Help, Report and Install open on top of this sheet; Escape closes the top one first.
+    const onTop = ["#help-sheet", "#report-sheet", "#install-sheet"].some((sheet) => !$(sheet).hidden);
+    if (event.key === "Escape" && !onTop) closeOptions();
   }, true);
 
   /* Sound: on by default; the choice is remembered on the device. */
