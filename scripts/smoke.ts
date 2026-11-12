@@ -13,6 +13,7 @@
  *    table and shows what that board is for.
  * 2. A fresh game is played like a player would: a tile is tapped and thrown
  *    with the pointer, a tile is dragged into your own order and sorted back,
+ *    a tile is dragged while the bots play (arranged, never thrown),
  *    the hints and the help sheet open, some turns are played against the
  *    bots, and a reload resumes the same hand from the save.
  *
@@ -257,6 +258,62 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
     { timeout: READY_MS },
   );
   console.log("  ok  tap twice to throw");
+
+  // The bots play on: a swipe up on a hand tile throws nothing. The swipe is dispatched as pointer
+  // events in one synchronous step, so no bot turn can land between the check and the swipe: if the
+  // table is busy at that moment, it stays busy through the swipe. (Our turn returning first makes
+  // the swipe a legal throw, so the check only applies while the bots play.)
+  assert.equal(await page.evaluate(() => window.mahjong!.busy()), true, "the bots are playing after your throw");
+  const thrownBefore = myDiscards((await page.evaluate(() => window.mahjong!.state())) as Payload);
+  const swiped = await page.evaluate(
+    ({ x, y }) => {
+      if (!window.mahjong!.busy()) return false;
+      const canvas = document.querySelector("canvas")!;
+      // A synthetic pointer is not an active one, so the table's capture calls would throw; the swipe needs none.
+      canvas.setPointerCapture = () => undefined;
+      canvas.releasePointerCapture = () => undefined;
+      const send = (type: string, at: number) =>
+        canvas.dispatchEvent(
+          new PointerEvent(type, { clientX: x, clientY: at, pointerId: 7, pointerType: "mouse", button: 0, bubbles: true, buttons: type === "pointerup" ? 0 : 1 }),
+        );
+      send("pointerdown", y);
+      send("pointermove", y - 40);
+      send("pointermove", y - 150);
+      send("pointerup", y - 150);
+      Reflect.deleteProperty(canvas, "setPointerCapture");
+      Reflect.deleteProperty(canvas, "releasePointerCapture");
+      return true;
+    },
+    { x: tile.x, y: tile.y },
+  );
+  if (swiped) {
+    await page.waitForTimeout(400);
+    assert.equal(
+      myDiscards((await page.evaluate(() => window.mahjong!.state())) as Payload),
+      thrownBefore,
+      "a swipe up during the bots' turns throws nothing",
+    );
+    console.log("  ok  a swipe up while the bots play throws nothing");
+  } else {
+    console.log("  --  your turn came back before the swipe; not a bots'-turn swipe, not counted");
+  }
+
+  // A drag sideways during the bots' turns arranges the hand; a drag throws nothing.
+  await page.mouse.move(tile.x, tile.y);
+  await page.mouse.down();
+  await page.mouse.move(tile.x + 60, tile.y - 4, { steps: 6 });
+  await page.mouse.move(tile.x + 170, tile.y - 4, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForFunction(() => document.querySelector("#sort")?.getAttribute("aria-pressed") === "false", null, {
+    timeout: 5000,
+  });
+  assert.equal(
+    myDiscards((await page.evaluate(() => window.mahjong!.state())) as Payload),
+    thrownBefore,
+    "a drag sideways during the bots' turns arranges the hand and throws nothing",
+  );
+  await page.click("#sort");
+  console.log("  ok  arrange the hand while the bots play, nothing thrown");
 
   // A tap on the ponds zooms onto them from above; a second tap goes back.
   payload = await yourMove(page);

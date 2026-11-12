@@ -34,8 +34,10 @@ export function goulashKeys() {
   return goulashPicks.map((entry) => entry.key);
 }
 
+/** The Discard action for this tile, if you may throw it now: only on your own turn, never while the table runs. */
 function legalDiscard(key) {
-  return state.payload?.legalActions.find((action) => action.type === "Discard" && action.tile === key) ?? null;
+  if (state.busy || state.payload === null) return null;
+  return state.payload.legalActions.find((action) => action.type === "Discard" && action.tile === key) ?? null;
 }
 
 /** The quiet click of a hand tile, pitched by where it sits along the hand. */
@@ -54,11 +56,13 @@ renderer.domElement.addEventListener("pointerdown", (event) => {
     setPondZoom(!pondZoomed());
     return;
   }
-  if (state.busy || state.payload === null) return;
+  // Your hand can be arranged and tiles lifted at any time, the bots' turns
+  // included; throwing is checked by `legalDiscard` below.
+  if (state.payload === null) return;
   const legal = state.payload.legalActions;
 
   if (legal.some((action) => action.type === "GoulashExchange")) {
-    if (entry === null) return;
+    if (state.busy || entry === null) return;
     const index = goulashPicks.indexOf(entry);
     if (index >= 0) {
       goulashPicks.splice(index, 1);
@@ -100,11 +104,16 @@ function throwing(event) {
   return rise >= THROW_RISE && rise >= Math.abs(event.clientX - press.x);
 }
 
-/** With a mouse (or pen) the tile under the pointer is pre-selected: click discards. */
+/**
+ * With a mouse (or pen) the tile under the pointer is pre-selected: click discards.
+ * Only when you may discard it: on the bots' turns the hand is still there to
+ * arrange, but nothing lifts that would suggest a click throws it.
+ */
 function hover(event) {
-  if (press !== null || state.busy || state.payload === null || pondZoomed()) return;
+  if (press !== null || state.payload === null || pondZoomed()) return;
   if (state.payload.legalActions.some((action) => action.type === "GoulashExchange")) return;
-  const entry = board.pick(event);
+  const picked = board.pick(event);
+  const entry = picked !== null && legalDiscard(picked.key) !== null ? picked : null;
   if (entry === selected) return;
   if (selected !== null) void board.lift(selected, false);
   selected = entry;
@@ -129,7 +138,8 @@ renderer.domElement.addEventListener("pointermove", (event) => {
     if (selected !== null && selected !== press.entry) void board.lift(selected, false);
     selected = press.entry;
   }
-  const armed = throwing(event);
+  // A swipe up swells the tile only where letting go would throw it.
+  const armed = legalDiscard(press.entry.key) !== null && throwing(event);
   if (armed !== press.armed) {
     press.armed = armed;
     if (board.armThrow(press.entry, armed) && armed) tickFor(press.entry);
