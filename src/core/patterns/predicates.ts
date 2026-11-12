@@ -50,6 +50,13 @@ export function setRankOf(set: StandardSet): number | null {
 
 export const anyPung: SetFilter = isPungSet;
 
+/**
+ * A pung/kong of a suit: Bamboo, Characters or Circles. Winds and Dragons are
+ * honours, not a suit, so "in any suit" never reaches them.
+ */
+export const suitedPung: SetFilter = (set) =>
+  isPungSet(set) && setSuitOf(set) !== null;
+
 export const anyChow: SetFilter = (set) => set.kind === "chow";
 
 export function pungOf(key: string): SetFilter {

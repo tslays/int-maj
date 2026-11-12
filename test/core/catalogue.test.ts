@@ -160,10 +160,11 @@ export const FIXTURES: Readonly<Record<string, Fixture>> = {
   },
   "little-robert": {
     positive: {
-      concealed: "b1 b2 b3 c4 c5 c6 o7 o8 o9 dG dG dG wE wE",
+      concealed: "b1 b2 b3 c4 c5 c6 o7 o8 o9 b5 b5 b5 c2 c2",
     },
+    // Honours are not a suit: a Dragon pung and a Wind pair do not qualify.
     negative: {
-      concealed: "b1 b2 b3 b4 b5 b6 o7 o8 o9 dG dG dG wE wE",
+      concealed: "b1 b2 b3 c4 c5 c6 o7 o8 o9 dG dG dG wE wE",
     },
   },
   "windy-chow": {
