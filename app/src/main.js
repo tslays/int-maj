@@ -16,6 +16,7 @@ import { refreshHints } from "./hints.js";
 import { warmIndex } from "./handbook.js";
 import { installMenu } from "./menu.js";
 import { houseRules, installOptions } from "./options.js";
+import { level } from "./level.js";
 import { pace } from "./pace.js";
 import "./report.js";
 import { installResult, showOutcome } from "./result.js";
@@ -111,7 +112,7 @@ async function run() {
       const legal = state.payload.legalActions;
       if (legal.length === 0) {
         const before = state.payload;
-        const next = await request("/api/step", { game: state.payload.game });
+        const next = await request("/api/step", { game: state.payload.game, level: level.id });
         if (next.done === true) {
           await apply(await request(`/api/state?game=${encodeURIComponent(state.payload.game)}`));
           if (state.payload.legalActions.length === 0 && state.payload.outcome === null) return;
