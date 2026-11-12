@@ -117,44 +117,29 @@ export function discardRect(rel, index) {
 export const WALL_INNER = WALL_R - H / 2;
 
 /**
- * The round spotlight, for phones only (issue: tile visibility on a small
- * screen). The last `COUNT` discards on the table - one go round the table,
- * whoever threw them - stand up out of their ponds, `SCALE` times their size,
- * turned upright to you and tilted back by `TILT` radians so their faces meet
- * the table camera (which looks down at about 46 degrees) nearly square-on.
- * A fifth discard sends the oldest back down. A screen whose short side is at
- * most `MAX_SHORT_SIDE` CSS pixels is a phone: every iPhone held sideways is
- * at most 440 high, the smallest iPad 744.
+ * The round layers, for phones only. Each tile the other players throw this
+ * round gets its face laid flat on top of it - the same place, angle and
+ * orientation as the tile - `SCALE` times the tile's size, until you throw
+ * and the next round starts. A layer floats `LIFT` (in the tile's own units)
+ * above the tile's face, plus `STEP` for each layer before it in the round,
+ * so it lies over its neighbours and a later layer over an earlier one. A
+ * screen whose short side is at most `MAX_SHORT_SIDE` CSS pixels is a phone:
+ * every iPhone held sideways is at most 440 high, the smallest iPad 744.
  */
-export const SPOT = Object.freeze({ COUNT: 4, SCALE: 1.6, TILT: 0.75, OUT: 1.6, MAX_SHORT_SIDE: 500 });
+export const ROUND_LAYER = Object.freeze({ SCALE: 2, LIFT: 0.06, STEP: 0.03, MAX_SHORT_SIDE: 500 });
 
-/** Whether a screen of this size (CSS pixels) is small enough for the spotlight. */
-export function spotlightWanted(width, height) {
-  return Math.min(width, height) <= SPOT.MAX_SHORT_SIDE;
+/** Whether a screen of this size (CSS pixels) is small enough for the round layers. */
+export function roundLayersWanted(width, height) {
+  return Math.min(width, height) <= ROUND_LAYER.MAX_SHORT_SIDE;
 }
 
 /**
- * Where discard `index` of seat `rel` stands while spotlit, in table space:
- * its centre `{ x, y, z }`, its `scale`, its `tilt`, and the `rect` it covers
- * on the felt. It stands over its own slot moved `OUT` towards its thrower,
- * so a tile in the row against the console does not rise over the console's
- * scores; it is pulled in only as far as it must be to keep clear of the
- * walls, and its lowest edge stays above the felt.
+ * Where a layer's group sits in its tile's frame, `scale` times the face's
+ * size and the `order`-th of the round (0 first): the face, which the group
+ * holds at z = D / 2, then lies `LIFT + order * STEP` above the tile's face.
  */
-export const SPOT_CLEARANCE = 0.04;
-export function spotPose(rel, index) {
-  const slot = discardSlot(index);
-  const centre = toTable(rel, slot.x, slot.z + SPOT.OUT);
-  const scale = DISCARD_SCALE * SPOT.SCALE;
-  const tilt = SPOT.TILT;
-  const halfX = (W * scale) / 2;
-  const halfZ = (H * scale * Math.cos(tilt) + D * scale * Math.sin(tilt)) / 2;
-  const limit = WALL_INNER - 0.1;
-  const clamp = (value, half) => Math.max(-limit + half, Math.min(limit - half, value));
-  const x = clamp(centre.x, halfX);
-  const z = clamp(centre.z, halfZ);
-  const y = ((H * scale) / 2) * Math.sin(tilt) + ((D * scale) / 2) * Math.cos(tilt) + SPOT_CLEARANCE;
-  return { x, y, z, scale, tilt, rect: { minX: x - halfX, maxX: x + halfX, minZ: z - halfZ, maxZ: z + halfZ } };
+export function roundLayerZ(scale, order) {
+  return D / 2 + ROUND_LAYER.LIFT + order * ROUND_LAYER.STEP - (scale * D) / 2;
 }
 
 /**

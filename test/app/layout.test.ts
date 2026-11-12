@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 // @ts-expect-error - a plain browser module without type declarations
-import { breakFor, DRAWN_SLIDE, handTileStart, wallLook, wallPlan, discardRect, discardSlot, frameRect, handRects, latestPlate, pondExtent, pondPad, meldLayout, SPOT, spotlightWanted, spotPose, meldRects, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
+import { breakFor, DRAWN_SLIDE, handTileStart, wallLook, wallPlan, discardRect, discardSlot, frameRect, handRects, latestPlate, pondExtent, pondPad, meldLayout, ROUND_LAYER, roundLayersWanted, roundLayerZ, meldRects, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
 
 interface Rect {
   readonly minX: number;
@@ -378,29 +378,22 @@ describe("pond extent (the zoomed view's square)", () => {
   });
 });
 
-describe("round spotlight (phones)", () => {
-  it("is on for every iPhone held sideways and off from the smallest iPad up", () => {
-    for (const [width, height] of [[667, 375], [844, 390], [932, 430], [956, 440], [390, 844]]) assert.ok(spotlightWanted(width, height), `${width}x${height}`);
-    for (const [width, height] of [[1133, 744], [1180, 820], [1366, 1024], [1280, 800], [1920, 1080]]) assert.ok(!spotlightWanted(width, height), `${width}x${height}`);
+describe("round layers (phones)", () => {
+  it("are on for every iPhone held sideways and off from the smallest iPad up", () => {
+    for (const [width, height] of [[667, 375], [844, 390], [932, 430], [956, 440], [390, 844]]) assert.ok(roundLayersWanted(width, height), `${width}x${height}`);
+    for (const [width, height] of [[1133, 744], [1180, 820], [1366, 1024], [1280, 800], [1920, 1080]]) assert.ok(!roundLayersWanted(width, height), `${width}x${height}`);
   });
 
-  it("stands every discard larger, above the felt and inside the walls, over or beside its own slot", () => {
-    for (let rel = 0; rel < 4; rel++) {
-      for (let index = 0; index <= MOST; index++) {
-        const pose = spotPose(rel, index);
-        assert.ok(pose.scale > TABLE.DISCARD_SCALE);
-        // The lowest corner of the tilted tile clears the felt.
-        const low = pose.y - ((H * pose.scale) / 2) * Math.sin(pose.tilt) - ((0.78 * pose.scale) / 2) * Math.cos(pose.tilt);
-        assert.ok(low > 0, `rel ${rel} index ${index} sinks into the felt`);
-        const { rect } = pose;
-        assert.ok(rect.minX >= -WALL_INNER && rect.maxX <= WALL_INNER && rect.minZ >= -WALL_INNER && rect.maxZ <= WALL_INNER, `rel ${rel} index ${index} reaches a wall`);
-        // It still covers its own slot, so it reads as that seat's discard.
-        assert.ok(overlaps(rect, discardRect(rel, index)), `rel ${rel} index ${index} left its slot`);
+  it("lie above their tile's face at every size of the expansion, a later one above an earlier one", () => {
+    const D = 0.78;
+    for (const scale of [1, 1.5, ROUND_LAYER.SCALE]) {
+      for (let order = 0; order < 4; order++) {
+        // The card's face sits at D / 2 in the layer's own frame, scaled with it.
+        const face = roundLayerZ(scale, order) + (scale * D) / 2;
+        assert.ok(face > D / 2 + 0.05, `scale ${scale} order ${order}`);
+        if (order > 0) assert.ok(face > roundLayerZ(scale, order - 1) + (scale * D) / 2);
       }
     }
-  });
-
-  it("is one go round the table", () => {
-    assert.equal(SPOT.COUNT, 4);
+    assert.ok(ROUND_LAYER.SCALE > 1);
   });
 });

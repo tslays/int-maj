@@ -183,7 +183,7 @@ function layerCanvas() {
 const panelLayer = layerCanvas();
 const textLayer = layerCanvas();
 
-export const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)") ?? { matches: false };
+const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)") ?? { matches: false };
 
 /**
  * The turn light. `theta` is where it sits, in seats counted from you (a whole
@@ -416,7 +416,7 @@ function fit() {
   viewChanged();
 }
 
-/* Who wants to know when the screen's size or the pond zoom changes (the round spotlight). */
+/* Who wants to know when the screen's size or the pond zoom changes (the round layers). */
 const viewListeners = [];
 export function onViewChange(listener) {
   viewListeners.push(listener);

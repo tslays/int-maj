@@ -64,20 +64,21 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   hand tile lifted only puts the tile down. With `prefers-reduced-motion` the
   view changes at once. `test/app/view.test.ts` proves every discard is on
   screen and larger than in the table view.
-- The round spotlight, on phones only (`app/src/board-spot.js`; `SPOT`,
-  `spotPose` and `spotlightWanted` in `layout.js`): the last four discards on
-  the table, one go round whoever threw them, stand up out of their ponds 1.6
-  times their size, turned upright to you and tilted to face the camera, so a
-  glance tells what this round threw. Each rises with a small overshoot once
-  it lands; a fifth discard lays the oldest back down flat in its pond, and a
-  claimed tile simply leaves the round. Each stands moved a little towards
-  its thrower, so the row against the console never covers the scores, and
-  never reaches a wall. The pond zoom lays them flat (it is large already)
-  and stands them up again on the way back; with `prefers-reduced-motion`
-  they change at once. A screen whose short side is at most 500 CSS pixels is
-  a phone (every iPhone held sideways; the smallest iPad is 744), so tablets
-  and computers keep the flat table. `test/app/layout.test.ts` proves a
-  standing tile stays above the felt, inside the walls and over its own slot.
+- The round layers, on phones only (`app/src/board-round.js`;
+  `makeFaceLayer` in `tiles.js`; `ROUND_LAYER`, `roundLayerZ` and
+  `roundLayersWanted` in `layout.js`): each tile the other players throw
+  this round gets its face laid flat on top of it, twice its size, in the
+  tile's own place, angle and orientation (a layer is a child of its tile).
+  A layer appears only once its tile has landed and settled, expanding out
+  of the tile in 0.2 s; your own throw clears them all as it leaves your
+  hand, and the next round starts. A claimed tile takes its layer with it.
+  The newest layer has the cyan edge of the latest-discard plate it covers,
+  and the gold marks for a selected tile go on a layer rather than the tile
+  under it. With `prefers-reduced-motion` a layer appears at full size. A
+  screen whose short side is at most 500 CSS pixels is a phone (every
+  iPhone held sideways; the smallest iPad is 744), so tablets and computers
+  keep the plain table. `test/app/layout.test.ts` proves a layer lies above
+  its tile's face, and a later one above an earlier one, at every size.
 - The turn light (`stage.js`, `updateConsole`): the console is painted in three
   layers (panel, light, lettering) so the light can move under the text. The
   seat whose turn it is glows along its edge with a soft, edgeless light, wide
