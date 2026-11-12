@@ -28,6 +28,7 @@ class FakeParam {
 class FakeNode {
   gain = new FakeParam();
   frequency = new FakeParam();
+  playbackRate = new FakeParam();
   Q = new FakeParam();
   pan = new FakeParam();
   threshold = new FakeParam();
@@ -76,6 +77,7 @@ class FakeContext {
   createDynamicsCompressor = () => this.node();
   createOscillator = () => this.node(true);
   createBufferSource = () => this.node(true);
+  decodeAudioData = async (_bytes: ArrayBuffer) => ({ duration: 0.5 });
   createBuffer = (_channels: number, length: number) => ({ getChannelData: () => new Float32Array(length) });
   suspended = 0;
   async resume() {
@@ -160,6 +162,40 @@ describe("sound voices", () => {
     assert.equal(sourcesFor(4), (sourcesFor(2) / 2) * 4);
   });
 
+  it("dice play a recording, fitted to the throw, and are silent without one", () => {
+    const play = (takes: { duration: number }[], options: Record<string, number>) => {
+      const ctx = new FakeContext();
+      createVoices(ctx, ctx.destination, () => 0.5, { dice: takes }).dice(10, options);
+      return ctx;
+    };
+    assert.equal(play([], { span: 0.5 }).sources.length, 0, "nothing decoded: nothing plays");
+    const fitted = play([{ duration: 0.6 }], { span: 0.4 });
+    assert.equal(fitted.sources.length, 1);
+    assert.equal(fitted.sources[0]!.starts[0], 10);
+    // A 0.6 s take played over 0.4 s runs at 1.5x; over 0.8 s at 0.75x; never absurdly fast or slow.
+    assert.ok(Math.abs(fitted.sources[0]!.playbackRate.value - 1.5) < 1e-9);
+    assert.ok(Math.abs(play([{ duration: 0.6 }], { span: 0.8 }).sources[0]!.playbackRate.value - 0.75) < 1e-9);
+    assert.equal(play([{ duration: 0.6 }], { span: 0.1 }).sources[0]!.playbackRate.value, 1.6);
+    assert.equal(play([{ duration: 0.6 }], { span: 5 }).sources[0]!.playbackRate.value, 0.7);
+    // Each throw is a different take.
+    const takes = [{ duration: 0.5 }, { duration: 0.6 }, { duration: 0.7 }, { duration: 0.8 }];
+    const used = new Set<unknown>();
+    for (const value of [0.05, 0.3, 0.55, 0.9]) {
+      const ctx = new FakeContext();
+      createVoices(ctx, ctx.destination, () => value, { dice: takes }).dice(0, { span: 0.5 });
+      used.add(ctx.sources[0]!.buffer);
+    }
+    assert.equal(used.size, 4);
+    // Throws one after another differ a little in speed, and stay within a few percent of the fit.
+    const rates = [0, 0.5, 0.999].map((value) => {
+      const ctx = new FakeContext();
+      createVoices(ctx, ctx.destination, () => value, { dice: [{ duration: 0.6 }] }).dice(0, { span: 0.6 });
+      return ctx.sources[0]!.playbackRate.value as number;
+    });
+    assert.ok(rates[0]! < rates[1]! && rates[1]! < rates[2]!, "the speed varies from throw to throw");
+    assert.ok(rates[0]! >= 0.94 - 1e-9 && rates[2]! <= 1.06 + 1e-9, "by no more than six percent");
+  });
+
   it("a tick is far lighter than a clack", () => {
     const sourcesFor = (name: string) => {
       const ctx = new FakeContext();
@@ -167,6 +203,38 @@ describe("sound voices", () => {
       return ctx.sources.length;
     };
     assert.ok(sourcesFor("tick") < sourcesFor("clack"));
+  });
+});
+
+describe("the recordings", () => {
+  it("are fetched and decoded when audio starts, and a cue plays them", async () => {
+    const asked: string[] = [];
+    const { engine, ctx } = await running({
+      loadSample: async (name: string) => {
+        asked.push(name);
+        return new ArrayBuffer(8);
+      },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.deepEqual(asked, ["dice-1.mp3", "dice-2.mp3", "dice-3.mp3", "dice-4.mp3"]);
+    ctx.state = "running";
+    const before = ctx.sources.length;
+    assert.equal(engine.cue("dice", { span: 0.5 }), true);
+    assert.equal(ctx.sources.length, before + 1, "one recording starts");
+  });
+
+  it("leave the cue silent when a file will not load, and never break the engine", async () => {
+    const { engine, ctx } = await running({
+      loadSample: async () => {
+        throw new Error("offline");
+      },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    ctx.state = "running";
+    const before = ctx.sources.length;
+    engine.cue("dice", { span: 0.5 });
+    assert.equal(ctx.sources.length, before, "nothing plays");
+    assert.equal(engine.cue("clack"), true, "the other sounds still play");
   });
 });
 

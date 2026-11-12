@@ -136,19 +136,27 @@ export interface NewGameOptions {
   readonly goulashPool?: number;
 }
 
-/** Roll two dice per seat; the unique highest total becomes East (I p. 18). */
+/**
+ * Roll two dice per seat; the unique highest total becomes East (I p. 18).
+ * The book is silent on a tie, so all four throw again until one total is
+ * highest. Every throw is kept so the table can show the dice.
+ */
 function rollForSeats(seed: string | number): {
   rolls: Record<Seat, number>;
   dealer: Seat;
+  throws: Record<Seat, [number, number]>[];
 } {
   const rng = createRng(`${seed}:seats`);
+  const throws: Record<Seat, [number, number]>[] = [];
   for (;;) {
-    const rolls = Object.fromEntries(
-      SEATS.map((seat) => [seat, rng.int(6) + 1 + rng.int(6) + 1]),
-    ) as Record<Seat, number>;
+    const dice = Object.fromEntries(
+      SEATS.map((seat) => [seat, [rng.int(6) + 1, rng.int(6) + 1] as [number, number]]),
+    ) as Record<Seat, [number, number]>;
+    throws.push(dice);
+    const rolls = Object.fromEntries(SEATS.map((seat) => [seat, dice[seat][0] + dice[seat][1]])) as Record<Seat, number>;
     const best = Math.max(...SEATS.map((seat) => rolls[seat]));
     const winners = SEATS.filter((seat) => rolls[seat] === best);
-    if (winners.length === 1) return { rolls, dealer: winners[0]! };
+    if (winners.length === 1) return { rolls, dealer: winners[0]!, throws };
   }
 }
 

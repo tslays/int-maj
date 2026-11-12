@@ -1,12 +1,15 @@
 /**
  * The table's sound: every effect is synthesised live with Web Audio, so there
  * are no audio files to ship, cache or license, and the game stays offline.
+ * The one exception is the dice, a short recording of real dice (CC0, in
+ * assets/sounds, cached with the app): a rattle is too irregular to synthesise.
  *
  * The rhythm of a game, in the order you hear it:
  *
  *   draw       a soft, low lift of a tile from the wall (a bot's, or yours settling)
  *   clack      a weighty plastic tile landing on felt: a round, low thump (a
  *              little knock and the felt thud under it), the game's base beat
+ *   dice       two dice thrown: a recording of real dice (the only sound not synthesised)
  *   meld       the tiles of a call set down together
  *   tick       the very quiet click of a hand tile under your pointer / finger
  *   alert      the bright two-note chime when the game asks you to decide
@@ -25,6 +28,15 @@ const MUTE_KEY = "int-maj.sound";
 const LEAD = 0.004; // seconds between "now" and the earliest sound
 const IDLE_MS = 5000; // quiet this long and the audio context is suspended
 const FLOOR = 0.0001; // exponential ramps cannot reach zero
+
+/** The recordings, by cue: files beside the app, fetched and decoded at the first gesture. */
+export const SAMPLE_FILES = { dice: ["dice-1.mp3", "dice-2.mp3", "dice-3.mp3", "dice-4.mp3"] };
+
+async function fetchSample(name) {
+  const response = await globalThis.fetch(new URL(`../assets/sounds/${name}`, import.meta.url));
+  if (!response.ok) throw new Error(`${name}: ${response.status}`);
+  return response.arrayBuffer();
+}
 
 /** Cues that may not repeat faster than this many milliseconds. */
 const MIN_GAP = { tick: 22, swap: 45, draw: 30, press: 40 };
@@ -53,7 +65,7 @@ function envelope(param, t, peak, attack, decay) {
   param.exponentialRampToValueAtTime(FLOOR, t + attack + decay);
 }
 
-export function createVoices(ctx, out, random = Math.random) {
+export function createVoices(ctx, out, random = Math.random, samples = { dice: [] }) {
   /** A short filtered noise burst. */
   function burst(bus, t, { type = "bandpass", freq, q = 1, gain, attack = 0.001, decay }) {
     const source = ctx.createBufferSource();
@@ -143,6 +155,25 @@ export function createVoices(ctx, out, random = Math.random) {
     tone(bus, t, { freq: 820 * k, gain: 0.1 * v, decay: 0.03 });
     burst(bus, t, { type: "lowpass", freq: 300, q: 0.7, gain: 0.5 * v, attack: 0.001, decay: 0.07 });
     tone(bus, t, { freq: 150 * k, to: 80, sweep: 0.09, gain: 0.36 * v, decay: 0.1 });
+  }
+
+  /**
+   * Two dice thrown, rattling and settling: a real recording (four takes,
+   * CC0, from freesound.org, see assets/sounds/LICENSE.md; a rattle is too
+   * irregular to synthesise well), a different take each time. It is played
+   * faster or slower so that it ends about when the dice do (`span`,
+   * seconds), and a few percent either way. Silent until the recordings are
+   * decoded, which happens at the first gesture.
+   */
+  function dice(t, { span = 0.5, intensity = 1, pan = 0, far = 0 } = {}) {
+    const takes = samples.dice;
+    if (takes.length === 0) return;
+    const buffer = takes[Math.floor(random() * takes.length)];
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.playbackRate.value = clamp((buffer.duration / span) * (0.94 + random() * 0.12), 0.7, 1.6);
+    source.connect(lane({ pan, far, gain: clamp(intensity, 0, 1.2) }));
+    source.start(t);
   }
 
   /** Tiles set down together: a call's tiles landing a hair apart. */
@@ -277,7 +308,7 @@ export function createVoices(ctx, out, random = Math.random) {
     bell(bus, t + 0.16, 659, { gain: 0.2, decay: 0.8 });
   }
 
-  return { clack, meld, deal, draw, tick, swap, lift, press, alert, alertWin, notice, fishing, win, lose, drawn };
+  return { clack, dice, meld, deal, draw, tick, swap, lift, press, alert, alertWin, notice, fishing, win, lose, drawn };
 }
 
 /* --------------------------------------------------------- the engine */
@@ -302,9 +333,11 @@ export function createSound({
   doc = globalThis.document ?? null,
   setTimer = (fn, ms) => globalThis.setTimeout(fn, ms),
   clearTimer = (id) => globalThis.clearTimeout(id),
+  loadSample = fetchSample,
 } = {}) {
   let ctx = null;
   let voices = null;
+  const samples = { dice: [] };
   const lastPlayed = new Map();
   let idleTimer = null;
   let idleSuspended = false;
@@ -336,7 +369,22 @@ export function createSound({
     limiter.release.value = 0.12;
     master.connect(limiter);
     limiter.connect(ctx.destination);
-    voices = createVoices(ctx, master, random);
+    voices = createVoices(ctx, master, random, samples);
+    void loadSamples(ctx);
+  }
+
+  /** Fetch and decode the recordings; one that will not load is skipped, and its cue stays silent. */
+  async function loadSamples(context) {
+    for (const [cue, files] of Object.entries(SAMPLE_FILES)) {
+      for (const name of files) {
+        try {
+          const bytes = await loadSample(name);
+          samples[cue].push(await context.decodeAudioData(bytes));
+        } catch {
+          // Offline without a cached copy, or a browser that cannot decode it.
+        }
+      }
+    }
   }
 
   /** Stop the clock when nothing has sounded for a while, so iOS sees no audio activity. */
@@ -409,6 +457,11 @@ export function createSound({
     },
 
     unlock,
+
+    /** How many dice recordings are decoded and ready (4 once audio has started and they loaded). */
+    get samplesLoaded() {
+      return samples.dice.length;
+    },
 
     setMuted(value) {
       muted = Boolean(value);

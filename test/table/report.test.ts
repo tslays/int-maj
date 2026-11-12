@@ -68,7 +68,7 @@ describe("problem report", () => {
     const text = buildReport(store.get(session.id)!, INFO);
     const parsed = parseReport(text);
     assert.ok(!("error" in parsed));
-    assert.deepEqual(Object.keys(parsed).sort(), ["dealer", "format", "humanSteps", "seed", "steps"]);
+    assert.deepEqual(Object.keys(parsed).sort(), ["dealer", "dice", "format", "humanSteps", "seed", "steps"]);
     for (const step of parsed.steps) assert.ok(!("hand" in step) && !("wall" in step) && !("state" in step));
     assert.ok(!text.includes('"wall"') && !text.includes('"players"') && !text.includes('"concealed"'));
   });

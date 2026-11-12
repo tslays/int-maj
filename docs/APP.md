@@ -226,6 +226,7 @@ shut:
 | --- | --- | --- |
 | `draw` | a bot takes from the wall; your drawn tile slides in | soft, low brush and tap (centroid about 330 Hz) |
 | `clack` | a discard lands (yours, then each bot's, panned to its side; the opposite seat is darker and quieter) | the base beat: a weighty plastic tile on smooth felt, a low round thump (centroid about 300 Hz, top end rolled off), nearly the same each time, never sharp; the chimes and ticks are the bright sounds, so the two kinds stay apart |
+| `dice` | each throw of the opening: the seats' throw for East, East's throw for the wall | a recording of two real dice thrown, rattling and settling (the only sound that is not synthesised): four CC0 takes from freesound.org (`assets/sounds/`, provenance in its `LICENSE.md`), a different one each throw, played faster or slower so that it ends about when the dice do on screen; fetched at the first gesture and cached for offline play, silent if it cannot load |
 | `meld` | a call's tiles drop together; a claimed discard arrives with its own clack | 3-4 clacks a hair apart |
 | `tick` | a hand tile under the mouse, or your first tap on it (pitch follows its place in the hand); `swap` when a dragged tile trades places with one it passes | very quiet click |
 | `lift` | the moment you throw a tile | short low pluck, before the clack |
@@ -265,6 +266,29 @@ The table never holds a `GameState`. It calls `routeApi` (`src/table/api.ts`)
 in the page through `src/table/local.ts`, and every answer is built from
 `viewFor(state, seat)`: your own hand, the public melds, discards and bonus
 tiles of the other seats, and their hand counts only.
+
+**Who is East.** You always sit at the bottom of the table, but a new game does
+not deal to you: the four seats throw two dice each and the highest total is
+East (*Illustrated* p. 18, R-026), the throw seeded by the game's seed so a
+reload or a replay gets the same East. Your wind follows from where East sits
+(West sits opposite East, South to its right). When a bot is East it discards
+first, and the table runs the bots up to your move. A saved game or problem
+report records the first dealer, and `dealtByDice` so a replay from the seed
+throws the same dice; a save from before the dice has neither and was dealt
+to East.
+
+**The opening of a hand** (`app/src/ceremony.js`, `opening.js`) shows what the
+book does before play, quickly: on a new game the four seats throw two dice in
+turn and the highest total is East (a tie is thrown again; the table sends every
+throw in `seatSelection`); then East throws two dice for the wall to break
+(*Illustrated* p. 18-19, rules 5-6; `breakFor` in `layout.js`, which also gives
+the two dice), the break stack lifts, and the tiles are dealt in rounds of four.
+Every later hand repeats the last two steps. It follows the Pace setting (the dice's tumbling and their sound too): about two seconds a hand at Faster, three at Normal and four at Slower (`OPENING_SPEED` in `opening.js`),
+and a tap, Escape or Enter skips what is left; the hand it ends on is always the
+engine's. **Options, Dice and dealing: Show / Skip** turns all of it off for
+players who want to go straight to play (kept on the device); a resumed game and
+the review boards never show it. `?seed=<text>` pins the first game's seed, for
+tests and bug reports. Presentation only: the engine's draws do not depend on it.
 
 | Route | Body / query | Returns |
 | --- | --- | --- |

@@ -30,6 +30,8 @@ import { join, resolve } from "node:path";
 
 import type { Browser, Page } from "playwright";
 
+import { newGame } from "../src/core/game/index.ts";
+import type { Seat } from "../src/core/game/index.ts";
 import { SCENARIO_NAMES, type ScenarioName } from "../src/table/scenarios.ts";
 import { build } from "./build.ts";
 import { serve } from "./preview.ts";
@@ -55,6 +57,7 @@ interface Payload {
     readonly phase: string;
     readonly turn: string;
     readonly handNumber: number;
+    readonly dealer: string;
     readonly player: { readonly hand: readonly string[] };
   };
 }
@@ -65,6 +68,7 @@ declare global {
       state(): Payload | null;
       busy(): boolean;
       act(action: unknown): Promise<void>;
+      sound: { readonly samplesLoaded: number };
     };
   }
 }
@@ -182,6 +186,14 @@ async function yourMove(page: Page): Promise<Payload> {
   return (await page.evaluate(() => window.mahjong!.state())) as Payload;
 }
 
+/** A seed whose dice make `dealer` East (the page's `?seed=` pins a game's seed). */
+function seedWithDealer(dealer: Seat): string {
+  for (let n = 0; n < 200; n++) {
+    if (newGame(`smoke-${n}`).state.dealer === dealer) return `smoke-${n}`;
+  }
+  throw new Error(`no seed dealt to ${dealer}`);
+}
+
 /** A page that fails the run on any script error or console error. */
 async function openPage(browser: Browser, errors: string[]): Promise<Page> {
   const context = await browser.newContext({ viewport: VIEWPORT, hasTouch: true });
@@ -221,7 +233,8 @@ async function reviewBoards(browser: Browser, origin: string, shots: string | nu
 async function playThrough(browser: Browser, origin: string, shots: string | null): Promise<void> {
   const errors: string[] = [];
   const page = await openPage(browser, errors);
-  await page.goto(`${origin}/`);
+  // The dice decide who is East; this walk-through needs the first throw to be yours.
+  await page.goto(`${origin}/?seed=${seedWithDealer("E")}`);
   let payload = await yourMove(page);
   assert.equal(payload.view.handNumber, 1);
   assert.equal(payload.view.phase, "discard", "a new game starts with your throw");
@@ -472,6 +485,104 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.context().close();
 }
 
+/** The opening of a game: the throw for East, the throw for the wall, the deal; and how to skip it. */
+async function opening(browser: Browser, origin: string, shots: string | null): Promise<void> {
+  const watch = () => {
+    // Record whether the opening's layer ever stood on the page.
+    (window as unknown as { openingSeen: boolean }).openingSeen = false;
+    new MutationObserver(() => {
+      if (document.querySelector(".opening") !== null) (window as unknown as { openingSeen: boolean }).openingSeen = true;
+    }).observe(document, { childList: true, subtree: true });
+  };
+
+  // A bot wins the throw: the dice are shown, then the wall's, then the deal; the bot throws first.
+  {
+    const errors: string[] = [];
+    const page = await openPage(browser, errors);
+    await page.addInitScript(watch);
+    const seed = seedWithDealer("W");
+    await page.goto(`${origin}/?seed=${seed}`);
+    // All four seats throw, under the title "Who is East?" (checked at once: the card moves on in about two seconds).
+    await page.waitForFunction(
+      () => document.querySelectorAll(".opening-row .die").length === 8 && document.querySelector(".opening-card h2")?.textContent === "Who is East?",
+      null,
+      { timeout: READY_MS },
+    );
+    await page.waitForFunction(() => /\d/.test(document.querySelector(".opening-row.east .opening-total")?.textContent ?? ""), null, {
+      timeout: READY_MS,
+    });
+    if (shots !== null) await page.screenshot({ path: join(shots, "opening-east.png") });
+    await page.waitForFunction(() => /for the wall/.test(document.querySelector(".opening-card h2")?.textContent ?? ""), null, {
+      timeout: READY_MS,
+    });
+    await page.waitForFunction(() => /Wind's wall/.test(document.querySelector(".opening-note")?.textContent ?? ""), null, {
+      timeout: READY_MS,
+    });
+    await page.waitForSelector(".opening", { state: "detached", timeout: READY_MS });
+    const payload = await yourMove(page);
+    assert.equal(payload.view.dealer, "W", "the dice made West East");
+    assert.equal(payload.view.handNumber, 1);
+    assert.ok(
+      payload.table.find((entry) => entry.seat === "W")!.discards.length > 0,
+      "the bot that is East threw first",
+    );
+    await assertDrawn(page, "opening-dealt", shots);
+    assert.deepEqual(errors, [], "opening: no errors");
+    await page.context().close();
+    console.log("  ok  the opening: dice for East, the wall's dice, the deal");
+  }
+
+  // A tap skips what is left, and the hand is the same.
+  {
+    const errors: string[] = [];
+    const page = await openPage(browser, errors);
+    await page.goto(`${origin}/?seed=${seedWithDealer("S")}`);
+    await page.waitForSelector(".opening", { timeout: READY_MS });
+    const started = Date.now();
+    await page.mouse.click(VIEWPORT.width / 2, VIEWPORT.height / 3);
+    await page.waitForSelector(".opening", { state: "detached", timeout: 3000 });
+    assert.ok(Date.now() - started < 3000, "a tap cuts the opening short");
+    // The tap started audio, which fetched and decoded the dice recordings from the built app.
+    await page.waitForFunction(() => window.mahjong?.sound.samplesLoaded === 4, null, {
+      timeout: 10_000,
+    });
+    const payload = await yourMove(page);
+    assert.equal(payload.view.dealer, "S");
+    assert.ok(payload.view.player.hand.length >= 13, "the deal is complete");
+    assert.deepEqual(errors, [], "skipped opening: no errors");
+    await page.context().close();
+    console.log("  ok  a tap skips the opening");
+  }
+
+  // Dice and dealing set to Skip: no opening at all, and the choice is remembered.
+  {
+    const errors: string[] = [];
+    const page = await openPage(browser, errors);
+    await page.goto(`${origin}/?seed=${seedWithDealer("N")}`);
+    await page.waitForSelector(".opening", { timeout: READY_MS });
+    await page.mouse.click(VIEWPORT.width / 2, VIEWPORT.height / 3);
+    await yourMove(page);
+    await page.click("#options");
+    await page.waitForSelector("#options-sheet:not([hidden])", { timeout: 5000 });
+    await page.click('#opening-pref [data-opening="off"]');
+    await page.waitForSelector('#opening-pref [data-opening="off"][aria-checked=true]', { timeout: 5000 });
+    assert.equal(await page.evaluate(() => localStorage.getItem("int-maj.opening")), "off", "the choice is remembered");
+    await page.context().close();
+
+    const fresh = await openPage(browser, errors);
+    await fresh.addInitScript(watch);
+    await fresh.addInitScript(() => localStorage.setItem("int-maj.opening", "off"));
+    await fresh.goto(`${origin}/?seed=${seedWithDealer("E")}`);
+    const payload = await yourMove(fresh);
+    assert.equal(payload.view.dealer, "E");
+    assert.equal(payload.view.player.hand.length, 14);
+    assert.equal(await fresh.evaluate(() => (window as unknown as { openingSeen: boolean }).openingSeen), false, "no opening when it is off");
+    assert.deepEqual(errors, [], "opening off: no errors");
+    await fresh.context().close();
+    console.log("  ok  Dice and dealing set to Skip goes straight to play");
+  }
+}
+
 function option(argv: readonly string[], name: string): string | undefined {
   const index = argv.indexOf(name);
   return index >= 0 ? argv[index + 1] : undefined;
@@ -500,6 +611,8 @@ try {
   await reviewBoards(browser, origin, shots);
   console.log("A game, as a player");
   await playThrough(browser, origin, shots);
+  console.log("The opening of a hand");
+  await opening(browser, origin, shots);
   console.log("Smoke test passed.");
 } catch (error) {
   failed = true;

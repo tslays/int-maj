@@ -114,7 +114,7 @@ async function main(): Promise<void> {
       process.exitCode = 1;
       return;
     }
-    reportDealer = report.dealer;
+    reportDealer = report.dice === true ? undefined : report.dealer;
     reportExcluded = report.excludedHands;
     input = { seed: report.seed, actions: report.steps };
   } else {

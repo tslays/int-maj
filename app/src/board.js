@@ -121,6 +121,17 @@ export class Board {
   }
 
   /**
+   * A new hand: clear the table and build its wall. A `closed` wall still
+   * stands whole (the opening lifts the break stack with `breakWall`).
+   */
+  startHand(payload, { closed = false } = {}) {
+    this.me = payload.seat;
+    this.handId = `${payload.game}:${payload.view.handNumber}`;
+    this.clear();
+    this.buildWall(`${payload.seed}:${payload.view.handNumber}`, payload.view.dealer, { closed });
+  }
+
+  /**
    * Bring the table in line with `payload`. Resolves when every animation it
    * started has finished. Returns what happened worth announcing.
    */
@@ -129,9 +140,7 @@ export class Board {
     this.me = payload.seat;
     const handId = `${payload.game}:${payload.view.handNumber}`;
     if (handId !== this.handId) {
-      this.handId = handId;
-      this.clear();
-      this.buildWall(`${payload.seed}:${payload.view.handNumber}`, payload.view.dealer);
+      this.startHand(payload);
       animated = false;
       sound.cue("deal");
     }
