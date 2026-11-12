@@ -183,7 +183,7 @@ function layerCanvas() {
 const panelLayer = layerCanvas();
 const textLayer = layerCanvas();
 
-const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)") ?? { matches: false };
+export const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)") ?? { matches: false };
 
 /**
  * The turn light. `theta` is where it sits, in seats counted from you (a whole
@@ -413,6 +413,16 @@ function fit() {
   views.pond.position.copy(tableCamera.position);
   views.pond.quaternion.copy(tableCamera.quaternion);
   poseTableCamera();
+  viewChanged();
+}
+
+/* Who wants to know when the screen's size or the pond zoom changes (the round spotlight). */
+const viewListeners = [];
+export function onViewChange(listener) {
+  viewListeners.push(listener);
+}
+function viewChanged() {
+  for (const listener of viewListeners) listener();
 }
 
 /* --------------------------------------------------------- pond zoom */
@@ -452,6 +462,7 @@ export function setPondZoom(on) {
   if (zoom.on === on) return;
   zoom.on = on;
   document.documentElement.classList.toggle("pond-zoom", on);
+  viewChanged();
   const run = ++zoom.run;
   const from = zoom.k;
   const to = on ? 1 : 0;

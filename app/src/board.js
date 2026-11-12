@@ -17,9 +17,10 @@ import { D, H, W, makeTile, roundedRect, markTile, markMaterial, markFillMateria
 import { discardSlot, latestPlate, meldLayout, pondPad } from "./layout.js";
 import { pace } from "./pace.js";
 import { sound } from "./sound.js";
-import { animate, easeInOutCubic, easeOutBack, easeOutCubic, handScene, requestRender, setPondCounts, tableScene, tween } from "./stage.js";
+import { animate, easeInOutCubic, easeOutBack, easeOutCubic, handScene, onViewChange, requestRender, setPondCounts, tableScene, tween } from "./stage.js";
 import { handMethods } from "./board-hand.js";
 import { wallMethods } from "./board-wall.js";
+import { spotMethods } from "./board-spot.js";
 
 const SEATS = ["E", "S", "W", "N"];
 const { WALL_STACKS, WALL_R, HAND_Z, DISCARD_SCALE } = TABLE;
@@ -72,6 +73,8 @@ export class Board {
     this.raycaster = new THREE.Raycaster();
     this.marked = [];
     this.markId = 0;
+    this.spot = []; // the round's discards, standing up on a phone (board-spot.js)
+    onViewChange(() => this.refreshSpot());
   }
 
   rel(seat) {
@@ -97,6 +100,7 @@ export class Board {
     this.carried = null;
     this.setCustom(false);
     this.seats = {};
+    this.spot = [];
     for (const seat of SEATS) {
       this.seats[seat] = {
         discards: [],
@@ -177,6 +181,8 @@ export class Board {
     if (state && state.discards.length > 0 && state.discards[state.discards.length - 1].key === last.tile) {
       this.plate = flatPlate(latestPlate(state.discards.length - 1), plateMaterial, 0.2, 0.012);
       this.frameOf(last.seat).add(this.plate);
+      // Opened mid-hand (a reload, a review board): the round starts with the latest discard.
+      if (this.spot.length === 0) this.spotlight(last.seat, state.discards[state.discards.length - 1]);
     }
     requestRender();
   }
@@ -194,10 +200,14 @@ export class Board {
       }
     } else if (after.length === before.length - 1 && samePrefix(after.length)) {
       const taken = state.discards.pop();
+      this.unspot(taken);
       const claimer = [...meldsGrew.keys()].find((seat) => seat !== entry.seat) ?? null;
       work.push(animated && claimer !== null ? this.flyToClaimer(taken.tile, claimer) : Promise.resolve(taken.tile.removeFromParent()));
     } else {
-      for (const item of state.discards) item.tile.removeFromParent();
+      for (const item of state.discards) {
+        this.unspot(item);
+        item.tile.removeFromParent();
+      }
       state.discards = [];
       after.forEach((key, index) => work.push(this.addDiscard(entry.seat, key, index, false)));
     }
@@ -211,7 +221,8 @@ export class Board {
     const rest = poseFaceUp(new THREE.Object3D(), slot.x, slot.z, index * 7 + SEATS.indexOf(seat), DISCARD_SCALE);
     tile.scale.copy(rest.scale);
     this.frameOf(seat).add(tile);
-    state.discards.push({ key, tile });
+    const item = { key, tile, rest };
+    state.discards.push(item);
     if (!animated) {
       tile.position.copy(rest.position);
       tile.rotation.copy(rest.rotation);
@@ -234,7 +245,7 @@ export class Board {
     }).then(() => {
       const y = rest.position.y;
       return tween(tile.position, { y: y + 0.05 }, 60).then(() => tween(tile.position, { y }, 90));
-    });
+    }).then(() => this.spotlight(seat, item));
   }
 
   /** A claimed discard flies from the heap towards the claimer and goes into the meld. */
@@ -242,12 +253,13 @@ export class Board {
     tableScene.attach(tile);
     const target = this.meldTarget(claimer);
     const from = tile.position.clone();
+    const size = tile.scale.x; // a spotlit tile flies from its standing size
     sound.cue("clack", { delay: pace.scale(0.33), intensity: 0.7, ...this.ear(claimer) });
     return animate(360, (t) => {
       const k = easeInOutCubic(t);
       tile.position.lerpVectors(from, target, k);
       tile.position.y += Math.sin(Math.PI * t) * 1.2;
-      tile.scale.setScalar(DISCARD_SCALE * (1 - 0.3 * k));
+      tile.scale.setScalar(size + (DISCARD_SCALE * 0.7 - size) * k);
     }).then(() => tile.removeFromParent());
   }
 
@@ -372,4 +384,4 @@ export class Board {
   }
 }
 
-Object.assign(Board.prototype, wallMethods, handMethods);
+Object.assign(Board.prototype, wallMethods, handMethods, spotMethods);
