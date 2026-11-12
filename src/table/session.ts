@@ -18,7 +18,7 @@
 import { checkHand, summarizeMatch, type MatchSummary } from "../core/check.ts";
 import { tileKey } from "../core/tiles.ts";
 import type { Action } from "../core/game/actions.ts";
-import { chooseAction } from "../core/game/bot.ts";
+import { chooseAction, DEFAULT_BOT_LEVEL, type BotLevel } from "../core/game/bot.ts";
 import { closestWithPins, type ClosestHand, type PinnedHand } from "../core/game/closest.ts";
 import type { Event } from "../core/game/events.ts";
 import { isApplyError } from "../core/game/draft.ts";
@@ -270,11 +270,11 @@ function startSession(id: string, seed: string | number, rules: HouseRules): Web
  * Bots see only their own `viewFor` projection, so this cannot reveal a hand
  * to the client either: only their public events are appended.
  */
-function botStep(session: WebSession): SessionUpdate | null {
+function botStep(session: WebSession, level: BotLevel): SessionUpdate | null {
   if (session.state.phase === "finished") return null;
   if (viewFor(session.state, session.seat).legalActions.length > 0) return null;
   const actor = session.state.turn;
-  const action = chooseAction(viewFor(session.state, actor), actor);
+  const action = chooseAction(viewFor(session.state, actor), actor, level);
   if (action === null) return null;
   const result = apply(session.state, action);
   if (isApplyError(result)) {
@@ -683,11 +683,15 @@ export class GameStore {
    * The table's next decision. The browser calls this whenever the human has
    * nothing to do, so every throw arrives as its own payload and the beat the
    * player watches is the beat the game actually runs at.
+   *
+   * `level` is how well the bot plays this decision. It is a preference, not
+   * a rule: the decision it makes is recorded as a step like any other, so a
+   * replay, undo or saved game never needs to know the level.
    */
-  step(id: string): StepUpdate {
+  step(id: string, level: BotLevel = DEFAULT_BOT_LEVEL): StepUpdate {
     const session = this.sessions.get(id);
     if (session === undefined) return { error: `unknown game: ${id}` };
-    const stepped = botStep(session);
+    const stepped = botStep(session, level);
     if (stepped === null) return { done: true };
     this.sessions.set(id, stepped.session);
     return stepped;

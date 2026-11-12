@@ -20,7 +20,8 @@ The message to paste to the club, then the known limits. It stands alone.
 > books, searchable; the pin on a hand's sheet keeps it in the Hints panel.
 > After a hand, Next hand deals on, and the small Play this hand again link
 > deals the same tiles once more. The menu has New game, Calls, Sort, Hints
-> and Options. Options holds Sound, Pace (Slower, Normal or Faster bots), the
+> and Options. Options holds Sound, Pace (Slower, Normal or Faster bots), Bot level
+> (Easy, Medium or Hard), the
 > house rule (which hands are in play), Help and Report. The game
 > saves after every move and resumes where you left off. On an iPhone the
 > silent switch mutes the game; flip it off (or use the Sound switch in Options).
