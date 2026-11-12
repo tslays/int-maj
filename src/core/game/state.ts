@@ -189,8 +189,16 @@ export interface GameState {
   readonly goulash?: boolean;
   /** Dice roll and East's chosen seat for the game, when the deal selected it. */
   readonly seatSelection?: {
+    /** The throw that decided it: each seat's two-dice total. */
     readonly rolls: Readonly<Record<Seat, number>>;
     readonly dealer: Seat;
+    /**
+     * Every throw, oldest first, each seat's two dice. A tie for the highest
+     * total is thrown again by all four (an assumption: the book is silent),
+     * so the last entry is the throw that decided it. Absent in states saved
+     * before the dice were shown.
+     */
+    readonly throws?: readonly Readonly<Record<Seat, readonly [number, number]>>[];
   };
   readonly players: readonly PlayerState[];
   readonly wall: {

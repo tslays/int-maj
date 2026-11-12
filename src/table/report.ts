@@ -3,7 +3,7 @@
  * the game to the same state.
  *
  * A report is plain text. The header lines are for a human; the block between
- * the BEGIN/END markers is JSON holding the seed, the first dealer and every
+ * the BEGIN/END markers is JSON holding the seed, the first dealer (East of hand 1, by the dice) and every
  * decision (`ReplayStep`) in order, bots included. `bin/replay.ts` reads a
  * report as it is, and `replayReport` here is the same replay in code.
  *
@@ -34,7 +34,10 @@ export interface ReportInfo {
 export interface ReportReplay {
   readonly format: typeof REPORT_FORMAT;
   readonly seed: string | number;
+  /** East of hand 1. For a game dealt by the dice this is what they chose. */
   readonly dealer: Seat;
+  /** Hand 1 was dealt by the dice, so the seed decides the dealer when replayed. */
+  readonly dice?: true;
   /** The house-rule exclusion list hand 1 was dealt with; absent means none. */
   readonly excludedHands?: readonly string[];
   readonly steps: readonly ReplayStep[];
@@ -54,7 +57,8 @@ export function buildReport(session: WebSession, info: ReportInfo): string {
   const replay: ReportReplay = {
     format: REPORT_FORMAT,
     seed: session.seed,
-    dealer: session.seat,
+    dealer: session.firstDealer ?? "E",
+    ...(session.dealtByDice === true ? { dice: true as const } : {}),
     ...(session.excludedAtStart === undefined || session.excludedAtStart.length === 0
       ? {}
       : { excludedHands: session.excludedAtStart }),
@@ -98,7 +102,8 @@ export function parseReport(text: string): ReportReplay | { readonly error: stri
   if (record.format !== REPORT_FORMAT) return { error: "unknown report format" };
   if (typeof record.seed !== "string" && typeof record.seed !== "number") return { error: "report has no seed" };
   if (!SEATS.includes(record.dealer as Seat)) return { error: "report has no dealer" };
-  const { steps, humanSteps, excludedHands } = record;
+  const { steps, humanSteps, excludedHands, dice } = record;
+  if (dice !== undefined && dice !== true) return { error: "report has a malformed dice flag" };
   if (
     excludedHands !== undefined &&
     !(Array.isArray(excludedHands) && excludedHands.every((id) => typeof id === "string"))
@@ -118,6 +123,7 @@ export function parseReport(text: string): ReportReplay | { readonly error: stri
     format: REPORT_FORMAT,
     seed: record.seed,
     dealer: record.dealer as Seat,
+    ...(dice === true ? { dice: true as const } : {}),
     ...(excludedHands === undefined ? {} : { excludedHands: excludedHands as string[] }),
     steps: steps as ReplayStep[],
     humanSteps: humanSteps as number[],
@@ -127,7 +133,7 @@ export function parseReport(text: string): ReportReplay | { readonly error: stri
 /** Replay a report's decisions from its seed; throws if they no longer replay. */
 export function replayReport(report: ReportReplay): ApplyOk {
   return replaySteps(report.seed, report.steps, {
-    dealer: report.dealer,
+    ...(report.dice === true ? {} : { dealer: report.dealer }),
     ...(report.excludedHands === undefined ? {} : { excludedHands: report.excludedHands }),
   });
 }

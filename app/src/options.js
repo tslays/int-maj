@@ -1,5 +1,5 @@
 /**
- * The Options sheet: sound, large discards (phones only), the pace, the bot level, the house rules, and the doors to Help and
+ * The Options sheet: sound, large discards (phones only), the pace, the bot level, dice and dealing, the house rules, and the doors to Help and
  * Report a problem.
  *
  * A house rule is a preference kept on the device. The table fixes a hand's
@@ -10,6 +10,7 @@
 import { largeDiscards } from "./large-discards.js";
 import { roundLayersWanted } from "./layout.js";
 import { level } from "./level.js";
+import { openingPref } from "./opening.js";
 import { pace } from "./pace.js";
 import { sound } from "./sound.js";
 import { $, request, state, storage } from "./shared.js";
@@ -88,6 +89,12 @@ function showLevel() {
   }
 }
 
+function showOpening() {
+  for (const button of document.querySelectorAll("#opening-pref [data-opening]")) {
+    button.setAttribute("aria-checked", String((button.dataset.opening === "on") === openingPref.enabled));
+  }
+}
+
 /* The left-out hands are named by the table, never by a list kept here. */
 async function nameHands() {
   try {
@@ -108,6 +115,7 @@ export function installOptions() {
   showLargeDiscards();
   showPace();
   showLevel();
+  showOpening();
   showRules();
 
   $("#options").addEventListener("click", () => {
@@ -138,6 +146,14 @@ export function installOptions() {
   $("#large-discards").addEventListener("click", () => {
     largeDiscards.set(!largeDiscards.on);
     showLargeDiscards();
+  });
+
+  /* Dice and dealing: takes effect with the next deal. */
+  $("#opening-pref").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-opening]");
+    if (button === null) return;
+    openingPref.set(button.dataset.opening === "on");
+    showOpening();
   });
 
   /* Pace: takes effect at once, the next move already runs at it. */

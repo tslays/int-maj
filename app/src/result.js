@@ -207,7 +207,7 @@ function renderOutcome(outcome) {
     panel.replaceChildren();
     state.busy = true;
     try {
-      await apply(await request("/api/next", { game: state.payload.game, houseRules: houseRules() }), { animated: false });
+      await apply(await request("/api/next", { game: state.payload.game, houseRules: houseRules() }), { animated: false, opening: true });
     } catch (error) {
       toast(error.message);
     } finally {

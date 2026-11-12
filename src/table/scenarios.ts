@@ -26,7 +26,7 @@ import type { GameState, Seat } from "../core/game/state.ts";
 import { viewFor, type GameView } from "../core/game/view.ts";
 import { GameStore, handCheck, ZERO_SCORES, type WebSession } from "./session.ts";
 
-/** The web table always seats you at East. */
+/** Review boards are dealt to you at East, so each one opens on your move. */
 const SEAT: Seat = "E";
 
 /** A hand from deal to result is well under this; it bounds a broken replay. */

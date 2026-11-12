@@ -334,6 +334,9 @@ describe("wall draw (I p. 18-19 rules 6-8, p. 62)", () => {
     for (let n = 0; n < 400; n++) {
       const b = breakFor(`k${n}`);
       assert.ok(b.total >= 2 && b.total <= 12 && b.count === b.total);
+      assert.equal(b.dice.length, 2);
+      assert.ok(b.dice.every((die: number) => Number.isInteger(die) && die >= 1 && die <= 6));
+      assert.equal(b.dice[0] + b.dice[1], b.total, "the two dice shown are the total thrown");
       const named = [0, 1, 2, 3].map((w) => [[5, 9], [2, 6, 10], [3, 7, 11], [4, 8, 12]][w]!.includes(b.total));
       assert.ok(named[b.wallSeat], `${b.total} -> ${b.wallSeat}`);
       seats.set(b.wallSeat, (seats.get(b.wallSeat) ?? 0) + 1);
