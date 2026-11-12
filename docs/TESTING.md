@@ -14,10 +14,14 @@ The message to paste to the club, then the known limits. It stands alone.
 >
 > **How it works:** tap a tile in your hand and tap it again to throw it (or
 > hold it and swipe up). Claims, kongs, fishing and Mah Jong appear as buttons.
-> The Hints panel lists the hands you are closest to; tap a row to see that
-> hand. The All hands button above it opens every hand in both books, searchable.
-> The menu has New game, Calls, Sort, Hints and Options. Options holds Sound,
-> the house rule (which hands are in play), Help and Report. The game
+> You can drag tiles sideways to arrange your hand at any time, even while
+> the bots play. The Hints panel lists the hands you are closest to; tap a row
+> to see that hand. The All hands button above it opens every hand in both
+> books, searchable; the pin on a hand's sheet keeps it in the Hints panel.
+> After a hand, Next hand deals on, and the small Play this hand again link
+> deals the same tiles once more. The menu has New game, Calls, Sort, Hints
+> and Options. Options holds Sound, Pace (Slower, Normal or Faster bots), the
+> house rule (which hands are in play), Help and Report. The game
 > saves after every move and resumes where you left off. On an iPhone the
 > silent switch mutes the game; flip it off (or use the Sound switch in Options).
 >
