@@ -21,6 +21,7 @@ import { animate, easeInOutCubic, easeOutBack, easeOutCubic, handScene, onViewCh
 import { handMethods } from "./board-hand.js";
 import { wallMethods } from "./board-wall.js";
 import { roundMethods } from "./board-round.js";
+import { largeDiscards } from "./large-discards.js";
 
 const SEATS = ["E", "S", "W", "N"];
 const { WALL_STACKS, WALL_R, HAND_Z, DISCARD_SCALE } = TABLE;
@@ -75,6 +76,7 @@ export class Board {
     this.markId = 0;
     this.round = []; // this round's opponent discards, each with its face layer on a phone (board-round.js)
     onViewChange(() => this.refreshRound());
+    largeDiscards.onChange(() => this.refreshRound());
   }
 
   rel(seat) {

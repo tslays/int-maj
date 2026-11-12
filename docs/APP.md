@@ -77,7 +77,11 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   under it. With `prefers-reduced-motion` a layer appears at full size. A
   screen whose short side is at most 500 CSS pixels is a phone (every
   iPhone held sideways; the smallest iPad is 744), so tablets and computers
-  keep the plain table. `test/app/layout.test.ts` proves a layer lies above
+  keep the plain table. Options has a **Large discards** switch for them,
+  shown only on a phone and on by default (`app/src/large-discards.js`, kept
+  on the device; the players it helps most are the least likely to look for
+  a setting); turning it off hides the layers at once, mid-round too.
+  `test/app/layout.test.ts` proves a layer lies above
   its tile's face, and a later one above an earlier one, at every size.
 - The turn light (`stage.js`, `updateConsole`): the console is painted in three
   layers (panel, light, lettering) so the light can move under the text. The
@@ -114,7 +118,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   (the index of all hands), `result.js` (the result card and the final
   standings), `menu.js`
   (the Calls, Sort, New game buttons and the help sheet), `options.js` (the
-  Options sheet: the Sound switch, the Pace choice, the Bot level, the house rules, and the Help and Report
+  Options sheet: the Sound switch, the Large discards switch (phones only), the Pace choice, the Bot level, the house rules, and the Help and Report
   buttons) and `report.js` (report a problem). Modules that need the loop (`input`,
   `result`, `menu`) get its functions from `main.js` through an `installX`
   call, so imports never run in a circle.

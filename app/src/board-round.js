@@ -4,7 +4,8 @@
  * angle and orientation, so a glance tells what the round threw without
  * leaning in or zooming. A layer appears only once its tile has landed and
  * settled, and expands briefly out of the tile; your own throw clears them
- * all, and the next round starts. A claimed tile takes its layer with it. The
+ * all, and the next round starts. Options has a switch for them (on by
+ * default, `large-discards.js`). A claimed tile takes its layer with it. The
  * newest layer has the latest discard's cyan edge (it covers that plate).
  *
  * Each layer is a child of its tile (`makeFaceLayer` in `tiles.js`), so it
@@ -17,6 +18,7 @@
 import { layerEdge, makeFaceLayer } from "./tiles.js";
 import { ROUND_LAYER, roundLayersWanted, roundLayerZ } from "./layout.js";
 import { animate, easeOutCubic, requestRender, viewport } from "./stage.js";
+import { largeDiscards } from "./large-discards.js";
 
 const GROW_MS = 200;
 const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)") ?? { matches: false };
@@ -27,9 +29,9 @@ function setLayerScale(item, scale, order) {
 }
 
 export const roundMethods = {
-  /** Whether the layers show: on a phone-sized screen only. */
+  /** Whether the layers show: on a phone-sized screen, with Large discards on (Options). */
   roundShown() {
-    return roundLayersWanted(viewport.width, viewport.height);
+    return largeDiscards.on && roundLayersWanted(viewport.width, viewport.height);
   },
 
   /** An opponent's discard has landed and settled: lay its face over it, expanding out of the tile. */
@@ -79,7 +81,7 @@ export const roundMethods = {
     item.edge = null;
   },
 
-  /** The screen changed size: show the layers on a phone, hide them on anything larger. */
+  /** The screen changed size or the switch was turned: show the layers, or hide them. */
   refreshRound() {
     const shown = this.roundShown();
     for (const item of this.round) item.layer.visible = shown;
