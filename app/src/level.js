@@ -3,7 +3,8 @@
  *
  * A preference kept on the device, like the pace. It is sent with every bot
  * decision the table asks for, so a change takes effect with the bots' next
- * move. The decisions themselves are recorded in the game, so undo, Play
+ * move. Medium is the default: most players found the bots too strong at
+ * Hard, which is how they played before there was a choice. The decisions themselves are recorded in the game, so undo, Play
  * again and a resumed game never depend on the level.
  */
 
@@ -26,11 +27,11 @@ function browserStorage() {
 export function createLevel({ storage = browserStorage } = {}) {
   const store = () => (typeof storage === "function" ? storage() : storage);
   const find = (id) => LEVELS.find((entry) => entry.id === id);
-  let current = find("hard");
+  let current = find("medium");
   try {
     current = find(store()?.getItem(LEVEL_KEY)) ?? current;
   } catch {
-    // Unreadable: Hard, the bots as they always played.
+    // Unreadable: Medium, the table's default.
   }
 
   return {

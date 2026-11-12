@@ -1,6 +1,6 @@
 /**
- * The bot level (`app/src/level.js`): easy, medium and hard, Hard by default
- * (the bots as they always played), remembered on the device and safe with
+ * The bot level (`app/src/level.js`): easy, medium and hard, Medium by default
+ * (most players found Hard too strong), remembered on the device and safe with
  * missing, refusing or garbled storage. The table checks the same three ids.
  */
 
@@ -25,10 +25,10 @@ describe("bot level", () => {
     assert.deepEqual(LEVELS.map((entry: { id: string }) => entry.id), [...BOT_LEVELS]);
   });
 
-  it("starts at Hard and remembers the choice", () => {
+  it("starts at Medium and remembers the choice", () => {
     const store = memory();
     const level = createLevel({ storage: store });
-    assert.equal(level.id, "hard");
+    assert.equal(level.id, "medium");
     assert.equal(level.set("easy"), true);
     assert.equal(store.getItem(LEVEL_KEY), "easy");
     assert.equal(createLevel({ storage: store }).id, "easy");
@@ -36,15 +36,15 @@ describe("bot level", () => {
 
   it("ignores an unknown id and a garbled saved value", () => {
     const level = createLevel({ storage: memory({ [LEVEL_KEY]: "expert" }) });
-    assert.equal(level.id, "hard");
+    assert.equal(level.id, "medium");
     assert.equal(level.set("expert"), false);
-    assert.equal(level.id, "hard");
+    assert.equal(level.id, "medium");
   });
 
   it("works with no storage and with storage that throws", () => {
     const none = createLevel({ storage: () => null });
-    assert.equal(none.set("medium"), true);
-    assert.equal(none.id, "medium");
+    assert.equal(none.set("hard"), true);
+    assert.equal(none.id, "hard");
     const refusing = createLevel({
       storage: () => ({
         getItem: () => {
@@ -55,7 +55,7 @@ describe("bot level", () => {
         },
       }),
     });
-    assert.equal(refusing.id, "hard");
+    assert.equal(refusing.id, "medium");
     assert.equal(refusing.set("easy"), true);
     assert.equal(refusing.id, "easy");
   });

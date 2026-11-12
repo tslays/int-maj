@@ -256,7 +256,7 @@ tiles of the other seats, and their hand counts only.
 | `GET /api/scenario` | `state=<name>` | one fixed review board and its events |
 | `POST /api/new` | `{ "seed": "..." }` | a new game and its first state |
 | `POST /api/move` | `{ "game": "...", "action": {...} }` | the new state plus `events` as text lines |
-| `POST /api/step` | `{ "game": "...", "level"?: "easy" \| "medium" \| "hard" }` | the next single bot decision at that level (hard when absent), or `{ "done": true }` |
+| `POST /api/step` | `{ "game": "...", "level"?: "easy" \| "medium" \| "hard" }` | the next single bot decision at that level (hard when absent; the app always sends one), or `{ "done": true }` |
 | `POST /api/undo` | `{ "game": "..." }` | the state before your previous decision in this hand |
 | `POST /api/retry` | `{ "game": "..." }` | the current hand dealt again: same wall and tiles, scores from before it kept |
 | `POST /api/next` | `{ "game": "..." }` | the next hand after a finished one |
@@ -301,7 +301,7 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   a problem report. Unbuilt, the label reads `dev · local`.
 - **Options and house rules.** The menu's Options button opens a sheet with
   the Sound switch, the Pace choice (Slower, Normal, Faster), the Bot level (Easy, Medium, Hard), the house rules, and the Help and Report buttons (their
-  sheets open on top of it). The Bot level is a device preference too (`int-maj.level`, `app/src/level.js`, Hard by default): it is sent as `level` with every `/api/step`, so it takes effect with the bots' next move; the decision is recorded as a step, so undo, Play again and a saved game never depend on it. Pace is a device preference (`int-maj.pace`, `app/src/pace.js`): `pace.scale(ms)` multiplies every bot beat, call-out hold, tile animation and animation-timed sound delay (Normal 1, Slower 1.5, Faster 0.6); ambient and camera animations stay fixed, and the engine never sees it. A house rule is a preference kept on the device
+  sheets open on top of it). The Bot level is a device preference too (`int-maj.level`, `app/src/level.js`, Medium by default): it is sent as `level` with every `/api/step`, so it takes effect with the bots' next move; the decision is recorded as a step, so undo, Play again and a saved game never depend on it. Pace is a device preference (`int-maj.pace`, `app/src/pace.js`): `pace.scale(ms)` multiplies every bot beat, call-out hold, tile animation and animation-timed sound delay (Normal 1, Slower 1.5, Faster 0.6); ambient and camera animations stay fixed, and the engine never sees it. A house rule is a preference kept on the device
   (`int-maj:house-rules`); `houseRules()` in `options.js` is sent with every
   `/api/new` and `/api/next`, and the table fixes a hand's rules at its deal
   (`GameState.excludedHands`), so a change made mid-hand reads "Takes effect

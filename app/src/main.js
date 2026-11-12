@@ -99,6 +99,10 @@ function onlyPass(actions) {
   return actions.length > 0 && actions.every((action) => action.type === "Pass");
 }
 
+/** Review boards (`?state=`) are fixed screens: their bots always play at Hard, as the board was built. */
+const REVIEW = new URLSearchParams(window.location.search).has("state");
+const botLevel = () => (REVIEW ? "hard" : level.id);
+
 /** Let the table run until it needs you, then show your choices. */
 async function run() {
   if (state.busy || state.payload === null) return;
@@ -112,7 +116,7 @@ async function run() {
       const legal = state.payload.legalActions;
       if (legal.length === 0) {
         const before = state.payload;
-        const next = await request("/api/step", { game: state.payload.game, level: level.id });
+        const next = await request("/api/step", { game: state.payload.game, level: botLevel() });
         if (next.done === true) {
           await apply(await request(`/api/state?game=${encodeURIComponent(state.payload.game)}`));
           if (state.payload.legalActions.length === 0 && state.payload.outcome === null) return;
