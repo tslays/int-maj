@@ -1028,7 +1028,8 @@ button.detail-rule {
 .options-grid > .options-col {
   display: contents;
 }
-.options-grid .option-links {
+.options-grid .option-links,
+.options-grid .option-confirm {
   order: 1;
 }
 @media (min-width: 540px) {
@@ -1041,7 +1042,8 @@ button.detail-rule {
     flex: 1 1 0;
     min-width: 0;
   }
-  .options-grid .option-links {
+  .options-grid .option-links,
+  .options-grid .option-confirm {
     order: 0;
   }
 }
@@ -1165,8 +1167,28 @@ button.detail-rule {
   justify-content: center;
   gap: 2px 4px;
 }
-.option-links [hidden] {
+.option-links[hidden],
+.option-links [hidden],
+.option-confirm[hidden] {
   display: none;
+}
+.option-confirm {
+  padding: 8px 12px 6px;
+  border-radius: 12px;
+  background: rgba(240, 120, 100, 0.1);
+  text-align: center;
+}
+.option-confirm p {
+  font-size: 13px;
+}
+.option-confirm-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.option-link.option-danger {
+  color: #f39a88;
 }
 .option-link {
   min-height: 34px;

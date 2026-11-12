@@ -1,7 +1,7 @@
 /**
  * The Options sheet: sound, large discards (phones only), the pace, the bot
- * level, dice and dealing, the house rules, and the doors to Help and Report a
- * problem.
+ * level, dice and dealing, the house rules, and the doors to New game, Help
+ * and Report a problem.
  *
  * A house rule is a preference kept on the device. The table fixes a hand's
  * rules at its deal, so `houseRules()` is sent with every new game and every
@@ -99,11 +99,19 @@ async function nameHands() {
   }
 }
 
-function closeOptions() {
-  $("#options-sheet").hidden = true;
+/* New game ends the game in progress, so it asks first, in place of the links. */
+function askNewGame(asking) {
+  $("#new-game-confirm").hidden = !asking;
+  $("#option-links").hidden = asking;
 }
 
-export function installOptions() {
+function closeOptions() {
+  $("#options-sheet").hidden = true;
+  askNewGame(false);
+}
+
+/** `hooks.newGame` starts a fresh game. */
+export function installOptions({ newGame }) {
   showSound();
   showLargeDiscards();
   showPace();
@@ -120,6 +128,18 @@ export function installOptions() {
     $("#options-close").focus();
   });
   $("#options-close").addEventListener("click", closeOptions);
+  $("#new-game").addEventListener("click", () => {
+    askNewGame(true);
+    $("#new-game-keep").focus();
+  });
+  $("#new-game-keep").addEventListener("click", () => {
+    askNewGame(false);
+    $("#new-game").focus();
+  });
+  $("#new-game-go").addEventListener("click", () => {
+    closeOptions();
+    void newGame();
+  });
   $("#options-sheet").addEventListener("click", (event) => {
     if (event.target === event.currentTarget) closeOptions();
   });

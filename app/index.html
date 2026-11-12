@@ -76,7 +76,6 @@
       </div>
     </div>
     <nav class="menu">
-      <button class="ghost" id="new-game" type="button"><span>New game</span></button>
       <button class="ghost on" id="calls" type="button" aria-pressed="true"><span>Calls</span></button>
       <button class="ghost on" id="sort" type="button" aria-pressed="true"><span>Sort</span></button>
       <button class="ghost on" id="hints" type="button" aria-pressed="true"><span>Hints</span></button>
@@ -153,11 +152,19 @@
               </div>
             </div>
           </section>
-          <nav class="option-links" aria-label="More">
+          <nav class="option-links" id="option-links" aria-label="More">
+            <button class="option-link" id="new-game" type="button">New game</button>
             <button class="option-link" id="install-open" type="button" hidden>Install app</button>
             <button class="option-link" id="help" type="button">Help</button>
             <button class="option-link" id="report" type="button" aria-label="Report a problem">Report a problem</button>
           </nav>
+          <div class="option-confirm" id="new-game-confirm" role="alertdialog" aria-labelledby="new-game-ask" hidden>
+            <p id="new-game-ask"><b>Start a new game?</b> This game and its scores end.</p>
+            <div class="option-confirm-buttons">
+              <button class="option-link" id="new-game-keep" type="button">Keep playing</button>
+              <button class="option-link option-danger" id="new-game-go" type="button">Start over</button>
+            </div>
+          </div>
           </div>
           <div class="options-col">
           <section class="option-group" aria-labelledby="group-table">
@@ -240,11 +247,10 @@
         <div class="detail-line">
           <h3>Menu</h3>
           <ul>
-            <li><b>New game</b>: start again from the first hand. The game in progress is dropped.</li>
             <li><b>Calls</b>: lit, you are asked about every discard you could claim. Off, you are not asked about Pung, Chow or Kong, which cuts the pauses. You are still asked about Mah Jong.</li>
             <li><b>Sort</b>: lit, the game keeps your hand in order. After you have rearranged it by hand, tap it to sort again.</li>
             <li><b>Hints</b>: show or hide the Closest hands panel.</li>
-            <li><b>Options</b>: opens a sheet in three groups. <b>Play</b>: <b>Bot level</b> (how well the bots play: Easy, Medium or Hard, Medium to start with; Easy bots chase fewer special hands, call almost any discard, never play safe and often throw a useful tile; a change takes effect with their next move), <b>Pace</b> (how quickly the bots play and the tiles move: Slower, Normal or Faster) and <b>Dice and dealing</b> (Show or Skip the throw for East, the break of the wall and the deal at the start of a hand; a tap skips it too). <b>Table</b>: the <b>Sound</b> switch (on iPhone the silent switch also mutes it) and, on a phone, <b>Large discards</b> (the tiles thrown this round show a face twice the size until you throw; on to start with). <b>House rules</b>: which hands are in play (All, Companion or Companion pictured, below). Under the groups: <b>Install app</b> (in a phone's browser), <b>Help</b>, this sheet, and <b>Report a problem</b> (below). The small label under the menu is the build you are playing.</li>
+            <li><b>Options</b>: opens a sheet in three groups. <b>Play</b>: <b>Bot level</b> (how well the bots play: Easy, Medium or Hard, Medium to start with; Easy bots chase fewer special hands, call almost any discard, never play safe and often throw a useful tile; a change takes effect with their next move), <b>Pace</b> (how quickly the bots play and the tiles move: Slower, Normal or Faster) and <b>Dice and dealing</b> (Show or Skip the throw for East, the break of the wall and the deal at the start of a hand; a tap skips it too). <b>Table</b>: the <b>Sound</b> switch (on iPhone the silent switch also mutes it) and, on a phone, <b>Large discards</b> (the tiles thrown this round show a face twice the size until you throw; on to start with). <b>House rules</b>: which hands are in play (All, Companion or Companion pictured, below). Under the groups: <b>New game</b> (start again from the first hand; it asks first, as the game in progress and its scores end), <b>Install app</b> (in a phone's browser), <b>Help</b>, this sheet, and <b>Report a problem</b> (below). The small label under the menu is the build you are playing.</li>
           </ul>
           <p>A lit button is on. Hints, Sound, Large discards, Pace, Bot level, Dice and dealing and the house rules are remembered on this device.</p>
         </div>
