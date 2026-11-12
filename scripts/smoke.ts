@@ -316,11 +316,49 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   assert.equal(await page.locator(".index-card").count(), 1);
   await page.click(".index-card");
   await page.waitForSelector("#hand-detail:not([hidden])", { timeout: 5000 });
-  await page.keyboard.press("Escape");
-  await page.waitForSelector("#hand-detail", { state: "hidden", timeout: 5000 });
+
+  // Pinning from the sheet puts the hand in the panel's first place; a second pin takes the second.
+  const panelNames = () => page.locator("#closest .closest-name").allTextContents();
+  const closeSheet = async () => {
+    await page.keyboard.press("Escape");
+    await page.waitForSelector("#hand-detail", { state: "hidden", timeout: 5000 });
+  };
+  await page.click('.pin-button:has-text("Pin to hints")');
+  await page.waitForSelector('.pin-button:has-text("Unpin from hints")', { timeout: 5000 });
+  await closeSheet();
+  await page.waitForFunction(() => /knitting/i.test(document.querySelector("#closest .closest-name")?.textContent ?? ""));
+  await page.click('.index-chip:has-text("All hands")'); // the Two Suits heading is still chosen
+  await page.fill("#index-search", "wriggly");
+  await page.click(".index-card");
+  await page.waitForSelector("#hand-detail:not([hidden])", { timeout: 5000 });
+  await page.click('.pin-button:has-text("Pin to hints")');
+  await closeSheet();
+  await page.waitForFunction(() => document.querySelectorAll("#closest .pin-icon").length === 2);
+  let names = await panelNames();
+  assert.equal(names.length, 3, "two pins and one suggestion fill the three places");
+  assert.match(names[0]!, /knitting/i);
+  assert.match(names[1]!, /wriggly snake/i);
+  assert.equal(await page.locator("#closest .closest-name .pin-icon").count(), 2, "only the pins are marked");
+  assert.ok(await page.locator('.index-card.is-pinned').count() === 1, "the card of a pinned hand is marked");
+
+  // Unpinning the first lets the second take its place and the suggestions come back.
   await page.click("#index-close");
   await page.waitForSelector("#hand-index", { state: "hidden", timeout: 5000 });
-  console.log("  ok  index of all hands");
+  await page.click("#closest .closest-item >> nth=0");
+  await page.waitForSelector("#hand-detail:not([hidden])", { timeout: 5000 });
+  await page.click('.pin-button:has-text("Unpin from hints")');
+  await closeSheet();
+  await page.waitForFunction(() => document.querySelectorAll("#closest .pin-icon").length === 1);
+  names = await panelNames();
+  assert.equal(names.length, 3);
+  assert.match(names[0]!, /wriggly snake/i, "the remaining pin is the first hint now");
+  await page.click("#closest .closest-item >> nth=0");
+  await page.waitForSelector("#hand-detail:not([hidden])", { timeout: 5000 });
+  await page.click('.pin-button:has-text("Unpin from hints")');
+  await closeSheet();
+  await page.waitForFunction(() => document.querySelectorAll("#closest .pin-icon").length === 0);
+  assert.equal((await panelNames()).length, 3, "the suggestions fill all three places again");
+  console.log("  ok  index of all hands, pinning to the hints");
 
   // Play on against the bots through the same door the buttons use.
   const wallAtStart = payload.wall.remaining;

@@ -1,10 +1,13 @@
 /**
  * The closest-hands panel (top right), the hand sheet behind it and the
  * Hints toggle in the menu. The hand sheet also serves the index of all
- * hands (`handbook.js`).
+ * hands (`handbook.js`), and is where a hand is pinned: a pinned hand takes
+ * the panel's first place, the next pin the second, and what the bots'
+ * planner suggests fills the places left (`pins.js`).
  */
 
 import { bookPages, visibleSamples } from "./pages.js";
+import { createPins, MAX_PINS } from "./pins.js";
 import { $, companionRules, faceChip, request, showToggle, state, storage } from "./shared.js";
 
 /* --------------------------------------------------------- closest hands */
@@ -20,16 +23,40 @@ function readHints() {
 }
 
 let hintsOn = readHints();
-let hintsFor = null; // the tiles the panel was last built for
+let hintsFor = null; // the tiles and pins the panel was last built for
+
+const pins = createPins(storage());
+const pinListeners = [];
+
+/** The pinned hands of the game on the table; none before a game. */
+function pinsNow() {
+  return state.payload === null ? [] : pins.list(state.payload.game);
+}
+
+export function isPinned(pattern) {
+  return state.payload !== null && pins.has(state.payload.game, pattern);
+}
+
+/** Call `listener` whenever a hand is pinned or unpinned. */
+export function onPinsChange(listener) {
+  pinListeners.push(listener);
+}
 
 /**
- * The catalogue hands your tiles are nearest to, top right. Asked for when
- * your own tiles change and at each of your decisions (the tiles in sight
- * change too), never on a bot's beat alone.
+ * The panel, top right: your pinned hands, then the catalogue hands your
+ * tiles are nearest to. Asked for when your own tiles or your pins change and
+ * at each of your decisions (the tiles in sight change too), never on a bot's
+ * beat alone. With Hints off only the pinned hands show: they are your choice.
  */
 export async function refreshHints(force = false) {
   const panel = $("#closest");
-  if (!hintsOn || state.payload === null || state.payload.outcome !== null || state.payload.view.phase === "finished") {
+  const mine = pinsNow();
+  if (
+    (!hintsOn && mine.length === 0) ||
+    state.payload === null ||
+    state.payload.outcome !== null ||
+    state.payload.view.phase === "finished"
+  ) {
     // A sheet opened from the panel goes with it; one opened from the index stays.
     if (!panel.hidden) closeHandDetail();
     panel.hidden = true;
@@ -37,12 +64,19 @@ export async function refreshHints(force = false) {
     return;
   }
   const player = state.payload.view.player;
-  const key = `${state.payload.game}|${player.hand.join()}|${player.melds.map((meld) => meld.tiles.join()).join("/")}`;
+  const melds = player.melds.map((meld) => meld.tiles.join()).join("/");
+  const key = `${state.payload.game}|${player.hand.join()}|${melds}|${mine.join()}|${hintsOn}`;
   if (!force && key === hintsFor) return;
   hintsFor = key;
   try {
-    const answer = await request(`/api/closest?game=${encodeURIComponent(state.payload.game)}`);
-    if (hintsFor === key) renderHints(answer.hands);
+    // The places the pins leave are the suggestions'.
+    const room = Math.max(1, MAX_PINS - mine.length);
+    const answer = await request(
+      `/api/closest?game=${encodeURIComponent(state.payload.game)}&limit=${room}&pins=${encodeURIComponent(mine.join())}`,
+    );
+    if (hintsFor !== key) return;
+    if (!hintsOn && answer.pinned.length === 0) panel.hidden = true;
+    else renderHints(hintsOn ? answer.hands.slice(0, room) : [], answer.pinned);
   } catch {
     panel.hidden = true;
   }
@@ -85,36 +119,50 @@ export function playIcon(concealedOnly) {
   return svg;
 }
 
-function renderHints(hands) {
-  const panel = $("#closest");
-  const title = document.createElement("p");
-  title.className = "closest-title";
-  title.textContent = "Closest hands";
-  if (hands.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "closest-empty";
-    empty.textContent = "Nothing within six tiles yet.";
-    panel.replaceChildren(title, empty);
-    panel.hidden = false;
-    return;
+/** A drawing pin: the mark of a pinned hand. */
+export function pinIcon() {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("class", "play-icon pin-icon");
+  svg.setAttribute("aria-hidden", "true");
+  for (const d of ["M9 3h6l-1 6 3.5 3.5V14h-11v-1.5L10 9z", "M12 14v7"]) {
+    const path = document.createElementNS(ns, "path");
+    path.setAttribute("d", d);
+    svg.append(path);
   }
-  const list = document.createElement("ol");
-  for (const hand of hands) {
-    const item = document.createElement("li");
-    const row = document.createElement("button");
-    row.type = "button";
-    row.className = "closest-item";
-    row.title = hand.concealedOnly ? "Concealed only" : "Exposed melds allowed";
-    row.setAttribute(
-      "aria-label",
-      `${hand.name}, ${hand.concealedOnly ? "concealed only" : "exposed melds allowed"}. Tap for details.`,
-    );
-    const name = document.createElement("span");
-    name.className = "closest-name";
-    name.textContent = hand.name;
-    const meta = document.createElement("span");
-    meta.className = "closest-meta";
-    const progress = document.createElement("span");
+  return svg;
+}
+
+/** One row of the panel: a hand, how far it is, and its icon. `hand` is null for a pinned hand out of reach. */
+function hintRow(hand, { name: label, pinned }) {
+  const item = document.createElement("li");
+  const row = document.createElement("button");
+  row.type = "button";
+  row.className = "closest-item";
+  const away = hand === null;
+  const play = away ? null : hand.concealedOnly;
+  row.title = away
+    ? "More than six tiles away, or no longer possible with the tiles in sight or your exposed melds"
+    : hand.concealedOnly
+      ? "Concealed only"
+      : "Exposed melds allowed";
+  row.setAttribute(
+    "aria-label",
+    `${pinned ? "Pinned: " : ""}${label}${
+      away ? ", out of reach" : `, ${hand.concealedOnly ? "concealed only" : "exposed melds allowed"}`
+    }. Tap for details.`,
+  );
+  const name = document.createElement("span");
+  name.className = "closest-name";
+  if (pinned) name.append(pinIcon());
+  name.append(label);
+  const meta = document.createElement("span");
+  meta.className = "closest-meta";
+  const progress = document.createElement("span");
+  if (away) {
+    progress.textContent = "Out of reach";
+  } else {
     const value = hand.points === null ? "calculated" : hand.points.toLocaleString("en");
     if (hand.away === 0) {
       const done = document.createElement("span");
@@ -124,9 +172,34 @@ function renderHints(hands) {
     } else {
       progress.textContent = `${hand.away} to go · ${value}`;
     }
-    meta.append(progress, playIcon(hand.concealedOnly));
-    row.append(name, meta);
-    row.addEventListener("click", () => void openHandDetail(hand.pattern, hand));
+  }
+  meta.append(progress);
+  if (play !== null) meta.append(playIcon(play));
+  row.append(name, meta);
+  return { item, row };
+}
+
+function renderHints(hands, pinned) {
+  const panel = $("#closest");
+  const title = document.createElement("p");
+  title.className = "closest-title";
+  title.textContent = pinned.length === 0 ? "Closest hands" : hands.length === 0 ? "Pinned hands" : "Pinned and closest";
+  if (hands.length === 0 && pinned.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "closest-empty";
+    empty.textContent = "Nothing within six tiles yet.";
+    panel.replaceChildren(title, empty);
+    panel.hidden = false;
+    return;
+  }
+  const list = document.createElement("ol");
+  const rows = [
+    ...pinned.map((entry) => ({ pattern: entry.pattern, hand: entry.hand, name: entry.name, pinned: true })),
+    ...hands.map((hand) => ({ pattern: hand.pattern, hand, name: hand.name, pinned: false })),
+  ];
+  for (const entry of rows) {
+    const { item, row } = hintRow(entry.hand, entry);
+    row.addEventListener("click", () => void openHandDetail(entry.pattern, entry.hand));
     item.append(row);
     list.append(item);
   }
@@ -210,6 +283,44 @@ function sampleSection(samples, pages) {
 }
 
 /**
+ * The button that pins a hand to the panel, or unpins it. It is left out
+ * before a game (pins belong to a game). A fourth pin is not taken: the
+ * button says so, and unpinning one frees a place.
+ */
+function pinControl(pattern) {
+  if (state.payload === null) return null;
+  const game = state.payload.game;
+  const wrap = document.createElement("div");
+  wrap.className = "detail-pin";
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "pin-button";
+  const note = document.createElement("span");
+  note.className = "pin-note";
+  const show = () => {
+    const pinned = pins.has(game, pattern);
+    const blocked = !pinned && pins.full(game);
+    button.replaceChildren(pinIcon(), pinned ? "Unpin from hints" : "Pin to hints");
+    button.setAttribute("aria-pressed", String(pinned));
+    button.disabled = blocked;
+    note.textContent = blocked
+      ? `All ${MAX_PINS} pins are in use. Unpin a hand to pin this one.`
+      : pinned
+        ? "Shown in the panel, whatever your tiles are."
+        : "Keeps this hand in the panel, whatever your tiles are.";
+  };
+  button.addEventListener("click", () => {
+    pins.toggle(game, pattern);
+    show();
+    for (const listener of pinListeners) listener();
+    void refreshHints(true);
+  });
+  show();
+  wrap.append(button, note);
+  return wrap;
+}
+
+/**
  * The sheet for one hand. `progress` is the hand's closest-hands entry (how
  * many tiles away, which ones), or null when the hand is out of reach or no
  * hand is being played.
@@ -252,7 +363,10 @@ export async function openHandDetail(pattern, progress = null) {
 
   // A Companion-only table sees the Companion's pictures and pages alone.
   const samples = visibleSamples(detail.samples, companionRules());
-  card.append(close, heading, banner, detailLine("What it is", detail.description), sampleSection(samples, detail.pages));
+  card.append(close, heading, banner);
+  const pin = pinControl(pattern);
+  if (pin !== null) card.append(pin);
+  card.append(detailLine("What it is", detail.description), sampleSection(samples, detail.pages));
   if (detail.requiresSelfDrawn) {
     card.append(detailLine("Self-drawn", "Every tile, the winning one included, must come from the wall."));
   }

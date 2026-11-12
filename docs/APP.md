@@ -131,6 +131,21 @@ value and the missing tiles. It is asked for when your own tiles change and at
 each of your decisions, and hides on the result card. The menu's Hints button
 turns it off (remembered on the device).
 
+**Pinning.** A hand's sheet (from the panel or from All hands) has a "Pin to
+hints" button. A pinned hand takes the panel's first place, the next pin the
+second, a third pin the third; what the planner suggests fills the places the
+pins leave (`GET /api/closest?pins=a,b,c`, `closestWithPins` in
+`src/core/game/closest.ts`). A pinned row carries a pin mark and says how many
+tiles you are from the hand, or "Out of reach" when it is more than six away
+or can no longer be made (the copies are in sight, or an exposed meld rules
+out a concealed-only hand). Unpinning gives the place back: the pins behind it
+move up and the suggestions return. At most three hands can be pinned (the
+panel shows three in all, for a phone's sake); the fourth is refused until one
+is unpinned. Pins belong to the game (`app/src/pins.js`, kept on the device):
+they survive a reload and the next hand, and a new game starts with none. With
+Hints off the panel shows only the pinned hands, since a pin is the player's
+own choice. The cards in All hands carry a "Pinned" mark.
+
 The panel is deliberately small and quiet (148px, muted colours, no tile
 chips) so it never competes with the table, even on a phone. Each row is the
 hand's name and "n to go - value", with one icon: a closed eye when the hand is

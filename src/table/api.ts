@@ -8,7 +8,8 @@
  *
  *   GET  /api/state?game=     one seat's view, legal actions and wait panel
  *   GET  /api/closest?game=   the catalogue hands your tiles are nearest to
- *                             (`&limit=` up to 100 instead of the default three)
+ *                             (`&limit=` up to 100 instead of the default three;
+ *                             `&pins=a,b,c` also reports how near each pinned hand is)
  *   GET  /api/hand?pattern=   one catalogue hand's conditions (concealed or open)
  *   GET  /api/house-rules     the hand sets on offer and the hands each leaves out
  *   GET  /api/hands?set=      the hands in play (set: all, companion, companion-pictured) with the book's headings, for the index
@@ -170,7 +171,11 @@ function routeGet(context: ApiContext, request: ApiRequest): ApiResponse | null 
     if (session === undefined) return fail(404, `unknown game: ${id}`);
     const limit = Number(request.query.get("limit") ?? "");
     return ok(
-      closestPayload(session, Number.isInteger(limit) && limit > 0 ? Math.min(limit, 100) : undefined),
+      closestPayload(
+        session,
+        Number.isInteger(limit) && limit > 0 ? Math.min(limit, 100) : undefined,
+        (request.query.get("pins") ?? "").split(",").filter((id) => id.length > 0),
+      ),
       request.query.has("pretty"),
     );
   }

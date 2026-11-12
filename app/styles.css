@@ -663,6 +663,50 @@ button {
   font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
+/* The mark of a hand pinned to the panel: in the hand's name row, the sheet's button and the index card. */
+.closest-name .pin-icon {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin: 0 3px -1px 0;
+  color: var(--gold-1);
+}
+.detail-pin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-top: 10px;
+}
+.pin-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 224, 138, 0.5);
+  border-radius: 999px;
+  background: rgba(255, 224, 138, 0.1);
+  color: var(--gold-1);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pin-button[aria-pressed="true"] {
+  background: rgba(255, 224, 138, 0.22);
+}
+.pin-button:disabled {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: none;
+  color: var(--muted);
+  cursor: default;
+}
+.pin-note {
+  flex: 1 1 140px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
 .closest-done {
   color: var(--gold-1);
   font-weight: 700;
@@ -1071,6 +1115,21 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+}
+.index-pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin: 0 auto 0 8px;
+  color: var(--gold-1);
+  font-weight: 700;
+}
+.index-pin .play-icon {
+  width: 12px;
+  height: 12px;
+}
+.index-card.is-pinned {
+  border-color: rgba(255, 224, 138, 0.45);
 }
 .index-away {
   padding: 1px 7px;

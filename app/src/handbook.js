@@ -9,7 +9,7 @@
  * (`GET /api/closest?limit=`), and the list can be sorted by that.
  */
 
-import { openHandDetail, playIcon, TIER_LABEL } from "./hints.js";
+import { isPinned, onPinsChange, openHandDetail, pinIcon, playIcon, TIER_LABEL } from "./hints.js";
 import { bookPages } from "./pages.js";
 import { $, companionRules, faceChip, handSetInForce, request, state } from "./shared.js";
 
@@ -105,7 +105,27 @@ function card(hand) {
   // The closest-hands entry is read when the card is tapped, so it is never stale.
   item.addEventListener("click", () => void openHandDetail(hand.pattern, progress.get(hand.pattern) ?? null));
   cards.set(hand.pattern, item);
+  applyPins();
   return item;
+}
+
+/** Mark the cards of the hands pinned to the panel (and unmark the others). */
+function applyPins() {
+  for (const [pattern, item] of cards) {
+    const pinned = isPinned(pattern);
+    item.classList.toggle("is-pinned", pinned);
+    let mark = item.querySelector(".index-pin");
+    if (!pinned) {
+      mark?.remove();
+      continue;
+    }
+    if (mark === null) {
+      mark = document.createElement("span");
+      mark.className = "index-pin";
+      mark.append(pinIcon(), "Pinned");
+      item.querySelector(".index-play").after(mark);
+    }
+  }
 }
 
 /** Put (or take away) the "n to go" badge on every card; the cards themselves are not rebuilt. */
@@ -275,6 +295,7 @@ export async function openIndex() {
   if (progress.size === 0) filter.sort = "book";
   renderFilters();
   renderList();
+  applyPins();
   $("#hand-index").hidden = false;
   // After the panel has painted.
   requestAnimationFrame(() => setTimeout(() => void refreshProgress(), 0));
@@ -285,6 +306,7 @@ function closeIndex() {
   $("#index-search").blur();
 }
 
+onPinsChange(applyPins);
 $("#index-open").addEventListener("click", () => void openIndex());
 $("#index-close").addEventListener("click", closeIndex);
 $("#hand-index").addEventListener("click", (event) => {
