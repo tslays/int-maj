@@ -1009,6 +1009,7 @@ button.detail-rule {
 /* Options: a setting per row, its switch below its explanation and starting
    on the left, like the segmented choices in the rows under it. */
 .option-row .ghost {
+  min-width: 0;
   margin: 8px 6px 0 0;
 }
 .segmented {
