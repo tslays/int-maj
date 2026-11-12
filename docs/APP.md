@@ -161,7 +161,7 @@ value, or concealed and exposed when they differ) and "Self-drawn only"; the
 book's sample hand first, in its own dashed panel headed "Sample hand from the
 book" (or "Sample hands from the books"), each picture captioned with a badge
 for the book and page (and its version); the hand's composition below it; then,
-set apart in a gold panel, "Your hand: you still need (N)" with the tiles to
+set apart by a soft gold edge, "You still need N tiles" with the tiles to
 collect, so the book's tiles and yours are never confused. Close it with the cross, the backdrop or Escape.
 
 Above the panel, **All hands** opens the index of every catalogue hand

@@ -440,7 +440,7 @@ export async function openHandDetail(pattern, progress = null) {
       for (const key of progress.need) need.append(faceChip(key));
     }
     const heading = document.createElement("h3");
-    heading.textContent = progress.away === 0 ? "Your hand" : `Your hand: you still need (${progress.away})`;
+    heading.textContent = progress.away === 0 ? "Your hand" : `You still need ${progress.away} ${progress.away === 1 ? "tile" : "tiles"}`;
     yours.append(heading, need);
     card.append(yours);
   }
