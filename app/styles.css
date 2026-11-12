@@ -1006,16 +1006,27 @@ button.detail-rule {
 .help-card {
   width: min(520px, 100%);
 }
-/* Options: a setting per row, its switch on the right. */
+/* Options: a setting per row, its switch on the right, on the same line as
+   its label; the explanation runs full width beneath both. */
 .option-row {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 12px;
+  column-gap: 12px;
   align-items: center;
 }
+.option-row h3 {
+  grid-column: 1;
+  grid-row: 1;
+}
 .option-row .ghost {
+  grid-column: 2;
+  grid-row: 1;
   min-width: 64px;
   margin-right: 6px;
+}
+.option-row p {
+  grid-column: 1 / -1;
+  grid-row: 2;
 }
 .segmented {
   display: flex;
