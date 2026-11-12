@@ -9,7 +9,7 @@
  * (`GET /api/closest?limit=`), and the list can be sorted by that.
  */
 
-import { isPinned, onPinsChange, openHandDetail, pinIcon, playIcon, TIER_LABEL } from "./hints.js";
+import { isPinned, onPinsChange, openHandDetail, pinIcon, playWord, TIER_LABEL } from "./hints.js";
 import { bookPages } from "./pages.js";
 import { $, companionRules, faceChip, handSetInForce, request, state } from "./shared.js";
 
@@ -98,7 +98,7 @@ function card(hand) {
   foot.className = "index-foot";
   const play = document.createElement("span");
   play.className = "index-play";
-  play.append(playIcon(hand.concealedOnly), hand.concealedOnly ? "Concealed only" : "Exposed allowed");
+  play.textContent = playWord(hand.concealedOnly);
   foot.append(play);
 
   item.append(head, tiles, text, foot);
@@ -222,8 +222,8 @@ function renderFilters() {
     ]),
     choices("Play", "play", [
       ["all", "Either"],
-      ["concealed", "Concealed only", count((hand) => hand.concealedOnly)],
-      ["exposed", "Exposed allowed", count((hand) => !hand.concealedOnly)],
+      ["concealed", "Concealed", count((hand) => hand.concealedOnly)],
+      ["exposed", "Exposed", count((hand) => !hand.concealedOnly)],
     ]),
     // The Companion sets know only one book, so there is nothing to filter by.
     ...(companionRules()

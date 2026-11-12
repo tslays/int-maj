@@ -94,29 +94,9 @@ export function worth(tier, points) {
   return points === null ? TIER_LABEL[tier] : `${TIER_LABEL[tier]} · ${points.toLocaleString("en")}`;
 }
 
-/**
- * Open eye: exposed melds are fine. Closed eye: concealed only. Drawn in
- * the text colour so it stays quiet; the words appear on the hand's sheet.
- */
-export function playIcon(concealedOnly) {
-  const ns = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(ns, "svg");
-  svg.setAttribute("viewBox", "0 0 24 24");
-  svg.setAttribute("class", "play-icon");
-  svg.setAttribute("aria-hidden", "true");
-  const shape = (name, attrs) => {
-    const node = document.createElementNS(ns, name);
-    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
-    svg.append(node);
-  };
-  if (concealedOnly) {
-    shape("path", { d: "M3 10c2.4 4.4 5.4 6.5 9 6.5s6.6-2.1 9-6.5" });
-    shape("path", { d: "M6.5 14.6 4.5 17.5M12 16.5V20M17.5 14.6l2 2.9" });
-  } else {
-    shape("path", { d: "M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" });
-    shape("circle", { cx: "12", cy: "12", r: "3" });
-  }
-  return svg;
+/** The book's words for how a hand may be played: Concealed, or Exposed (melds may be called). */
+export function playWord(concealedOnly) {
+  return concealedOnly ? "Concealed" : "Exposed";
 }
 
 /** A drawing pin: the mark of a pinned hand. */
@@ -141,40 +121,41 @@ function hintRow(hand, { name: label, pinned }) {
   row.type = "button";
   row.className = "closest-item";
   const away = hand === null;
-  const play = away ? null : hand.concealedOnly;
   row.title = away
     ? "More than six tiles away, or no longer possible with the tiles in sight or your exposed melds"
     : hand.concealedOnly
-      ? "Concealed only"
-      : "Exposed melds allowed";
+      ? "Concealed: no exposed melds"
+      : "Exposed: exposed melds allowed";
   row.setAttribute(
     "aria-label",
     `${pinned ? "Pinned: " : ""}${label}${
-      away ? ", out of reach" : `, ${hand.concealedOnly ? "concealed only" : "exposed melds allowed"}`
+      away ? ", out of reach" : `, ${hand.concealedOnly ? "concealed, no exposed melds" : "exposed melds allowed"}`
     }. Tap for details.`,
   );
   const name = document.createElement("span");
   name.className = "closest-name";
   if (pinned) name.append(pinIcon());
   name.append(label);
+  // The same order as the hand's sheet: how it is played, how far it is, what it pays.
   const meta = document.createElement("span");
   meta.className = "closest-meta";
-  const progress = document.createElement("span");
+  const piece = (words, className) => {
+    const span = document.createElement("span");
+    if (className) span.className = className;
+    span.textContent = words;
+    return span;
+  };
   if (away) {
-    progress.textContent = "Out of reach";
+    meta.append(piece("Out of reach"));
   } else {
-    const value = hand.points === null ? "calculated" : hand.points.toLocaleString("en");
-    if (hand.away === 0) {
-      const done = document.createElement("span");
-      done.className = "closest-done";
-      done.textContent = "Complete";
-      progress.append(done, ` · ${value}`);
-    } else {
-      progress.textContent = `${hand.away} to go · ${value}`;
-    }
+    meta.append(
+      piece(playWord(hand.concealedOnly)),
+      piece("\u00b7"),
+      hand.away === 0 ? piece("Complete", "closest-done") : piece(`${hand.away} to go`),
+      piece("\u00b7"),
+      piece(hand.points === null ? "calculated" : hand.points.toLocaleString("en")),
+    );
   }
-  meta.append(progress);
-  if (play !== null) meta.append(playIcon(play));
   row.append(name, meta);
   return { item, row };
 }
@@ -216,17 +197,6 @@ function closeHandDetail() {
   sheet.replaceChildren();
 }
 
-function detailLine(label, ...content) {
-  const line = document.createElement("div");
-  line.className = "detail-line";
-  const heading = document.createElement("h3");
-  heading.textContent = label;
-  const body = document.createElement("p");
-  body.append(...content);
-  line.append(heading, body);
-  return line;
-}
-
 /** A card the book prints in place of a tile, such as "Any tile paired". */
 function anyChip(words) {
   const chip = document.createElement("span");
@@ -235,7 +205,7 @@ function anyChip(words) {
   return chip;
 }
 
-/** One printed picture: the book's tiles in the book's order and grouping. */
+/** One printed picture: the book's tiles in the book's order and grouping, with the pill of where it is printed below. */
 function sampleFigure(sample) {
   const figure = document.createElement("figure");
   figure.className = "detail-sample";
@@ -247,30 +217,44 @@ function sampleFigure(sample) {
     for (const tile of group) set.append(typeof tile === "string" ? faceChip(tile) : anyChip(tile.any));
     tiles.append(set);
   }
-  const caption = document.createElement("figcaption");
-  const where = sample.sources.map((source) => `${source.book.includes("Companion") ? "Companion" : "Illustrated"} p. ${source.page}`);
-  caption.textContent = (sample.label === null ? where : [sample.label, ...where]).join(" \u00b7 ");
-  figure.append(tiles, caption);
+  figure.append(tiles);
   for (const text of sample.notes) {
     const note = document.createElement("p");
     note.className = "sample-note";
     note.textContent = text;
     figure.append(note);
   }
+  const caption = document.createElement("figcaption");
+  for (const source of sample.sources) {
+    const badge = document.createElement("span");
+    badge.className = "sample-source";
+    badge.textContent = `${source.book.includes("Companion") ? "Companion" : "Illustrated"} p. ${source.page}`;
+    caption.append(badge);
+  }
+  if (sample.label !== null) caption.append(sample.label);
+  figure.append(caption);
   return figure;
 }
 
-function sampleSection(samples, pages) {
+function sampleSection(samples, pages, example) {
   const companionOnly = companionRules();
-  const wrap = document.createElement("div");
-  wrap.className = "detail-samples";
+  const wrap = document.createElement("section");
+  wrap.className = "detail-book";
+  const heading = document.createElement("h3");
+  heading.textContent =
+    samples.length === 0 ? "Example hand (not from a book)" : samples.length === 1 ? "Sample hand from the book" : "Sample hands from the books";
+  wrap.append(heading);
   if (samples.length === 0) {
+    const tiles = document.createElement("div");
+    tiles.className = "sample-tiles";
+    for (const key of example) tiles.append(faceChip(key));
     const none = document.createElement("p");
     none.className = "detail-muted";
     none.textContent = companionOnly
       ? `The Companion lists this hand (${bookPages(pages, true)}) without a picture.`
       : `The books list this hand (${bookPages(pages)}) without a picture.`;
-    wrap.append(none);
+    wrap.append(tiles, none);
+    return wrap;
   }
   for (const sample of samples) wrap.append(sampleFigure(sample));
   return wrap;
@@ -379,7 +363,7 @@ export async function openHandDetail(pattern, progress = null) {
   const ruleChevron = document.createElement("span");
   ruleChevron.className = "rule-chevron";
   ruleChevron.setAttribute("aria-hidden", "true");
-  rule.append(playIcon(detail.concealedOnly), detail.concealedOnly ? "Concealed only" : "Exposed allowed", ruleChevron);
+  rule.append(playWord(detail.concealedOnly), ruleChevron);
   const ruleNote = document.createElement("p");
   ruleNote.className = "detail-note";
   ruleNote.id = "hand-rule-note";
@@ -398,6 +382,13 @@ export async function openHandDetail(pattern, progress = null) {
   const facts = document.createElement("div");
   facts.className = "detail-facts";
   facts.append(rule);
+  // How it is played, how far you are, and last what it pays: the panel's order.
+  if (detail.requiresSelfDrawn) facts.append(factChip(null, "Self-drawn only"));
+  if (progress !== null) {
+    const far = factChip(null, progress.away === 0 ? "Complete" : `${progress.away} to go`);
+    if (progress.away === 0) far.classList.add("detail-done");
+    facts.append(far);
+  }
   const concealedWorth = worth(detail.concealedTier, detail.concealedPoints);
   const exposedWorth = detail.concealedOnly ? null : worth(detail.exposedTier, detail.exposedPoints);
   if (exposedWorth === null || exposedWorth === concealedWorth) {
@@ -406,7 +397,6 @@ export async function openHandDetail(pattern, progress = null) {
   } else {
     facts.append(factChip("Concealed", concealedWorth), factChip("Exposed", exposedWorth));
   }
-  if (detail.requiresSelfDrawn) facts.append(factChip(null, "Self-drawn only"));
 
   const lede = document.createElement("p");
   lede.className = "detail-lede";
@@ -414,10 +404,17 @@ export async function openHandDetail(pattern, progress = null) {
 
   card.append(head);
   if (pin !== null) card.append(pin.note);
-  card.append(facts, ruleNote, lede);
+  card.append(facts, ruleNote);
 
-  // What you still need comes before the picture: it is what you act on.
+  // First the book's sample hand, then what the hand is, below it. A
+  // Companion-only table sees the Companion's pictures and pages alone.
+  const samples = visibleSamples(detail.samples, companionRules());
+  card.append(sampleSection(samples, detail.pages, detail.example), lede);
+
+  // Then, clearly apart, your own hand: the tiles still needed to complete it.
   if (progress !== null) {
+    const yours = document.createElement("section");
+    yours.className = "detail-yours";
     const need = document.createElement("span");
     need.className = "closest-need detail-need";
     if (progress.away === 0) {
@@ -425,19 +422,10 @@ export async function openHandDetail(pattern, progress = null) {
     } else {
       for (const key of progress.need) need.append(faceChip(key));
     }
-    card.append(detailLine(progress.away === 0 ? "Your hand" : `You still need (${progress.away})`, need));
-  }
-
-  // A Companion-only table sees the Companion's pictures and pages alone.
-  const samples = visibleSamples(detail.samples, companionRules());
-  card.append(sampleSection(samples, detail.pages));
-
-  // The book's own picture is the example; only a hand it does not picture gets a made-up one.
-  if (samples.length === 0) {
-    const example = document.createElement("span");
-    example.className = "closest-need detail-need";
-    for (const key of detail.example) example.append(faceChip(key));
-    card.append(detailLine("For example", example));
+    const heading = document.createElement("h3");
+    heading.textContent = progress.away === 0 ? "Your hand" : "Tiles you still need";
+    yours.append(heading, need);
+    card.append(yours);
   }
 
   sheet.replaceChildren(card);

@@ -594,7 +594,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  width: 148px;
+  width: 176px;
 }
 /* The door to the index of all hands: as quiet as the panel under it. */
 .index-open {
@@ -656,8 +656,8 @@ button {
 .closest-meta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px;
+  gap: 4px;
+  white-space: nowrap;
   margin-top: 1px;
   color: var(--muted);
   font-size: 11px;
@@ -796,6 +796,9 @@ button {
 }
 /* The hand's sheet: wider than the other sheets, laid out to fit a phone's height without scrolling. */
 .hand-card {
+  /* iOS Safari inflates small text in landscape; the sheet's sizes are meant literally. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   width: min(600px, 100%);
   padding: 10px 14px 12px;
 }
@@ -839,6 +842,10 @@ button {
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+.detail-fact.detail-done {
+  color: var(--gold-1);
+  font-weight: 700;
 }
 .detail-fact small {
   color: var(--muted);
@@ -885,23 +892,53 @@ button.detail-rule {
   margin-top: 8px;
 }
 .detail-need {
-  margin-top: 2px;
+  margin-top: 4px;
 }
 .detail-need .chip {
   width: 24px;
   height: 32px;
 }
-.detail-samples {
+/* The book's sample hand: a quiet, cool "page from the book" panel, so it never reads as your tiles. */
+.detail-book {
   margin-top: 8px;
+  padding: 5px 9px 7px;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
 }
-.detail-samples:empty {
-  display: none;
+/* The two section labels: small, sentence case, quiet. */
+.detail-card .detail-book h3,
+.detail-card .detail-yours h3 {
+  margin-bottom: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
 }
 .detail-sample {
   margin: 0;
 }
 .detail-sample + .detail-sample {
   margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.detail-sample figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.sample-source {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  font-weight: 700;
+  white-space: nowrap;
 }
 .sample-tiles {
   display: flex;
@@ -927,14 +964,25 @@ button.detail-rule {
   line-height: 1.05;
   text-align: center;
 }
-.detail-sample figcaption {
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: 11px;
-}
 .detail-card .sample-note {
   margin-top: 2px;
   font-size: 12px;
+}
+/* Your own hand: set apart below the explanation by a soft gold edge, no box. */
+.detail-yours {
+  margin-top: 10px;
+  padding: 2px 0 2px 10px;
+  border-left: 2px solid rgba(229, 161, 47, 0.7);
+}
+.detail-yours h3 {
+  color: var(--gold-1);
+}
+.detail-yours .detail-need {
+  margin-top: 3px;
+}
+.detail-yours .detail-need .chip {
+  width: 20px;
+  height: 27px;
 }
 .help-card {
   width: min(520px, 100%);

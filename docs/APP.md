@@ -126,8 +126,9 @@ Mah Jong, reshuffle and the Goulash exchange appear as buttons when the engine
 offers them. The table is landscape only.
 
 The panel at the top right lists the closest hands: up to three catalogue
-hands your tiles are nearest to, with how many tiles each still needs, its
-value and the missing tiles. It is asked for when your own tiles change and at
+hands your tiles are nearest to. A row and the hand's sheet give the same facts
+in the same order: the hand's name, how it is played (Concealed or Exposed),
+how many tiles you are from it ("3 to go", "Complete"), and last what it pays. It is asked for when your own tiles change and at
 each of your decisions, and hides on the result card. The menu's Hints button
 turns it off (remembered on the device).
 
@@ -147,19 +148,26 @@ they survive a reload and the next hand, and a new game starts with none. With
 Hints off the panel shows only the pinned hands, since a pin is the player's
 own choice. The cards in All hands carry a "Pinned" mark.
 
-The panel is deliberately small and quiet (148px, muted colours, no tile
+The panel is deliberately small and quiet (176px, muted colours, no tile
 chips) so it never competes with the table, even on a phone. Each row is the
-hand's name and "n to go - value", with one icon: a closed eye when the hand is
-concealed only (any exposed meld rules it out; most special hands), an open eye
-when exposed melds are allowed. Tapping a row opens the hand's sheet
+hand's name and one line in the books' own words and order: how it is played
+("Concealed" when any exposed meld rules the hand out, as for most special
+hands; "Exposed" when exposed melds are allowed), "n to go", and last its value.
+No icons: the Illustrated prints "Concealed" or "Exposed" under each hand and
+the Companion prints "LIMIT (Concealed) HALF LIMIT (Exposed)", so players
+already know the words. Tapping a row opens the hand's sheet
 (`GET /api/hand`), laid out to fit a phone's height without scrolling (600px
 wide, one column): the name with the pin and the close cross at the right; one
-row of chips - the play chip (the same icon with "Concealed only" or "Exposed
-allowed"; tapping it opens the explanation of what it means for calling
-discards and self-drawn wins, which a player needs once), what it pays (one
-value, or concealed and exposed when they differ) and "Self-drawn only"; the
-hand's composition; the tiles you still need (above the picture, being what
-you act on); and the book's picture with its page in each book. Close it with the cross, the backdrop or Escape.
+row of chips - the play chip (the word "Concealed" or "Exposed"; tapping it opens the explanation of what it means for calling
+discards and self-drawn wins, which a player needs once), "Self-drawn only",
+how far your hand is ("3 to go" or "Complete") when you have the hand in play
+and, last, what it pays (one value, or concealed and exposed when they
+differ); the book's sample hand first, in its own dashed panel headed "Sample hand from the
+book" (or "Sample hands from the books"), each picture followed below by a pill
+for the book and page (and its version), so two books read title, 1st hand,
+1st source, 2nd hand, 2nd source; the hand's composition below it; then,
+set apart by a soft gold edge, "Tiles you still need" with the tiles to
+collect, so the book's tiles and yours are never confused. Close it with the cross, the backdrop or Escape.
 
 Above the panel, **All hands** opens the index of every catalogue hand
 (`app/src/handbook.js`, `GET /api/hands`), so nobody has to reach for either
@@ -177,7 +185,7 @@ book. The rail on the left filters by:
   p. 30, not in the synopsis) are filed under Pungs & Kongs by composition;
   Buried Treasure and the Chinese ordinary hand have no heading and sit under
   "Other".
-- **Value** (the concealed tier), **Play** (concealed only or exposed allowed)
+- **Value** (the concealed tier), **Play** (Concealed or Exposed)
   and **Book** (printed in the Illustrated book, or only in the Companion).
 
 The search box matches every typed word against the name, composition,
