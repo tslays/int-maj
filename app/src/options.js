@@ -1,5 +1,5 @@
 /**
- * The Options sheet: sound, the pace, the house rules, and the doors to Help and
+ * The Options sheet: sound, the pace, the bot level, the house rules, and the doors to Help and
  * Report a problem.
  *
  * A house rule is a preference kept on the device. The table fixes a hand's
@@ -7,6 +7,7 @@
  * next hand, and a change made mid-hand shows as pending until then.
  */
 
+import { level } from "./level.js";
 import { pace } from "./pace.js";
 import { sound } from "./sound.js";
 import { $, request, state, storage } from "./shared.js";
@@ -68,6 +69,12 @@ function showPace() {
   }
 }
 
+function showLevel() {
+  for (const button of document.querySelectorAll("#level [data-level]")) {
+    button.setAttribute("aria-checked", String(button.dataset.level === level.id));
+  }
+}
+
 /* The left-out hands are named by the table, never by a list kept here. */
 async function nameHands() {
   try {
@@ -86,6 +93,7 @@ function closeOptions() {
 export function installOptions() {
   showSound();
   showPace();
+  showLevel();
   showRules();
 
   $("#options").addEventListener("click", () => {
@@ -117,6 +125,14 @@ export function installOptions() {
     if (button === null) return;
     pace.set(button.dataset.pace);
     showPace();
+  });
+
+  /* Bot level: sent with every bot move, so the next one already plays at it. */
+  $("#level").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-level]");
+    if (button === null) return;
+    level.set(button.dataset.level);
+    showLevel();
   });
 
   $("#hand-set").addEventListener("click", (event) => {

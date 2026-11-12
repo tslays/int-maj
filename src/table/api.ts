@@ -16,7 +16,9 @@
  *   GET  /api/scenario?state= a fixed review board (turn, claim, win, ...)
  *   POST /api/new             deal a game from `{ seed, houseRules }`
  *   POST /api/move            apply `{ game, action }`, return events as text
- *   POST /api/step            the next single bot decision, or `{ done }`
+ *   POST /api/step            the next single bot decision, or `{ done }`;
+ *                             `{ level }` (easy, medium, hard) sets how well
+ *                             the bot plays it, hard when absent
  *   POST /api/undo            replay to before the previous human decision
  *   POST /api/retry           play the current hand again from its deal
  *   POST /api/next            deal the next hand after a finished one, under
@@ -29,6 +31,7 @@
 import { handDetail, handIndex } from "../core/game/closest.ts";
 import { HAND_SET_EXCLUDED, HAND_SETS } from "../core/patterns/table.ts";
 import { describeEventFor } from "../core/game/describe.ts";
+import { BOT_LEVELS, DEFAULT_BOT_LEVEL, isBotLevel } from "../core/game/bot.ts";
 import type { Action } from "../core/game/actions.ts";
 import {
   closestPayload,
@@ -224,7 +227,9 @@ function routePost(context: ApiContext, request: ApiRequest): ApiResponse | null
 
   if (request.path === "/api/step") {
     const game = requireString(body, "game");
-    const update = store.step(game);
+    const level = body.level ?? DEFAULT_BOT_LEVEL;
+    if (!isBotLevel(level)) throw new ApiError(400, `level must be one of ${BOT_LEVELS.join(", ")}`);
+    const update = store.step(game, level);
     if ("error" in update) return fail(400, update.error);
     if (isDone(update)) return ok({ done: true });
     return ok(responsePayload(update));

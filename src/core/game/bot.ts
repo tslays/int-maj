@@ -26,7 +26,12 @@
  *
  * Each seat has a temperament (ambition for special hands, appetite for
  * calls, caution), so the three opponents do not play like copies of one
- * another. Everything is deterministic: the same view gives the same action.
+ * another. On top of it the table sets a skill level (`BotLevel`): Hard plays
+ * the policy above as it stands; Medium defends less and misjudges its
+ * discards by a margin; Easy never defends, chases special hands less, calls
+ * almost any discard and misjudges its discards widely. The misjudgement comes from a hash of the view, never
+ * from a random source, so everything stays deterministic: the same view at
+ * the same level gives the same action.
  */
 
 import type { Action } from "./actions.ts";
@@ -76,6 +81,57 @@ export function temperamentOf(seat: Seat): Temperament {
   return TEMPERAMENTS[seatIndex(seat)]!;
 }
 
+/** How well the bots play. A table preference, never a rule. */
+export const BOT_LEVELS = ["easy", "medium", "hard"] as const;
+export type BotLevel = (typeof BOT_LEVELS)[number];
+export const DEFAULT_BOT_LEVEL: BotLevel = "hard";
+
+export function isBotLevel(value: unknown): value is BotLevel {
+  return typeof value === "string" && (BOT_LEVELS as readonly string[]).includes(value);
+}
+
+/** What a level changes on top of a seat's temperament. */
+interface Skill {
+  /** Multiplier on the temperament's ambition for special hands. */
+  readonly ambition: number;
+  /** Multiplier on the temperament's caution (defensive penalties). */
+  readonly caution: number;
+  /** Added to the temperament's call margin; below zero calls hurt hands. */
+  readonly callShift: number;
+  /** Discard misjudgement, as a fraction of the best discard's value. */
+  readonly noise: number;
+}
+
+const SKILLS: Readonly<Record<BotLevel, Skill>> = {
+  easy: { ambition: 0.6, caution: 0, callShift: -0.35, noise: 0.8 },
+  medium: { ambition: 1, caution: 0.5, callShift: 0, noise: 0.3 },
+  hard: { ambition: 1, caution: 1, callShift: 0, noise: 0 },
+};
+
+/** A seat's temperament at a level: the style stays, the skill changes. */
+function playing(seat: Seat, level: BotLevel): Temperament & { readonly noise: number } {
+  const base = temperamentOf(seat);
+  const skill = SKILLS[level];
+  return {
+    ...base,
+    ambition: base.ambition * skill.ambition,
+    caution: base.caution * skill.caution,
+    callMargin: base.callMargin + skill.callShift,
+    noise: skill.noise,
+  };
+}
+
+/** A number in [0, 1) fixed by the view and the tile: a misjudgement without a random source. */
+function slip(view: GameView, tile: string): number {
+  const text = `${view.seat}|${view.wallRemaining}|${view.player.hand.join("")}|${view.player.discards.length}|${tile}`;
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index++) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash / 0x100000000;
+}
+
 function seatWindOf(view: GameView, seat: Seat): (typeof WINDS)[number] {
   const offset = (seatIndex(seat) - seatIndex(view.dealer) + SEATS.length) % SEATS.length;
   return WINDS[offset]!;
@@ -97,7 +153,7 @@ function unseenFor(view: GameView): Counts {
 }
 
 /** Everything the planner needs from one seat's view, with that seat's ambition. */
-export function situationFor(view: GameView, seat: Seat): Situation {
+export function situationFor(view: GameView, seat: Seat, level: BotLevel = DEFAULT_BOT_LEVEL): Situation {
   return {
     hand: countsOf(view.player.hand),
     melds: view.player.melds.map((meld) => ({
@@ -111,7 +167,7 @@ export function situationFor(view: GameView, seat: Seat): Situation {
     prevailingWind: view.prevailingWind,
     flowers: view.player.flowers,
     seasons: view.player.seasons,
-    ambition: temperamentOf(seat).ambition,
+    ambition: playing(seat, level).ambition,
     excluded: view.excludedHands,
   };
 }
@@ -153,8 +209,9 @@ function discardValues(situation: Situation): Map<string, number> {
  * discard that lets that player win makes the discarder pay the other
  * losers' debts too, unless the discarder is fishing (I p. 22, R79).
  */
-function danger(view: GameView, tile: string): number {
-  const caution = temperamentOf(view.seat).caution;
+function danger(view: GameView, tile: string, level: BotLevel): number {
+  const caution = playing(view.seat, level).caution;
+  if (caution === 0) return 0;
   const fishingSelf = view.fishing.some((entry) => entry.seat === view.seat);
   const late = Math.max(0, 1 - view.wallRemaining / 70);
   const suit = /^[bco]/.test(tile) ? tile[0] : null;
@@ -189,8 +246,12 @@ function danger(view: GameView, tile: string): number {
  * claiming; an ordinary hand's small figure is kept quiet while the wall is
  * long, the moment depending on the seat's temperament.
  */
-function showsFish(view: GameView, action: Extract<Action, { type: "DeclareFishing" }>): boolean {
-  const situation = situationFor(view, view.seat);
+function showsFish(
+  view: GameView,
+  action: Extract<Action, { type: "DeclareFishing" }>,
+  level: BotLevel,
+): boolean {
+  const situation = situationFor(view, view.seat, level);
   const special = action.wait.some((tile) => {
     const pattern = completedPattern(situation, tile);
     return pattern !== null && PATTERN_BY_ID.get(pattern)?.tier !== "calculate";
@@ -199,7 +260,7 @@ function showsFish(view: GameView, action: Extract<Action, { type: "DeclareFishi
   return view.wallRemaining <= temperamentOf(view.seat).quietUntil;
 }
 
-function chooseDiscard(view: GameView, situation: Situation): Action | null {
+function chooseDiscard(view: GameView, situation: Situation, level: BotLevel): Action | null {
   const discards = view.legalActions.filter(
     (action): action is Extract<Action, { type: "Discard" }> => action.type === "Discard",
   );
@@ -208,11 +269,14 @@ function chooseDiscard(view: GameView, situation: Situation): Action | null {
   const fishing = view.fishing.find((entry) => entry.seat === view.seat);
   const fixedWait = new Set(fishing?.wait ?? []);
   const values = discardValues(situation);
+  const noise = playing(view.seat, level).noise;
+  const spread = noise === 0 ? 0 : noise * Math.max(1, ...values.values());
 
   let best: Action | null = null;
   let bestScore = Number.NEGATIVE_INFINITY;
   for (const action of discards) {
-    let score = (values.get(action.tile) ?? 0) - danger(view, action.tile);
+    let score = (values.get(action.tile) ?? 0) - danger(view, action.tile, level);
+    if (spread > 0) score += spread * slip(view, action.tile);
     if (fixedWait.has(action.tile)) score -= 1e6;
     // Tie-break: throw the tile with fewer live copies (safer, less useful).
     score -= situation.unseen[indexOf(action.tile)]! * 1e-3;
@@ -262,7 +326,7 @@ function chooseDiscard(view: GameView, situation: Situation): Action | null {
   return best;
 }
 
-function chooseClaim(view: GameView, situation: Situation): Action | null {
+function chooseClaim(view: GameView, situation: Situation, level: BotLevel): Action | null {
   const claims = view.legalActions.filter(
     (action): action is Extract<Action, { type: "Claim" }> =>
       action.type === "Claim" && action.kind !== "mahjong",
@@ -273,7 +337,7 @@ function chooseClaim(view: GameView, situation: Situation): Action | null {
   if (tile === undefined) return pass;
 
   const stay = holdValue(situation);
-  const margin = temperamentOf(view.seat).callMargin;
+  const margin = playing(view.seat, level).callMargin;
   let best: Action | null = pass;
   let bestValue = stay * (1 + margin) + 2;
 
@@ -336,7 +400,7 @@ function chooseExchange(view: GameView, situation: Situation): Action | null {
   );
 }
 
-export function chooseAction(view: GameView, seat: Seat): Action | null {
+export function chooseAction(view: GameView, seat: Seat, level: BotLevel = DEFAULT_BOT_LEVEL): Action | null {
   if (view.seat !== seat) {
     throw new Error(`chooseAction got a view for ${view.seat}, not ${seat}`);
   }
@@ -352,7 +416,7 @@ export function chooseAction(view: GameView, seat: Seat): Action | null {
     (action): action is Extract<Action, { type: "DeclareFishing" }> =>
       action.type === "DeclareFishing",
   );
-  if (fishing !== undefined && showsFish(view, fishing)) return fishing;
+  if (fishing !== undefined && showsFish(view, fishing, level)) return fishing;
 
   if (view.phase === "announce") {
     return legal.find((action) => action.type === "Pass") ?? legal[0]!;
@@ -361,8 +425,8 @@ export function chooseAction(view: GameView, seat: Seat): Action | null {
   const draw = legal.find((action) => action.type === "Draw");
   if (draw !== undefined) return draw;
 
-  const situation = situationFor(view, seat);
-  if (view.phase === "claim") return chooseClaim(view, situation) ?? legal[0]!;
+  const situation = situationFor(view, seat, level);
+  if (view.phase === "claim") return chooseClaim(view, situation, level) ?? legal[0]!;
   if (view.phase === "exchange") return chooseExchange(view, situation) ?? legal[0]!;
-  return chooseDiscard(view, situation) ?? legal[0]!;
+  return chooseDiscard(view, situation, level) ?? legal[0]!;
 }
