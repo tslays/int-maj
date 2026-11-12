@@ -117,6 +117,32 @@ export function discardRect(rel, index) {
 export const WALL_INNER = WALL_R - H / 2;
 
 /**
+ * The round layers, for phones only. Each tile the other players throw this
+ * round gets its face laid flat on top of it - the same place, angle and
+ * orientation as the tile - `SCALE` times the tile's size, until you throw
+ * and the next round starts. A layer floats `LIFT` (in the tile's own units)
+ * above the tile's face, plus `STEP` for each layer before it in the round,
+ * so it lies over its neighbours and a later layer over an earlier one. A
+ * screen whose short side is at most `MAX_SHORT_SIDE` CSS pixels is a phone:
+ * every iPhone held sideways is at most 440 high, the smallest iPad 744.
+ */
+export const ROUND_LAYER = Object.freeze({ SCALE: 2, LIFT: 0.06, STEP: 0.03, MAX_SHORT_SIDE: 500 });
+
+/** Whether a screen of this size (CSS pixels) is small enough for the round layers. */
+export function roundLayersWanted(width, height) {
+  return Math.min(width, height) <= ROUND_LAYER.MAX_SHORT_SIDE;
+}
+
+/**
+ * Where a layer's group sits in its tile's frame, `scale` times the face's
+ * size and the `order`-th of the round (0 first): the face, which the group
+ * holds at z = D / 2, then lies `LIFT + order * STEP` above the tile's face.
+ */
+export function roundLayerZ(scale, order) {
+  return D / 2 + ROUND_LAYER.LIFT + order * ROUND_LAYER.STEP - (scale * D) / 2;
+}
+
+/**
  * How far from the table's centre the ponds reach, given each seat's number
  * of discards: the half-side of the square the zoomed, top-down view frames.
  * Never less than the three full rows, so the view does not jump about early

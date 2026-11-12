@@ -17,9 +17,11 @@ import { D, H, W, makeTile, roundedRect, markTile, markMaterial, markFillMateria
 import { discardSlot, latestPlate, meldLayout, pondPad } from "./layout.js";
 import { pace } from "./pace.js";
 import { sound } from "./sound.js";
-import { animate, easeInOutCubic, easeOutBack, easeOutCubic, handScene, requestRender, setPondCounts, tableScene, tween } from "./stage.js";
+import { animate, easeInOutCubic, easeOutBack, easeOutCubic, handScene, onViewChange, requestRender, setPondCounts, tableScene, tween } from "./stage.js";
 import { handMethods } from "./board-hand.js";
 import { wallMethods } from "./board-wall.js";
+import { roundMethods } from "./board-round.js";
+import { largeDiscards } from "./large-discards.js";
 
 const SEATS = ["E", "S", "W", "N"];
 const { WALL_STACKS, WALL_R, HAND_Z, DISCARD_SCALE } = TABLE;
@@ -72,6 +74,9 @@ export class Board {
     this.raycaster = new THREE.Raycaster();
     this.marked = [];
     this.markId = 0;
+    this.round = []; // this round's opponent discards, each with its face layer on a phone (board-round.js)
+    onViewChange(() => this.refreshRound());
+    largeDiscards.onChange(() => this.refreshRound());
   }
 
   rel(seat) {
@@ -97,6 +102,7 @@ export class Board {
     this.carried = null;
     this.setCustom(false);
     this.seats = {};
+    this.clearRound();
     for (const seat of SEATS) {
       this.seats[seat] = {
         discards: [],
@@ -177,6 +183,8 @@ export class Board {
     if (state && state.discards.length > 0 && state.discards[state.discards.length - 1].key === last.tile) {
       this.plate = flatPlate(latestPlate(state.discards.length - 1), plateMaterial, 0.2, 0.012);
       this.frameOf(last.seat).add(this.plate);
+      // Opened mid-hand (a reload, a review board): the round starts with the latest discard, if not yours.
+      if (this.round.length === 0 && last.seat !== this.me) this.addRoundLayer(state.discards[state.discards.length - 1]);
     }
     requestRender();
   }
@@ -194,10 +202,14 @@ export class Board {
       }
     } else if (after.length === before.length - 1 && samePrefix(after.length)) {
       const taken = state.discards.pop();
+      this.dropRoundLayer(taken);
       const claimer = [...meldsGrew.keys()].find((seat) => seat !== entry.seat) ?? null;
       work.push(animated && claimer !== null ? this.flyToClaimer(taken.tile, claimer) : Promise.resolve(taken.tile.removeFromParent()));
     } else {
-      for (const item of state.discards) item.tile.removeFromParent();
+      for (const item of state.discards) {
+        this.dropRoundLayer(item);
+        item.tile.removeFromParent();
+      }
       state.discards = [];
       after.forEach((key, index) => work.push(this.addDiscard(entry.seat, key, index, false)));
     }
@@ -211,12 +223,15 @@ export class Board {
     const rest = poseFaceUp(new THREE.Object3D(), slot.x, slot.z, index * 7 + SEATS.indexOf(seat), DISCARD_SCALE);
     tile.scale.copy(rest.scale);
     this.frameOf(seat).add(tile);
-    state.discards.push({ key, tile });
+    const item = { key, tile };
+    state.discards.push(item);
     if (!animated) {
       tile.position.copy(rest.position);
       tile.rotation.copy(rest.rotation);
       return Promise.resolve();
     }
+    // Your throw ends the round: this round's face layers go as it leaves your hand.
+    if (seat === this.me) this.clearRound();
     // Thrown from the seat's hand, in an arc, turning face up as it lands.
     const fromX = seat === this.me ? this.lastThrowX * 0.45 : 0;
     const from = new THREE.Vector3(fromX, 1.4, HAND_Z - (seat === this.me ? -0.5 : 0.8));
@@ -234,6 +249,9 @@ export class Board {
     }).then(() => {
       const y = rest.position.y;
       return tween(tile.position, { y: y + 0.05 }, 60).then(() => tween(tile.position, { y }, 90));
+    }).then(() => {
+      // Only once the throw has landed and settled does its face layer appear.
+      if (seat !== this.me) this.addRoundLayer(item);
     });
   }
 
@@ -339,7 +357,8 @@ export class Board {
     const found = [];
     for (const seat of SEATS) {
       const state = this.seats[seat];
-      for (const item of state.discards) if (item.key === key) found.push(item.tile);
+      // A tile under a round layer is marked on the layer, which hides it.
+      for (const item of state.discards) if (item.key === key) found.push(item.layer?.visible ? item.layer : item.tile);
       for (const tile of state.melds.children) if (tile.userData.key === key) found.push(tile);
     }
     if (found.length === 0) return;
@@ -372,4 +391,4 @@ export class Board {
   }
 }
 
-Object.assign(Board.prototype, wallMethods, handMethods);
+Object.assign(Board.prototype, wallMethods, handMethods, roundMethods);

@@ -64,6 +64,25 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   hand tile lifted only puts the tile down. With `prefers-reduced-motion` the
   view changes at once. `test/app/view.test.ts` proves every discard is on
   screen and larger than in the table view.
+- The round layers, on phones only (`app/src/board-round.js`;
+  `makeFaceLayer` in `tiles.js`; `ROUND_LAYER`, `roundLayerZ` and
+  `roundLayersWanted` in `layout.js`): each tile the other players throw
+  this round gets its face laid flat on top of it, twice its size, in the
+  tile's own place, angle and orientation (a layer is a child of its tile).
+  A layer appears only once its tile has landed and settled, expanding out
+  of the tile in 0.2 s; your own throw clears them all as it leaves your
+  hand, and the next round starts. A claimed tile takes its layer with it.
+  The newest layer has the cyan edge of the latest-discard plate it covers,
+  and the gold marks for a selected tile go on a layer rather than the tile
+  under it. With `prefers-reduced-motion` a layer appears at full size. A
+  screen whose short side is at most 500 CSS pixels is a phone (every
+  iPhone held sideways; the smallest iPad is 744), so tablets and computers
+  keep the plain table. Options has a **Large discards** switch for them,
+  shown only on a phone and on by default (`app/src/large-discards.js`, kept
+  on the device; the players it helps most are the least likely to look for
+  a setting); turning it off hides the layers at once, mid-round too.
+  `test/app/layout.test.ts` proves a layer lies above
+  its tile's face, and a later one above an earlier one, at every size.
 - The turn light (`stage.js`, `updateConsole`): the console is painted in three
   layers (panel, light, lettering) so the light can move under the text. The
   seat whose turn it is glows along its edge with a soft, edgeless light, wide
@@ -99,7 +118,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   (the index of all hands), `result.js` (the result card and the final
   standings), `menu.js`
   (the Calls, Sort, New game buttons and the help sheet), `options.js` (the
-  Options sheet: the Sound switch, the Pace choice, the Bot level, the house rules, and the Help and Report
+  Options sheet: the Sound switch, the Large discards switch (phones only), the Pace choice, the Bot level, the house rules, and the Help and Report
   buttons) and `report.js` (report a problem). Modules that need the loop (`input`,
   `result`, `menu`) get its functions from `main.js` through an `installX`
   call, so imports never run in a circle.
