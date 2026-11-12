@@ -19,9 +19,9 @@ export function installInput(hooks) {
 }
 
 /**
- * A prompt that asks for a throw starts with nothing lifted. `keep` leaves a
- * tile you are studying raised: the bots' turns and claim windows (no throw
- * possible) must not disturb it.
+ * A new prompt normally leaves a pre-selected tile raised: it is the tile you
+ * chose while the bots played, and your own turn carries on from it. `keep`
+ * false (the goulash exchange, which lifts its own picks) puts it down.
  */
 export function clearSelection(keep = false) {
   if (keep || board.lifted === null) return;

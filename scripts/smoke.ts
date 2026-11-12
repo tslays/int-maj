@@ -347,6 +347,14 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.click("#sort");
   console.log("  ok  arrange the hand while the bots play, nothing thrown");
 
+  // A tile pre-selected by hover while the bots play is still up when your turn (and new tile) arrives.
+  await page.mouse.move(tile.x, tile.y);
+  payload = await yourMove(page);
+  assert.notEqual(await page.evaluate(() => window.mahjong!.lifted()), null, "the pre-selected tile stays up on your turn");
+  console.log("  ok  a pre-selected tile stays up when your turn comes");
+  await page.mouse.move(VIEWPORT.width / 2, VIEWPORT.height * 0.4); // off the hand: the tile goes down
+  await page.waitForTimeout(300);
+
   // A tap on the ponds zooms onto them from above; a second tap goes back.
   payload = await yourMove(page);
   const zoomed = () => page.evaluate(() => document.documentElement.classList.contains("pond-zoom"));

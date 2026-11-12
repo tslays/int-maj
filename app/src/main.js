@@ -238,8 +238,9 @@ function showChoices({ chime = true } = {}) {
   const view = state.payload.view;
   const bar = $("#actions");
   bar.replaceChildren();
-  // A tile you are studying stays up through a prompt that asks for no throw (a claim window).
-  clearSelection(!legal.some((action) => action.type === "Discard" || action.type === "GoulashExchange"));
+  // A tile you pre-selected while the bots played stays up when your turn (and your new tile) comes;
+  // only the goulash exchange, which lifts its own picks, starts clean.
+  clearSelection(!legal.some((action) => action.type === "GoulashExchange"));
   void refreshHints(true);
   if (chime) alertFor(legal);
 
