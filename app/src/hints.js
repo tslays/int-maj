@@ -248,12 +248,8 @@ function sampleFigure(sample) {
     tiles.append(set);
   }
   const caption = document.createElement("figcaption");
-  const lines = sample.sources.map((source) => `${source.book}, p. ${source.page}`);
-  if (sample.label !== null) lines.unshift(sample.label);
-  lines.forEach((text, index) => {
-    if (index > 0) caption.append(document.createElement("br"));
-    caption.append(text);
-  });
+  const where = sample.sources.map((source) => `${source.book.includes("Companion") ? "Companion" : "Illustrated"} p. ${source.page}`);
+  caption.textContent = (sample.label === null ? where : [sample.label, ...where]).join(" \u00b7 ");
   figure.append(tiles, caption);
   for (const text of sample.notes) {
     const note = document.createElement("p");
@@ -266,58 +262,74 @@ function sampleFigure(sample) {
 
 function sampleSection(samples, pages) {
   const companionOnly = companionRules();
-  const line = document.createElement("div");
-  line.className = "detail-line";
-  const heading = document.createElement("h3");
-  heading.textContent = companionOnly ? "The hand in the Companion" : "The hand in the book";
-  line.append(heading);
+  const wrap = document.createElement("div");
+  wrap.className = "detail-samples";
   if (samples.length === 0) {
     const none = document.createElement("p");
+    none.className = "detail-muted";
     none.textContent = companionOnly
       ? `The Companion lists this hand (${bookPages(pages, true)}) without a picture.`
       : `The books list this hand (${bookPages(pages)}) without a picture.`;
-    line.append(none);
+    wrap.append(none);
   }
-  for (const sample of samples) line.append(sampleFigure(sample));
-  return line;
+  for (const sample of samples) wrap.append(sampleFigure(sample));
+  return wrap;
 }
 
 /**
- * The button that pins a hand to the panel, or unpins it. It is left out
- * before a game (pins belong to a game). A fourth pin is not taken: the
- * button says so, and unpinning one frees a place.
+ * The icon button, top right of a hand's sheet, that pins the hand to the
+ * panel or unpins it. `null` before a game (pins belong to a game). A fourth
+ * pin is not taken: the button stays but says so when tapped (`note`), and
+ * unpinning one frees a place.
  */
 function pinControl(pattern) {
   if (state.payload === null) return null;
   const game = state.payload.game;
-  const wrap = document.createElement("div");
-  wrap.className = "detail-pin";
   const button = document.createElement("button");
   button.type = "button";
   button.className = "pin-button";
-  const note = document.createElement("span");
-  note.className = "pin-note";
+  const note = document.createElement("p");
+  note.className = "detail-muted pin-note";
+  note.setAttribute("role", "status");
+  note.hidden = true;
   const show = () => {
     const pinned = pins.has(game, pattern);
     const blocked = !pinned && pins.full(game);
-    button.replaceChildren(pinIcon(), pinned ? "Unpin from hints" : "Pin to hints");
+    const words = pinned ? "Unpin from hints" : "Pin to hints";
+    button.replaceChildren(pinIcon());
+    button.setAttribute("aria-label", words);
+    button.title = blocked ? `All ${MAX_PINS} pins are in use` : words;
     button.setAttribute("aria-pressed", String(pinned));
-    button.disabled = blocked;
-    note.textContent = blocked
-      ? `All ${MAX_PINS} pins are in use. Unpin a hand to pin this one.`
-      : pinned
-        ? "Shown in the panel, whatever your tiles are."
-        : "Keeps this hand in the panel, whatever your tiles are.";
+    button.classList.toggle("is-blocked", blocked);
+    return blocked;
   };
   button.addEventListener("click", () => {
+    if (show()) {
+      note.textContent = `All ${MAX_PINS} pins are in use. Unpin a hand to pin this one.`;
+      note.hidden = false;
+      return;
+    }
+    note.hidden = true;
     pins.toggle(game, pattern);
     show();
     for (const listener of pinListeners) listener();
     void refreshHints(true);
   });
   show();
-  wrap.append(button, note);
-  return wrap;
+  return { button, note };
+}
+
+/** A small value chip: a muted label and the words. */
+function factChip(label, words) {
+  const chip = document.createElement("span");
+  chip.className = "detail-fact";
+  if (label !== null) {
+    const tag = document.createElement("small");
+    tag.textContent = label;
+    chip.append(tag);
+  }
+  chip.append(words);
+  return chip;
 }
 
 /**
@@ -334,60 +346,77 @@ export async function openHandDetail(pattern, progress = null) {
   }
   const sheet = $("#hand-detail");
   const card = document.createElement("div");
-  card.className = "detail-card";
+  card.className = "detail-card hand-card";
   card.setAttribute("role", "dialog");
   card.setAttribute("aria-modal", "true");
   card.setAttribute("aria-label", detail.name);
 
+  // Top row: the name, then the pin and the close cross at the right.
   const close = document.createElement("button");
   close.type = "button";
   close.className = "detail-close";
   close.setAttribute("aria-label", "Close");
   close.textContent = "\u00d7";
   close.addEventListener("click", closeHandDetail);
-
   const heading = document.createElement("h2");
   heading.textContent = detail.name;
-
-  const banner = document.createElement("div");
-  banner.className = "detail-banner";
-  const bannerTitle = document.createElement("strong");
-  bannerTitle.textContent = detail.concealedOnly ? "Concealed only" : "Exposed or concealed";
-  const bannerText = document.createElement("span");
-  bannerText.textContent = detail.concealedOnly
-    ? "Build it entirely from your own tiles. Do not call Pung, Kong or Chow on a discard: " +
-      "one exposed meld and this hand is gone. You may still win on a discard."
-    : "You may call discards to make exposed melds and still win this hand, " +
-      "though it pays less than playing it concealed.";
-  banner.append(playIcon(detail.concealedOnly), bannerTitle, bannerText);
-
-  // A Companion-only table sees the Companion's pictures and pages alone.
-  const samples = visibleSamples(detail.samples, companionRules());
-  card.append(close, heading, banner);
+  const actions = document.createElement("div");
+  actions.className = "detail-actions";
   const pin = pinControl(pattern);
-  if (pin !== null) card.append(pin);
-  card.append(detailLine("What it is", detail.description), sampleSection(samples, detail.pages));
-  if (detail.requiresSelfDrawn) {
-    card.append(detailLine("Self-drawn", "Every tile, the winning one included, must come from the wall."));
-  }
-  const pays = [`Concealed: ${worth(detail.concealedTier, detail.concealedPoints)}`];
-  pays.push(
-    detail.exposedTier === null
-      ? "Exposed: not possible"
-      : `Exposed: ${worth(detail.exposedTier, detail.exposedPoints)}`,
-  );
-  const payLine = detailLine("What it pays", pays[0]);
-  payLine.lastChild.append(document.createElement("br"), pays[1]);
-  card.append(payLine);
+  if (pin !== null) actions.append(pin.button);
+  actions.append(close);
+  const head = document.createElement("div");
+  head.className = "detail-head";
+  head.append(heading, actions);
 
-  // The book's own picture is the example; only a hand it does not picture gets a made-up one.
-  if (samples.length === 0) {
-    const example = document.createElement("span");
-    example.className = "closest-need detail-need";
-    for (const key of detail.example) example.append(faceChip(key));
-    card.append(detailLine("For example", example));
+  // How it is played and what it pays, in one row of chips. The play chip
+  // opens the long explanation, which a player needs once and then knows.
+  const rule = document.createElement("button");
+  rule.type = "button";
+  rule.className = "detail-fact detail-rule";
+  rule.setAttribute("aria-expanded", "false");
+  rule.setAttribute("aria-controls", "hand-rule-note");
+  const ruleChevron = document.createElement("span");
+  ruleChevron.className = "rule-chevron";
+  ruleChevron.setAttribute("aria-hidden", "true");
+  rule.append(playIcon(detail.concealedOnly), detail.concealedOnly ? "Concealed only" : "Exposed allowed", ruleChevron);
+  const ruleNote = document.createElement("p");
+  ruleNote.className = "detail-note";
+  ruleNote.id = "hand-rule-note";
+  ruleNote.hidden = true;
+  ruleNote.textContent =
+    (detail.concealedOnly
+      ? "Build it entirely from your own tiles. Do not call Pung, Kong or Chow on a discard: " +
+        "one exposed meld and this hand is gone. You may still win on a discard."
+      : "You may call discards to make exposed melds and still win this hand, " +
+        "though it pays less than playing it concealed.") +
+    (detail.requiresSelfDrawn ? " Self-drawn: every tile, the winning one included, must come from the wall." : "");
+  rule.addEventListener("click", () => {
+    ruleNote.hidden = !ruleNote.hidden;
+    rule.setAttribute("aria-expanded", String(!ruleNote.hidden));
+  });
+  const facts = document.createElement("div");
+  facts.className = "detail-facts";
+  facts.append(rule);
+  const concealedWorth = worth(detail.concealedTier, detail.concealedPoints);
+  const exposedWorth = detail.concealedOnly ? null : worth(detail.exposedTier, detail.exposedPoints);
+  if (exposedWorth === null || exposedWorth === concealedWorth) {
+    // One value when the hand pays the same either way, or cannot be exposed.
+    facts.append(factChip("Pays", concealedWorth));
+  } else {
+    facts.append(factChip("Concealed", concealedWorth), factChip("Exposed", exposedWorth));
   }
+  if (detail.requiresSelfDrawn) facts.append(factChip(null, "Self-drawn only"));
 
+  const lede = document.createElement("p");
+  lede.className = "detail-lede";
+  lede.textContent = detail.description;
+
+  card.append(head);
+  if (pin !== null) card.append(pin.note);
+  card.append(facts, ruleNote, lede);
+
+  // What you still need comes before the picture: it is what you act on.
   if (progress !== null) {
     const need = document.createElement("span");
     need.className = "closest-need detail-need";
@@ -397,6 +426,18 @@ export async function openHandDetail(pattern, progress = null) {
       for (const key of progress.need) need.append(faceChip(key));
     }
     card.append(detailLine(progress.away === 0 ? "Your hand" : `You still need (${progress.away})`, need));
+  }
+
+  // A Companion-only table sees the Companion's pictures and pages alone.
+  const samples = visibleSamples(detail.samples, companionRules());
+  card.append(sampleSection(samples, detail.pages));
+
+  // The book's own picture is the example; only a hand it does not picture gets a made-up one.
+  if (samples.length === 0) {
+    const example = document.createElement("span");
+    example.className = "closest-need detail-need";
+    for (const key of detail.example) example.append(faceChip(key));
+    card.append(detailLine("For example", example));
   }
 
   sheet.replaceChildren(card);

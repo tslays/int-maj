@@ -131,8 +131,9 @@ value and the missing tiles. It is asked for when your own tiles change and at
 each of your decisions, and hides on the result card. The menu's Hints button
 turns it off (remembered on the device).
 
-**Pinning.** A hand's sheet (from the panel or from All hands) has a "Pin to
-hints" button. A pinned hand takes the panel's first place, the next pin the
+**Pinning.** A hand's sheet (from the panel or from All hands) has a pin
+button, an icon at the top right beside the close cross (gold and filled while
+pinned; a fourth pin is refused with a one-line message). A pinned hand takes the panel's first place, the next pin the
 second, a third pin the third; what the planner suggests fills the places the
 pins leave (`GET /api/closest?pins=a,b,c`, `closestWithPins` in
 `src/core/game/closest.ts`). A pinned row carries a pin mark and says how many
@@ -151,9 +152,14 @@ chips) so it never competes with the table, even on a phone. Each row is the
 hand's name and "n to go - value", with one icon: a closed eye when the hand is
 concealed only (any exposed meld rules it out; most special hands), an open eye
 when exposed melds are allowed. Tapping a row opens the hand's sheet
-(`GET /api/hand`): the same icon with the words, what it means for calling
-discards, the hand's composition, what it pays concealed and exposed, whether
-it must be self-drawn, the tiles you still need and its book pages. Close it with the cross, the backdrop or Escape.
+(`GET /api/hand`), laid out to fit a phone's height without scrolling (600px
+wide, one column): the name with the pin and the close cross at the right; one
+row of chips - the play chip (the same icon with "Concealed only" or "Exposed
+allowed"; tapping it opens the explanation of what it means for calling
+discards and self-drawn wins, which a player needs once), what it pays (one
+value, or concealed and exposed when they differ) and "Self-drawn only"; the
+hand's composition; the tiles you still need (above the picture, being what
+you act on); and the book's picture with its page in each book. Close it with the cross, the backdrop or Escape.
 
 Above the panel, **All hands** opens the index of every catalogue hand
 (`app/src/handbook.js`, `GET /api/hands`), so nobody has to reach for either
