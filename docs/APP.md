@@ -247,6 +247,16 @@ in the page through `src/table/local.ts`, and every answer is built from
 `viewFor(state, seat)`: your own hand, the public melds, discards and bonus
 tiles of the other seats, and their hand counts only.
 
+**Who is East.** You always sit at the bottom of the table, but a new game does
+not deal to you: the four seats throw two dice each and the highest total is
+East (*Illustrated* p. 18, R-026), the throw seeded by the game's seed so a
+reload or a replay gets the same East. Your wind follows from where East sits
+(West sits opposite East, South to its right). When a bot is East it discards
+first, and the table runs the bots up to your move. A saved game or problem
+report records the first dealer, and `dealtByDice` so a replay from the seed
+throws the same dice; a save from before the dice has neither and was dealt
+to East.
+
 | Route | Body / query | Returns |
 | --- | --- | --- |
 | `GET /api/state` | `game=<id>` | the view, legal actions, wall count, per-seat table, ledger, wait panel, result and `scoresBefore` |

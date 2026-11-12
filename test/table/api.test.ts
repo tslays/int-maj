@@ -23,6 +23,7 @@ import { tileKey } from "../../src/core/tiles.ts";
 import { createApiContext, routeApi, type ApiContext } from "../../src/table/api.ts";
 import { GameStore, type StatePayload, type WaitPanelEntry } from "../../src/table/session.ts";
 import { viewFor } from "../../src/core/game/view.ts";
+import { seedWithDealer, seedYouDeal } from "../helpers/seeds.ts";
 
 interface ApiPayload extends StatePayload {
   readonly events: readonly string[];
@@ -81,7 +82,7 @@ async function stepToHuman(game: string): Promise<ApiPayload> {
 
 describe("table API", () => {
   it("returns the seat view, legal actions, table, ledger and wait panel", async () => {
-    const created = await post<ApiPayload>("/api/new", { seed: "api-shape" });
+    const created = await post<ApiPayload>("/api/new", { seed: seedYouDeal("api-shape") });
     assert.equal(created.status, 200);
     assert.ok(
       created.body.events.some((line) => line.startsWith("E is dealt 14 tiles")),
@@ -90,7 +91,7 @@ describe("table API", () => {
 
     assert.equal(typeof payload.game, "string");
     assert.equal(payload.seat, "E");
-    assert.equal(payload.seed, "api-shape");
+    assert.equal(payload.seed, seedYouDeal("api-shape"));
     assert.equal(payload.view.seat, "E");
     assert.equal(payload.view.dealer, "E", "the deal is yours");
     assert.equal(payload.view.player.hand.length, 14);
@@ -202,7 +203,7 @@ describe("table API", () => {
   });
 
   it("never puts another seat's concealed tiles in a payload", async () => {
-    const created = await post<ApiPayload>("/api/new", { seed: "api-hidden" });
+    const created = await post<ApiPayload>("/api/new", { seed: seedYouDeal("api-hidden") });
     const game = created.body.game;
     const discard = created.body.legalActions.find(
       (action) => action.type === "Discard",
@@ -281,7 +282,7 @@ describe("table API", () => {
   });
 
   it("applies a legal move and advances the hand", async () => {
-    const created = await post<ApiPayload>("/api/new", { seed: "api-legal" });
+    const created = await post<ApiPayload>("/api/new", { seed: seedYouDeal("api-legal") });
     const game = created.body.game;
     const before = store.state(game)!;
     assert.equal(created.body.view.dealer, "E", "the deal is yours");
@@ -369,7 +370,7 @@ describe("table API", () => {
   });
 
   it("answers one table action per step, never a round", async () => {
-    const created = await post<ApiPayload>("/api/new", { seed: "api-step" });
+    const created = await post<ApiPayload>("/api/new", { seed: seedYouDeal("api-step") });
     const game = created.body.game;
     assert.equal(created.body.view.dealer, "E", "the deal is yours");
     assert.ok(
@@ -403,6 +404,35 @@ describe("table API", () => {
       human.legalActions.length > 0 || human.view.phase === "finished",
       "the steps stop at the human's move",
     );
+  });
+
+  it("throws dice for East: a new game does not always deal to you", async () => {
+    const dealers = new Set<string>();
+    for (let index = 0; index < 60; index++) {
+      const created = await post<ApiPayload>("/api/new", { seed: `api-dice-${index}` });
+      const payload = created.body;
+      dealers.add(payload.view.dealer);
+      assert.equal(payload.seat, "E", "you keep your place at the bottom of the table");
+      const winds = Object.fromEntries(payload.table.map((entry) => [entry.seat, entry.wind]));
+      assert.equal(winds[payload.view.dealer], "E", "the dealer is East Wind");
+      assert.equal(payload.table.filter((entry) => entry.dealer).length, 1);
+      assert.equal(payload.table.find((entry) => entry.isYou)?.wind, winds.E);
+      // The same seed gives the same throw: reloading a game never changes who is East.
+      const again = await post<ApiPayload>("/api/new", { seed: `api-dice-${index}` });
+      assert.equal(again.body.view.dealer, payload.view.dealer);
+    }
+    assert.deepEqual([...dealers].sort(), ["E", "N", "S", "W"], "every seat can be East");
+  });
+
+  it("lets a bot East open the hand, then hands the table to you", async () => {
+    const created = await post<ApiPayload>("/api/new", { seed: seedWithDealer("api-bot-east", "W") });
+    const game = created.body.game;
+    assert.equal(created.body.view.dealer, "W");
+    assert.equal(created.body.view.player.hand.length, 13, "East's 14th tile is not yours");
+    assert.equal(created.body.legalActions.length, 0, "the bot dealer throws first");
+    const human = await stepToHuman(game);
+    assert.ok(human.legalActions.length > 0 || human.view.phase === "finished");
+    assert.equal(human.view.dealer, "W");
   });
 
   it("matches check.ts's wait report for the same 13 tiles", async () => {

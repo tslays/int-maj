@@ -315,3 +315,19 @@ the printed rule is not changed:
 
 The tiles drawn, their count and their order are the engine's and are the same
 either way, so this is presentation only.
+
+## Seat selection: a tied highest throw (2026-11-12)
+
+**Source (I p. 18, rule 1):** "The four players in turn throw two dice. The
+highest total leads the game and becomes East Wind." Rule 5 and the page 19
+table use the same two-dice throw for the wall. The page is silent when two or
+more players tie for the highest total.
+
+**Assumption.** A tie for the highest total is thrown again, by all four
+players, until one total is highest (`rollForSeats` in `src/core/game/deal.ts`).
+Only the final throw is kept. The web table now plays this for every new game
+(you keep your place at the bottom; the dice decide who is East and so your
+wind), where it used to deal to you as East; the seed fixes the throw, so a
+saved game or report replays to the same East. Any other tie-break (only the
+tied players throw again) would change nothing else.
+

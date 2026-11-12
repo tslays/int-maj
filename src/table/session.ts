@@ -40,7 +40,10 @@ import type { Wind } from "../core/tiles.ts";
 import type { PageRefs, Tier } from "../core/patterns/types.ts";
 import { HAND_SET_EXCLUDED, HAND_SETS, PATTERNS, type HandSet } from "../core/patterns/table.ts";
 
-/** The web table always seats you at East, and deals to you. */
+/**
+ * Your fixed place at the table (the bottom of the screen). It is a position,
+ * not a wind: the dice pick the dealer, and the winds follow from that.
+ */
 const SEAT: Seat = "E";
 
 const PATTERN_NAMES: ReadonlyMap<string, string> = new Map(
@@ -94,7 +97,17 @@ export interface WebSession {
   readonly seed: string | number;
   /** The exclusion list hand 1 was dealt with; a replay from the seed needs it. */
   readonly excludedAtStart?: readonly string[];
-  /** The human's fixed seat. The web table seats you at East. */
+  /**
+   * Who was East in hand 1. Absent means East, as every game and review
+   * board was dealt before the dice.
+   */
+  readonly firstDealer?: Seat;
+  /**
+   * Hand 1 was dealt by the dice (I p. 18), which the seed decides. A replay
+   * from the seed then leaves the dealer to the seed instead of fixing it.
+   */
+  readonly dealtByDice?: true;
+  /** The human's fixed seat position; the dice decide which wind it holds. */
   readonly seat: Seat;
   readonly state: GameState;
   /** Every step needed to rebuild `state` from the seed, including NextHand. */
@@ -245,13 +258,17 @@ export interface StatePayload {
 }
 
 function startSession(id: string, seed: string | number, rules: HouseRules): WebSession {
-  // You are East and the deal is yours, so the first discard is yours too.
+  // Who is East is thrown for with two dice per seat (I p. 18), seeded by the
+  // game's seed. You always sit at the `SEAT` position; the dealer, and so
+  // your wind, is whatever the dice made it. A bot East discards first.
   const excludedAtStart = excludedHandsFor(rules);
-  const { state, events } = newGame(seed, { dealer: SEAT, excludedHands: excludedAtStart });
+  const { state, events } = newGame(seed, { excludedHands: excludedAtStart });
   return {
     id,
     seed,
     excludedAtStart,
+    firstDealer: state.dealer,
+    dealtByDice: true,
     seat: SEAT,
     state,
     steps: [],
@@ -491,6 +508,10 @@ export interface SessionSnapshot {
   readonly humanSteps: readonly number[];
   /** The exclusion list hand 1 was dealt with (a house rule); absent means none. */
   readonly excludedHands?: readonly string[];
+  /** Who was East in hand 1; absent means East (games saved before the dice). */
+  readonly firstDealer?: Seat;
+  /** Hand 1 was dealt by the dice; absent means it was dealt to `firstDealer`. */
+  readonly dealtByDice?: true;
   /** The current hand's checkpoint; without it, restore replays from the seed. */
   readonly handStart?: {
     readonly step: number;
@@ -508,6 +529,8 @@ export function isSessionSnapshot(value: unknown): value is SessionSnapshot {
     Array.isArray(record.steps) &&
     Array.isArray(record.humanSteps) &&
     record.humanSteps.every((index) => Number.isInteger(index)) &&
+    (record.firstDealer === undefined || SEATS.includes(record.firstDealer as Seat)) &&
+    (record.dealtByDice === undefined || record.dealtByDice === true) &&
     (record.excludedHands === undefined ||
       (Array.isArray(record.excludedHands) && record.excludedHands.every((id) => typeof id === "string"))) &&
     (record.handStart === undefined || isHandStartRecord(record.handStart, record.steps.length))
@@ -578,6 +601,8 @@ export class GameStore {
       ...(session.excludedAtStart === undefined || session.excludedAtStart.length === 0
         ? {}
         : { excludedHands: session.excludedAtStart }),
+      ...(session.firstDealer === undefined ? {} : { firstDealer: session.firstDealer }),
+      ...(session.dealtByDice === true ? { dealtByDice: true as const } : {}),
       handStart: {
         step: session.handStart.step,
         state: session.handStart.state,
@@ -621,7 +646,10 @@ export class GameStore {
           scoresBefore: { ...snapshot.handStart.scoresBefore },
         };
       } else {
-        const options = { dealer: SEAT, excludedHands: snapshot.excludedHands ?? [] };
+        const options = {
+          ...(snapshot.dealtByDice === true ? {} : { dealer: snapshot.firstDealer ?? SEAT }),
+          excludedHands: snapshot.excludedHands ?? [],
+        };
         replayed = replaySteps(snapshot.seed, snapshot.steps, options);
         const start = newGame(snapshot.seed, options);
         handStart = {
@@ -642,6 +670,8 @@ export class GameStore {
       id,
       seed: snapshot.seed,
       excludedAtStart: snapshot.excludedHands ?? [],
+      firstDealer: snapshot.firstDealer ?? SEAT,
+      ...(snapshot.dealtByDice === true ? { dealtByDice: true as const } : {}),
       seat: SEAT,
       state: replayed.state,
       steps: [...steps],

@@ -28,6 +28,7 @@ import {
 } from "../../src/table/session.ts";
 import { createLocalApi, SAVE_KEY, type KeyValueStorage } from "../../src/table/local.ts";
 import { build } from "../../scripts/build.ts";
+import { seedWithDealer, seedYouDeal } from "../helpers/seeds.ts";
 
 /** Play the human seat with the bot policy until `limit` decisions or the end. */
 function playOn(store: GameStore, id: string, limit = Number.POSITIVE_INFINITY): void {
@@ -79,6 +80,38 @@ describe("session snapshots", () => {
       comparable(statePayload(restored.session)),
       comparable(statePayload(store.get(session.id)!)),
     );
+  });
+
+  it("restores a game whose dice made a bot East, and one saved before the dice", () => {
+    const seed = seedWithDealer("snapshot-dice", "S");
+    const store = new GameStore();
+    const { session } = store.create(seed);
+    assert.equal(session.state.dealer, "S");
+    playOn(store, session.id, 30);
+    const snapshot = store.snapshot(session.id)!;
+    assert.equal(snapshot.firstDealer, "S");
+    assert.equal(snapshot.dealtByDice, true);
+
+    // From the seed alone (no checkpoint) the dice are thrown again, to the same East.
+    const { handStart: _checkpoint, ...bare } = snapshot;
+    const fromSeed = new GameStore().restore(JSON.parse(JSON.stringify(bare)));
+    assert.ok(!("error" in fromSeed));
+    assert.equal(fromSeed.session.state.dealer, "S");
+    assert.deepEqual(
+      comparable(statePayload(fromSeed.session)),
+      comparable(statePayload(store.get(session.id)!)),
+    );
+
+    // A save from before the dice has neither field: it was dealt to East.
+    const legacyStore = new GameStore();
+    const legacySeed = seedYouDeal("snapshot-legacy");
+    const legacy = legacyStore.create(legacySeed).session;
+    playOn(legacyStore, legacy.id, 20);
+    const { firstDealer: _first, dealtByDice: _dice, handStart: _start, ...old } = legacyStore.snapshot(legacy.id)!;
+    assert.ok(isSessionSnapshot(JSON.parse(JSON.stringify(old))));
+    const revived = new GameStore().restore(JSON.parse(JSON.stringify(old)));
+    assert.ok(!("error" in revived));
+    assert.equal(revived.session.state.dealer, "E");
   });
 
   it("restores across finished hands, and undo still works afterwards", () => {
@@ -248,7 +281,7 @@ describe("playing a hand again", () => {
       method: "POST",
       path: "/api/new",
       query: new URLSearchParams(),
-      body: { seed: "retry-4" },
+      body: { seed: seedYouDeal("retry-4") },
     })!.body as { game: string };
     playOn(context.store, created.game, 8);
     const answer = call({ game: created.game })!;
