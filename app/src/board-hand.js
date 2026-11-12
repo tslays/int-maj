@@ -72,7 +72,8 @@ export const handMethods = {
     for (const entry of pool) entry.tile.removeFromParent();
     this.hand = next;
 
-    const work = this.layoutHand(fresh, animated);
+    // A tile you are carrying stays with your pointer, even if the table moves on meanwhile.
+    const work = this.layoutHand(fresh, animated, this.carried);
 
     return work;
   },
@@ -207,6 +208,7 @@ export const handMethods = {
     const x = this.handX(event);
     if (x === null) return;
     const { places, total } = this.handPlaces();
+    this.carried = entry;
     entry.glide += 1; // the pointer owns this tile now
     entry.tile.position.x = Math.max(-total / 2, Math.min(total / 2, x));
     entry.tile.position.y = HAND_LIFT;
@@ -241,11 +243,13 @@ export const handMethods = {
   /** Settle every hand tile into its place (after a drag or a swap). */
   settle() {
     this.clearMarks();
+    this.carried = null;
     return this.layoutHand(new Set(), true);
   },
 
   /** Remember where the tile you throw left the hand, so its arc starts there. */
   noteThrow(entry) {
     this.lastThrowX = entry.tile.position.x;
+    this.carried = null;
   },
 };
