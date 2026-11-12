@@ -576,6 +576,25 @@ button {
 .result-next {
   justify-self: end;
 }
+/* "Play this hand again": a quiet link, not a second button. */
+.result-again {
+  justify-self: end;
+  margin: 0;
+  padding: 6px 2px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-decoration-color: rgba(233, 228, 214, 0.35);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.result-again:hover,
+.result-again:focus-visible {
+  color: var(--ink);
+}
 /* Narrow screens stack the two columns. */
 @media (max-width: 640px) {
   .result-card {

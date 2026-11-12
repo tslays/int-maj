@@ -190,6 +190,77 @@ describe("session snapshots", () => {
   });
 });
 
+describe("playing a hand again", () => {
+  it("deals the finished hand again: same tiles, scores from before kept", () => {
+    const store = new GameStore();
+    const { session } = store.create("retry-1");
+    playOn(store, session.id);
+    assert.ok(!("error" in store.next(session.id)));
+    const dealt = comparable(statePayload(store.get(session.id)!));
+    const paid = store.get(session.id)!.handStart.scoresBefore;
+    const logged = store.get(session.id)!.steps.length;
+    playOn(store, session.id);
+    assert.equal(store.get(session.id)!.state.phase, "finished");
+
+    const again = store.retry(session.id);
+    assert.ok(!("error" in again));
+    assert.equal(again.session.state.phase, "discard");
+    assert.equal(again.session.state.handNumber, 2);
+    assert.deepEqual(comparable(statePayload(again.session)), dealt, "the same deal, as dealt");
+    assert.deepEqual(again.session.handStart.scoresBefore, paid);
+    assert.equal(again.session.steps.length, logged, "the abandoned attempt leaves no steps");
+    assert.ok(again.session.humanSteps.every((index) => index < again.session.handStart.step));
+  });
+
+  it("is repeatable and plays out the same under the same decisions", () => {
+    const store = new GameStore();
+    const { session } = store.create("retry-2");
+    playOn(store, session.id);
+    const first = store.get(session.id)!;
+    const outcome = statePayload(first).outcome;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      assert.ok(!("error" in store.retry(session.id)));
+      playOn(store, session.id);
+      assert.deepEqual(statePayload(store.get(session.id)!).outcome, outcome);
+    }
+  });
+
+  it("works part-way through a hand, and a saved game restores to the fresh deal", () => {
+    const store = new GameStore();
+    const { session } = store.create("retry-3");
+    const dealt = comparable(statePayload(session));
+    playOn(store, session.id, 12);
+    const again = store.retry(session.id);
+    assert.ok(!("error" in again));
+    assert.deepEqual(comparable(statePayload(again.session)), dealt);
+    assert.equal(again.session.steps.length, 0);
+
+    const restored = new GameStore().restore(JSON.parse(JSON.stringify(store.snapshot(session.id)!)));
+    assert.ok(!("error" in restored));
+    assert.deepEqual(comparable(statePayload(restored.session)), dealt);
+  });
+
+  it("answers on /api/retry, and refuses an unknown game", () => {
+    const context = createApiContext();
+    const call = (body: unknown) =>
+      routeApi(context, { method: "POST", path: "/api/retry", query: new URLSearchParams(), body });
+    const created = routeApi(context, {
+      method: "POST",
+      path: "/api/new",
+      query: new URLSearchParams(),
+      body: { seed: "retry-4" },
+    })!.body as { game: string };
+    playOn(context.store, created.game, 8);
+    const answer = call({ game: created.game })!;
+    assert.equal(answer.status, 200);
+    const payload = answer.body as { replaceLog?: boolean; view: { turn: string }; legalActions: unknown[] };
+    assert.equal(payload.replaceLog, true);
+    assert.ok(payload.legalActions.length > 0, "the deal is yours: your first discard is up");
+    assert.equal(call({ game: "nope" })!.status, 400);
+    assert.equal(call({})!.status, 400);
+  });
+});
+
 describe("running scores", () => {
   it("carries every finished hand into scoresBefore, zero-sum", () => {
     const store = new GameStore();

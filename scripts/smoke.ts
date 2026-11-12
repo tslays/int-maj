@@ -97,6 +97,14 @@ const BOARD_CHECKS: Readonly<Record<ScenarioName, (payload: Payload, page: Page)
   result: async (payload, page) => {
     assert.equal(payload.outcome?.kind, "win");
     await resultCard(page);
+    // "Play this hand again" deals the same hand from the start.
+    const hand = payload.view.handNumber;
+    await page.click(".result-again");
+    await page.waitForSelector("#result", { state: "hidden", timeout: READY_MS });
+    const again = await yourMove(page);
+    assert.equal(again.view.handNumber, hand, "the same hand is dealt again");
+    assert.equal(again.outcome, null, "the hand is open again");
+    assert.ok(again.legalActions.length > 0, "your first discard is up");
   },
   goulash: async (payload, page) => {
     assert.equal(payload.view.phase, "exchange");
