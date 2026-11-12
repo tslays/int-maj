@@ -67,6 +67,7 @@ declare global {
     mahjong?: {
       state(): Payload | null;
       busy(): boolean;
+      lifted(): string | null;
       act(action: unknown): Promise<void>;
       sound: { readonly samplesLoaded: number };
     };
@@ -277,6 +278,18 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
     { timeout: READY_MS },
   );
   console.log("  ok  tap twice to throw");
+
+  // The bots play on: a mouse over a hand tile pre-selects it (to see its copies in the ponds), and the
+  // bots' moves do not put it down again. Only checked while the table is still busy, as a bot's turn
+  // can end at any moment (your turn lowers the tile by design).
+  await page.mouse.move(tile.x, tile.y);
+  await page.waitForTimeout(150);
+  for (const wait of [0, 350, 350]) {
+    await page.waitForTimeout(wait);
+    const seen = await page.evaluate(() => ({ busy: window.mahjong!.busy(), lifted: window.mahjong!.lifted() }));
+    if (seen.busy) assert.notEqual(seen.lifted, null, "a hovered tile stays lifted while the bots play");
+  }
+  console.log("  ok  hover lifts a tile while the bots play");
 
   // The bots play on: a swipe up on a hand tile throws nothing. The swipe is dispatched as pointer
   // events in one synchronous step, so no bot turn can land between the check and the swipe: if the

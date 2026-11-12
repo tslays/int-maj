@@ -238,7 +238,8 @@ function showChoices({ chime = true } = {}) {
   const view = state.payload.view;
   const bar = $("#actions");
   bar.replaceChildren();
-  clearSelection();
+  // A tile you are studying stays up through a prompt that asks for no throw (a claim window).
+  clearSelection(!legal.some((action) => action.type === "Discard" || action.type === "GoulashExchange"));
   void refreshHints(true);
   if (chime) alertFor(legal);
 
@@ -368,6 +369,7 @@ async function boot() {
 window.mahjong = {
   state: () => state.payload,
   busy: () => state.busy,
+  lifted: () => board.lifted?.key ?? null,
   act: (action) => act(action),
   next: () => $("#result .result-next")?.click(),
   sound,

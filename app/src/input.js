@@ -9,7 +9,6 @@ import { $, board, state } from "./shared.js";
 import { pondTap, pondZoomed, renderer, setPondZoom } from "./stage.js";
 import { sound } from "./sound.js";
 
-let selected = null;
 let press = null; // the tile under a held pointer
 let goulashPicks = [];
 let act = null;
@@ -19,9 +18,14 @@ export function installInput(hooks) {
   act = hooks.act;
 }
 
-/** Drop any lifted tile (a new prompt starts with nothing selected). */
-export function clearSelection() {
-  selected = null;
+/**
+ * A prompt that asks for a throw starts with nothing lifted. `keep` leaves a
+ * tile you are studying raised: the bots' turns and claim windows (no throw
+ * possible) must not disturb it.
+ */
+export function clearSelection(keep = false) {
+  if (keep || board.lifted === null) return;
+  void board.lift(board.lifted, false);
 }
 
 /** A new goulash exchange starts with no tiles picked. */
@@ -52,7 +56,7 @@ renderer.domElement.addEventListener("pointerdown", (event) => {
   // A tap on the ponds (not on a hand tile, and with no tile lifted to put
   // down) zooms in on them from above; a tap anywhere zooms back. It works
   // while the bots play too: that is when you study the discards.
-  if (entry === null && (pondZoomed() || selected === null || state.busy || state.payload === null) && pondTap(event)) {
+  if (entry === null && (pondZoomed() || board.lifted === null || state.busy || state.payload === null) && pondTap(event)) {
     setPondZoom(!pondZoomed());
     return;
   }
@@ -80,18 +84,24 @@ renderer.domElement.addEventListener("pointerdown", (event) => {
   }
 
   if (entry === null) {
-    if (selected !== null) void board.lift(selected, false);
-    selected = null;
+    if (board.lifted !== null) void board.lift(board.lifted, false);
     return;
   }
   // Press on a hand tile: a tap selects / moves the lift / discards, a drag re-arranges.
-  const wasSelected = entry === selected;
-  if (selected === null) {
-    selected = entry;
+  const wasSelected = entry === board.lifted;
+  if (board.lifted === null) {
     void board.lift(entry, true);
     tickFor(entry); // the first tap on a tile: it clicks up
   }
-  press = { entry, wasSelected, x: event.clientX, y: event.clientY, dragging: false, id: event.pointerId };
+  press = {
+    entry,
+    wasSelected,
+    touch: event.pointerType === "touch",
+    x: event.clientX,
+    y: event.clientY,
+    dragging: false,
+    id: event.pointerId,
+  };
   renderer.domElement.setPointerCapture?.(event.pointerId);
 });
 
@@ -105,18 +115,17 @@ function throwing(event) {
 }
 
 /**
- * With a mouse (or pen) the tile under the pointer is pre-selected: click discards.
- * Only when you may discard it: on the bots' turns the hand is still there to
- * arrange, but nothing lifts that would suggest a click throws it.
+ * With a mouse (or pen) the tile under the pointer is pre-selected: on your
+ * turn a click discards it. On the bots' turns it lifts and marks its copies
+ * in the ponds just the same, so you can look at your options early; a click
+ * then throws nothing (`legalDiscard`).
  */
 function hover(event) {
   if (press !== null || state.payload === null || pondZoomed()) return;
   if (state.payload.legalActions.some((action) => action.type === "GoulashExchange")) return;
-  const picked = board.pick(event);
-  const entry = picked !== null && legalDiscard(picked.key) !== null ? picked : null;
-  if (entry === selected) return;
-  if (selected !== null) void board.lift(selected, false);
-  selected = entry;
+  const entry = board.pick(event);
+  if (entry === board.lifted) return;
+  if (board.lifted !== null) void board.lift(board.lifted, false);
   if (entry !== null) {
     void board.lift(entry, true);
     tickFor(entry);
@@ -124,9 +133,8 @@ function hover(event) {
 }
 
 renderer.domElement.addEventListener("pointerleave", (event) => {
-  if (event.pointerType === "touch" || press !== null || selected === null) return;
-  void board.lift(selected, false);
-  selected = null;
+  if (event.pointerType === "touch" || press !== null || board.lifted === null) return;
+  void board.lift(board.lifted, false);
 });
 
 renderer.domElement.addEventListener("pointermove", (event) => {
@@ -135,8 +143,8 @@ renderer.domElement.addEventListener("pointermove", (event) => {
   if (!press.dragging) {
     if (Math.hypot(event.clientX - press.x, event.clientY - press.y) < DRAG_SLOP) return;
     press.dragging = true;
-    if (selected !== null && selected !== press.entry) void board.lift(selected, false);
-    selected = press.entry;
+    if (board.lifted !== null && board.lifted !== press.entry) void board.lift(board.lifted, false);
+    board.lifted = press.entry;
   }
   // A swipe up swells the tile only where letting go would throw it.
   const armed = legalDiscard(press.entry.key) !== null && throwing(event);
@@ -149,13 +157,12 @@ renderer.domElement.addEventListener("pointermove", (event) => {
 
 function endPress(event, cancelled) {
   if (press === null || event.pointerId !== press.id) return;
-  const { entry, wasSelected, dragging, armed } = press;
+  const { entry, wasSelected, dragging, armed, touch } = press;
   press = null;
   renderer.domElement.releasePointerCapture?.(event.pointerId);
   if (dragging) board.armThrow(entry, false);
   if (dragging && armed && !cancelled && legalDiscard(entry.key) !== null) {
     // Swiped up and let go: the tile is thrown onto the table.
-    selected = null;
     board.noteThrow(entry);
     sound.cue("lift");
     void act(legalDiscard(entry.key));
@@ -163,21 +170,20 @@ function endPress(event, cancelled) {
   }
   if (dragging) {
     // Dropped: it settles where it was carried; nothing is thrown.
-    selected = null;
     void board.settle();
     return;
   }
   if (cancelled) {
-    if (selected !== null) void board.lift(selected, false);
-    selected = null;
+    if (board.lifted !== null) void board.lift(board.lifted, false);
     return;
   }
-  if (selected === entry) {
+  if (board.lifted === entry) {
     if (!wasSelected) return; // first tap: it stays lifted
-    selected = null;
     const discard = legalDiscard(entry.key);
     if (discard === null) {
-      void board.lift(entry, false);
+      // Nothing to throw (the bots play): a second touch tap puts the tile back; a mouse
+      // click leaves the hovered tile up, as the hover would only lift it again.
+      if (touch) void board.lift(entry, false);
       return;
     }
     board.noteThrow(entry);
@@ -187,8 +193,7 @@ function endPress(event, cancelled) {
   }
   // A second tile tapped while one is lifted: the lift moves to it (to compare
   // discards by touch); a second tap on that tile discards it.
-  if (selected !== null) void board.lift(selected, false);
-  selected = entry;
+  if (board.lifted !== null) void board.lift(board.lifted, false);
   void board.lift(entry, true);
   tickFor(entry);
 }

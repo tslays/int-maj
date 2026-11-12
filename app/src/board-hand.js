@@ -113,10 +113,12 @@ export const handMethods = {
         }
         continue;
       }
+      // A tile you have raised stays raised while the hand shifts around it.
+      const y = entry === this.lifted ? HAND_LIFT : 0;
       const position = entry.tile.position;
-      if (Math.abs(position.x - x) > 1e-3 || Math.abs(position.y) > 1e-3) {
-        if (animated) work.push(this.glide(entry, { x, y: 0 }, 220));
-        else position.set(x, 0, 0);
+      if (Math.abs(position.x - x) > 1e-3 || Math.abs(position.y - y) > 1e-3) {
+        if (animated) work.push(this.glide(entry, { x, y }, 220));
+        else position.set(x, y, 0);
       }
     }
     return work;
@@ -139,9 +141,15 @@ export const handMethods = {
     return this.hand.find((entry) => entry.tile === object) ?? null;
   },
 
+  /** Raise a hand tile (marking its copies on the table) or put it back; `lifted` is the one raised. */
   lift(entry, up) {
-    if (up) this.markCopies(entry.key);
-    else this.clearMarks();
+    if (up) {
+      this.lifted = entry;
+      this.markCopies(entry.key);
+    } else {
+      if (this.lifted === entry) this.lifted = null;
+      this.clearMarks();
+    }
     return this.glide(entry, { y: up ? HAND_LIFT : 0 }, 140);
   },
 
@@ -245,6 +253,7 @@ export const handMethods = {
   settle() {
     this.clearMarks();
     this.carried = null;
+    this.lifted = null;
     return this.layoutHand(new Set(), true);
   },
 
@@ -252,5 +261,6 @@ export const handMethods = {
   noteThrow(entry) {
     this.lastThrowX = entry.tile.position.x;
     this.carried = null;
+    this.lifted = null;
   },
 };
