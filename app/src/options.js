@@ -61,21 +61,13 @@ function showRules() {
 }
 
 function showSound() {
-  const on = !sound.muted;
-  const button = $("#sound");
-  button.classList.toggle("on", on);
-  button.setAttribute("aria-pressed", String(on));
-  button.firstElementChild.textContent = on ? "On" : "Off";
+  $("#sound").setAttribute("aria-checked", String(!sound.muted));
 }
 
 /* Large discards: only a phone shows them, so only a phone offers the switch. */
 function showLargeDiscards() {
   $("#large-discards-row").hidden = !roundLayersWanted(viewport.width, viewport.height);
-  const on = largeDiscards.on;
-  const button = $("#large-discards");
-  button.classList.toggle("on", on);
-  button.setAttribute("aria-pressed", String(on));
-  button.firstElementChild.textContent = on ? "On" : "Off";
+  $("#large-discards").setAttribute("aria-checked", String(largeDiscards.on));
 }
 
 function showPace() {
