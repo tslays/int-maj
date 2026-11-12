@@ -12,4 +12,4 @@ Each throw was cut out of the file (about 0.6 s each), converted to mono MP3
 (96 kbit/s, so every phone can decode it) and set to a peak of -3 dB. Nothing else was
 changed.
 
-Every other sound in the game is synthesised in `src/sound.js`.
+Every other sound in the game is synthesised in `app/src/sound.js`.

@@ -1,6 +1,7 @@
 /**
- * The Options sheet: sound, large discards (phones only), the pace, the bot level, dice and dealing, the house rules, and the doors to Help and
- * Report a problem.
+ * The Options sheet: sound, large discards (phones only), the pace, the bot
+ * level, dice and dealing, the house rules, and the doors to Help and Report a
+ * problem.
  *
  * A house rule is a preference kept on the device. The table fixes a hand's
  * rules at its deal, so `houseRules()` is sent with every new game and every

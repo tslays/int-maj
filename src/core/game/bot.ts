@@ -29,9 +29,9 @@
  * another. On top of it the table sets a skill level (`BotLevel`): Hard plays
  * the policy above as it stands; Medium defends less and misjudges its
  * discards by a margin; Easy never defends, chases special hands less, calls
- * almost any discard and misjudges its discards widely. The misjudgement comes from a hash of the view, never
- * from a random source, so everything stays deterministic: the same view at
- * the same level gives the same action.
+ * almost any discard and misjudges its discards widely. The misjudgement
+ * comes from a hash of the view, never from a random source, so everything
+ * stays deterministic: the same view at the same level gives the same action.
  */
 
 import type { Action } from "./actions.ts";
