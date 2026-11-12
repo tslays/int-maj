@@ -40,7 +40,6 @@ const APP_DIRS = [
   { dir: "vendor/three", pattern: /\.(js|md)$|^LICENSE$/ },
   { dir: "assets/faces", pattern: /\.(svg|md)$/ },
   { dir: "assets/icons", pattern: /\.(png|svg)$/ },
-  { dir: "assets/sounds", pattern: /\.(mp3|md)$/ },
 ] as const;
 
 /** Licence and notes travel with the files they cover, but are not cached. */

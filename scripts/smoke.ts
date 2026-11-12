@@ -62,7 +62,6 @@ declare global {
       state(): Payload | null;
       busy(): boolean;
       act(action: unknown): Promise<void>;
-      sound: { readonly samplesLoaded: number };
     };
   }
 }
@@ -536,10 +535,6 @@ async function opening(browser: Browser, origin: string, shots: string | null): 
     await page.mouse.click(VIEWPORT.width / 2, VIEWPORT.height / 3);
     await page.waitForSelector(".opening", { state: "detached", timeout: 3000 });
     assert.ok(Date.now() - started < 3000, "a tap cuts the opening short");
-    // The tap started audio, which fetched and decoded the dice recordings from the built app.
-    await page.waitForFunction(() => window.mahjong?.sound.samplesLoaded === 3, null, {
-      timeout: 10_000,
-    });
     const payload = await yourMove(page);
     assert.equal(payload.view.dealer, "S");
     assert.ok(payload.view.player.hand.length >= 13, "the deal is complete");

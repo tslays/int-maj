@@ -66,8 +66,8 @@ async function tumble(dice, faces, ms, run) {
     die.classList.add("tumbling");
   }
   const end = performance.now() + stretch(ms);
-  // The recording is fitted to the tumble: the dice are heard for as long as they roll and land with the picture.
-  sound.cue("dice", { span: stretch(ms) / 1000 });
+  // The dice are heard bouncing for as long as they tumble, and land with the picture.
+  sound.cue("dice", { span: stretch(ms) / 1000, count: dice.length });
   while (!run.skipped && performance.now() < end) {
     for (const die of dice) showFace(die, 1 + Math.floor(Math.random() * 6));
     await run.wait(65);

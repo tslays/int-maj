@@ -28,7 +28,6 @@ class FakeParam {
 class FakeNode {
   gain = new FakeParam();
   frequency = new FakeParam();
-  playbackRate = new FakeParam();
   Q = new FakeParam();
   pan = new FakeParam();
   threshold = new FakeParam();
@@ -77,7 +76,6 @@ class FakeContext {
   createDynamicsCompressor = () => this.node();
   createOscillator = () => this.node(true);
   createBufferSource = () => this.node(true);
-  decodeAudioData = async (_bytes: ArrayBuffer) => ({ duration: 0.5 });
   createBuffer = (_channels: number, length: number) => ({ getChannelData: () => new Float32Array(length) });
   suspended = 0;
   async resume() {
@@ -113,6 +111,7 @@ async function running(extra: Record<string, unknown> = {}) {
 
 const CUES = [
   "clack",
+  "dice",
   "meld",
   "deal",
   "draw",
@@ -162,30 +161,23 @@ describe("sound voices", () => {
     assert.equal(sourcesFor(4), (sourcesFor(2) / 2) * 4);
   });
 
-  it("dice play a recording, fitted to the throw, and are silent without one", () => {
-    const play = (takes: { duration: number }[], options: Record<string, number>) => {
+  it("dice rattle for as long as they were asked to, spreading out, and are a pair", () => {
+    const heard = (options: Record<string, number>) => {
       const ctx = new FakeContext();
-      createVoices(ctx, ctx.destination, () => 0.5, { dice: takes }).dice(10, options);
-      return ctx;
+      createVoices(ctx, ctx.destination, () => 0.5).dice(10, options);
+      return ctx.sources.map((source) => source.starts[0]! as number);
     };
-    assert.equal(play([], { span: 0.5 }).sources.length, 0, "nothing decoded: nothing plays");
-    const fitted = play([{ duration: 0.6 }], { span: 0.4 });
-    assert.equal(fitted.sources.length, 1);
-    assert.equal(fitted.sources[0]!.starts[0], 10);
-    // A 0.6 s take played over 0.4 s runs at 1.5x; over 0.8 s at 0.75x; never absurdly fast or slow.
-    assert.ok(Math.abs(fitted.sources[0]!.playbackRate.value - 1.5) < 1e-9);
-    assert.ok(Math.abs(play([{ duration: 0.6 }], { span: 0.8 }).sources[0]!.playbackRate.value - 0.75) < 1e-9);
-    assert.equal(play([{ duration: 0.6 }], { span: 0.1 }).sources[0]!.playbackRate.value, 1.6);
-    assert.equal(play([{ duration: 0.6 }], { span: 5 }).sources[0]!.playbackRate.value, 0.7);
-    // Each throw is a different take.
-    const takes = [{ duration: 0.4 }, { duration: 0.5 }, { duration: 0.6 }];
-    const used = new Set<unknown>();
-    for (const value of [0.1, 0.5, 0.9]) {
-      const ctx = new FakeContext();
-      createVoices(ctx, ctx.destination, () => value, { dice: takes }).dice(0, { span: 0.5 });
-      used.add(ctx.sources[0]!.buffer);
-    }
-    assert.equal(used.size, 3);
+    const pair = heard({ span: 0.4, count: 2 });
+    const single = heard({ span: 0.4, count: 1 });
+    assert.equal(pair.length, single.length * 2, "each die clicks on its own");
+    assert.ok(single.length > 30, "a rattle, not a few knocks");
+    assert.ok(Math.max(...pair) >= 10.4 && Math.max(...pair) < 10.4 + 0.1, "the last clicks land at the span");
+    assert.ok(Math.max(...heard({ span: 0.8, count: 2 })) > Math.max(...pair) + 0.3, "a longer throw lasts longer");
+    // The clicks spread out as the die slows: more of them fall in the first half of the throw.
+    const clicks = [...new Set(single.map((time) => Math.round(time * 1000)))].filter((ms) => ms > 10010);
+    const early = clicks.filter((ms) => ms < 10200).length;
+    const late = clicks.filter((ms) => ms >= 10200 && ms < 10400).length;
+    assert.ok(early > late, `denser at the throw (${early}) than at the rest (${late})`);
   });
 
   it("a tick is far lighter than a clack", () => {
@@ -195,38 +187,6 @@ describe("sound voices", () => {
       return ctx.sources.length;
     };
     assert.ok(sourcesFor("tick") < sourcesFor("clack"));
-  });
-});
-
-describe("the recordings", () => {
-  it("are fetched and decoded when audio starts, and a cue plays them", async () => {
-    const asked: string[] = [];
-    const { engine, ctx } = await running({
-      loadSample: async (name: string) => {
-        asked.push(name);
-        return new ArrayBuffer(8);
-      },
-    });
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    assert.deepEqual(asked, ["dice-1.mp3", "dice-2.mp3", "dice-3.mp3"]);
-    ctx.state = "running";
-    const before = ctx.sources.length;
-    assert.equal(engine.cue("dice", { span: 0.5 }), true);
-    assert.equal(ctx.sources.length, before + 1, "one recording starts");
-  });
-
-  it("leave the cue silent when a file will not load, and never break the engine", async () => {
-    const { engine, ctx } = await running({
-      loadSample: async () => {
-        throw new Error("offline");
-      },
-    });
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    ctx.state = "running";
-    const before = ctx.sources.length;
-    engine.cue("dice", { span: 0.5 });
-    assert.equal(ctx.sources.length, before, "nothing plays");
-    assert.equal(engine.cue("clack"), true, "the other sounds still play");
   });
 });
 
