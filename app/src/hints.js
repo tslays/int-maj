@@ -94,29 +94,9 @@ export function worth(tier, points) {
   return points === null ? TIER_LABEL[tier] : `${TIER_LABEL[tier]} · ${points.toLocaleString("en")}`;
 }
 
-/**
- * Open eye: exposed melds are fine. Closed eye: concealed only. Drawn in
- * the text colour so it stays quiet; the words appear on the hand's sheet.
- */
-export function playIcon(concealedOnly) {
-  const ns = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(ns, "svg");
-  svg.setAttribute("viewBox", "0 0 24 24");
-  svg.setAttribute("class", "play-icon");
-  svg.setAttribute("aria-hidden", "true");
-  const shape = (name, attrs) => {
-    const node = document.createElementNS(ns, name);
-    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
-    svg.append(node);
-  };
-  if (concealedOnly) {
-    shape("path", { d: "M3 10c2.4 4.4 5.4 6.5 9 6.5s6.6-2.1 9-6.5" });
-    shape("path", { d: "M6.5 14.6 4.5 17.5M12 16.5V20M17.5 14.6l2 2.9" });
-  } else {
-    shape("path", { d: "M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" });
-    shape("circle", { cx: "12", cy: "12", r: "3" });
-  }
-  return svg;
+/** The book's words for how a hand may be played: Concealed, or Exposed (melds may be called). */
+export function playWord(concealedOnly) {
+  return concealedOnly ? "Concealed" : "Exposed";
 }
 
 /** A drawing pin: the mark of a pinned hand. */
@@ -144,12 +124,12 @@ function hintRow(hand, { name: label, pinned }) {
   row.title = away
     ? "More than six tiles away, or no longer possible with the tiles in sight or your exposed melds"
     : hand.concealedOnly
-      ? "Concealed only"
-      : "Exposed melds allowed";
+      ? "Concealed: no exposed melds"
+      : "Exposed: exposed melds allowed";
   row.setAttribute(
     "aria-label",
     `${pinned ? "Pinned: " : ""}${label}${
-      away ? ", out of reach" : `, ${hand.concealedOnly ? "concealed only" : "exposed melds allowed"}`
+      away ? ", out of reach" : `, ${hand.concealedOnly ? "concealed, no exposed melds" : "exposed melds allowed"}`
     }. Tap for details.`,
   );
   const name = document.createElement("span");
@@ -169,7 +149,8 @@ function hintRow(hand, { name: label, pinned }) {
     meta.append(piece("Out of reach"));
   } else {
     meta.append(
-      playIcon(hand.concealedOnly),
+      piece(playWord(hand.concealedOnly)),
+      piece("\u00b7"),
       piece(hand.points === null ? "calculated" : hand.points.toLocaleString("en")),
       piece("\u00b7"),
       hand.away === 0 ? piece("Complete", "closest-done") : piece(`${hand.away} to go`),
@@ -386,7 +367,7 @@ export async function openHandDetail(pattern, progress = null) {
   const ruleChevron = document.createElement("span");
   ruleChevron.className = "rule-chevron";
   ruleChevron.setAttribute("aria-hidden", "true");
-  rule.append(playIcon(detail.concealedOnly), detail.concealedOnly ? "Concealed only" : "Exposed allowed", ruleChevron);
+  rule.append(playWord(detail.concealedOnly), ruleChevron);
   const ruleNote = document.createElement("p");
   ruleNote.className = "detail-note";
   ruleNote.id = "hand-rule-note";

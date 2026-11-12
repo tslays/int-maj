@@ -594,7 +594,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  width: 148px;
+  width: 176px;
 }
 /* The door to the index of all hands: as quiet as the panel under it. */
 .index-open {
@@ -656,7 +656,8 @@ button {
 .closest-meta {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  white-space: nowrap;
   margin-top: 1px;
   color: var(--muted);
   font-size: 11px;

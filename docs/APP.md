@@ -149,15 +149,17 @@ they survive a reload and the next hand, and a new game starts with none. With
 Hints off the panel shows only the pinned hands, since a pin is the player's
 own choice. The cards in All hands carry a "Pinned" mark.
 
-The panel is deliberately small and quiet (148px, muted colours, no tile
+The panel is deliberately small and quiet (176px, muted colours, no tile
 chips) so it never competes with the table, even on a phone. Each row is the
-hand's name and "n to go - value", with one icon: a closed eye when the hand is
-concealed only (any exposed meld rules it out; most special hands), an open eye
-when exposed melds are allowed. Tapping a row opens the hand's sheet
+hand's name and one line in the books' own words and order: how it is played
+("Concealed" when any exposed meld rules the hand out, as for most special
+hands; "Exposed" when exposed melds are allowed), its value, and "n to go".
+No icons: the Illustrated prints "Concealed" or "Exposed" under each hand and
+the Companion prints "LIMIT (Concealed) HALF LIMIT (Exposed)", so players
+already know the words. Tapping a row opens the hand's sheet
 (`GET /api/hand`), laid out to fit a phone's height without scrolling (600px
 wide, one column): the name with the pin and the close cross at the right; one
-row of chips - the play chip (the same icon with "Concealed only" or "Exposed
-allowed"; tapping it opens the explanation of what it means for calling
+row of chips - the play chip (the word "Concealed" or "Exposed"; tapping it opens the explanation of what it means for calling
 discards and self-drawn wins, which a player needs once), what it pays (one
 value, or concealed and exposed when they differ), "Self-drawn only" and, last,
 how far your hand is ("3 to go" or "Complete") when you have the hand in play; the
@@ -183,7 +185,7 @@ book. The rail on the left filters by:
   p. 30, not in the synopsis) are filed under Pungs & Kongs by composition;
   Buried Treasure and the Chinese ordinary hand have no heading and sit under
   "Other".
-- **Value** (the concealed tier), **Play** (concealed only or exposed allowed)
+- **Value** (the concealed tier), **Play** (Concealed or Exposed)
   and **Book** (printed in the Illustrated book, or only in the Companion).
 
 The search box matches every typed word against the name, composition,
