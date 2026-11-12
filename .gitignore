@@ -13,3 +13,10 @@ dist/
 # Wrangler's local cache from `npm run deploy`.
 .wrangler/
 .dev.vars
+
+# Scratch screenshots and sound sources a session leaves at the root. Real
+# assets live under app/assets/.
+/*.png
+/*.jpg
+/*.wav
+/*.mp3
