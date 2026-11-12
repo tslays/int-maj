@@ -216,17 +216,6 @@ function closeHandDetail() {
   sheet.replaceChildren();
 }
 
-function detailLine(label, ...content) {
-  const line = document.createElement("div");
-  line.className = "detail-line";
-  const heading = document.createElement("h3");
-  heading.textContent = label;
-  const body = document.createElement("p");
-  body.append(...content);
-  line.append(heading, body);
-  return line;
-}
-
 /** A card the book prints in place of a tile, such as "Any tile paired". */
 function anyChip(words) {
   const chip = document.createElement("span");
@@ -235,10 +224,18 @@ function anyChip(words) {
   return chip;
 }
 
-/** One printed picture: the book's tiles in the book's order and grouping. */
+/** One printed picture: the book's tiles in the book's order and grouping, captioned above with where it is printed. */
 function sampleFigure(sample) {
   const figure = document.createElement("figure");
   figure.className = "detail-sample";
+  const caption = document.createElement("figcaption");
+  for (const source of sample.sources) {
+    const badge = document.createElement("span");
+    badge.className = "sample-source";
+    badge.textContent = `${source.book.includes("Companion") ? "Companion" : "Illustrated"} p. ${source.page}`;
+    caption.append(badge);
+  }
+  if (sample.label !== null) caption.append(sample.label);
   const tiles = document.createElement("div");
   tiles.className = "sample-tiles";
   for (const group of sample.groups) {
@@ -247,10 +244,7 @@ function sampleFigure(sample) {
     for (const tile of group) set.append(typeof tile === "string" ? faceChip(tile) : anyChip(tile.any));
     tiles.append(set);
   }
-  const caption = document.createElement("figcaption");
-  const where = sample.sources.map((source) => `${source.book.includes("Companion") ? "Companion" : "Illustrated"} p. ${source.page}`);
-  caption.textContent = (sample.label === null ? where : [sample.label, ...where]).join(" \u00b7 ");
-  figure.append(tiles, caption);
+  figure.append(caption, tiles);
   for (const text of sample.notes) {
     const note = document.createElement("p");
     note.className = "sample-note";
@@ -260,17 +254,30 @@ function sampleFigure(sample) {
   return figure;
 }
 
-function sampleSection(samples, pages) {
+/**
+ * The book's sample hand(s), set apart as a "page from the book" panel under
+ * its own heading, so it is never mistaken for your tiles. A hand the books
+ * list without a picture gets a made-up example, labelled as one.
+ */
+function sampleSection(samples, pages, example) {
   const companionOnly = companionRules();
-  const wrap = document.createElement("div");
-  wrap.className = "detail-samples";
+  const wrap = document.createElement("section");
+  wrap.className = "detail-book";
+  const heading = document.createElement("h3");
+  heading.textContent =
+    samples.length === 0 ? "Example hand (not from a book)" : samples.length === 1 ? "Sample hand from the book" : "Sample hands from the books";
+  wrap.append(heading);
   if (samples.length === 0) {
+    const tiles = document.createElement("div");
+    tiles.className = "sample-tiles";
+    for (const key of example) tiles.append(faceChip(key));
     const none = document.createElement("p");
     none.className = "detail-muted";
     none.textContent = companionOnly
       ? `The Companion lists this hand (${bookPages(pages, true)}) without a picture.`
       : `The books list this hand (${bookPages(pages)}) without a picture.`;
-    wrap.append(none);
+    wrap.append(tiles, none);
+    return wrap;
   }
   for (const sample of samples) wrap.append(sampleFigure(sample));
   return wrap;
@@ -414,10 +421,17 @@ export async function openHandDetail(pattern, progress = null) {
 
   card.append(head);
   if (pin !== null) card.append(pin.note);
-  card.append(facts, ruleNote, lede);
+  card.append(facts, ruleNote);
 
-  // What you still need comes before the picture: it is what you act on.
+  // First the book's sample hand, then what the hand is, below it. A
+  // Companion-only table sees the Companion's pictures and pages alone.
+  const samples = visibleSamples(detail.samples, companionRules());
+  card.append(sampleSection(samples, detail.pages, detail.example), lede);
+
+  // Then, clearly apart, your own hand: the tiles still needed to complete it.
   if (progress !== null) {
+    const yours = document.createElement("section");
+    yours.className = "detail-yours";
     const need = document.createElement("span");
     need.className = "closest-need detail-need";
     if (progress.away === 0) {
@@ -425,19 +439,10 @@ export async function openHandDetail(pattern, progress = null) {
     } else {
       for (const key of progress.need) need.append(faceChip(key));
     }
-    card.append(detailLine(progress.away === 0 ? "Your hand" : `You still need (${progress.away})`, need));
-  }
-
-  // A Companion-only table sees the Companion's pictures and pages alone.
-  const samples = visibleSamples(detail.samples, companionRules());
-  card.append(sampleSection(samples, detail.pages));
-
-  // The book's own picture is the example; only a hand it does not picture gets a made-up one.
-  if (samples.length === 0) {
-    const example = document.createElement("span");
-    example.className = "closest-need detail-need";
-    for (const key of detail.example) example.append(faceChip(key));
-    card.append(detailLine("For example", example));
+    const heading = document.createElement("h3");
+    heading.textContent = progress.away === 0 ? "Your hand" : `Your hand: you still need (${progress.away})`;
+    yours.append(heading, need);
+    card.append(yours);
   }
 
   sheet.replaceChildren(card);

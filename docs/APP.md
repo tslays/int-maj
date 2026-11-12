@@ -158,8 +158,11 @@ row of chips - the play chip (the same icon with "Concealed only" or "Exposed
 allowed"; tapping it opens the explanation of what it means for calling
 discards and self-drawn wins, which a player needs once), what it pays (one
 value, or concealed and exposed when they differ) and "Self-drawn only"; the
-hand's composition; the tiles you still need (above the picture, being what
-you act on); and the book's picture with its page in each book. Close it with the cross, the backdrop or Escape.
+book's sample hand first, in its own dashed panel headed "Sample hand from the
+book" (or "Sample hands from the books"), each picture captioned with a badge
+for the book and page (and its version); the hand's composition below it; then,
+set apart in a gold panel, "Your hand: you still need (N)" with the tiles to
+collect, so the book's tiles and yours are never confused. Close it with the cross, the backdrop or Escape.
 
 Above the panel, **All hands** opens the index of every catalogue hand
 (`app/src/handbook.js`, `GET /api/hands`), so nobody has to reach for either
