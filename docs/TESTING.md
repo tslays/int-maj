@@ -20,15 +20,21 @@ The message to paste to the club, then the known limits. It stands alone.
 > books, searchable; the pin on a hand's sheet keeps it in the Hints panel.
 > After a hand, Next hand deals on, and the small Play this hand again link
 > deals the same tiles once more. The menu has New game, Calls, Sort, Hints
-> and Options. Options holds Sound, Pace (Slower, Normal or Faster bots), Bot
-> level (Easy, Medium or Hard), the house rule (which hands are in play), Help and Report. The game
-> saves after every move and resumes where you left off. On an iPhone the
-> silent switch mutes the game; flip it off (or use the Sound switch in Options).
+> and Options. Options holds Sound, Large discards (phones only: this round's
+> discards show a face twice the size until you throw), Pace (Slower, Normal
+> or Faster bots), Bot level (Easy, Medium or Hard; Medium to start with),
+> Dice and dealing (Show or Skip the dice for East, the break of the wall and
+> the deal; a tap also skips it), the house rule (which hands are in play),
+> Help and Report. A new game throws dice for East, so a bot may deal first.
+> The game saves after every move and resumes where you left off. On an
+> iPhone the silent switch mutes the game; flip it off (or use the Sound
+> switch in Options).
 >
 > **What we would like to hear:** Is it clear what to do and whose turn it is?
 > Do the buttons and the swipe feel right on your phone? Does any score or
-> result surprise you? Do the bots play sensibly? Did anything break or look
-> wrong?
+> result surprise you? Do the bots play sensibly at each level, and is Medium
+> a good default? Is the opening (dice and dealing) pleasant or in the way? Do
+> Large discards help on your phone? Did anything break or look wrong?
 >
 > **To send a report:** open Options, tap Report, type a line about
 > what you saw (optional) and tap Send. It goes straight to us and answers
@@ -55,4 +61,5 @@ The message to paste to the club, then the known limits. It stands alone.
   scored against each other. This cannot be changed in the app.
 - Crazy Chows is a common way for the bots to win.
 - There is one link. When a new version is deployed it updates itself, so a
-  reload may bring changes.
+  reload may bring changes. If an update changes the game, the hand in
+  progress starts again with the scores kept.
