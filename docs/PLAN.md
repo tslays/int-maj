@@ -69,6 +69,19 @@ and the board were split into modules; the page's CSS left `index.html`; CI
 builds once and deploys that build; and a browser smoke test
 (`npm run smoke`) covers the screens no test ran before.
 
+**Alpha-4 (2026-11-11).** The index of all hands, searchable, above the
+Hints panel; the book's own sample hand on each hand's sheet; Report a problem
+files a GitHub issue; tap the ponds to zoom onto the discards; the Goulash
+announced in the middle of the table; the Options sheet with the house rule of
+which hands are in play; the closest hands measured exactly; the help sheet
+rewritten as a guide to the app; more Companion hands made concealed-only.
+
+**Alpha-5 (2026-11-12).** Pin up to three hands from All hands to the Hints
+panel; a compact hand sheet that reads like the books (Concealed or Exposed,
+sample hand first); the index opens at once; a Pace choice in Options (Slower,
+Normal, Faster); Play this hand again on the result card; and the hand can be
+arranged while the bots play, with a throw only on your turn.
+
 Testers: https://int.mah-jong.workers.dev (changes only on a `v*` tag).
 Development: https://int-dev.mah-jong.workers.dev (every green push to `main`).
 
@@ -78,7 +91,6 @@ The testers decide this. Findings from testing become issues labelled
 `from-testing`; the list below is the backlog from the alpha-1 plan, offered
 as **candidates, not commitments**:
 
-- Hand catalogue browser in the app, every hand pictured, with its book page.
 - Deal animation.
 - Settlement tier (beginner/intermediate/advanced) as a setting; the engine
   uses intermediate today.
