@@ -72,6 +72,12 @@ export const handMethods = {
     }
     for (const entry of pool) entry.tile.removeFromParent();
     this.hand = next;
+    // The tile you raised was used up (a call took it): if you still hold another copy, the lift moves to it.
+    if (this.lifted !== null && !next.includes(this.lifted)) {
+      const key = this.lifted.key;
+      this.lifted = next.find((entry) => entry.key === key && !fresh.has(entry)) ?? next.find((entry) => entry.key === key) ?? null;
+      if (this.lifted === null) this.clearMarks();
+    }
 
     // A tile you are carrying stays with your pointer, even if the table moves on meanwhile.
     const work = this.layoutHand(fresh, animated, this.carried);
