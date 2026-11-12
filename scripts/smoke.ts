@@ -495,9 +495,12 @@ async function opening(browser: Browser, origin: string, shots: string | null): 
     await page.addInitScript(watch);
     const seed = seedWithDealer("W");
     await page.goto(`${origin}/?seed=${seed}`);
-    await page.waitForSelector(".opening .opening-row .die", { timeout: READY_MS });
-    assert.equal((await page.textContent(".opening-card h2")) ?? "", "Who is East?");
-    assert.equal(await page.locator(".opening-row").count(), 4, "all four seats throw");
+    // All four seats throw, under the title "Who is East?" (checked at once: the card moves on in about two seconds).
+    await page.waitForFunction(
+      () => document.querySelectorAll(".opening-row .die").length === 8 && document.querySelector(".opening-card h2")?.textContent === "Who is East?",
+      null,
+      { timeout: READY_MS },
+    );
     await page.waitForFunction(() => /\d/.test(document.querySelector(".opening-row.east .opening-total")?.textContent ?? ""), null, {
       timeout: READY_MS,
     });

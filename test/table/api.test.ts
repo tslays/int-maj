@@ -281,6 +281,25 @@ describe("table API", () => {
     assert.deepEqual(await getState(game), beforePayload);
   });
 
+  it("plays a bot move at the level asked for, and refuses an unknown level", async () => {
+    const created = await post<ApiPayload>("/api/new", { seed: seedYouDeal("api-level") });
+    const game = created.body.game;
+    const discard = created.body.legalActions.find((action) => action.type === "Discard");
+    assert.ok(discard !== undefined);
+    await post<ApiPayload>("/api/move", { game, action: discard });
+    const before = serialize(store.state(game)!);
+
+    const refused = await post<ApiError>("/api/step", { game, level: "expert" });
+    assert.equal(refused.status, 400);
+    assert.match(refused.body.error, /level must be one of easy, medium, hard/);
+    assert.equal(serialize(store.state(game)!), before, "a refused step changes nothing");
+
+    for (const level of ["easy", "medium", "hard"]) {
+      const stepped = await post<ApiPayload | { done: boolean }>("/api/step", { game, level });
+      assert.equal(stepped.status, 200, level);
+    }
+  });
+
   it("applies a legal move and advances the hand", async () => {
     const created = await post<ApiPayload>("/api/new", { seed: seedYouDeal("api-legal") });
     const game = created.body.game;

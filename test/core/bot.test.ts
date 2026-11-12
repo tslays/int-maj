@@ -18,7 +18,7 @@ import {
   type Action,
   type GameState,
 } from "../../src/core/game/index.ts";
-import { chooseAction } from "../../src/core/game/bot.ts";
+import { BOT_LEVELS, chooseAction, isBotLevel, type BotLevel } from "../../src/core/game/bot.ts";
 import { fixture, play } from "../helpers/game-fixture.ts";
 
 /** A wall long enough that the bot still expects to draw for a while. */
@@ -276,5 +276,80 @@ describe("bot policy", () => {
       () => chooseAction(viewFor(state, "E"), "S"),
       /view for E, not S/,
     );
+  });
+});
+
+describe("bot levels", () => {
+  it("names easy, medium and hard, and nothing else", () => {
+    assert.deepEqual([...BOT_LEVELS], ["easy", "medium", "hard"]);
+    assert.ok(isBotLevel("medium"));
+    assert.ok(!isBotLevel("expert"));
+    assert.ok(!isBotLevel(undefined));
+  });
+
+  for (const level of ["easy", "medium"] as const) {
+    it(`plays only legal actions to the end of a hand at ${level}`, () => {
+      let state = newGame(`bot-level-${level}`).state;
+      let steps = 0;
+      while (state.phase !== "finished" && steps < 500) {
+        const seat = state.turn;
+        const view = viewFor(state, seat);
+        const action = chooseAction(view, seat, level);
+        assert.ok(
+          action !== null && view.legalActions.some((candidate) => sameAction(candidate, action)),
+          `${seat} chose ${JSON.stringify(action)} outside legalActions`,
+        );
+        const result = apply(state, action!);
+        assert.ok(!isApplyError(result));
+        if (isApplyError(result)) return;
+        state = result.state;
+        steps += 1;
+      }
+      assert.equal(state.phase, "finished");
+    });
+  }
+
+  it("plays hard by default, and each level is deterministic", () => {
+    // Follow a hard game and ask every level at each decision: the default
+    // is hard, the same view gives the same action, and the weaker levels
+    // decide differently more often the weaker they are.
+    let state = newGame("bot-level-compare").state;
+    const differs: Record<BotLevel, number> = { easy: 0, medium: 0, hard: 0 };
+    let decisions = 0;
+    while (state.phase !== "finished") {
+      const seat = state.turn;
+      const view = viewFor(state, seat);
+      const hard = chooseAction(view, seat, "hard")!;
+      assert.deepEqual(chooseAction(view, seat), hard);
+      for (const level of BOT_LEVELS) {
+        const action = chooseAction(view, seat, level);
+        assert.deepEqual(chooseAction(view, seat, level), action, `${level} is not deterministic`);
+        if (!sameAction(action!, hard)) differs[level] += 1;
+      }
+      if (view.legalActions.length > 1) decisions += 1;
+      const result = apply(state, hard);
+      assert.ok(!isApplyError(result));
+      if (isApplyError(result)) return;
+      state = result.state;
+    }
+    assert.equal(differs.hard, 0);
+    assert.ok(differs.medium > 0, "medium never decided differently from hard");
+    assert.ok(differs.easy > differs.medium, `easy ${differs.easy}, medium ${differs.medium} of ${decisions}`);
+  });
+
+  it("still takes a win at every level", () => {
+    const state = fixture({
+      hands: {
+        E: "b1 b1 b1 b2 b2 b2 b3 b3 b3 b4 b4 b4 b5 b5",
+        S: "b7 b8 b9 c7 c8 c9 o1 o2 o3 wE wS wW wN",
+        W: "b1 b2 b3 b4 b5 b6 c1 c2 c3 c4 c5 c6 c7",
+        N: "b7 b8 b9 c7 c8 c9 o1 o2 o3 wE wS wW wN",
+      },
+      wall: ["o1", "o2", "o3"],
+      phase: "discard",
+      turn: "E",
+      lastDraw: { seat: "E", tile: "b5", end: "front" },
+    });
+    for (const level of BOT_LEVELS) assert.equal(chooseAction(viewFor(state, "E"), "E", level)?.type, "Win", level);
   });
 });
