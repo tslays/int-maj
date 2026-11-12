@@ -67,6 +67,7 @@ export class Board {
     handScene.add(this.handGroup);
     this.hand = []; // { key, tile, drawn }
     this.custom = false; // true once you have arranged the hand yourself
+    this.carried = null; // the hand tile under your pointer: no animation moves it
     this.lastThrowX = 0;
     this.raycaster = new THREE.Raycaster();
     this.marked = [];
@@ -93,6 +94,7 @@ export class Board {
     for (const frame of this.frames) frame.clear();
     this.handGroup.clear();
     this.hand = [];
+    this.carried = null;
     this.setCustom(false);
     this.seats = {};
     for (const seat of SEATS) {
