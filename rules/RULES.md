@@ -70,6 +70,11 @@ honours.
 > "3. Flower and Season tiles—These tiles play no active part in the game, but
 > do affect the final score."
 
+A hand's "suit" always means category 1: Bamboo, Circles or Characters. Winds
+and Dragons are honours, never a suit, so "in any suit" does not reach them;
+where a hand may take an honour the book says so ("Pair Winds OR Dragons",
+"with Winds, Dragons or both").
+
 **R-003** `[I p. 6]` — Each suit runs 1-9 with four copies of each number.
 > "Each suit is numbered from 1 to 9 inclusive, and there are four tiles for
 > each number (36 × 3 suits = 108 tiles)."
@@ -1019,7 +1024,7 @@ not illustrate it `[C p. 4: N/I = Not Illustrated]`.
 | `moon-at-bottom-of-well` | Moon at Bottom of Well | All Circles: four chows — 123, 456 and 789 in ascending order, plus any fourth Circle chow — + pair of Circles. | LIMIT (Concealed 1000 / 400) | `[C p. 15]` | Also pp. 47 and 60. Illustration: 123, 456, 789, 123, 44. |
 | `three-philosophers` | Three Philosophers | Chow in each suit + one mixed chow (three consecutive numbers, one from each suit) + pair in any suit. | LIMIT (Concealed 1000 / 400) | `[C p. 15]` | |
 | `crazy-chows` | Crazy Chows | Four mixed chows + mixed pair (same number in two suits). | HALF LIMIT (Concealed 500 / 200) | `[C p. 16]` | Illustration: 456, 234, 678, 123 mixed chows; pair 6B + 6C. |
-| `little-robert` | Little Robert | Chow in each suit + pung/kong in any suit + pair in any suit. | HALF LIMIT (Concealed 500 / 200) | `[C p. 16]` | |
+| `little-robert` | Little Robert | Chow in each suit + pung/kong in any suit + pair in any suit. | HALF LIMIT (Concealed 500 / 200) | `[C p. 16]` | Printed "Pung/K in any suit" and "Pair any suit". A suit is Bamboo, Characters or Circles (R-002 category 1), so the pung and the pair are suited: no Winds or Dragons. Illustration: 567 C, 456 O, 234 B chows; 333 O pung; 22 B pair. |
 | `hovering-angel` | Hovering Angel | Chow in each suit + pung/kong of own Wind + pair of Dragons. | LIMIT (Concealed 1000 / 400) | `[C p. 17]` | Also p. 41. |
 | `little-brother` | Little Brother | Chow in each suit + another chow in any suit + pair of own Wind. | HALF LIMIT (Concealed 500 / 200) | `[C p. 17]` | |
 | `apple-blossom` | Apple Blossom | Three mixed chows + pung/kong of White Dragons + pair of Green Dragons. | LIMIT (Concealed 1000 / 400) | `[C p. 19]` | Also p. 33. |

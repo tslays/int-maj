@@ -73,6 +73,7 @@ import {
   setSuitOf,
   shapeKeys,
   singleGroup,
+  suitedPung,
   standardPattern,
   suitIsExactRanks,
   suitIsExactRun,
@@ -930,15 +931,19 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     requiresSelfDrawn: false,
     description:
       "One chow in each suit, one pung/kong in any suit, and a pair in any " +
-      "suit.",
+      "suit. The pung and the pair are suited: no winds or dragons.",
     source: "Short list p. 6; synopsis p. 56; illustration p. 16.",
+    notes:
+      "p. 16 prints 'Pung/K in any suit' and 'Pair any suit'. A suit is " +
+      "Bamboo, Characters or Circles; winds and dragons are honours, so " +
+      "neither the pung nor the pair may be an honour.",
     ...standardPattern(() => ({
-      pair: () => true,
+      pair: isSuitedKey,
       sets: [
         chowSuit("bamboo"),
         chowSuit("characters"),
         chowSuit("circles"),
-        anyPung,
+        suitedPung,
       ],
     })),
   },

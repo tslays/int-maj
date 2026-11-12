@@ -345,7 +345,7 @@ export const EXAMPLES: Readonly<Record<string, string>> = {
   "moon-at-bottom-of-well": "o1 o2 o2 o3 o3 o4 o4 o5 o5 o5 o6 o7 o8 o9",
   "three-philosophers": "b1 b2 b3 c4 c5 c6 o7 o8 o9 b2 c3 o4 b5 b5",
   "crazy-chows": "b2 c3 o4 b3 c4 o5 b4 c5 o6 b5 c6 o7 b8 c8",
-  "little-robert": "b1 b2 b3 c4 c5 c6 o7 o8 o9 dG dG dG wE wE",
+  "little-robert": "b1 b2 b3 c4 c5 c6 o7 o8 o9 b5 b5 b5 c2 c2",
   "windy-chow": "b1 b2 b3 c4 c5 c6 o7 o8 o9 wE wE wS wW wN",
   "chop-suey": "b1 b2 b3 c1 c2 c3 o1 o2 o3 wE wE wS wW wN",
   "chow-mein": "b7 b8 b9 c7 c8 c9 o7 o8 o9 wE wE wS wW wN",
