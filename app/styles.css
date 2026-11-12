@@ -796,6 +796,9 @@ button {
 }
 /* The hand's sheet: wider than the other sheets, laid out to fit a phone's height without scrolling. */
 .hand-card {
+  /* iOS Safari inflates small text in landscape; the sheet's sizes are meant literally. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   width: min(600px, 100%);
   padding: 10px 14px 12px;
 }
@@ -907,7 +910,7 @@ button.detail-rule {
 .detail-card .detail-book h3,
 .detail-card .detail-yours h3 {
   margin-bottom: 3px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
