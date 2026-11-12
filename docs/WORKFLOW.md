@@ -64,6 +64,11 @@ it is given (`claude/...`), so delivery is a pull request:
 2. Commit, push the branch, open a pull request into `main` (mirror
    `.github/pull_request_template.md` if one exists). The pull request gets
    a comment with its preview link (`pr-<number>-int-dev...workers.dev`).
+   Every reply to the owner names the pull request by number and full URL
+   (`https://github.com/<owner>/<repo>/pull/<number>`), each time it comes up.
+   For a visual change, also give the preview link
+   (`https://pr-<number>-int-dev.mah-jong.workers.dev`) for testing, each time,
+   and whether it is live yet.
 3. Then the route depends on the kind of change:
    - **Non-visual** (engine, rules, docs, tests, CI): enable auto-merge
      (GitHub MCP `enable_pr_auto_merge`, squash) and end the session. Do not

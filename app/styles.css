@@ -671,41 +671,33 @@ button {
   margin: 0 3px -1px 0;
   color: var(--gold-1);
 }
-.detail-pin {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 10px;
-  margin-top: 10px;
-}
+/* The pin, top right of a hand's sheet beside the close cross: an icon, gold and filled while pinned. */
 .pin-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 36px;
-  padding: 0 12px;
-  border: 1px solid rgba(255, 224, 138, 0.5);
-  border-radius: 999px;
-  background: rgba(255, 224, 138, 0.1);
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(255, 224, 138, 0.4);
+  border-radius: 50%;
+  background: none;
   color: var(--gold-1);
-  font: inherit;
-  font-weight: 700;
   cursor: pointer;
 }
+.pin-button .pin-icon {
+  width: 16px;
+  height: 16px;
+}
 .pin-button[aria-pressed="true"] {
-  background: rgba(255, 224, 138, 0.22);
+  border-color: rgba(255, 224, 138, 0.7);
+  background: rgba(255, 224, 138, 0.2);
 }
-.pin-button:disabled {
+.pin-button[aria-pressed="true"] .pin-icon {
+  fill: currentColor;
+}
+.pin-button.is-blocked {
   border-color: rgba(255, 255, 255, 0.15);
-  background: none;
   color: var(--muted);
-  cursor: default;
-}
-.pin-note {
-  flex: 1 1 140px;
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.35;
 }
 .closest-done {
   color: var(--gold-1);
@@ -802,39 +794,114 @@ button {
   font-size: 24px;
   cursor: pointer;
 }
-.detail-banner {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 2px 10px;
+/* The hand's sheet: wider than the other sheets, laid out to fit a phone's height without scrolling. */
+.hand-card {
+  width: min(600px, 100%);
+  padding: 10px 14px 12px;
+}
+.detail-head {
+  display: flex;
   align-items: center;
-  padding: 8px 10px;
-  border-radius: 10px;
+  justify-content: space-between;
+  gap: 8px;
+}
+.detail-card .detail-head h2 {
+  min-width: 0;
+  margin: 0;
+}
+.detail-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+}
+.detail-head .detail-close {
+  position: static;
+}
+.detail-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 4px;
+}
+.detail-fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-sizing: border-box;
+  min-height: 26px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 999px;
   background: rgba(255, 255, 255, 0.07);
-  line-height: 1.35;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-.detail-banner .play-icon {
-  grid-row: span 2;
-  width: 26px;
-  height: 26px;
-}
-.detail-banner strong {
-  font-size: 14px;
-}
-.detail-banner span {
+.detail-fact small {
   color: var(--muted);
+  font-size: 11px;
+}
+.detail-fact .play-icon {
+  width: 15px;
+  height: 15px;
+}
+button.detail-rule {
+  cursor: pointer;
+  font-weight: 700;
+}
+.rule-chevron {
+  width: 5px;
+  height: 5px;
+  margin: -3px 0 0 1px;
+  border: solid var(--muted);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+.detail-rule[aria-expanded="true"] .rule-chevron {
+  margin-top: 3px;
+  transform: rotate(225deg);
+}
+.detail-card .detail-note {
+  margin-top: 6px;
+  padding: 6px 9px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+  font-size: 12px;
+}
+.detail-card .detail-note[hidden],
+.detail-card .pin-note[hidden] {
+  display: none;
+}
+.detail-card .detail-muted {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.detail-card .detail-lede {
+  margin-top: 8px;
 }
 .detail-need {
   margin-top: 2px;
 }
 .detail-need .chip {
-  width: 22px;
-  height: 30px;
+  width: 24px;
+  height: 32px;
+}
+.detail-samples {
+  margin-top: 8px;
+}
+.detail-samples:empty {
+  display: none;
 }
 .detail-sample {
-  margin: 4px 0 0;
+  margin: 0;
 }
 .detail-sample + .detail-sample {
-  margin-top: 10px;
+  margin-top: 8px;
 }
 .sample-tiles {
   display: flex;
@@ -846,12 +913,12 @@ button {
   gap: 1px;
 }
 .sample-tiles .chip {
-  width: 22px;
-  height: 30px;
+  width: 24px;
+  height: 32px;
 }
 .sample-tiles .chip-any {
   box-sizing: border-box;
-  width: 34px;
+  width: 36px;
   padding: 1px;
   background: #f8f6f0;
   color: #1c2a30;

@@ -273,7 +273,7 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   // A listed hand opens its sheet, which shows the book's picture of the hand.
   if ((await page.locator(".closest-item").count()) > 0) {
     await page.click(".closest-item");
-    await page.waitForSelector("#hand-detail:not([hidden]) .detail-line", { timeout: 5000 });
+    await page.waitForSelector("#hand-detail:not([hidden]) .detail-lede", { timeout: 5000 });
     const pictured = await page.locator("#hand-detail .sample-tiles .chip").count();
     const sheet = (await page.textContent("#hand-detail")) ?? "";
     if (pictured < 14 && !sheet.includes("without a picture")) {
@@ -323,15 +323,15 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
     await page.keyboard.press("Escape");
     await page.waitForSelector("#hand-detail", { state: "hidden", timeout: 5000 });
   };
-  await page.click('.pin-button:has-text("Pin to hints")');
-  await page.waitForSelector('.pin-button:has-text("Unpin from hints")', { timeout: 5000 });
+  await page.click('.pin-button[aria-label="Pin to hints"]');
+  await page.waitForSelector('.pin-button[aria-label="Unpin from hints"]', { timeout: 5000 });
   await closeSheet();
   await page.waitForFunction(() => /knitting/i.test(document.querySelector("#closest .closest-name")?.textContent ?? ""));
   await page.click('.index-chip:has-text("All hands")'); // the Two Suits heading is still chosen
   await page.fill("#index-search", "wriggly");
   await page.click(".index-card");
   await page.waitForSelector("#hand-detail:not([hidden])", { timeout: 5000 });
-  await page.click('.pin-button:has-text("Pin to hints")');
+  await page.click('.pin-button[aria-label="Pin to hints"]');
   await closeSheet();
   await page.waitForFunction(() => document.querySelectorAll("#closest .pin-icon").length === 2);
   let names = await panelNames();
@@ -346,7 +346,7 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.waitForSelector("#hand-index", { state: "hidden", timeout: 5000 });
   await page.click("#closest .closest-item >> nth=0");
   await page.waitForSelector("#hand-detail:not([hidden])", { timeout: 5000 });
-  await page.click('.pin-button:has-text("Unpin from hints")');
+  await page.click('.pin-button[aria-label="Unpin from hints"]');
   await closeSheet();
   await page.waitForFunction(() => document.querySelectorAll("#closest .pin-icon").length === 1);
   names = await panelNames();
@@ -354,7 +354,7 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   assert.match(names[0]!, /wriggly snake/i, "the remaining pin is the first hint now");
   await page.click("#closest .closest-item >> nth=0");
   await page.waitForSelector("#hand-detail:not([hidden])", { timeout: 5000 });
-  await page.click('.pin-button:has-text("Unpin from hints")');
+  await page.click('.pin-button[aria-label="Unpin from hints"]');
   await closeSheet();
   await page.waitForFunction(() => document.querySelectorAll("#closest .pin-icon").length === 0);
   assert.equal((await panelNames()).length, 3, "the suggestions fill all three places again");
