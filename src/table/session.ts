@@ -19,7 +19,7 @@ import { checkHand, summarizeMatch, type MatchSummary } from "../core/check.ts";
 import { tileKey } from "../core/tiles.ts";
 import type { Action } from "../core/game/actions.ts";
 import { chooseAction } from "../core/game/bot.ts";
-import { closestHands, type ClosestHand } from "../core/game/closest.ts";
+import { closestWithPins, type ClosestHand, type PinnedHand } from "../core/game/closest.ts";
 import type { Event } from "../core/game/events.ts";
 import { isApplyError } from "../core/game/draft.ts";
 import { ledgerTotals } from "../core/game/settle.ts";
@@ -461,16 +461,18 @@ export function statePayload(session: WebSession): StatePayload {
 
 /**
  * The catalogue hands your tiles are nearest to, for the "closest hands"
- * helper. Built from your own `viewFor` projection only, and on request
- * rather than with every state, because planning costs a few milliseconds.
- * Empty once the hand is over.
+ * helper, and how near each hand you pinned is (`pins`, in the order they were
+ * pinned; `hands` leaves those out). Built from your own `viewFor` projection
+ * only, and on request rather than with every state, because planning costs a
+ * few milliseconds. Empty once the hand is over.
  */
 export function closestPayload(
   session: WebSession,
   limit?: number,
-): { readonly game: string; readonly hands: readonly ClosestHand[] } {
-  if (session.state.phase === "finished") return { game: session.id, hands: [] };
-  return { game: session.id, hands: closestHands(viewFor(session.state, session.seat), limit) };
+  pins: readonly string[] = [],
+): { readonly game: string; readonly hands: readonly ClosestHand[]; readonly pinned: readonly PinnedHand[] } {
+  if (session.state.phase === "finished") return { game: session.id, hands: [], pinned: [] };
+  return { game: session.id, ...closestWithPins(viewFor(session.state, session.seat), pins, limit) };
 }
 
 export interface GameStoreOptions {

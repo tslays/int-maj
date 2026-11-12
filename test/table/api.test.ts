@@ -162,6 +162,28 @@ describe("table API", () => {
     assert.ok(index.body.hands.every((hand) => hand.example.every((key) => TILE_KEY.test(key))));
   });
 
+  it("reports pinned hands beside the suggestions, and leaves them out of those", async () => {
+    const created = await post<ApiPayload>("/api/new", { seed: "api-closest" });
+    const game = encodeURIComponent(created.body.game);
+    type Pinned = { pattern: string; name: string; hand: ClosestHandPayload | null };
+    const plain = call<{ hands: ClosestHandPayload[]; pinned: Pinned[] }>("GET", `/api/closest?game=${game}`).body;
+    assert.deepEqual(plain.pinned, []);
+
+    const first = plain.hands[0]!.pattern;
+    const answer = call<{ hands: ClosestHandPayload[]; pinned: Pinned[] }>(
+      "GET",
+      `/api/closest?game=${game}&limit=2&pins=${first},no-such-hand`,
+    ).body;
+    assert.deepEqual(
+      answer.pinned.map((entry) => entry.pattern),
+      [first],
+      "an unknown hand is dropped",
+    );
+    assert.equal(answer.pinned[0]!.hand?.pattern, first);
+    assert.equal(answer.hands.length, 2);
+    assert.ok(answer.hands.every((hand) => hand.pattern !== first));
+  });
+
   it("tells a player whether a hand is concealed only, and explains it", () => {
     const snake = call<Record<string, unknown>>("GET", "/api/hand?pattern=wriggly-snake");
     assert.equal(snake.status, 200);

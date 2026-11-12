@@ -112,7 +112,21 @@ function exactVersion(
   };
 }
 
-export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand[] {
+/** Hands a player can pin so they stay in the panel: the panel shows `CLOSEST_SHOWN` in all. */
+export const MAX_PINS = CLOSEST_SHOWN;
+
+/** One entry of the search: the hand and how likely, times how much, it is to be completed. */
+interface Found {
+  readonly hand: ClosestHand;
+  readonly rank: number;
+}
+
+/**
+ * Every catalogue hand the seat can still reach, nearest first. The search
+ * widens a tile at a time and stops once `limit` hands outside `pinned` are
+ * within reach; a pinned hand is always searched for, however far it is.
+ */
+function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { found: Found[]; excluded: readonly string[] } {
   // The player's own planner, without any bot's taste for special hands.
   const situation = { ...situationFor(view, view.seat), ambition: 1 };
   const odds = oddsFor(situation);
@@ -127,7 +141,7 @@ export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand
   }
   const exactIds = new Set(exact.map((entry) => entry.pattern.id));
 
-  const best = new Map<string, { hand: ClosestHand; rank: number }>();
+  const best = new Map<string, Found>();
   for (const goal of planGoals(situation)) {
     if (exactIds.has(goal.pattern)) continue;
     const pattern = PATTERN_BY_ID.get(goal.pattern);
@@ -176,8 +190,9 @@ export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand
   let pending = exact;
   const cache = reachCache();
   const within = (tiles: number): number =>
-    [...best.values()].filter((entry) => entry.hand.away <= tiles).length;
-  for (let budget = 0; budget <= MAX_MISSING && pending.length > 0 && within(budget - 1) < limit; budget++) {
+    [...best.values()].filter((entry) => entry.hand.away <= tiles && !pinned.has(entry.hand.pattern)).length;
+  const wanted = (budget: number): boolean => within(budget - 1) < limit || pending.some((entry) => pinned.has(entry.pattern.id));
+  for (let budget = 0; budget <= MAX_MISSING && pending.length > 0 && wanted(budget); budget++) {
     pending = pending.filter(({ pattern, tier }) => {
       const found = exactVersion(pattern, tier, situation, odds, budget, cache);
       if (found === null) return true;
@@ -186,10 +201,55 @@ export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand
     });
   }
 
-  return [...best.values()]
-    .sort((a, b) => a.hand.away - b.hand.away || b.rank - a.rank || a.hand.pattern.localeCompare(b.hand.pattern))
+  const found = [...best.values()].sort(
+    (a, b) => a.hand.away - b.hand.away || b.rank - a.rank || a.hand.pattern.localeCompare(b.hand.pattern),
+  );
+  return { found, excluded: situation.excluded ?? [] };
+}
+
+export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand[] {
+  return search(view, limit, new Set())
+    .found.slice(0, limit)
+    .map((entry) => entry.hand);
+}
+
+/** A hand the player pinned, with how near their tiles are to it; `hand` is null when it is out of reach. */
+export interface PinnedHand {
+  readonly pattern: string;
+  readonly name: string;
+  /**
+   * Null when the hand cannot be finished from here: too far, the copies it
+   * needs are in sight, or an exposed meld rules out a concealed-only hand.
+   */
+  readonly hand: ClosestHand | null;
+}
+
+/**
+ * The panel's contents: the player's pinned hands first, in the order they
+ * were pinned, then the nearest other hands (at most `limit`, never one that
+ * is pinned). Pins naming no hand, or a hand this table plays without, are
+ * left out; so are repeats and every pin beyond `MAX_PINS`.
+ */
+export function closestWithPins(
+  view: GameView,
+  pins: readonly string[],
+  limit = CLOSEST_SHOWN,
+): { hands: ClosestHand[]; pinned: PinnedHand[] } {
+  const ids = [...new Set(pins)].slice(0, MAX_PINS);
+  const chosen = new Set(ids);
+  const { found, excluded } = search(view, limit, chosen);
+  const byId = new Map(found.map((entry) => [entry.hand.pattern, entry.hand]));
+  const pinned: PinnedHand[] = [];
+  for (const id of ids) {
+    const pattern = PATTERN_BY_ID.get(id);
+    if (pattern === undefined || excluded.includes(id)) continue;
+    pinned.push({ pattern: id, name: pattern.name, hand: byId.get(id) ?? null });
+  }
+  const hands = found
+    .filter((entry) => !chosen.has(entry.hand.pattern))
     .slice(0, limit)
     .map((entry) => entry.hand);
+  return { hands, pinned };
 }
 
 /** Everything the table can tell a player about one catalogue hand. */

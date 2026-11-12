@@ -6,7 +6,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { closestHands, viewFor } from "../../src/core/game/index.ts";
+import { closestHands, closestWithPins, MAX_PINS, viewFor } from "../../src/core/game/index.ts";
 import { fixture } from "../helpers/game-fixture.ts";
 
 const OTHERS = {
@@ -186,5 +186,80 @@ describe("closest hands", () => {
       closestHands(viewFor(fixture({ ...base, excludedHands: excluded }), "E"), 100).map((hand) => hand.pattern);
     assert.ok(shown().includes("crazy-chows"));
     assert.ok(!shown(["crazy-chows"]).includes("crazy-chows"));
+  });
+
+  describe("pinned hands", () => {
+    const state = () => fixture({ hands: { E: SNAKE_LESS_NORTH, ...OTHERS }, wall: LONG_WALL, phase: "draw", turn: "E" });
+
+    it("with no pins is the plain closest hands", () => {
+      const view = viewFor(state(), "E");
+      const { hands, pinned } = closestWithPins(view, []);
+      assert.deepEqual(pinned, []);
+      assert.deepEqual(hands, closestHands(view));
+    });
+
+    it("reports a pinned hand however far it is, and keeps it out of the suggestions", () => {
+      const view = viewFor(state(), "E");
+      const near = closestHands(view);
+      assert.ok(near.some((hand) => hand.pattern === "wriggly-snake"), "the snake is among the three nearest");
+      // A hand that is not among the nearest three now.
+      const far = closestHands(view, 100).find((hand) => !near.some((n) => n.pattern === hand.pattern) && hand.away > 2)!;
+      assert.ok(far, "a farther hand exists");
+
+      const { hands, pinned } = closestWithPins(view, [far.pattern, "wriggly-snake"]);
+      assert.deepEqual(
+        pinned.map((entry) => entry.pattern),
+        [far.pattern, "wriggly-snake"],
+        "in the order pinned",
+      );
+      assert.deepEqual(pinned[0]!.hand, far);
+      assert.equal(pinned[1]!.hand?.away, 1);
+      assert.ok(!hands.some((hand) => hand.pattern === far.pattern || hand.pattern === "wriggly-snake"));
+      assert.deepEqual(
+        hands,
+        near.filter((hand) => hand.pattern !== "wriggly-snake").concat(
+          closestHands(view, 100).filter(
+            (hand) =>
+              hand.pattern !== far.pattern &&
+              hand.pattern !== "wriggly-snake" &&
+              !near.some((n) => n.pattern === hand.pattern),
+          ),
+        ).slice(0, 3),
+        "the nearest unpinned hands fill the rest",
+      );
+    });
+
+    it("says null for a pinned hand that cannot be finished, and names it", () => {
+      const view = viewFor(
+        fixture({
+          hands: { E: SNAKE_LESS_NORTH, ...OTHERS },
+          discards: { S: ["wN", "wN"], N: ["wN", "wN"] },
+          wall: LONG_WALL.filter((key) => key !== "wN"),
+          phase: "draw",
+          turn: "E",
+        }),
+        "E",
+      );
+      const { pinned } = closestWithPins(view, ["wriggly-snake"]);
+      assert.equal(pinned.length, 1);
+      assert.equal(pinned[0]!.name, "Wriggly Snake");
+      assert.equal(pinned[0]!.hand, null, "every north is in sight");
+    });
+
+    it("ignores unknown ids, repeats and pins past the limit", () => {
+      const view = viewFor(state(), "E");
+      assert.deepEqual(closestWithPins(view, ["no-such-hand"]).pinned, []);
+      const ids = closestHands(view, 100).map((hand) => hand.pattern);
+      const { pinned } = closestWithPins(view, [ids[0]!, ids[0]!, ids[1]!, ids[2]!, ids[3]!]);
+      assert.deepEqual(
+        pinned.map((entry) => entry.pattern),
+        ids.slice(0, MAX_PINS),
+      );
+    });
+
+    it("leaves out a pinned hand the table plays without", () => {
+      const view = viewFor(fixture({ hands: { E: SNAKE_LESS_NORTH, ...OTHERS }, wall: LONG_WALL, phase: "draw", turn: "E", excludedHands: ["wriggly-snake"] }), "E");
+      assert.deepEqual(closestWithPins(view, ["wriggly-snake"]).pinned, []);
+    });
   });
 });
