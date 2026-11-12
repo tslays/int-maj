@@ -99,7 +99,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   (the index of all hands), `result.js` (the result card and the final
   standings), `menu.js`
   (the Calls, Sort, New game buttons and the help sheet), `options.js` (the
-  Options sheet: the Sound switch, the house rules, and the Help and Report
+  Options sheet: the Sound switch, the Pace choice, the house rules, and the Help and Report
   buttons) and `report.js` (report a problem). Modules that need the loop (`input`,
   `result`, `menu`) get its functions from `main.js` through an `installX`
   call, so imports never run in a circle.
@@ -297,8 +297,8 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   (`version`, `stage`, `id`) and `BUILD_LABEL`; import it to put the build in
   a problem report. Unbuilt, the label reads `dev · local`.
 - **Options and house rules.** The menu's Options button opens a sheet with
-  the Sound switch, the house rules, and the Help and Report buttons (their
-  sheets open on top of it). A house rule is a preference kept on the device
+  the Sound switch, the Pace choice (Slower, Normal, Faster), the house rules, and the Help and Report buttons (their
+  sheets open on top of it). Pace is a device preference (`int-maj.pace`, `app/src/pace.js`): `pace.scale(ms)` multiplies every bot beat, call-out hold, tile animation and animation-timed sound delay (Normal 1, Slower 1.5, Faster 0.6); ambient and camera animations stay fixed, and the engine never sees it. A house rule is a preference kept on the device
   (`int-maj:house-rules`); `houseRules()` in `options.js` is sent with every
   `/api/new` and `/api/next`, and the table fixes a hand's rules at its deal
   (`GameState.excludedHands`), so a change made mid-hand reads "Takes effect

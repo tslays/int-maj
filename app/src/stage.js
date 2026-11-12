@@ -12,6 +12,7 @@ import * as THREE from "three";
 import { RoomEnvironment } from "../vendor/three/RoomEnvironment.js";
 import { HAND_FOV, fitHandCamera, fitPondCamera, fitTableCamera } from "./camera.js";
 import { WALL_INNER, pondExtent } from "./layout.js";
+import { pace } from "./pace.js";
 import { D, H, TABLE } from "./tiles.js";
 
 const { TABLE_HALF, WALL_R, HAND_Z, CENTER_HALF } = TABLE;
@@ -464,7 +465,7 @@ export function setPondZoom(on) {
     zoom.k = from + (to - from) * easeInOutCubic(t);
     poseTableCamera();
     return true;
-  });
+  }, { fixed: true });
 }
 
 const pondRay = new THREE.Raycaster();
@@ -507,7 +508,10 @@ export const easeOutBack = (t) => 1 + 2.2 * Math.pow(t - 1, 3) + 1.2 * Math.pow(
  * too: a backgrounded or hidden page gets no frames, and the game must never
  * wait on a picture nobody can see.
  */
-function schedule(duration, step) {
+function schedule(duration, step, fixed = false) {
+  // The pace stretches or shrinks the table's motion; `fixed` keeps the
+  // ambient and camera animations at their own speed.
+  if (!fixed) duration = pace.scale(duration);
   return new Promise((resolve) => {
     const item = { start: performance.now(), duration, step, resolve, done: false };
     tweens.push(item);
@@ -536,9 +540,9 @@ export function tween(target, to, duration, ease = easeOutCubic) {
   });
 }
 
-/** Run `step(t)` for t in 0..1 over `duration`; resolves when done. */
-export function animate(duration, step) {
-  return schedule(duration, step);
+/** Run `step(t)` for t in 0..1 over `duration` (scaled by the pace unless `fixed`); resolves when done. */
+export function animate(duration, step, { fixed = false } = {}) {
+  return schedule(duration, step, fixed);
 }
 
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

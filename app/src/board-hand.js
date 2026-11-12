@@ -8,6 +8,7 @@
 import * as THREE from "three";
 import { W, makeTile, tileOrder } from "./tiles.js";
 import { HAND_LIFT, handTileStart } from "./layout.js";
+import { pace } from "./pace.js";
 import { sound } from "./sound.js";
 import { animate, easeOutCubic, handCamera, renderer, requestRender, setHandRowWidth, tween, viewport } from "./stage.js";
 
@@ -107,7 +108,7 @@ export const handMethods = {
         entry.tile.position.set(start.x, start.y, 0);
         if (animated) {
           work.push(tween(entry.tile.position, { x, y: 0 }, 260, easeOutCubic));
-          if (entry.drawn) sound.cue("draw", { own: true, delay: 0.17 });
+          if (entry.drawn) sound.cue("draw", { own: true, delay: pace.scale(0.17) });
         }
         continue;
       }
