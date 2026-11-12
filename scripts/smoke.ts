@@ -537,7 +537,7 @@ async function opening(browser: Browser, origin: string, shots: string | null): 
     await page.waitForSelector(".opening", { state: "detached", timeout: 3000 });
     assert.ok(Date.now() - started < 3000, "a tap cuts the opening short");
     // The tap started audio, which fetched and decoded the dice recordings from the built app.
-    await page.waitForFunction(() => window.mahjong?.sound.samplesLoaded === 3, null, {
+    await page.waitForFunction(() => window.mahjong?.sound.samplesLoaded === 4, null, {
       timeout: 10_000,
     });
     const payload = await yourMove(page);

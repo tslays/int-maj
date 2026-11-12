@@ -178,14 +178,22 @@ describe("sound voices", () => {
     assert.equal(play([{ duration: 0.6 }], { span: 0.1 }).sources[0]!.playbackRate.value, 1.6);
     assert.equal(play([{ duration: 0.6 }], { span: 5 }).sources[0]!.playbackRate.value, 0.7);
     // Each throw is a different take.
-    const takes = [{ duration: 0.4 }, { duration: 0.5 }, { duration: 0.6 }];
+    const takes = [{ duration: 0.5 }, { duration: 0.6 }, { duration: 0.7 }, { duration: 0.8 }];
     const used = new Set<unknown>();
-    for (const value of [0.1, 0.5, 0.9]) {
+    for (const value of [0.05, 0.3, 0.55, 0.9]) {
       const ctx = new FakeContext();
       createVoices(ctx, ctx.destination, () => value, { dice: takes }).dice(0, { span: 0.5 });
       used.add(ctx.sources[0]!.buffer);
     }
-    assert.equal(used.size, 3);
+    assert.equal(used.size, 4);
+    // Throws one after another differ a little in speed, and stay within a few percent of the fit.
+    const rates = [0, 0.5, 0.999].map((value) => {
+      const ctx = new FakeContext();
+      createVoices(ctx, ctx.destination, () => value, { dice: [{ duration: 0.6 }] }).dice(0, { span: 0.6 });
+      return ctx.sources[0]!.playbackRate.value as number;
+    });
+    assert.ok(rates[0]! < rates[1]! && rates[1]! < rates[2]!, "the speed varies from throw to throw");
+    assert.ok(rates[0]! >= 0.94 - 1e-9 && rates[2]! <= 1.06 + 1e-9, "by no more than six percent");
   });
 
   it("a tick is far lighter than a clack", () => {
@@ -208,7 +216,7 @@ describe("the recordings", () => {
       },
     });
     await new Promise((resolve) => setTimeout(resolve, 0));
-    assert.deepEqual(asked, ["dice-1.mp3", "dice-2.mp3", "dice-3.mp3"]);
+    assert.deepEqual(asked, ["dice-1.mp3", "dice-2.mp3", "dice-3.mp3", "dice-4.mp3"]);
     ctx.state = "running";
     const before = ctx.sources.length;
     assert.equal(engine.cue("dice", { span: 0.5 }), true);

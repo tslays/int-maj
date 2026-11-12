@@ -30,7 +30,7 @@ const IDLE_MS = 5000; // quiet this long and the audio context is suspended
 const FLOOR = 0.0001; // exponential ramps cannot reach zero
 
 /** The recordings, by cue: files beside the app, fetched and decoded at the first gesture. */
-export const SAMPLE_FILES = { dice: ["dice-1.mp3", "dice-2.mp3", "dice-3.mp3"] };
+export const SAMPLE_FILES = { dice: ["dice-1.mp3", "dice-2.mp3", "dice-3.mp3", "dice-4.mp3"] };
 
 async function fetchSample(name) {
   const response = await globalThis.fetch(new URL(`../assets/sounds/${name}`, import.meta.url));
@@ -158,11 +158,12 @@ export function createVoices(ctx, out, random = Math.random, samples = { dice: [
   }
 
   /**
-   * Two dice thrown, rattling and settling: a real recording (Kenney's CC0
-   * Casino Audio, see assets/sounds/LICENSE.md; a rattle is too irregular to
-   * synthesise well), a different take each time, played faster or slower so
-   * that it ends when the dice do (`span`, seconds). Silent until the
-   * recordings are decoded, which happens at the first gesture.
+   * Two dice thrown, rattling and settling: a real recording (four takes,
+   * CC0, from freesound.org, see assets/sounds/LICENSE.md; a rattle is too
+   * irregular to synthesise well), a different take each time. It is played
+   * faster or slower so that it ends about when the dice do (`span`,
+   * seconds), and a few percent either way. Silent until the recordings are
+   * decoded, which happens at the first gesture.
    */
   function dice(t, { span = 0.5, intensity = 1, pan = 0, far = 0 } = {}) {
     const takes = samples.dice;
@@ -170,7 +171,7 @@ export function createVoices(ctx, out, random = Math.random, samples = { dice: [
     const buffer = takes[Math.floor(random() * takes.length)];
     const source = ctx.createBufferSource();
     source.buffer = buffer;
-    source.playbackRate.value = clamp(buffer.duration / span, 0.7, 1.6);
+    source.playbackRate.value = clamp((buffer.duration / span) * (0.94 + random() * 0.12), 0.7, 1.6);
     source.connect(lane({ pan, far, gain: clamp(intensity, 0, 1.2) }));
     source.start(t);
   }
@@ -457,7 +458,7 @@ export function createSound({
 
     unlock,
 
-    /** How many dice recordings are decoded and ready (3 once audio has started and they loaded). */
+    /** How many dice recordings are decoded and ready (4 once audio has started and they loaded). */
     get samplesLoaded() {
       return samples.dice.length;
     },
