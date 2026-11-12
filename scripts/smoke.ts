@@ -288,6 +288,13 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.waitForSelector("#help-sheet:not([hidden])", { timeout: 5000 });
   await page.click("#help-close");
   await page.waitForSelector("#help-sheet", { state: "hidden", timeout: 5000 });
+  // Pace is a device preference that takes effect at once.
+  await page.click('#pace [data-pace="faster"]');
+  await page.waitForSelector('#pace [data-pace="faster"][aria-checked=true]', { timeout: 5000 });
+  if ((await page.evaluate(() => localStorage.getItem("int-maj.pace"))) !== "faster") {
+    throw new Error("the pace choice is not remembered on the device");
+  }
+  await page.click('#pace [data-pace="normal"]');
   // A house rule set mid-hand waits for the next deal; the hand on the table keeps its rules.
   await page.click('#hand-set [data-set="companion"]');
   await page.waitForSelector('#hand-set [data-set="companion"][aria-checked=true]', { timeout: 5000 });

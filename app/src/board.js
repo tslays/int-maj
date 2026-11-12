@@ -15,6 +15,7 @@
 import * as THREE from "three";
 import { D, H, W, makeTile, roundedRect, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, TABLE } from "./tiles.js";
 import { discardSlot, latestPlate, meldLayout, pondPad } from "./layout.js";
+import { pace } from "./pace.js";
 import { sound } from "./sound.js";
 import { animate, easeInOutCubic, easeOutBack, easeOutCubic, handScene, requestRender, setPondCounts, tableScene, tween } from "./stage.js";
 import { handMethods } from "./board-hand.js";
@@ -220,7 +221,7 @@ export class Board {
     tile.position.copy(from);
     tile.rotation.set(seat === this.me ? -0.35 : 0.2, 0, 0);
     // The arc touches down at about 0.36 of its 0.4 s: that is when it clacks.
-    sound.cue("clack", { delay: 0.36, intensity: seat === this.me ? 1 : 0.85, ...this.ear(seat) });
+    sound.cue("clack", { delay: pace.scale(0.36), intensity: seat === this.me ? 1 : 0.85, ...this.ear(seat) });
     const startRotation = tile.rotation.clone();
     return animate(400, (t) => {
       const k = easeOutCubic(t);
@@ -239,7 +240,7 @@ export class Board {
     tableScene.attach(tile);
     const target = this.meldTarget(claimer);
     const from = tile.position.clone();
-    sound.cue("clack", { delay: 0.33, intensity: 0.7, ...this.ear(claimer) });
+    sound.cue("clack", { delay: pace.scale(0.33), intensity: 0.7, ...this.ear(claimer) });
     return animate(360, (t) => {
       const k = easeInOutCubic(t);
       tile.position.lerpVectors(from, target, k);
@@ -267,7 +268,7 @@ export class Board {
       if (animated && grewBy === 1 && index === entry.handCount - 1) {
         tile.position.y += 0.9;
         work.push(tween(tile.position, { y: H / 2 }, 220, easeOutCubic));
-        sound.cue("draw", { delay: 0.03, ...this.ear(entry.seat) });
+        sound.cue("draw", { delay: pace.scale(0.03), ...this.ear(entry.seat) });
       }
     }
     return work;
@@ -316,7 +317,7 @@ export class Board {
       }
     }
     // The dropping tiles first meet the felt at about 0.45 of their 0.3 s.
-    if (fresh) sound.cue("meld", { delay: 0.135, count: groups.at(-1).length, ...this.ear(entry.seat) });
+    if (fresh) sound.cue("meld", { delay: pace.scale(0.135), count: groups.at(-1).length, ...this.ear(entry.seat) });
     return work;
   }
 
@@ -352,7 +353,7 @@ export class Board {
       markMaterial.opacity = intro * (0.85 + 0.15 * breath);
       markFillMaterial.opacity = intro * (0.3 + 0.16 * breath);
       markHaloMaterial.opacity = intro * (0.35 + 0.45 * breath);
-    });
+    }, { fixed: true });
   }
 
   clearMarks() {

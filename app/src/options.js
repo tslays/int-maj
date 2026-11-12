@@ -1,5 +1,5 @@
 /**
- * The Options sheet: sound, the house rules, and the doors to Help and
+ * The Options sheet: sound, the pace, the house rules, and the doors to Help and
  * Report a problem.
  *
  * A house rule is a preference kept on the device. The table fixes a hand's
@@ -7,6 +7,7 @@
  * next hand, and a change made mid-hand shows as pending until then.
  */
 
+import { pace } from "./pace.js";
 import { sound } from "./sound.js";
 import { $, request, state, storage } from "./shared.js";
 
@@ -61,6 +62,12 @@ function showSound() {
   button.firstElementChild.textContent = on ? "On" : "Off";
 }
 
+function showPace() {
+  for (const button of document.querySelectorAll("#pace [data-pace]")) {
+    button.setAttribute("aria-checked", String(button.dataset.pace === pace.id));
+  }
+}
+
 /* The left-out hands are named by the table, never by a list kept here. */
 async function nameHands() {
   try {
@@ -78,6 +85,7 @@ function closeOptions() {
 
 export function installOptions() {
   showSound();
+  showPace();
   showRules();
 
   $("#options").addEventListener("click", () => {
@@ -101,6 +109,14 @@ export function installOptions() {
     sound.setMuted(!sound.muted);
     showSound();
     sound.cue("press"); // heard only when sound has just been turned on
+  });
+
+  /* Pace: takes effect at once, the next move already runs at it. */
+  $("#pace").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-pace]");
+    if (button === null) return;
+    pace.set(button.dataset.pace);
+    showPace();
   });
 
   $("#hand-set").addEventListener("click", (event) => {

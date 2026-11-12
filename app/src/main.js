@@ -16,6 +16,7 @@ import { refreshHints } from "./hints.js";
 import { warmIndex } from "./handbook.js";
 import { installMenu } from "./menu.js";
 import { houseRules, installOptions } from "./options.js";
+import { pace } from "./pace.js";
 import "./report.js";
 import { installResult, showOutcome } from "./result.js";
 import { $, board, faceChip, request, scores, state, storage, toast } from "./shared.js";
@@ -55,7 +56,7 @@ async function callOut(seat, word, hold = 700) {
   element.style.left = `${Math.max(70, Math.min(viewport.width - 70, point.x))}px`;
   element.style.top = `${Math.max(40, Math.min(viewport.height - viewport.strip - 30, point.y))}px`;
   document.body.append(element);
-  await sleep(hold);
+  await sleep(pace.scale(hold));
   element.classList.add("callout-out");
   setTimeout(() => element.remove(), 300);
 }
@@ -87,7 +88,7 @@ async function apply(next, { animated = true } = {}) {
   }
   previousFishing = fishing;
   void refreshHints();
-  if (announcements.length > 0) await sleep(650);
+  if (announcements.length > 0) await sleep(pace.scale(650));
   return before;
 }
 
@@ -117,7 +118,7 @@ async function run() {
           continue;
         }
         await apply(next);
-        await sleep(threwSince(before, next) ? BEAT_AFTER_THROW : BEAT_AFTER_DRAW);
+        await sleep(pace.scale(threwSince(before, next) ? BEAT_AFTER_THROW : BEAT_AFTER_DRAW));
         continue;
       }
       // Drawing is not a decision: the table hands you the tile.
