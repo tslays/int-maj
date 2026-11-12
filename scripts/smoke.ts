@@ -37,6 +37,12 @@ import { serve } from "./preview.ts";
 /** A phone on its side: the layout the testers use. */
 const VIEWPORT = { width: 844, height: 390 };
 const READY_MS = 20_000;
+/**
+ * Your next move can wait for a whole round of the bots (three throws, each
+ * animated and paced): about 12 s on a cloud container and more on a busy CI
+ * runner, too close to READY_MS. A stuck game still fails, just later.
+ */
+const ROUND_MS = 45_000;
 
 /** What the page's debug handle (`window.mahjong`) answers; see app/src/main.js. */
 interface Payload {
@@ -161,7 +167,7 @@ async function yourMove(page: Page): Promise<Payload> {
         return payload.legalActions.length > 0 || payload.view.phase === "finished";
       },
       null,
-      { timeout: READY_MS },
+      { timeout: ROUND_MS },
     );
   } catch (error) {
     // Say where the table stood, so a failure on a CI runner can be told from a stuck game.
