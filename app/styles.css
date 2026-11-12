@@ -925,7 +925,7 @@ button.detail-rule {
   flex-wrap: wrap;
   align-items: center;
   gap: 5px;
-  margin-bottom: 3px;
+  margin-top: 4px;
   color: var(--muted);
   font-size: 11px;
 }

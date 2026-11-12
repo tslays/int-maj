@@ -136,7 +136,7 @@ function hintRow(hand, { name: label, pinned }) {
   name.className = "closest-name";
   if (pinned) name.append(pinIcon());
   name.append(label);
-  // The same order as the hand's sheet: how it is played, what it pays, how far it is.
+  // The same order as the hand's sheet: how it is played, how far it is, what it pays.
   const meta = document.createElement("span");
   meta.className = "closest-meta";
   const piece = (words, className) => {
@@ -151,9 +151,9 @@ function hintRow(hand, { name: label, pinned }) {
     meta.append(
       piece(playWord(hand.concealedOnly)),
       piece("\u00b7"),
-      piece(hand.points === null ? "calculated" : hand.points.toLocaleString("en")),
-      piece("\u00b7"),
       hand.away === 0 ? piece("Complete", "closest-done") : piece(`${hand.away} to go`),
+      piece("\u00b7"),
+      piece(hand.points === null ? "calculated" : hand.points.toLocaleString("en")),
     );
   }
   row.append(name, meta);
@@ -205,18 +205,10 @@ function anyChip(words) {
   return chip;
 }
 
-/** One printed picture: the book's tiles in the book's order and grouping, captioned above with where it is printed. */
+/** One printed picture: the book's tiles in the book's order and grouping, with the pill of where it is printed below. */
 function sampleFigure(sample) {
   const figure = document.createElement("figure");
   figure.className = "detail-sample";
-  const caption = document.createElement("figcaption");
-  for (const source of sample.sources) {
-    const badge = document.createElement("span");
-    badge.className = "sample-source";
-    badge.textContent = `${source.book.includes("Companion") ? "Companion" : "Illustrated"} p. ${source.page}`;
-    caption.append(badge);
-  }
-  if (sample.label !== null) caption.append(sample.label);
   const tiles = document.createElement("div");
   tiles.className = "sample-tiles";
   for (const group of sample.groups) {
@@ -225,21 +217,25 @@ function sampleFigure(sample) {
     for (const tile of group) set.append(typeof tile === "string" ? faceChip(tile) : anyChip(tile.any));
     tiles.append(set);
   }
-  figure.append(caption, tiles);
+  figure.append(tiles);
   for (const text of sample.notes) {
     const note = document.createElement("p");
     note.className = "sample-note";
     note.textContent = text;
     figure.append(note);
   }
+  const caption = document.createElement("figcaption");
+  for (const source of sample.sources) {
+    const badge = document.createElement("span");
+    badge.className = "sample-source";
+    badge.textContent = `${source.book.includes("Companion") ? "Companion" : "Illustrated"} p. ${source.page}`;
+    caption.append(badge);
+  }
+  if (sample.label !== null) caption.append(sample.label);
+  figure.append(caption);
   return figure;
 }
 
-/**
- * The book's sample hand(s), set apart as a "page from the book" panel under
- * its own heading, so it is never mistaken for your tiles. A hand the books
- * list without a picture gets a made-up example, labelled as one.
- */
 function sampleSection(samples, pages, example) {
   const companionOnly = companionRules();
   const wrap = document.createElement("section");
@@ -386,6 +382,13 @@ export async function openHandDetail(pattern, progress = null) {
   const facts = document.createElement("div");
   facts.className = "detail-facts";
   facts.append(rule);
+  // How it is played, how far you are, and last what it pays: the panel's order.
+  if (detail.requiresSelfDrawn) facts.append(factChip(null, "Self-drawn only"));
+  if (progress !== null) {
+    const far = factChip(null, progress.away === 0 ? "Complete" : `${progress.away} to go`);
+    if (progress.away === 0) far.classList.add("detail-done");
+    facts.append(far);
+  }
   const concealedWorth = worth(detail.concealedTier, detail.concealedPoints);
   const exposedWorth = detail.concealedOnly ? null : worth(detail.exposedTier, detail.exposedPoints);
   if (exposedWorth === null || exposedWorth === concealedWorth) {
@@ -393,13 +396,6 @@ export async function openHandDetail(pattern, progress = null) {
     facts.append(factChip("Pays", concealedWorth));
   } else {
     facts.append(factChip("Concealed", concealedWorth), factChip("Exposed", exposedWorth));
-  }
-  if (detail.requiresSelfDrawn) facts.append(factChip(null, "Self-drawn only"));
-  // Last, as in the panel's rows: how far your hand is from it.
-  if (progress !== null) {
-    const far = factChip(null, progress.away === 0 ? "Complete" : `${progress.away} to go`);
-    if (progress.away === 0) far.classList.add("detail-done");
-    facts.append(far);
   }
 
   const lede = document.createElement("p");
