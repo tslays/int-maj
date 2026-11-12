@@ -7,7 +7,7 @@
  *   draw       a soft, low lift of a tile from the wall (a bot's, or yours settling)
  *   clack      a weighty plastic tile landing on felt: a round, low thump (a
  *              little knock and the felt thud under it), the game's base beat
- *   dice       two dice thrown: bouncing knocks that close up, then settle
+ *   dice       two dice thrown: a bright, irregular rattle that spreads out and settles
  *   meld       the tiles of a call set down together
  *   tick       the very quiet click of a hand tile under your pointer / finger
  *   alert      the bright two-note chime when the game asks you to decide
@@ -147,33 +147,44 @@ export function createVoices(ctx, out, random = Math.random) {
   }
 
   /**
-   * A small hard die striking felt: higher and drier than a tile, with a
-   * short pitched knock and almost no thud under it.
+   * One hard click of a die: an edge or a face meeting felt, wood or the other
+   * die. Bright and very short, with the faint hollow "tok" of a small cube
+   * under it, and no thud: a die weighs almost nothing. Every click lands on a
+   * different corner, so each has its own pitch.
    */
-  function dieKnock(t, { v = 1, pan = 0, far = 0 } = {}) {
-    const k = 1 + (random() - 0.5) * 0.2;
-    const bus = lane({ pan, far, top: 5200, gain: 0.8 * (0.9 + random() * 0.2) });
-    burst(bus, t, { freq: 2600 * k, q: 1.1, gain: 0.32 * v, attack: 0.0006, decay: 0.011 });
-    tone(bus, t, { freq: 980 * k, to: 520 * k, sweep: 0.03, gain: 0.45 * v, decay: 0.045 });
-    burst(bus, t, { type: "lowpass", freq: 420, q: 0.7, gain: 0.22 * v, attack: 0.001, decay: 0.04 });
+  function dieClick(t, { v = 1, pan = 0, far = 0 } = {}) {
+    const k = 0.75 + random() * 0.6;
+    const bus = lane({ pan, far, top: 9000, gain: 1.9 * (0.8 + random() * 0.4) });
+    burst(bus, t, { freq: 3200 * k, q: 1.4, gain: 0.5 * v, attack: 0.0004, decay: 0.006 + random() * 0.006 });
+    burst(bus, t, { type: "highpass", freq: 5200, q: 0.5, gain: 0.12 * v, attack: 0.0003, decay: 0.004 });
+    tone(bus, t, { freq: 1700 * k, to: 1200 * k, sweep: 0.012, gain: 0.22 * v, decay: 0.016 });
   }
 
   /**
-   * Dice thrown and settling: each die bounces on the felt, the knocks coming
-   * closer and softer, and lands with a firmer one at `span` seconds. `count`
-   * dice are a few hundredths apart, so a pair sounds like a pair.
+   * Dice thrown, rattling and settling, as a pair (`count`). Each die is a run
+   * of irregular clicks, close together at the throw and spreading out as it
+   * loses speed, now and then two at once (an edge, then the face), over a
+   * faint dry roll of friction; the last click lands at `span` seconds, with a
+   * tiny tick of it rocking to rest after. The two dice are a little apart.
    */
   function dice(t, { span = 0.4, count = 2, intensity = 1, pan = 0, far = 0 } = {}) {
-    const hits = 6;
+    const hits = 13;
     const v = clamp(intensity, 0, 1.2);
     for (let die = 0; die < count; die++) {
-      const lag = die * 0.028;
-      const side = pan + (die - (count - 1) / 2) * 0.12;
+      const lag = die * 0.021;
+      const side = pan + (die - (count - 1) / 2) * 0.14;
+      const bed = lane({ pan: side, far, top: 6000, gain: 1.3 });
+      burst(bed, t + lag, { freq: 2300, q: 0.6, gain: 0.05 * v, attack: 0.03, decay: span * 0.9 });
       for (let index = 0; index < hits; index++) {
-        const at = t + lag + span * (1 - Math.pow(1 - index / hits, 1.8)) + random() * 0.01;
-        dieKnock(at, { v: v * (0.3 + 0.5 * Math.pow(1 - index / hits, 0.7)), pan: side, far });
+        const x = index / hits;
+        const jitter = (random() - 0.5) * 0.35 * (span / hits);
+        const at = t + lag + Math.max(0, span * Math.pow(x, 1.7) + jitter);
+        const loud = v * (0.3 + 0.7 * (1 - x) * (0.6 + random() * 0.4));
+        dieClick(at, { v: loud, pan: side, far });
+        if (random() < 0.3) dieClick(at + 0.004 + random() * 0.005, { v: loud * 0.6, pan: side, far });
       }
-      dieKnock(t + lag + span, { v: v * 0.95, pan: side, far });
+      dieClick(t + lag + span, { v: v * 0.7, pan: side, far });
+      dieClick(t + lag + span + 0.024, { v: v * 0.25, pan: side, far });
     }
   }
 
