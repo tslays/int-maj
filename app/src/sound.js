@@ -24,6 +24,8 @@
  * a buffer.
  */
 
+import { browserStorage, storedString } from "./prefs.js";
+
 const MUTE_KEY = "int-maj.sound";
 const LEAD = 0.004; // seconds between "now" and the earliest sound
 const IDLE_MS = 5000; // quiet this long and the audio context is suspended
@@ -313,14 +315,6 @@ export function createVoices(ctx, out, random = Math.random, samples = { dice: [
 
 /* --------------------------------------------------------- the engine */
 
-function browserStorage() {
-  try {
-    return globalThis.localStorage ?? null;
-  } catch {
-    return null;
-  }
-}
-
 /**
  * The sound engine: unlocks audio on the first gesture, keeps the on / off
  * choice, and plays named cues. Everything is injectable for tests.
@@ -342,14 +336,8 @@ export function createSound({
   let idleTimer = null;
   let idleSuspended = false;
 
-  const store = () => (typeof storage === "function" ? storage() : storage);
-
-  let muted = false;
-  try {
-    muted = store()?.getItem(MUTE_KEY) === "off";
-  } catch {
-    // Storage blocked: sound stays on for this visit.
-  }
+  const stored = storedString(MUTE_KEY, storage);
+  let muted = stored.read() === "off";
 
   function build() {
     if (ctx !== null || AudioContextClass === null) return;
@@ -465,11 +453,7 @@ export function createSound({
 
     setMuted(value) {
       muted = Boolean(value);
-      try {
-        store()?.setItem(MUTE_KEY, muted ? "off" : "on");
-      } catch {
-        // Private mode: the choice lasts for this visit.
-      }
+      stored.write(muted ? "off" : "on");
     },
 
     /**

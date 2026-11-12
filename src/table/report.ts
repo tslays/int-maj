@@ -3,8 +3,8 @@
  * the game to the same state.
  *
  * A report is plain text. The header lines are for a human; the block between
- * the BEGIN/END markers is JSON holding the seed, the first dealer (East of hand 1, by the dice) and every
- * decision (`ReplayStep`) in order, bots included. `bin/replay.ts` reads a
+ * the BEGIN/END markers is JSON holding the seed, the first dealer (East of
+ * hand 1, by the dice) and every decision (`ReplayStep`) in order, bots included. `bin/replay.ts` reads a
  * report as it is, and `replayReport` here is the same replay in code.
  *
  * Nothing else leaves the table: no `GameState`, no checkpoint, no hand or
