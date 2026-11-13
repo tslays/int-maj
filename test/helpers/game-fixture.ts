@@ -55,6 +55,7 @@ export interface FixtureOptions {
   readonly goulashPicks?: GameState["goulashPicks"];
   readonly specialHands?: GameState["specialHands"];
   readonly excludedHands?: GameState["excludedHands"];
+  readonly fishOffered?: GameState["fishOffered"];
   readonly recentSpecialHands?: GameState["recentSpecialHands"];
 }
 
@@ -90,6 +91,7 @@ export function fixture(options: FixtureOptions = {}): GameState {
   if (options.goulashPicks !== undefined) state.goulashPicks = options.goulashPicks;
   if (options.specialHands !== undefined) state.specialHands = [...options.specialHands];
   if (options.excludedHands !== undefined) state.excludedHands = [...options.excludedHands];
+  if (options.fishOffered !== undefined) state.fishOffered = [...options.fishOffered];
   if (options.recentSpecialHands !== undefined) {
     state.recentSpecialHands = [...options.recentSpecialHands];
   }

@@ -84,6 +84,8 @@ function afterDiscard(draft: Draft, seat: Seat, events: Event[], emit: Emit): vo
   if (declaration !== null) {
     draft.phase = "announce";
     draft.turn = seat;
+    const offered = draft.fishOffered ?? [];
+    if (!offered.includes(seat)) draft.fishOffered = [...offered, seat];
     return;
   }
   openClaims(draft, seat, events, emit);

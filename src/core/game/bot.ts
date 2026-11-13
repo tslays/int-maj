@@ -266,6 +266,8 @@ function showsFish(
     return pattern !== null && PATTERN_BY_ID.get(pattern)?.tier !== "calculate";
   });
   if (special) return true;
+  // A table that wants the fish shown before a win: keeping quiet would forfeit it.
+  if (view.winNeedsFish) return true;
   return view.wallRemaining <= temperamentOf(view.seat).quietUntil;
 }
 

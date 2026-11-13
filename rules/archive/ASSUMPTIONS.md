@@ -359,3 +359,30 @@ Uncertainty: the Companion offers it as an idea, not a printed law, and does
 not say whether a barred hand may still go out as an ordinary hand; the
 narrowest reading lets the tiles count as whatever else they make.
 
+## A win needs the fish shown (2026-11-13)
+
+A tester asked that a player be required to declare fishing in order to win
+(report #118). Neither book prints this: *Illustrated* p. 21 only names the
+fishing state, and *Companion* p. 55 (idea 2) asks for the fish only "if a
+fishing score is to be claimed". The default therefore stays with the books:
+no announcement is needed to go out. The owner made the tester's version a
+house rule, off by default.
+
+Narrowest workable reading kept by the engine (`mayGoOut`,
+`src/core/game/hands.ts`):
+
+- A seat is offered the announcement after a discard that leaves it one tile
+  from Mah Jong (the `announce` phase); the engine records the offer
+  (`fishOffered`).
+- A seat that was offered it goes out (on a discard, from the wall, or by
+  robbing a kong) only once it has shown the fish.
+- A seat never offered it had no chance to announce, so it may go out: a hand
+  complete or waiting straight from the deal or a Goulash. Without this
+  exemption the rule would make such hands unwinnable, which no player would
+  agree to.
+- Bots show the fish as soon as they are offered it under the rule.
+
+Uncertainty: the tester's sentence does not say what happens to a player who
+kept quiet and later changes the wait; the reading here bars the win until the
+fish is shown at a later offer.
+

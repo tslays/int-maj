@@ -217,6 +217,12 @@ export interface GameState {
   readonly lastDiscard: { readonly seat: Seat; readonly tile: string } | null;
   readonly claimWindow: ClaimWindow | null;
   readonly fishing: readonly FishingState[];
+  /**
+   * Seats that have been offered the fishing announcement this hand (a
+   * discard left them one tile from Mah Jong). Under the house rule
+   * `WIN_NEEDS_FISH` such a seat goes out only once it has shown the fish.
+   */
+  readonly fishOffered?: readonly Seat[];
   readonly ledger: readonly LedgerEntry[];
   readonly eventSeq: number;
   /** The tile most recently drawn by `seat`, for a self-drawn win. */

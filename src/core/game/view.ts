@@ -22,7 +22,7 @@ import type { Action } from "./actions.ts";
 import { seatIndex, wallRemaining } from "./state.ts";
 import { legalActions } from "./legal.ts";
 import { goulashPartner } from "./reduce.ts";
-import { exclusionsOf } from "./hands.ts";
+import { exclusionsOf, hasRule, WIN_NEEDS_FISH } from "./hands.ts";
 
 export interface PlayerView {
   readonly seat: Seat;
@@ -92,6 +92,8 @@ export interface GameView {
    * Goulash). Pass it to the matcher as `excluded`.
    */
   readonly excludedHands: readonly string[];
+  /** House rule `WIN_NEEDS_FISH`: a player offered the fishing announcement goes out only after showing the fish. */
+  readonly winNeedsFish: boolean;
 }
 
 function copyMelds(melds: readonly MeldState[]): MeldState[] {
@@ -161,5 +163,6 @@ export function viewFor(state: GameState, seat: Seat): GameView {
         ? { stage: state.goulashStage ?? 0, partner: goulashPartner(state.goulashStage ?? 0, seat) }
         : null,
     excludedHands: [...exclusionsOf(state)],
+    winNeedsFish: hasRule(state, WIN_NEEDS_FISH),
   };
 }
