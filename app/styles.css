@@ -114,7 +114,8 @@ button {
   font-weight: 700;
   line-height: 18px;
   white-space: nowrap;
-  pointer-events: none;
+  /* A tap on a label opens the claims sheet on its seat (claims.js). */
+  cursor: pointer;
   transition: box-shadow 220ms, border-color 220ms;
 }
 .seat-label[hidden] {
@@ -2210,4 +2211,148 @@ button.detail-rule {
   .opening-card {
     animation: none;
   }
+}
+
+/* The claims sheet (claims.js): every seat's bonus tiles and melds, upright
+   and large, a row per seat; the tapped seat's row is lit in the turn cyan. */
+.claims-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 28;
+  display: grid;
+  place-items: center;
+  padding: var(--safe-t) var(--safe-r) 8px var(--safe-l);
+  background: rgba(5, 9, 11, 0.55);
+  animation: claims-in 160ms ease-out;
+}
+.claims-sheet[hidden] {
+  display: none;
+}
+.claims-panel {
+  --claims-w: 36px;
+  display: grid;
+  width: min(820px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  border-radius: 14px;
+  background: #162126;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+}
+.claims-row {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: center;
+  min-height: calc(var(--claims-w) * 1.36 + 18px);
+  padding: 0 12px 0 0;
+  border-left: 4px solid transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.claims-row:last-child {
+  border-bottom: none;
+  background: rgba(255, 255, 255, 0.03);
+}
+.claims-row.lit {
+  border-left-color: #62f2ea;
+  background: rgba(98, 242, 234, 0.09);
+}
+.claims-who {
+  display: grid;
+  grid-template: auto auto / auto 1fr;
+  column-gap: 8px;
+  align-items: center;
+  padding-left: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.claims-wind {
+  grid-row: 1 / 3;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cfd6d8;
+  font-size: 16px;
+}
+.claims-wind.dealer {
+  color: #ff6b5e;
+}
+.claims-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.claims-score {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 12px;
+}
+.claims-who .seat-fish {
+  grid-column: 2;
+  width: 22px;
+  height: 13px;
+}
+.claims-tiles {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: calc(var(--claims-w) * 0.45);
+  min-width: 0;
+  padding: 9px 0;
+}
+.claims-group {
+  display: flex;
+  gap: 2px;
+  border-radius: 6px;
+}
+.claims-group.bonus {
+  margin-right: calc(var(--claims-w) * 0.5);
+  padding-right: calc(var(--claims-w) * 0.45);
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0;
+}
+.claims-group .chip {
+  width: var(--claims-w);
+  height: calc(var(--claims-w) * 1.36);
+  border-radius: calc(var(--claims-w) * 0.14);
+}
+.claims-group .chip-white {
+  outline-offset: calc(var(--claims-w) * -0.2);
+}
+.claims-group .claims-copy {
+  outline: 2px solid var(--gold-1);
+  outline-offset: 1px;
+}
+.claims-group.fresh {
+  animation: claims-fresh 1.4s ease-out;
+}
+.claims-none {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+}
+@keyframes claims-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes claims-fresh {
+  from {
+    box-shadow: 0 0 0 3px #62f2ea, 0 0 18px 4px rgba(98, 242, 234, 0.7);
+  }
+  to {
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .claims-sheet,
+  .claims-group.fresh {
+    animation: none;
+  }
+}
+.claims-group.bonus:last-child {
+  margin-right: 0;
+  padding-right: 0;
+  border-right: none;
 }
