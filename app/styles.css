@@ -154,19 +154,24 @@ button {
   align-items: center;
   gap: 10px;
   max-width: calc(100vw - var(--safe-r) - 20px);
+  /* 19px on phones and small windows, growing with the window to 30px: the buttons are sized in em. */
+  font-size: clamp(19px, 1.7vw, 30px);
+}
+html.phone-frame .actions {
+  font-size: 19px;
 }
 .act {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 0 20px;
+  gap: 0.42em;
+  min-height: 2.32em;
+  padding: 0 1.05em;
   border: 0;
-  border-radius: 8px;
+  border-radius: 0.42em;
   transform: skewX(-12deg);
   font-style: italic;
   font-weight: 800;
-  font-size: 19px;
+  font-size: inherit;
   letter-spacing: 0.01em;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
   animation: act-in 180ms ease-out both;
@@ -197,7 +202,12 @@ button {
 }
 .act-tiles {
   display: inline-flex;
-  gap: 2px;
+  gap: 0.1em;
+}
+.act .chip {
+  width: 1.16em;
+  height: 1.58em;
+  border-radius: 0.21em;
 }
 @keyframes act-in {
   from {
