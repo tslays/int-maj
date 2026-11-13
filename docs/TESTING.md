@@ -23,14 +23,18 @@ hand you were playing starts again with the scores kept.
 
 **New to the app?** On an iPhone open the link in Safari, tap Share, then
 *Add to Home Screen*, and play it from the home-screen icon with the phone
-turned sideways. Everything else, the app shows you: tap **Help**.
+turned sideways. Everything else, the app shows you: Options › **Help**.
 
 ## New in alpha.7
 
 - **Discards in a pile, like a real table.** Options › Discards › *Pile*.
-  Every discard slides into one heap in the middle; nobody can see who threw
-  what. Each player's wind and score sit at their edge of the table.
-- **See who is fishing:** a small fish beside the player's wind.
+  Every discard slides into one round heap in the middle; nobody can see who
+  threw what. The round, your wind and the wall count move to a small badge
+  under the menu.
+- **See everyone's claims:** tap a player's side of the table, where their
+  melds lie, for a sheet with every player's claimed tiles shown large.
+- **See who is fishing:** a small fish beside the player's wind, or with the
+  pile, next to their melds.
 - **Goulash:** drag to arrange your hand while you pass, and the tiles you
   just received are marked in teal.
 - **Two new house rules:** *No half-limit hands in a Goulash* (on) and
@@ -38,9 +42,10 @@ turned sideways. Everything else, the app shows you: tap **Help**.
 - **Calmer Large discards** on phones: only the tile just thrown is shown
   large, each for the same short beat.
 - **Harder Hard bots.**
-- **New flower and season tiles:** big pictures you can recognise.
+- **New flower and season tiles:** the traditional pictures of a real set,
+  with their numbers printed on them.
 - **Help as a visual guide,** tips in your first game, and a redesigned
-  Options sheet with New game inside it.
+  Options sheet with New game and Help inside it.
 
 ## Fixed thanks to your reports
 
@@ -49,7 +54,8 @@ Thank you to everyone who sent a report. From the last round:
 - *"Discards organised in front of each player give away too much."* You can
   now play with one shared pile in the middle (Options › Discards).
 - *"Flower tiles: make the numbers bigger and the pictures recognisable."*
-  The flowers and seasons are now big pictures with the number in the corner.
+  The flowers and seasons now look like a real set's: the traditional
+  pictures, with the number printed large on each tile.
 - *"Hard feels too easy."* We measured it: a lucky deal is normal, about
   one game in three starts three tiles or fewer from Mah Jong. But Hard was
   too slow; it now races to go out and is clearly stronger.
@@ -66,7 +72,7 @@ Thank you to everyone who sent a report. From the last round:
   turn the rule off in Options. If the tiles also make another hand, they
   score as that one.
 - **Hard** is noticeably tougher. Medium is still where you start.
-- **New game** has moved from the menu into Options.
+- **New game and Help** have moved from the menu into Options.
 
 ## What to try, and tell us
 
@@ -78,6 +84,7 @@ Thank you to everyone who sent a report. From the last round:
 - On a phone: is the single **large discard** easier to follow than the
   whole round was?
 - Do you recognise every **flower and season** tile at a glance?
+- Tap a player's side of the table: is the **claims sheet** useful?
 - Anything that broke, looked wrong or surprised you.
 
 ## How to report
@@ -112,9 +119,9 @@ as a message instead.
 Play: https://int.mah-jong.workers.dev (reload once to update)
 
 New: discards in one shared pile like a real table (Options › Discards ›
-Pile), a fish shows who is fishing, Goulash arranging with your received
-tiles marked, two new house rules, tougher Hard bots and new flower and
-season tiles. Thank you for your reports, most of this came from them!
+Pile), a sheet with everyone's claims (tap a player's side), a fish shows
+who is fishing, Goulash arranging with your received tiles marked, two new
+house rules, tougher Hard bots and real-set flower and season tiles. Thank you for your reports, most of this came from them!
 
 What's new, what we fixed and what to try is in the attached guide. Found
 something odd? Options › Report a problem.
