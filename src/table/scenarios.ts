@@ -81,7 +81,7 @@ const TABLE = {
 
   fishing: {
     title: "Fishing announced",
-    seed: "fishing-scene-8",
+    seed: "fishing-scene-3",
     at: (view) =>
       view.phase === "discard" &&
       view.turn !== view.seat &&
