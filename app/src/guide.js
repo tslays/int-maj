@@ -232,7 +232,7 @@ const TABS = [
       },
       {
         title: "Now and then",
-        text: "Reshuffle: on your first turn, ask for a new deal when it gives you nothing to build on. Pass 3 tiles: in a Goulash, tap three tiles to pass on, then confirm.",
+        text: "Reshuffle: on your first turn, ask for a new deal when it gives you nothing to build on. Pass 3 tiles: in a Goulash, tap three tiles to pass on, then confirm; drag sideways to arrange the hand meanwhile. The tiles you receive are marked in teal.",
         picture: () => row(act("Reshuffle", "pass"), act("Pass 3 tiles", "claim")),
       },
     ],

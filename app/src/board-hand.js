@@ -6,7 +6,7 @@
  */
 
 import * as THREE from "three";
-import { W, makeTile, tileOrder } from "./tiles.js";
+import { W, makeTile, markReceived, tileOrder } from "./tiles.js";
 import { HAND_LIFT, handTileStart } from "./layout.js";
 import { pace } from "./pace.js";
 import { sound } from "./sound.js";
@@ -72,6 +72,7 @@ export const handMethods = {
     }
     for (const entry of pool) entry.tile.removeFromParent();
     this.hand = next;
+    for (const entry of this.raised) if (!next.includes(entry)) this.raised.delete(entry);
     // The tile you raised was used up (a call took it): if you still hold another copy, the lift moves to it.
     if (this.lifted !== null && !next.includes(this.lifted)) {
       const key = this.lifted.key;
@@ -119,8 +120,8 @@ export const handMethods = {
         }
         continue;
       }
-      // A tile you have raised stays raised while the hand shifts around it.
-      const y = entry === this.lifted ? HAND_LIFT : 0;
+      // A tile you have raised (or picked for a Goulash pass) stays raised while the hand shifts around it.
+      const y = entry === this.lifted || this.raised.has(entry) ? HAND_LIFT : 0;
       const position = entry.tile.position;
       if (Math.abs(position.x - x) > 1e-3 || Math.abs(position.y - y) > 1e-3) {
         if (animated) work.push(this.glide(entry, { x, y }, 220));
@@ -157,6 +158,47 @@ export const handMethods = {
       this.clearMarks();
     }
     return this.glide(entry, { y: up ? HAND_LIFT : 0 }, 140);
+  },
+
+  /**
+   * Raise or lower a tile picked for a Goulash pass. Several can be up at
+   * once, and none marks its copies on the table.
+   */
+  raise(entry, up) {
+    if (up) this.raised.add(entry);
+    else this.raised.delete(entry);
+    return this.glide(entry, { y: up ? HAND_LIFT : 0 }, 140);
+  },
+
+  /** Put every picked tile down (a new exchange, or the exchange is over). */
+  lowerAll() {
+    const work = [...this.raised].map((entry) => this.glide(entry, { y: 0 }, 140));
+    this.raised.clear();
+    return work;
+  },
+
+  /**
+   * Mark the tiles a Goulash exchange just brought in (#119), replacing the
+   * marks of the exchange before. One mark per copy received.
+   */
+  markReceived(keys) {
+    this.clearReceived();
+    const left = [...keys];
+    for (const entry of [...this.hand].reverse()) {
+      const at = left.indexOf(entry.key);
+      if (at < 0) continue;
+      left.splice(at, 1);
+      entry.received = markReceived(entry.tile);
+    }
+    requestRender();
+  },
+
+  clearReceived() {
+    for (const entry of this.hand) {
+      entry.received?.removeFromParent();
+      entry.received = null;
+    }
+    requestRender();
   },
 
   /** Move a hand tile; a newer move of the same tile replaces the one in flight. */

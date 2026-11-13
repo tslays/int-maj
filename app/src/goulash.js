@@ -56,7 +56,13 @@ export function refreshGoulash(view = state.payload?.view) {
   panel.replaceChildren(
     line("goulash-kicker", "The last hand was drawn, so this is a"),
     title,
-    line("goulash-rule", "Before play, everyone swaps three tiles, three times."),
+    // From the second exchange the swap is known; say instead where the new tiles are (#119).
+    line(
+      "goulash-rule",
+      goulash.stage === 0
+        ? "Before play, everyone swaps three tiles, three times."
+        : "The tiles you just received are marked in teal.",
+    ),
     line("goulash-rule", "No chows this hand, except in a special hand."),
     steps,
     line("goulash-task", `Tap 3 tiles to pass to ${partner}`),

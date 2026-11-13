@@ -1,6 +1,7 @@
 /**
  * Hand input: tap to lift, tap again to discard, drag to re-arrange, swipe up
- * to throw, and picking the three tiles of a goulash exchange. A tap on the
+ * to throw, and picking the three tiles of a goulash exchange (a tap picks or
+ * puts back, a sideways drag still arranges the hand, #119). A tap on the
  * ponds toggles the zoomed, top-down view of the discards.
  */
 
@@ -31,6 +32,24 @@ export function clearSelection(keep = false) {
 /** A new goulash exchange starts with no tiles picked. */
 export function resetGoulash() {
   goulashPicks = [];
+  board.lowerAll();
+}
+
+/** Pick a tile for the goulash pass, or put a picked one back. */
+function toggleGoulashPick(entry) {
+  const index = goulashPicks.indexOf(entry);
+  if (index >= 0) {
+    goulashPicks.splice(index, 1);
+    void board.raise(entry, false);
+    tickFor(entry);
+  } else if (goulashPicks.length < 3) {
+    goulashPicks.push(entry);
+    void board.raise(entry, true);
+    tickFor(entry);
+  }
+  const confirm = $("#goulash-confirm");
+  if (confirm) confirm.disabled = goulashPicks.length !== 3;
+  showGoulashPicked(goulashPicks.length);
 }
 
 /** The keys of the tiles picked for the goulash exchange so far. */
@@ -66,20 +85,10 @@ renderer.domElement.addEventListener("pointerdown", (event) => {
   const legal = state.payload.legalActions;
 
   if (legal.some((action) => action.type === "GoulashExchange")) {
+    // The pick happens on release: a press that turns into a sideways drag arranges the hand instead.
     if (state.busy || entry === null) return;
-    const index = goulashPicks.indexOf(entry);
-    if (index >= 0) {
-      goulashPicks.splice(index, 1);
-      void board.lift(entry, false);
-      tickFor(entry);
-    } else if (goulashPicks.length < 3) {
-      goulashPicks.push(entry);
-      void board.lift(entry, true);
-      tickFor(entry);
-    }
-    const confirm = $("#goulash-confirm");
-    if (confirm) confirm.disabled = goulashPicks.length !== 3;
-    showGoulashPicked(goulashPicks.length);
+    press = { entry, goulash: true, x: event.clientX, y: event.clientY, dragging: false, id: event.pointerId };
+    renderer.domElement.setPointerCapture?.(event.pointerId);
     return;
   }
 
@@ -142,6 +151,16 @@ renderer.domElement.addEventListener("pointerleave", (event) => {
 renderer.domElement.addEventListener("pointermove", (event) => {
   if (event.pointerType !== "touch" && press === null) hover(event);
   if (press === null || event.pointerId !== press.id) return;
+  if (press.goulash) {
+    // Only a clearly sideways drag arranges; nothing is thrown in an exchange.
+    if (!press.dragging) {
+      const across = Math.abs(event.clientX - press.x);
+      if (across < SORT_SLOP || across <= Math.abs(event.clientY - press.y)) return;
+      press.dragging = true;
+    }
+    board.dragTo(press.entry, event, true);
+    return;
+  }
   if (!press.dragging) {
     if (Math.hypot(event.clientX - press.x, event.clientY - press.y) < DRAG_SLOP) return;
     press.dragging = true;
@@ -163,9 +182,14 @@ renderer.domElement.addEventListener("pointermove", (event) => {
 
 function endPress(event, cancelled) {
   if (press === null || event.pointerId !== press.id) return;
-  const { entry, wasSelected, dragging, armed, touch } = press;
+  const { entry, wasSelected, dragging, armed, touch, goulash } = press;
   press = null;
   renderer.domElement.releasePointerCapture?.(event.pointerId);
+  if (goulash) {
+    if (dragging) void board.settle();
+    else if (!cancelled && !state.busy) toggleGoulashPick(entry);
+    return;
+  }
   if (dragging) board.armThrow(entry, false);
   if (dragging && armed && !cancelled && legalDiscard(entry.key) !== null) {
     // Swiped up and let go: the tile is thrown onto the table.
