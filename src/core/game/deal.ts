@@ -70,6 +70,7 @@ export function dealHand(
   draft.lastDiscard = null;
   draft.claimWindow = null;
   draft.fishing = [];
+  delete draft.fishOffered;
   draft.ledger = [];
   draft.lastDraw = null;
   draft.result = null;

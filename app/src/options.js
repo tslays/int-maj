@@ -28,13 +28,14 @@ const HAND_SET_TEXT = {
 };
 
 function savedRules() {
-  const rules = { handSet: "all", goulashNoHalfLimit: true };
+  const rules = { handSet: "all", goulashNoHalfLimit: true, winNeedsFish: false };
   try {
     const saved = JSON.parse(storage()?.getItem(RULES_KEY) ?? "{}");
     if (HAND_SETS.includes(saved?.handSet)) rules.handSet = saved.handSet;
     // The first version of this option was a plain on/off switch.
     else if (saved?.companionHandsOnly === true) rules.handSet = "companion";
     if (typeof saved?.goulashNoHalfLimit === "boolean") rules.goulashNoHalfLimit = saved.goulashNoHalfLimit;
+    if (typeof saved?.winNeedsFish === "boolean") rules.winNeedsFish = saved.winNeedsFish;
   } catch {
     // Unreadable: start from the default.
   }
@@ -69,6 +70,7 @@ function showRules() {
   const inForce = state.payload?.houseRules?.handSet;
   $("#hand-set-pending").hidden = inForce === undefined || inForce === rules.handSet;
   $("#goulash-rule").setAttribute("aria-checked", String(rules.goulashNoHalfLimit));
+  $("#fish-rule").setAttribute("aria-checked", String(rules.winNeedsFish));
 }
 
 function showSound() {
@@ -207,6 +209,12 @@ export function installOptions({ newGame }) {
 
   $("#goulash-rule").addEventListener("click", () => {
     rules.goulashNoHalfLimit = !rules.goulashNoHalfLimit;
+    saveRules();
+    showRules();
+  });
+
+  $("#fish-rule").addEventListener("click", () => {
+    rules.winNeedsFish = !rules.winNeedsFish;
     saveRules();
     showRules();
   });

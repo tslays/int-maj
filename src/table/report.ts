@@ -74,7 +74,7 @@ export function buildReport(session: WebSession, info: ReportInfo): string {
     `Hand: ${session.state.handNumber} (${session.state.phase})`,
     `House rules: hand set ${houseRulesOf(session.state).handSet}, half-limit hands in a Goulash ${
       houseRulesOf(session.state).goulashNoHalfLimit ? "barred" : "allowed"
-    }`,
+    }, a win ${houseRulesOf(session.state).winNeedsFish ? "needs the fish shown" : "needs no announcement"}`,
     `Decisions: ${session.steps.length} (yours: ${session.humanSteps.length})`,
     `Note: ${note === "" ? "(none)" : note}`,
     "",

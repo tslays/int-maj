@@ -80,6 +80,31 @@ export function buildHand(
  */
 export const GOULASH_NO_HALF_LIMIT = "rule:goulash-no-half-limit";
 
+/**
+ * `WIN_NEEDS_FISH`: a player must have shown the fish to go out (tester
+ * report #118; owner ruling 2026-11-13). Neither book prints it: the
+ * Illustrated (p. 21) only names the fishing state, and the Companion (p. 55)
+ * asks for the fish only to claim a fishing score. Off by default.
+ */
+export const WIN_NEEDS_FISH = "rule:win-needs-fish";
+
+/** True when the table plays with the house rule `rule`. */
+export function hasRule(state: GameState, rule: string): boolean {
+  return state.excludedHands?.includes(rule) === true;
+}
+
+/**
+ * Whether the rules let this seat go out now. Under `WIN_NEEDS_FISH` a seat
+ * that was offered the announcement must have shown the fish; a seat never
+ * offered it (a hand complete or waiting straight from the deal or a Goulash)
+ * had no chance to, and may go out.
+ */
+export function mayGoOut(state: GameState, seat: Seat): boolean {
+  if (!hasRule(state, WIN_NEEDS_FISH)) return true;
+  if (state.fishing.some((entry) => entry.seat === seat)) return true;
+  return state.fishOffered?.includes(seat) !== true;
+}
+
 /** True for an `excludedHands` entry that is a house rule rather than a hand. */
 export function isRuleToken(entry: string): boolean {
   return entry.startsWith("rule:");
@@ -132,6 +157,7 @@ export function winsOnDiscard(state: GameState, seat: Seat, tile: string): boole
   const player = playerOf(state, seat);
   if (effectiveCount(player) !== 13) return false;
   if (countOf(player.hand, tile) >= 4) return false;
+  if (!mayGoOut(state, seat)) return false;
   const hand = buildHand(state, seat, { extra: tile, winningTile: tile, selfDrawn: false });
   return (
     hand !== null &&
@@ -143,6 +169,7 @@ export function winsOnDiscard(state: GameState, seat: Seat, tile: string): boole
 export function handIsComplete(state: GameState, seat: Seat, winningTile: string): ScoreResult | null {
   const player = playerOf(state, seat);
   if (effectiveCount(player) !== 14) return null;
+  if (!mayGoOut(state, seat)) return null;
   const hand = buildHand(state, seat, { winningTile, selfDrawn: true });
   if (hand === null) return null;
   const score = scoreHand(hand, {

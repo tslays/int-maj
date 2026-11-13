@@ -222,7 +222,7 @@ const TABS = [
       },
       {
         title: "Fishing",
-        text: "One tile from winning: announce it, or keep it to yourself. The tiles shown are the ones you wait on.",
+        text: "One tile from winning: announce it, or keep it to yourself. The tiles shown are the ones you wait on. A seat that announced shows a small fish on the middle console. With the house rule Announce fishing to win, only an announced hand may go out.",
         picture: () => row(act("Fishing", "claim", ["c3", "c6"]), act("Don't announce", "pass")),
       },
       {

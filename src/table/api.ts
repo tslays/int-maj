@@ -25,7 +25,8 @@
  *                             `{ houseRules }` when they are given
  *
  * `houseRules` is `{ handSet: "all" | "companion" | "companion-pictured",
- * goulashNoHalfLimit: boolean }` (each optional, defaulting to all and true); a hand keeps the rules
+ * goulashNoHalfLimit: boolean, winNeedsFish: boolean }` (each optional,
+ * defaulting to all, true and false); a hand keeps the rules
  * it was dealt with, so a change shows from the next deal.
  */
 
@@ -134,7 +135,11 @@ function optionalHouseRules(record: Record<string, unknown>): HouseRules | undef
   if (typeof goulashNoHalfLimit !== "boolean") {
     throw new ApiError(400, "houseRules.goulashNoHalfLimit must be true or false");
   }
-  return { handSet, goulashNoHalfLimit };
+  const winNeedsFish = rules.winNeedsFish ?? DEFAULT_HOUSE_RULES.winNeedsFish;
+  if (typeof winNeedsFish !== "boolean") {
+    throw new ApiError(400, "houseRules.winNeedsFish must be true or false");
+  }
+  return { handSet, goulashNoHalfLimit, winNeedsFish };
 }
 
 /** The public event log as text lines the client can append to its log. */

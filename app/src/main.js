@@ -36,6 +36,7 @@ const BEAT_AFTER_DRAW = 140;
 function refreshConsole(litView = state.payload.view) {
   const view = state.payload.view;
   const totals = scores();
+  const fishing = new Set(view.fishing.map((entry) => entry.seat));
   updateConsole({
     round: view.prevailingWind,
     hand: view.handNumber,
@@ -45,6 +46,8 @@ function refreshConsole(litView = state.payload.view) {
       wind: entry.wind,
       score: totals[entry.seat],
       dealer: entry.dealer,
+      // Shown the fish (#118): a small fish beside the wind for the rest of the hand.
+      fishing: fishing.has(entry.seat),
       turn: litView.phase !== "finished" && litView.turn === entry.seat,
     })),
   });
@@ -301,7 +304,9 @@ function showChoices({ chime = true } = {}) {
   const pass = legal.find((action) => action.type === "Pass");
   const reshuffle = legal.find((action) => action.type === "RequestReshuffle");
 
-  if (pass) bar.append(button(fishing ? "Don't announce" : "Pass", "pass", () => void act(pass)));
+  // Under the house rule "Announce fishing to win" keeping quiet gives up the win (#118): say so.
+  const quiet = state.payload.view.winNeedsFish ? "Stay quiet, no win" : "Don't announce";
+  if (pass) bar.append(button(fishing ? quiet : "Pass", "pass", () => void act(pass)));
   if (reshuffle) bar.append(button("Reshuffle", "pass", () => void act(reshuffle)));
   const sortTiles = (tiles) => [...tiles].sort((a, b) => tileOrder(a) - tileOrder(b));
   const chows = claims.filter((claim) => claim.kind === "chow");
