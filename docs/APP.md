@@ -26,6 +26,35 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   to the right as the wall in front of them is used up (the wall never
   slides). `test/app/layout.test.ts` proves no meld
   touches a wall, a hand, a discard or another player's melds.
+- `app/src/pile.js` is the other discard layout, the **centre pile** (Options,
+  Discards: Rows or Pile, a device preference `int-maj.discard-layout`,
+  `discard-layout.js`; #122). Every discard is thrown into one heap in the
+  middle: it meets the felt in the lane just inside the thrower's wall and
+  slides in a straight line at the pile, stopping just short of the first
+  tile it would touch (checked every 0.05 of a tile, so it never passes
+  through one); the tiles it crashes into are knocked on along the throw,
+  each until it meets another. Of a few seeded throws the one that ends
+  nearest the pile's middle is made, so the heap stays round; nothing shows
+  who threw a tile or when. It is deterministic from the hand's seed and the throw order
+  (`pond` in the payload, built by `pondOf` from the hand's events, with
+  claimed tiles marked `taken`: they leave the pile, the knocks they gave
+  stay), so a reload or a review board settles the same pile;
+  `createPile(seed).settle(pond)` reuses every earlier throw, so a new discard
+  costs one throw. The board places each seat's discards where the pile says
+  (`discardRest`), animates a throw as a hop well over the thrower's wall
+  that drops almost straight onto the felt one run (`PILE.RUN`, the last
+  stretch of the checked line) short of its place, then the slide in: the same flick every
+  time, slowed evenly by the felt's friction, meeting the pile while still
+  moving when its run is cut short (`flickIntoPile`); the knock comes as it
+  arrives; a claimed tile lifts off before it flies,
+  knocks the tiles it reaches as it arrives (`nudgePile`), turns the latest-discard plate
+  with its tile, hides the seat pads and frames the zoomed view on the pile.
+  With the pile the middle console is put away (`setConsoleShown`): each
+  seat's wind (coral for the dealer), score and fish move to a label on the
+  felt just inside its wall, glowing cyan on the seat whose turn it is, and
+  the round and wall count to a badge under the menu (`seat-labels.js`).
+  `test/app/pile.test.ts` proves no two pile tiles overlap, no slide passes
+  through a tile, and none reaches the walls, hands or melds.
 - The wall is broken and drawn as *Illustrated* pp. 18-19 and p. 62 show: the
   dice (`breakFor`) name the wall and the stack counted from its right-hand
   end; that stack is lifted off. The wall is one ring read from the open end
@@ -126,7 +155,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   "Show tips again" brings them back, review boards show none; and the
   welcome card before the first deal on a device, offering the guide, which
   a review board or a `?seed=` link skips), `options.js` (the
-  Options sheet: the Sound switch, the Large discards switch (phones only), the Pace choice, the Bot level, the house rules, and the Help and Report
+  Options sheet: the Sound switch, the Large discards switch (phones only), the Discards choice (Rows or Pile), the Pace choice, the Bot level, the house rules, and the Help and Report
   buttons) and `report.js` (report a problem). Modules that need the loop (`input`,
   `result`, `menu`) get its functions from `main.js` through an `installX`
   call, so imports never run in a circle.

@@ -234,6 +234,48 @@ export interface OutcomePayload {
   readonly gameOver: boolean;
 }
 
+export interface PondEntry {
+  readonly seat: Seat;
+  readonly tile: string;
+  readonly taken: boolean;
+}
+
+/**
+ * The hand's discards in throw order, from its events. A claim, or a win on
+ * a discard, takes the discard just thrown off the table; any draw, kong or
+ * reshuffle in between closes that chance (a win by robbing a kong takes a
+ * kong's tile, not a discard).
+ */
+export function pondOf(session: WebSession): PondEntry[] {
+  let pond: { seat: Seat; tile: string; taken: boolean }[] = [];
+  let open: number | null = null;
+  for (const event of session.events.slice(session.handStart.eventIndex)) {
+    switch (event.type) {
+      case "Discarded":
+        pond.push({ seat: event.seat, tile: event.tile, taken: false });
+        open = pond.length - 1;
+        break;
+      case "Claimed":
+      case "WinDeclared":
+        if (open !== null && event.from !== null && pond[open]!.seat === event.from) pond[open]!.taken = true;
+        open = null;
+        break;
+      case "Reshuffled":
+        pond = [];
+        open = null;
+        break;
+      case "Drew":
+      case "KongDeclared":
+      case "KongReplacementDrawn":
+        open = null;
+        break;
+      default:
+        break;
+    }
+  }
+  return pond;
+}
+
 export interface TableSeat {
   readonly seat: Seat;
   readonly wind: Wind;
@@ -255,6 +297,13 @@ export interface StatePayload {
   readonly wallRemaining: number;
   readonly ledger: readonly LedgerEntry[];
   readonly table: readonly TableSeat[];
+  /**
+   * This hand's discards in the order they were thrown, every seat's together
+   * (public: each was thrown face up). `taken` marks one claimed off the
+   * table. The centre pile (#122) settles from this; `table[].discards` stay
+   * each seat's own list.
+   */
+  readonly pond: readonly PondEntry[];
   /**
    * What is left of the wall. Counts only - the faces stay hidden: the live
    * wall (ordinary draws), the loose pair lifted at the break and, in the
@@ -504,6 +553,7 @@ export function statePayload(session: WebSession): StatePayload {
     wallRemaining: view.wallRemaining,
     ledger: view.ledger,
     table: tableFor(session.state, view),
+    pond: pondOf(session),
     wall: {
       remaining: view.wallRemaining,
       loose: session.state.wall.loose.length,
