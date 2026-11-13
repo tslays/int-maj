@@ -24,6 +24,7 @@ import { nearest, reachCache, type ReachCache } from "../patterns/reach.ts";
 import { PATTERNS } from "../patterns/table.ts";
 import { EDITORIAL_ROWS, EXAMPLES, SYNOPSIS } from "../patterns/reference.ts";
 import { TIER_POINTS, type HandPattern, type PageRefs, type Tier } from "../patterns/types.ts";
+import { isExcluded } from "../match.ts";
 import { situationFor } from "./bot.ts";
 import { completion, KEYS, MAX_MISSING, oddsFor, planGoals, type Goal, type Situation } from "./bot/plan.ts";
 import type { GameView } from "./view.ts";
@@ -136,7 +137,7 @@ function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { f
   const exact: { pattern: HandPattern; tier: Tier }[] = [];
   for (const pattern of PATTERNS) {
     const tier = concealed ? pattern.tier : pattern.exposedTier;
-    if (situation.excluded?.includes(pattern.id) === true) continue; // a house rule: never hinted
+    if (tier !== null && isExcluded(situation.excluded ?? [], pattern.id, tier)) continue; // a house rule: never hinted
     if (pattern.groups !== undefined && tier !== null && tier !== "calculate") exact.push({ pattern, tier });
   }
   const exactIds = new Set(exact.map((entry) => entry.pattern.id));
@@ -147,7 +148,7 @@ function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { f
     const pattern = PATTERN_BY_ID.get(goal.pattern);
     if (pattern === undefined) continue;
     const tier = concealed ? pattern.tier : pattern.exposedTier;
-    if (tier === null) continue;
+    if (tier === null || isExcluded(situation.excluded ?? [], pattern.id, tier)) continue;
 
     const need: string[] = [];
     let live = true;

@@ -8,7 +8,7 @@
  */
 
 import { createHand, type Hand, type Meld } from "../hand.ts";
-import { matchesAny } from "../match.ts";
+import { isExcluded, matchesAny, tierExclusion } from "../match.ts";
 import { DEFAULT_LIMIT, scoreHand, type ScoreResult } from "../score.ts";
 import { TIER_FISHING, TIER_POINTS, type Tier } from "../patterns/types.ts";
 import { isSuited, parseTile, PLAY_TILE_KEYS, suitTileKey, type PlayTile } from "../tiles.ts";
@@ -68,11 +68,41 @@ export function buildHand(
   }
 }
 
+/**
+ * House rules ride in `excludedHands` beside the hands a table leaves out, so
+ * a deal, a save and a replay carry them with no field of their own. Each is
+ * a token the engine reads here, never a pattern id.
+ *
+ * `GOULASH_NO_HALF_LIMIT`: "No half-limit hands are permitted during a
+ * Goulash" (C p. 55, interesting idea 5; RULES.md Part III §3.3). In a Goulash
+ * hand, whatever would score at half limit is left out, so it cannot win and
+ * is no fishing hand; a hand that is also another pattern scores as that.
+ */
+export const GOULASH_NO_HALF_LIMIT = "rule:goulash-no-half-limit";
+
+/** True for an `excludedHands` entry that is a house rule rather than a hand. */
+export function isRuleToken(entry: string): boolean {
+  return entry.startsWith("rule:");
+}
+
+/**
+ * What the engine leaves out of this hand: the hands the table plays without
+ * by id, and by tier what a house rule bars from it. Pass this, never
+ * `state.excludedHands` itself, to the matcher and the scorer.
+ */
+export function exclusionsOf(state: GameState): readonly string[] {
+  const listed = state.excludedHands ?? [];
+  if (!listed.some(isRuleToken)) return listed;
+  const hands = listed.filter((entry) => !isRuleToken(entry));
+  if (state.goulash === true && listed.includes(GOULASH_NO_HALF_LIMIT)) hands.push(tierExclusion("half"));
+  return hands;
+}
+
 /** Tournament/agreed special-hand filter (R105(7)-(8), R106). */
 export const ORDINARY_PATTERNS = new Set(["ordinary-mahjong", "chinese-ordinary"]);
 
-export function allowedPattern(state: GameState, patternId: string): boolean {
-  if (state.excludedHands?.includes(patternId) === true) return false;
+export function allowedPattern(state: GameState, patternId: string, tier: Tier): boolean {
+  if (isExcluded(exclusionsOf(state), patternId, tier)) return false;
   if (
     state.specialHands !== undefined &&
     !ORDINARY_PATTERNS.has(patternId) &&
@@ -105,7 +135,7 @@ export function winsOnDiscard(state: GameState, seat: Seat, tile: string): boole
   const hand = buildHand(state, seat, { extra: tile, winningTile: tile, selfDrawn: false });
   return (
     hand !== null &&
-    matchesAny(hand, (pattern) => allowedPattern(state, pattern.id))
+    matchesAny(hand, (pattern, tier) => allowedPattern(state, pattern.id, tier))
   );
 }
 
@@ -117,9 +147,9 @@ export function handIsComplete(state: GameState, seat: Seat, winningTile: string
   if (hand === null) return null;
   const score = scoreHand(hand, {
     limit: state.limit ?? DEFAULT_LIMIT,
-    excluded: state.excludedHands,
+    excluded: exclusionsOf(state),
   });
-  if (score.winning === null || !allowedPattern(state, score.winning.pattern.id)) return null;
+  if (score.winning === null || !allowedPattern(state, score.winning.pattern.id, score.winning.tier)) return null;
   return score;
 }
 
@@ -142,7 +172,7 @@ export function waitsOf(state: GameState, seat: Seat): string[] {
     const hand = buildHand(state, seat, { extra: key, selfDrawn: true });
     if (
       hand !== null &&
-      matchesAny(hand, (pattern) => allowedPattern(state, pattern.id))
+      matchesAny(hand, (pattern, tier) => allowedPattern(state, pattern.id, tier))
     ) {
       waits.push(key);
     }
@@ -181,7 +211,7 @@ export function fishingValueFor(
     if (hand === null) continue;
     const score = scoreHand(hand, {
       withoutMahJongBonus: true,
-      excluded: state.excludedHands,
+      excluded: exclusionsOf(state),
     });
     const winning = score.winning;
     if (winning === null) continue;

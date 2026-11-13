@@ -30,6 +30,7 @@
 
 import { createHand, type MeldInput } from "../../hand.ts";
 import { TIER_POINTS, type Tier } from "../../patterns/types.ts";
+import { isExcluded } from "../../match.ts";
 import { PATTERNS } from "../../patterns/table.ts";
 import { scoreHand } from "../../score.ts";
 import { PLAY_TILE_KEYS, type Wind } from "../../tiles.ts";
@@ -384,9 +385,9 @@ export function planGoals(situation: Situation): Goal[] {
   const goals: Goal[] = [];
 
   for (const target of specials()) {
-    if (situation.excluded?.includes(target.pattern) === true) continue;
     const tier = concealed ? target.tier : target.exposedTier;
     if (tier === null) continue;
+    if (isExcluded(situation.excluded ?? [], target.pattern, tier)) continue;
     const goal = goalFrom(
       target.counts,
       fixed,
