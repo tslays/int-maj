@@ -84,7 +84,7 @@ function indexFor(key) {
   if (/^[bco][1-9]$/.test(key)) return { text: key[1], colour: "#1d2a44" };
   if (key.startsWith("w")) return { text: key[1], colour: "#141414" };
   if (key.startsWith("f")) return { text: key[1], colour: "#a8322b" };
-  if (key.startsWith("s")) return { text: key[1], colour: "#1f4f8f" };
+  if (key.startsWith("s")) return { text: key[1], colour: "#004900" };
   return null;
 }
 
