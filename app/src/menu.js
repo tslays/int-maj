@@ -1,5 +1,5 @@
 /**
- * The menu: the Calls, Sort and Help buttons, and closing the help sheet (the
+ * The menu: the Calls and Sort buttons, and closing the help sheet (the
  * guide itself is `guide.js`). Sound, the house
  * rules, New game and the Help and Report buttons live in `options.js`.
  */
@@ -37,7 +37,6 @@ function closeHelp() {
   $("#help-sheet").hidden = true;
 }
 $("#help").addEventListener("click", openGuide);
-$("#menu-help").addEventListener("click", openGuide);
 $("#help-close").addEventListener("click", closeHelp);
 $("#help-sheet").addEventListener("click", (event) => {
   if (event.target === event.currentTarget) closeHelp();

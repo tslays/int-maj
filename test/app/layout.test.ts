@@ -44,6 +44,7 @@ interface Spot {
   x: number;
   z: number;
   level: number;
+  group: number;
 }
 
 describe("3D table discard layout", () => {
@@ -95,12 +96,16 @@ describe("3D table discard layout", () => {
 
   it("lays every seat's melds in its wall's lane, clear of walls, hands, discards and other melds", () => {
     // Groups as the table lays them: [bonus tiles?, melds...], with the hand that is left.
-    const hands: { groups: number[]; bonusFirst: boolean; hand: number }[] = [
+    const hands: { groups: number[]; bonusFirst: boolean; hand: number; fish?: boolean }[] = [
       { groups: [3], bonusFirst: false, hand: 10 },
       { groups: [2, 3], bonusFirst: true, hand: 10 },
       { groups: [3, 3], bonusFirst: false, hand: 7 },
       { groups: [4, 3, 3, 3], bonusFirst: true, hand: 4 },
       { groups: [8, 4, 4, 4, 4], bonusFirst: true, hand: 1 },
+      // With the pile a fishing bot's fish takes two more slots after its melds (never yours).
+      { groups: [3, 3, 3, 2], bonusFirst: false, hand: 4, fish: true },
+      // Every bonus tile and four pungs: a kong lies three tiles wide, so four kongs take no more room.
+      { groups: [8, 3, 3, 3, 3, 2], bonusFirst: true, hand: 1, fish: true },
     ];
     // The wall never slides: stacks vanish where they stand, so what is left
     // can be the right end, a run in the middle or the left end alone. The
@@ -117,13 +122,14 @@ describe("3D table discard layout", () => {
     ];
     for (const { name, slots } of standing) {
       const walls = slots.length === 0 ? 0 : Math.max(...slots) + 1;
-      for (const { groups, bonusFirst, hand } of hands) {
+      for (const { groups, bonusFirst, hand, fish } of hands) {
         if (walls === 18 && groups.length > 4) continue; // twelve tiles are never laid before any wall is drawn
         const label = `wall ${name}, groups ${groups.join("+")}`;
         const melds: { rel: number; rect: Rect }[] = [];
         const solid: { what: string; rect: Rect }[] = [];
         for (let rel = 0; rel < 4; rel++) {
-          for (const rect of meldRects(rel, groups, walls, hand, { bonusFirst })) melds.push({ rel, rect });
+          const laid = fish && rel === 0 ? groups.slice(0, -1) : groups;
+          for (const rect of meldRects(rel, laid, walls, hand, { bonusFirst })) melds.push({ rel, rect });
           for (const rect of wallRects(rel, slots)) solid.push({ what: `seat ${rel} wall`, rect });
           for (const rect of handRects(rel, hand)) solid.push({ what: `seat ${rel} hand`, rect });
         }
@@ -173,6 +179,21 @@ describe("3D table discard layout", () => {
     const plain = meldLayout([2, 3], 6, 10);
     assert.ok(withBonus.tiles[2]!.x - withBonus.tiles[1]!.x > plain.tiles[2]!.x - plain.tiles[1]!.x, "a wider space after the bonus tiles");
     assert.ok(meldLayout([3, 3, 3, 3], 6, 1).scale >= 0.85, "four pungs stay large");
+  });
+
+  it("gives a fishing bot's fish two more slots after its last meld, on the table", () => {
+    // With the pile, a bot that has shown its fish has it in its lane as a group of two.
+    for (const rel of [1, 2, 3]) {
+      for (const [groups, bonusFirst] of [[[2], false], [[3, 2], false], [[8, 4, 4, 4, 4, 2], true]] as const) {
+        const lane = meldLayout([...groups], 0, 1, { bonusFirst, rel, kongs: bonusFirst ? [1, 2, 3, 4] : [] });
+        const fish = lane.tiles.slice(-2);
+        assert.ok(fish.every((t: Spot) => t.group === groups.length - 1), "the fish is the lane's last group");
+        assert.ok(lane.tiles.slice(0, -2).every((t: Spot) => t.x < fish[0]!.x), "the fish lies after every meld");
+        const rect = meldRects(rel, [...groups], 0, 1, { bonusFirst, kongs: bonusFirst ? [1, 2, 3, 4] : [] }).at(-1)!;
+        const edge = TABLE.TABLE_HALF - 0.05;
+        assert.ok(Math.max(Math.abs(rect.minX), Math.abs(rect.maxX), Math.abs(rect.minZ), Math.abs(rect.maxZ)) <= edge, "the fish stays on the table");
+      }
+    }
   });
 
   it("lays a kong as a pung with the fourth tile on top of the middle one", () => {

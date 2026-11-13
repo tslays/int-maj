@@ -53,19 +53,17 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   arrives; a claimed tile lifts off before it flies,
   knocks the tiles it reaches as it arrives (`nudgePile`), turns the latest-discard plate
   with its tile, hides the seat pads and frames the zoomed view on the pile.
-  With the pile the middle console is put away (`setConsoleShown`): each
-  seat shows only its wind letter (coral for the dealer) and its fish, no
-  score, glowing cyan on the seat whose turn it is, and the round and wall
-  count go to a badge under the menu (`seat-labels.js`). Each letter has one
-  fixed place, so it never moves as tiles are thrown, claimed or drawn, only
-  with the camera: on top of its seat's wall, at the wall's dead centre
-  (`WALL_TOP_CENTRE` in layout.js, `labelAnchor` in board.js;
-  `label-place.js` centres it there). A label whose place is off the screen
-  (the zoomed view) is not shown.
+  With the pile the middle console is put away (`setConsoleShown`) and the
+  table carries no labels: a badge under the menu (`round-badge.js`) shows
+  four captioned figures in a 2×2 block no wider than the menu buttons, Round (the prevailing wind), Hand, You (your own
+  seat wind, coral when you deal, with a fish once you
+  have shown one) and Wall (tiles left). A bot that has shown its fish has
+  it in its claims lane, two tiles' room after its last meld, as a sprite
+  that faces the camera (`reconcileMelds` in board.js; review board
+  `?state=botfishing`).
   `test/app/pile.test.ts` proves no two pile tiles overlap, no slide passes
-  through a tile, none reaches the walls, hands, melds or label strips, and
-  the pile is round (half its tiles in the diagonals);
-  `test/app/label-place.test.ts` proves each label's place.
+  through a tile, none reaches the walls, hands or melds, and
+  the pile is round (half its tiles in the diagonals).
 - The wall is broken and drawn as *Illustrated* pp. 18-19 and p. 62 show: the
   dice (`breakFor`) name the wall and the stack counted from its right-hand
   end; that stack is lifted off. The wall is one ring read from the open end
@@ -106,7 +104,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   view changes at once. `test/app/view.test.ts` proves every discard is on
   screen and larger than in the table view.
 - The claims sheet (`app/src/claims.js`): a tap between a seat's wall and
-  the rail, near any of its laid-out tiles, or on its seat label opens a
+  the rail, or near any of its laid-out tiles, opens a
   sheet over the table with every seat's flowers and seasons, then its
   exposed melds in the order made, as large upright 2D faces, one row per
   seat (right, across, left, then you), the tapped seat's row lit in the turn
@@ -175,7 +173,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   sheet with the book's own sample hand, and the Hints toggle), `handbook.js`
   (the index of all hands), `result.js` (the result card and the final
   standings), `menu.js`
-  (the Calls, Sort and Help buttons and closing the help sheet), `guide.js`
+  (the Calls and Sort buttons and closing the help sheet), `guide.js`
   (Help: a guide in tabs - Basics, Your turn, Calls, Helpers, More - of short
   cards, each with a picture made of tile faces, copies of the game's buttons
   or a small sketch), `tips.js` (first-game tips: a note at the top of the
