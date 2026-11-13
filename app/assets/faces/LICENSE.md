@@ -34,23 +34,32 @@ tiles. `Haku.svg` is blank; the prototype draws the white dragon's frame.
 
 ## Flowers and seasons
 
-The upstream set has no flowers or seasons. `f1.svg`-`f4.svg` (plum, orchid,
-chrysanthemum, bamboo) and `s1.svg`-`s4.svg` (spring, summer, autumn, winter)
-are original faces drawn for this project by `scripts/art/bonus-faces.py`:
-small shaded paintings a player recognises without reading Chinese - a plum
-branch, a potted orchid, a chrysanthemum and a bamboo grove; a seedling with a
-butterfly, the sun, maple leaves and a snowflake. Each picture fills the face
-with no card behind it, inside a thin frame of its own colour (open at the
-number's corner), so a player still knows it by colour: pink plum, violet orchid,
-orange chrysanthemum, teal bamboo; green spring, yellow summer, red autumn,
-blue winter. They use
-gradients only (no SVG filters), so they paint the same onto the table's
-canvas in every browser. The table prints the number in the top-left corner,
-red for flowers and green for seasons, the colouring *The Game of Mah Jong
-Illustrated* calls usual (p. 9).
+The upstream set has no flowers or seasons. `f1.svg`-`f4.svg` and
+`s1.svg`-`s4.svg` are the traditional bonus tiles of a standard set, cut from
+**SVG Oblique illustrations of Mahjong tiles** by Wikimedia Commons user
+**Cangjie6**:
 
-Rerun the script to change the faces:
+- Source: <https://commons.wikimedia.org/wiki/Category:SVG_Oblique_illustrations_of_Mahjong_tiles>
+  (author: <https://commons.wikimedia.org/wiki/User:Cangjie6>), taken from the
+  copies in <https://github.com/vitaly4uk/mahjong> (`static/game/tiles/`),
+  which only strip the Adobe Illustrator metadata.
+- Licence: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+  These eight files, as derivatives, stay under CC BY-SA 4.0; each one names
+  its source and licence in a comment.
+- Vendored: 2026-11-13.
+- Modifications: the drawn tile body is removed (the 3D table models its own)
+  and the view box is cropped to the tile's front face, widened to 3:4 like
+  the other faces; unused styles, gradients and filters are dropped. The
+  artwork itself is unchanged.
+
+| Commons | Vendored | Tile |
+| --- | --- | --- |
+| `MJh5-.svg` … `MJh8-.svg` | `f1.svg` … `f4.svg` | flowers 梅 plum, 蘭 orchid, 菊 chrysanthemum, 竹 bamboo |
+| `MJh1-.svg` … `MJh4-.svg` | `s1.svg` … `s4.svg` | seasons 春 spring, 夏 summer, 秋 autumn, 冬 winter |
+
+Each face prints its own number and character, so the table adds no corner
+index to them. Rerun the cut with the source files in a folder:
 
 ```sh
-python3 scripts/art/bonus-faces.py app/assets/faces
+python3 scripts/art/bonus-faces.py SOURCE_DIR app/assets/faces
 ```

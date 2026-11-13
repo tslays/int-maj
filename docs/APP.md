@@ -74,9 +74,10 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   ends at the highest wall slot still standing; `test/app/layout.test.ts`
   pins the order and proves no meld touches a wall.
 - `app/src/tiles.js` models a tile: a rounded off-white front, a sky-blue
-  lacquered back, and the face printed on it with a small corner index. The
-  faces are the public-domain riichi set in `app/assets/faces/` (see its
-  `LICENSE.md`).
+  lacquered back, and the face printed on it with a small corner index
+  (suits and winds; flowers and seasons print their own number). The faces
+  are the public-domain riichi set plus Cangjie6's traditional flowers and
+  seasons (CC BY-SA 4.0) in `app/assets/faces/` (see its `LICENSE.md`).
 - `app/src/stage.js` holds the renderer, the felt, the centre console, the
   table camera (solved for any screen shape) and your hand's own long-lens
   pass, plus promise-based tweens with a timer fallback, so a hidden page
