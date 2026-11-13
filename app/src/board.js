@@ -620,6 +620,22 @@ export class Board {
     return work;
   }
 
+  /** The centre of every laid-out meld and bonus tile, in table space, with its seat's `rel` (for the claims tap). */
+  claimTiles() {
+    const found = [];
+    const at = new THREE.Vector3();
+    for (const seat of SEATS) {
+      const state = this.seats[seat];
+      if (state === undefined) continue;
+      const rel = this.rel(seat);
+      for (const tile of state.melds.children) {
+        tile.getWorldPosition(at);
+        found.push({ rel, x: at.x, z: at.z });
+      }
+    }
+    return found;
+  }
+
   /** Where a seat's newest meld lands, in table space: the end of its lane. */
   meldTarget(seat) {
     const state = this.seats[seat];

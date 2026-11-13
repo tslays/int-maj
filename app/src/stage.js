@@ -421,7 +421,7 @@ export function updateConsole(info) {
 
 /* --------------------------------------------------------- framing */
 
-export const viewport = { width: 1, height: 1, strip: 1 };
+export const viewport = { width: 1, height: 1, strip: 1, handTop: 1 };
 let handRowWidth = 15.5;
 
 /** The hand row's width in tile units; the hand camera keeps it in view. */
@@ -445,6 +445,7 @@ function fit() {
   viewport.width = width;
   viewport.height = height;
   viewport.strip = strip;
+  viewport.handTop = tileTop;
   const style = document.documentElement.style;
   style.setProperty("--strip", `${strip}px`);
   // Where the tops of the standing hand tiles are, so the decision buttons
@@ -533,16 +534,24 @@ const pondRay = new THREE.Raycaster();
 const feltPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
 /**
+ * Where a pointer event meets the felt, in table space, or null off it. With
+ * `strip` false, null over the hand strip too (its headroom included).
+ */
+export function feltPoint(event, { strip = false } = {}) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  if (!strip && rect.bottom - event.clientY <= viewport.strip) return null;
+  const pointer = new THREE.Vector2(((event.clientX - rect.left) / rect.width) * 2 - 1, 1 - ((event.clientY - rect.top) / rect.height) * 2);
+  pondRay.setFromCamera(pointer, tableCamera);
+  return pondRay.ray.intersectPlane(feltPlane, new THREE.Vector3());
+}
+
+/**
  * Whether a pointer event is a tap for the zoom: anywhere once zoomed, else
  * above the hand strip and inside the walls, where the ponds lie.
  */
 export function pondTap(event) {
   if (zoom.on) return true;
-  const rect = renderer.domElement.getBoundingClientRect();
-  if (rect.bottom - event.clientY <= viewport.strip) return false;
-  const pointer = new THREE.Vector2(((event.clientX - rect.left) / rect.width) * 2 - 1, 1 - ((event.clientY - rect.top) / rect.height) * 2);
-  pondRay.setFromCamera(pointer, tableCamera);
-  const hit = pondRay.ray.intersectPlane(feltPlane, new THREE.Vector3());
+  const hit = feltPoint(event);
   return hit !== null && Math.abs(hit.x) <= WALL_INNER && Math.abs(hit.z) <= WALL_INNER;
 }
 
