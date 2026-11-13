@@ -28,6 +28,10 @@ import { largeDiscards } from "./large-discards.js";
 const SEATS = ["E", "S", "W", "N"];
 const { WALL_STACKS, WALL_R, HAND_Z, DISCARD_SCALE } = TABLE;
 const GAP = 0.02;
+/* The pile's throw: the hop onto the felt, the slide into the pile, and when the slide reaches the tiles it knocks. */
+const PILE_HOP_MS = 170;
+const PILE_SLIDE_MS = 480;
+const PILE_KNOCK_MS = PILE_HOP_MS + PILE_SLIDE_MS * 0.55;
 
 /**
  * Lay a meld's tiles in a row; a kong is a pung with its fourth tile on top of
@@ -153,11 +157,11 @@ export class Board {
           return;
         }
         knocked = true;
-        // Knocked as the throw lands (its arc touches down at about 0.36 s).
+        // Knocked as the flicked tile slides in among them.
         const from = { x: tile.position.x, z: tile.position.z, yaw: tile.rotation.z };
         work.push(
-          new Promise((resolve) => setTimeout(resolve, pace.scale(330))).then(() =>
-            animate(260, (t) => {
+          new Promise((resolve) => setTimeout(resolve, pace.scale(PILE_KNOCK_MS))).then(() =>
+            animate(240, (t) => {
               const k = easeOutCubic(t);
               tile.position.x = from.x + (rest.position.x - from.x) * k;
               tile.position.z = from.z + (rest.position.z - from.z) * k;
@@ -167,7 +171,7 @@ export class Board {
         );
       });
     }
-    if (knocked) sound.cue("tick", { delay: pace.scale(0.36), pitch: 0.2 });
+    if (knocked) sound.cue("clack", { delay: pace.scale(PILE_KNOCK_MS / 1000), intensity: 0.35 });
     return work;
   }
 
@@ -410,30 +414,57 @@ export class Board {
     const from = new THREE.Vector3(fromX, 1.4, HAND_Z - (seat === this.me ? -0.5 : 0.8));
     tile.position.copy(from);
     tile.rotation.set(seat === this.me ? -0.35 : 0.2, 0, 0);
+    if (land !== null) return this.flickIntoPile(seat, item, from, rest);
     // The arc touches down at about 0.36 of its 0.4 s: that is when it clacks.
     sound.cue("clack", { delay: pace.scale(0.36), intensity: seat === this.me ? 1 : 0.85, ...this.ear(seat) });
     const startRotation = tile.rotation.clone();
-    // In the pile the throw touches down where it was aimed, then slides clear of the tiles there.
-    const touch = land === null ? rest.position.clone() : new THREE.Vector3(land.x, rest.position.y, land.z);
     return animate(400, (t) => {
       const k = easeOutCubic(t);
-      tile.position.lerpVectors(from, touch, k);
+      tile.position.lerpVectors(from, rest.position, k);
       tile.position.y += Math.sin(Math.PI * Math.min(1, t * 1.1)) * 1.4;
       tile.rotation.x = startRotation.x + (rest.rotation.x - startRotation.x) * easeInOutCubic(t);
       tile.rotation.z = startRotation.z + (rest.rotation.z - startRotation.z) * k;
-    }).then(() => {
-      if (land === null) return undefined;
-      const slide = { x: touch.x, z: touch.z };
-      return animate(180, (t) => {
-        const k = easeOutCubic(t);
-        tile.position.x = slide.x + (rest.position.x - slide.x) * k;
-        tile.position.z = slide.z + (rest.position.z - slide.z) * k;
-      });
     }).then(() => {
       const y = rest.position.y;
       return tween(tile.position, { y: y + 0.05 }, 60).then(() => tween(tile.position, { y }, 90));
     }).then(() => {
       // Only once the throw has landed and settled does its face layer appear.
+      if (seat !== this.me) this.addRoundLayer(item);
+    });
+  }
+
+  /**
+   * The centre pile's throw (#122): a short, low hop over the thrower's own
+   * wall onto the felt, then a flick along the table straight into the pile,
+   * spinning a little as it slows; the tiles it reaches are knocked as it
+   * arrives (`nudgePile`, timed by `PILE_KNOCK_MS`).
+   */
+  flickIntoPile(seat, item, from, rest) {
+    const tile = item.tile;
+    const y = rest.position.y;
+    // Where it meets the felt: just inside the thrower's wall, a little towards its place.
+    const touch = new THREE.Vector3(from.x * 0.5 + rest.position.x * 0.25, y, WALL_R - 1.5);
+    const startRotation = tile.rotation.clone();
+    const spin = rest.rotation.z + (rest.position.x >= touch.x ? -0.9 : 0.9);
+    sound.cue("clack", { delay: pace.scale(PILE_HOP_MS / 1000), intensity: seat === this.me ? 0.9 : 0.75, ...this.ear(seat) });
+    return animate(PILE_HOP_MS, (t) => {
+      tile.position.lerpVectors(from, touch, t);
+      tile.position.y = from.y + (y - from.y) * t + Math.sin(Math.PI * t) * 0.35;
+      tile.rotation.x = startRotation.x + (rest.rotation.x - startRotation.x) * easeOutCubic(t);
+      tile.rotation.z = startRotation.z + (spin - startRotation.z) * t;
+    }).then(() => {
+      sound.cue("tick", { pitch: 0.1, ...this.ear(seat) });
+      return animate(PILE_SLIDE_MS, (t) => {
+        // Fast off the flick, slowing on the felt; the spin dies away with it.
+        const k = 1 - Math.pow(1 - t, 2.4);
+        tile.position.x = touch.x + (rest.position.x - touch.x) * k;
+        tile.position.z = touch.z + (rest.position.z - touch.z) * k;
+        tile.position.y = y;
+        tile.rotation.z = spin + (rest.rotation.z - spin) * k;
+      });
+    }).then(() => {
+      tile.position.copy(rest.position);
+      tile.rotation.z = rest.rotation.z;
       if (seat !== this.me) this.addRoundLayer(item);
     });
   }
