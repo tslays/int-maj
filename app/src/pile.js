@@ -36,9 +36,15 @@ export const PILE = Object.freeze({
   /** No corner of a pile tile goes past this, just inside the walls. */
   OUTER: WALL_INNER - 0.08,
   /** Where a throw meets the felt, in the thrower's frame (z): the lane just inside its wall. */
-  START_Z: WALL_INNER - 0.95,
+  START_Z: WALL_INNER - 1.15,
   /** How finely a slide is checked: a moving tile never passes through another. */
   STEP: 0.05,
+  /**
+   * How far every throw slides on the felt before it stops: the same run each
+   * time, at the same speed, so throws keep one beat. It is the last stretch
+   * of the checked line (shorter only when the line itself is).
+   */
+  RUN: 2.2,
   /** How far a knocked tile moves, at most. */
   PUSH: 0.42,
   /** Clearance kept between tiles. */
@@ -142,8 +148,8 @@ function placed(pose) {
  * the hand. Returns one entry per pond entry, in order:
  * `{ x, z, angle, fromX, fromZ, live }`. `x`, `z`, `angle` are where the tile
  * finally lies once every later throw has knocked it; `fromX`, `fromZ` are
- * where its own throw met the felt and began its slide (a straight line to
- * where it stopped, clear of every tile then on the table); `live` is
+ * where its own throw met the felt and began its slide (a straight line,
+ * `RUN` long, to where it stopped, clear of every tile then on the table); `live` is
  * false for a taken tile (its pose is where it lay when it was claimed).
  */
 export function settlePile(pond, seed) {
@@ -232,7 +238,10 @@ function throwTile(entry, index, seed, before) {
     }
   }
 
-  const tile = { index, ...pose, fromX: start.x, fromZ: start.z };
+  // It touches the felt RUN short of where it stops, on the line it slid along.
+  const run = Math.min(PILE.RUN, dist(start, pose));
+  const back = run > 0 ? unitVector(pose, start) : { x: 0, z: 0 };
+  const tile = { index, ...pose, fromX: pose.x + back.x * run, fromZ: pose.z + back.z * run };
   if (!entry.taken) live.push(tile);
   return { live, tile };
 }

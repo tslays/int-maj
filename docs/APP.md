@@ -41,8 +41,10 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   stay), so a reload or a review board settles the same pile;
   `createPile(seed).settle(pond)` reuses every earlier throw, so a new discard
   costs one throw. The board places each seat's discards where the pile says
-  (`discardRest`), animates a throw as a short low hop over the thrower's
-  wall onto that lane and the checked slide into its place (`flickIntoPile`),
+  (`discardRest`), animates a throw as a hop well over the thrower's wall
+  that drops almost straight onto the felt one run (`PILE.RUN`, the last
+  stretch of the checked line) short of its place, then the slide in at one
+  constant speed (`flickIntoPile`); a claimed tile lifts off before it flies,
   knocks the tiles it reaches as it arrives (`nudgePile`), turns the latest-discard plate
   with its tile, hides the seat pads and frames the zoomed view on the pile.
   With the pile the middle console is put away (`setConsoleShown`): each

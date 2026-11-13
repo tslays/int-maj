@@ -134,7 +134,7 @@ describe("the centre pile", () => {
     }
   });
 
-  it("slides every throw on a straight line that passes through no tile", () => {
+  it("slides every throw one short run on a straight line that passes through no tile", () => {
     for (const seed of [2, 7, 11]) {
       const pond = pondFor(seed, 70);
       let before: Pose[] = [];
@@ -143,6 +143,7 @@ describe("the centre pile", () => {
         const after: Pose[] = pile.settle(pond.slice(0, n));
         const thrown = after[n - 1]!;
         const length = Math.hypot(thrown.x - thrown.fromX, thrown.z - thrown.fromZ);
+        assert.ok(length <= PILE.RUN + 1e-9, `hand ${seed}, throw ${n}: every slide is one run at most`);
         const steps = Math.max(1, Math.ceil(length / 0.04));
         for (let step = 0; step <= steps; step++) {
           const k = step / steps;

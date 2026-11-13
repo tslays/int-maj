@@ -15,7 +15,7 @@
 import * as THREE from "three";
 import { D, H, W, makeTile, roundedRect, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, TABLE } from "./tiles.js";
 import { discardSlot, latestPlate, LATEST_MARGIN, meldLayout, pondPad } from "./layout.js";
-import { createPile, pileReach } from "./pile.js";
+import { createPile, PILE, pileReach } from "./pile.js";
 import { discardLayout } from "./discard-layout.js";
 import { pace } from "./pace.js";
 import { sound } from "./sound.js";
@@ -29,9 +29,10 @@ const SEATS = ["E", "S", "W", "N"];
 const { WALL_STACKS, WALL_R, HAND_Z, DISCARD_SCALE } = TABLE;
 const GAP = 0.02;
 /* The pile's throw: the hop onto the felt, the slide into the pile, and when the slide reaches the tiles it knocks. */
-const PILE_HOP_MS = 170;
-const PILE_SLIDE_MS = 460;
-const PILE_KNOCK_MS = PILE_HOP_MS + PILE_SLIDE_MS * 0.97;
+const PILE_HOP_MS = 260;
+const PILE_HOP_APEX = 3.0; // well over a wall two tiles high
+const PILE_SLIDE_MS = 300; // the full run, at one speed
+const PILE_KNOCK_MS = PILE_HOP_MS + PILE_SLIDE_MS;
 
 /**
  * Lay a meld's tiles in a row; a kong is a pung with its fourth tile on top of
@@ -446,26 +447,31 @@ export class Board {
     const y = rest.position.y;
     const touch = new THREE.Vector3(land.x, y, land.z);
     const startRotation = tile.rotation.clone();
-    const spin = rest.rotation.z;
+    // Up and over the wall, then down almost straight onto its spot on the felt:
+    // it reaches the spot early and drops the last of the way, clipping nothing.
     sound.cue("clack", { delay: pace.scale(PILE_HOP_MS / 1000), intensity: seat === this.me ? 0.9 : 0.75, ...this.ear(seat) });
-    return animate(PILE_HOP_MS, (t) => {
-      tile.position.lerpVectors(from, touch, t);
-      tile.position.y = from.y + (y - from.y) * t + Math.sin(Math.PI * t) * 0.35;
-      tile.rotation.x = startRotation.x + (rest.rotation.x - startRotation.x) * easeOutCubic(t);
-      tile.rotation.z = startRotation.z + (spin - startRotation.z) * t;
-    }).then(() => {
-      sound.cue("tick", { pitch: 0.1, ...this.ear(seat) });
-      return animate(PILE_SLIDE_MS, (t) => {
-        // Fast off the flick, still moving when it crashes into the pile.
-        const k = 1 - Math.pow(1 - t, 1.6);
-        tile.position.x = touch.x + (rest.position.x - touch.x) * k;
-        tile.position.z = touch.z + (rest.position.z - touch.z) * k;
-        tile.position.y = y;
-        tile.rotation.z = rest.rotation.z;
+    const hop = animate(PILE_HOP_MS, (t) => {
+      // By the time it is low enough to touch a neighbour it is within a hair of its spot.
+      const k = 1 - Math.pow(1 - t, 4);
+      tile.position.x = from.x + (touch.x - from.x) * k;
+      tile.position.z = from.z + (touch.z - from.z) * k;
+      tile.position.y = (1 - t) * (1 - t) * from.y + 2 * (1 - t) * t * PILE_HOP_APEX + t * t * y;
+      tile.rotation.x = startRotation.x + (rest.rotation.x - startRotation.x) * k;
+      tile.rotation.z = startRotation.z + (rest.rotation.z - startRotation.z) * k;
+    });
+    // One speed for every slide; the run is the same length but for a throw stopped early.
+    const run = Math.hypot(rest.position.x - touch.x, rest.position.z - touch.z);
+    const slideMs = PILE_SLIDE_MS * Math.min(1, run / PILE.RUN);
+    return hop.then(() => {
+      tile.position.copy(touch);
+      tile.rotation.x = rest.rotation.x;
+      tile.rotation.z = rest.rotation.z;
+      return animate(slideMs, (t) => {
+        tile.position.x = touch.x + (rest.position.x - touch.x) * t;
+        tile.position.z = touch.z + (rest.position.z - touch.z) * t;
       });
     }).then(() => {
       tile.position.copy(rest.position);
-      tile.rotation.z = rest.rotation.z;
       if (seat !== this.me) this.addRoundLayer(item);
     });
   }
@@ -477,9 +483,10 @@ export class Board {
     const from = tile.position.clone();
     sound.cue("clack", { delay: pace.scale(0.33), intensity: 0.7, ...this.ear(claimer) });
     return animate(360, (t) => {
-      const k = easeInOutCubic(t);
+      // It lifts off before it travels, so it leaves the heap without brushing its neighbours.
+      const k = easeInOutCubic(Math.max(0, (t - 0.25) / 0.75));
       tile.position.lerpVectors(from, target, k);
-      tile.position.y += Math.sin(Math.PI * t) * 1.2;
+      tile.position.y += Math.sin(Math.PI * t) * 1.4;
       tile.scale.setScalar(DISCARD_SCALE * (1 - 0.3 * k));
     }).then(() => tile.removeFromParent());
   }
