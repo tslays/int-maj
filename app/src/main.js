@@ -69,6 +69,34 @@ async function callOut(seat, word, hold = 700) {
 
 let previousFishing = new Set();
 
+/** Tiles in `after` beyond those in `before`, one key per extra copy. */
+function addedKeys(before, after) {
+  const left = [...before];
+  const added = [];
+  for (const key of after) {
+    const at = left.indexOf(key);
+    if (at >= 0) left.splice(at, 1);
+    else added.push(key);
+  }
+  return added;
+}
+
+/**
+ * The tiles a Goulash exchange brought in stay marked (#119) until the next
+ * exchange replaces them or the first tile of the hand is thrown.
+ */
+function markReceivedTiles(before, next) {
+  const view = next.view;
+  const sameHand = before !== null && before.game === next.game && before.view.handNumber === view.handNumber;
+  if (!sameHand || next.table.some((seat) => seat.discards.length > 0)) {
+    board.clearReceived();
+    return;
+  }
+  if (before.view.phase !== "exchange") return;
+  const added = addedKeys(before.view.player.hand, view.player.hand);
+  if (added.length > 0) board.markReceived(added);
+}
+
 /** Hand an answer to the board; announce calls; wait for the animation. */
 async function apply(next, { animated = true, opening = false } = {}) {
   const before = state.payload;
@@ -81,6 +109,7 @@ async function apply(next, { animated = true, opening = false } = {}) {
   const calls = open ? await playOpening(next, { onSeated: () => refreshConsole() }) : await board.reconcile(next, { animated });
   refreshConsole();
   refreshGoulash();
+  markReceivedTiles(before, next);
   const announcements = [];
   for (const call of calls) {
     announcements.push(callOut(call.seat, CALL_WORD[call.kind] ?? call.kind));
@@ -361,6 +390,8 @@ window.mahjong = {
   state: () => state.payload,
   busy: () => state.busy,
   lifted: () => board.lifted?.key ?? null,
+  hand: () => board.hand.map((entry) => entry.key),
+  received: () => board.hand.filter((entry) => entry.received).map((entry) => entry.key),
   act: (action) => act(action),
   next: () => $("#result .result-next")?.click(),
   sound,

@@ -203,6 +203,24 @@ export function markTile(tile) {
   return frame;
 }
 
+/* Tiles just received in a Goulash exchange: a steady teal wash and ring,
+   unlike the breathing gold of a marked copy, so the two never read alike. */
+const receivedMaterial = new THREE.MeshBasicMaterial({ color: 0x2fd3c4, transparent: true, depthWrite: false, opacity: 0.95 });
+const receivedFillMaterial = new THREE.MeshBasicMaterial({ color: 0x2fd3c4, transparent: true, depthWrite: false, opacity: 0.22 });
+
+/** Mark a hand tile as just received (child named "received"). */
+export function markReceived(tile) {
+  const frame = new THREE.Group();
+  frame.name = "received";
+  const ring = new THREE.Mesh(markGeometry, receivedMaterial);
+  const fill = new THREE.Mesh(markFillGeometry, receivedFillMaterial);
+  fill.position.z = ring.position.z = D / 2 + 0.03;
+  fill.renderOrder = ring.renderOrder = 5;
+  frame.add(fill, ring);
+  tile.add(frame);
+  return frame;
+}
+
 /** A tile; `key` null is a tile seen only from the back. */
 export function makeTile(key, { shadows = true } = {}) {
   const tile = new THREE.Group();

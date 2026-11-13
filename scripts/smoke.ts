@@ -68,6 +68,8 @@ declare global {
       state(): Payload | null;
       busy(): boolean;
       lifted(): string | null;
+      hand(): string[];
+      received(): string[];
       act(action: unknown): Promise<void>;
       sound: { readonly samplesLoaded: number };
     };
@@ -132,6 +134,16 @@ const BOARD_CHECKS: Readonly<Record<ScenarioName, (payload: Payload, page: Page)
     // Three taps pick the tiles, the button passes them, and the second exchange is announced.
     const strip = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--strip")));
     assert.equal(await page.isDisabled("#goulash-confirm"), true, "nothing to pass before three tiles are picked");
+    // A sideways drag arranges the hand during the exchange and picks nothing (#119).
+    const y = VIEWPORT.height - strip / 2;
+    const order = await page.evaluate(() => window.mahjong!.hand());
+    await page.mouse.move(VIEWPORT.width / 2 - 200, y);
+    await page.mouse.down();
+    for (let step = 1; step <= 8; step++) await page.mouse.move(VIEWPORT.width / 2 - 200 + step * 30, y);
+    await page.mouse.up();
+    await page.waitForTimeout(300);
+    assert.notDeepEqual(await page.evaluate(() => window.mahjong!.hand()), order, "the drag moved a tile");
+    assert.match((await page.textContent("#goulash-count")) ?? "", /0 of 3 picked/, "a drag picks nothing");
     for (const offset of [-150, -30, 90]) {
       await page.touchscreen.tap(VIEWPORT.width / 2 + offset, VIEWPORT.height - strip / 2);
       await page.waitForTimeout(250);
@@ -143,6 +155,9 @@ const BOARD_CHECKS: Readonly<Record<ScenarioName, (payload: Payload, page: Page)
       timeout: READY_MS,
     });
     assert.match((await page.textContent("#goulash")) ?? "", /pass to South, on your right/);
+    // The tiles the first exchange brought in are marked (#119).
+    await page.waitForFunction(() => window.mahjong!.received().length > 0, null, { timeout: READY_MS });
+    assert.match((await page.textContent("#goulash")) ?? "", /The tiles you just received are marked in teal/);
   },
 };
 
