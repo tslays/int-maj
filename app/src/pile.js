@@ -16,8 +16,6 @@
  *     disc round the table's centre that widens as the pile grows (seeded
  *     picks, a seeded turn). Of a few such throws the one that ends nearest
  *     the centre is made, so the pile grows round, not in arms at the seats.
- *   - No tile comes to rest on a seat label's pad (layout.js `labelPad`):
- *     the label always shows on clear felt.
  *   - It stops just short of the first tile it would touch, checked every
  *     `STEP` along the way, so it never passes through one. The tiles it
  *     crashes into are knocked on along the throw, each until it meets
@@ -29,7 +27,7 @@
  * the viewer sits at +z). `rel` is the thrower's seat relative to the viewer.
  */
 
-import { H, labelPad, TABLE, W, WALL_INNER, toTable } from "./layout.js";
+import { H, TABLE, W, WALL_INNER, toTable } from "./layout.js";
 
 const S = TABLE.DISCARD_SCALE;
 const HALF_W = (W * S) / 2;
@@ -125,28 +123,6 @@ const REACH = 2 * Math.hypot(HALF_W, HALF_H) + PILE.GAP;
 
 function touches(a, b) {
   return Math.abs(a.x - b.x) < REACH && Math.abs(a.z - b.z) < REACH && polygonsOverlap(a.points, b.points, PILE.GAP);
-}
-
-/** The four seat labels' pads (layout.js), as polygons: no pile tile comes to rest on one. */
-const PADS = [0, 1, 2, 3].map((rel) => {
-  const pad = labelPad(rel);
-  return [
-    { x: pad.minX, z: pad.minZ },
-    { x: pad.maxX, z: pad.minZ },
-    { x: pad.maxX, z: pad.maxZ },
-    { x: pad.minX, z: pad.maxZ },
-  ];
-});
-
-/** True when the tile lies clear of every seat label's pad. */
-export function offLabels(pose) {
-  const points = pose.points ?? corners(pose);
-  return PADS.every((pad) => !polygonsOverlap(points, pad));
-}
-
-/** Where a tile may come to rest: inside the walls and off the labels' pads. */
-function restsWell(pose) {
-  return inPond(pose) && offLabels(pose);
 }
 
 function clear(pose, others, skip = null) {
@@ -255,7 +231,7 @@ function throwTile(entry, index, seed, before) {
       let moved = other;
       for (let travelled = PILE.STEP; travelled <= PILE.PUSH + 1e-9; travelled += PILE.STEP) {
         const next = placed({ x: other.x + best.along.x * travelled, z: other.z + best.along.z * travelled, angle: other.angle });
-        if (!restsWell(next) || touches(next, pose) || live.some((tile) => tile !== other && touches(next, tile))) break;
+        if (!inPond(next) || touches(next, pose) || live.some((tile) => tile !== other && touches(next, tile))) break;
         moved = next;
       }
       Object.assign(other, { x: moved.x, z: moved.z, points: moved.points });
@@ -277,7 +253,8 @@ function throwTile(entry, index, seed, before) {
  * would touch. Null when the lane has no clear spot.
  */
 function slideOf(entry, tag, angle, live) {
-  const lane = (unit(`${tag}|lane`) - 0.5) * 7;
+  // Anywhere along the thrower's wall, so throws come in from the corners too and fill the diagonals.
+  const lane = (unit(`${tag}|lane`) - 0.5) * 16;
   let start = null;
   for (const shift of [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8, 2.4, -2.4, 3, -3, 3.6, -3.6]) {
     const at = toTable(entry.rel, lane + shift, PILE.START_Z);
@@ -305,8 +282,6 @@ function slideOf(entry, tag, angle, live) {
     if (hit.length > 0) break;
     pose = next;
   }
-  // A slide that would stop on a label's pad is not a throw anyone makes.
-  if (!offLabels(pose)) return null;
   return { start, pose, hit, along };
 }
 
@@ -327,7 +302,7 @@ function nearestFree(aim, angle, live, facing) {
       const a = (k / tries) * Math.PI * 2;
       for (const turn of [angle, facing + Math.PI / 2]) {
         const candidate = placed({ x: aim.x + Math.cos(a) * radius, z: aim.z + Math.sin(a) * radius, angle: turn });
-        if (clear(candidate, live) && offLabels(candidate)) return candidate;
+        if (clear(candidate, live)) return candidate;
       }
     }
   }
@@ -336,7 +311,7 @@ function nearestFree(aim, angle, live, facing) {
     for (let x = -PILE.OUTER; x <= PILE.OUTER; x += 0.1) {
       for (const turn of [0, Math.PI / 2]) {
         const candidate = placed({ x, z, angle: turn });
-        if (clear(candidate, live) && offLabels(candidate)) return candidate;
+        if (clear(candidate, live)) return candidate;
       }
     }
   }

@@ -550,6 +550,8 @@ export const frame = fit;
 
 /** Where a table point appears on screen, in CSS pixels from the top left. */
 export function screenPoint(point) {
+  // The camera may have moved since the last frame was drawn (the pond zoom): project from where it is now.
+  tableCamera.updateMatrixWorld();
   const projected = point.clone().project(tableCamera);
   return {
     x: ((projected.x + 1) / 2) * viewport.width,

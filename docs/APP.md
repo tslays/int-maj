@@ -29,7 +29,8 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
 - `app/src/pile.js` is the other discard layout, the **centre pile** (Options,
   Discards: Rows or Pile, a device preference `int-maj.discard-layout`,
   `discard-layout.js`; #122). Every discard is thrown into one heap in the
-  middle: it meets the felt in the lane just inside the thrower's wall and
+  middle: it meets the felt in the lane just inside the thrower's wall
+  (anywhere along it, so throws come in from the corners too) and
   slides in a straight line at the pile, stopping just short of the first
   tile it would touch (checked every 0.05 of a tile, so it never passes
   through one); the tiles it crashes into are knocked on along the throw,
@@ -56,13 +57,20 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   seat's wind (coral for the dealer), score and fish move to a label on the
   felt just inside its wall, glowing cyan on the seat whose turn it is, and
   the round and wall count to a badge under the menu (`seat-labels.js`).
-  Each label is centred on a pad against its wall (`LABEL_PAD`, `labelPad`
-  in layout.js; the side seats stack theirs, wind over score, the far seat's
-  pad is the largest as the table is smallest there) and no pile tile comes
-  to rest on a pad (`offLabels`): a throw that would stop there is not made,
-  a knock stops at its edge. `test/app/pile.test.ts` proves no two pile tiles
-  overlap, no slide passes through a tile, none reaches the walls, hands,
-  melds or label pads, and the pile is round (half its tiles in the diagonals).
+  The felt inside the walls is the pile's, so a label never covers it:
+  labels keep their size on the screen while the table scales with screen,
+  camera and zoom, so each frame `label-place.js` moves each label from the
+  middle of its wall's inner face straight out, away from the table's
+  centre, until it clears the pile's whole box on the screen (`pileBox`, the
+  felt up to a lying tile's top): onto its wall and the backs of the hand
+  behind it. The side seats stand theirs on end (wind and fish over score),
+  so it reaches less far. A label whose wall is off the screen (the zoomed
+  view) is held on the screen and slides along its edge to the nearest place
+  clear of the pile's tiles (`pileTops`). `test/app/pile.test.ts` proves no
+  two pile tiles overlap, no slide passes through a tile, none reaches the
+  walls, hands or melds, and the pile is round (half its tiles in the
+  diagonals, none far out); `test/app/label-place.test.ts` proves a label
+  clears the felt, and the tiles when held on the screen.
 - The wall is broken and drawn as *Illustrated* pp. 18-19 and p. 62 show: the
   dice (`breakFor`) name the wall and the stack counted from its right-hand
   end; that stack is lifted off. The wall is one ring read from the open end

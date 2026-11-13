@@ -117,8 +117,14 @@ button {
   pointer-events: none;
   transition: box-shadow 220ms, border-color 220ms;
 }
-/* The seats to the sides stack their label, wind over score, so it runs into
-   the felt no further than the pad the pile keeps clear (layout.js LABEL_PAD). */
+.seat-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+/* The seats to the sides stand their label on end, wind (and fish) over
+   score: it lies over their wall and the backs of their hand, so the narrower
+   the better (label-place.js). */
 .seat-label[data-rel="1"],
 .seat-label[data-rel="3"] {
   flex-direction: column;

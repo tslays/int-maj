@@ -14,7 +14,7 @@
 
 import * as THREE from "three";
 import { D, H, W, makeTile, roundedRect, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, TABLE } from "./tiles.js";
-import { discardSlot, labelPad, latestPlate, LATEST_MARGIN, meldLayout, pondPad } from "./layout.js";
+import { discardSlot, latestPlate, LATEST_MARGIN, meldLayout, pondPad, WALL_INNER } from "./layout.js";
 import { createPile, PILE, pileReach } from "./pile.js";
 import { discardLayout } from "./discard-layout.js";
 import { pace } from "./pace.js";
@@ -30,6 +30,8 @@ const { WALL_STACKS, WALL_R, HAND_Z, DISCARD_SCALE } = TABLE;
 const GAP = 0.02;
 /* The pile's throw: the hop onto the felt, the slide into the pile, and when the slide reaches the tiles it knocks. */
 const PILE_HOP_MS = 260;
+/** How high a tile lying in the pile reaches: the seat labels keep off the box this tall (`pileBox`). */
+const PILE_TOP = D * DISCARD_SCALE + 0.05;
 const PILE_HOP_APEX = 3.0; // well over a wall two tiles high
 const PILE_SLIDE_MS = 420; // a full run, from the flick to a stop
 
@@ -234,10 +236,41 @@ export class Board {
     return this.frames[this.rel(seat)];
   }
 
-  /** Where a seat's label sits with the centre pile: on its pad against the inside of its wall, which the pile keeps clear (world space). */
+  /** Where a seat's label starts with the centre pile: the middle of its wall's inner face, a lying tile high (world space). */
   labelPoint(rel) {
-    const { centre } = labelPad(rel);
-    return this.frames[rel].localToWorld(new THREE.Vector3(centre.x, 0.5, centre.z));
+    return this.frames[rel].localToWorld(new THREE.Vector3(0, PILE_TOP, WALL_INNER));
+  }
+
+  /** Each pile tile's top, as its four corners (world space): a label kept over the felt avoids them. */
+  pileTops() {
+    if (this.pilePoses === null) return [];
+    const tops = [];
+    for (const [seat, poses] of this.pilePoses) {
+      poses.forEach((_, index) => {
+        const tile = this.seats[seat]?.discards[index]?.tile;
+        if (tile === undefined) return;
+        tile.updateWorldMatrix(true, false);
+        // Face up, a tile's own x and y run along the felt and its face is half its depth up.
+        tops.push([[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([u, v]) => tile.localToWorld(new THREE.Vector3((u * W) / 2, (v * H) / 2, D / 2))));
+      });
+    }
+    return tops;
+  }
+
+  /** The table's middle, on the felt (world space). */
+  tableCentre() {
+    return this.frames[0].localToWorld(new THREE.Vector3(0, 0, 0));
+  }
+
+  /** The box the pile can ever fill, the felt inside the walls up to a lying tile's top: its eight corners (world space). */
+  pileBox() {
+    const corners = [];
+    for (const x of [-WALL_INNER, WALL_INNER]) {
+      for (const z of [-WALL_INNER, WALL_INNER]) {
+        for (const y of [0, PILE_TOP]) corners.push(this.frames[0].localToWorld(new THREE.Vector3(x, y, z)));
+      }
+    }
+    return corners;
   }
 
   /** Where a seat sounds from: the side you hear it on, and how far off it is. */

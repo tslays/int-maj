@@ -28,6 +28,7 @@ import { hideTip, tipForChoices, welcome } from "./tips.js";
 import { ALL_FACES, initTiles, preloadFaces, tileOrder } from "./tiles.js";
 import { mountStage, onViewChange, renderer, requestRender, screenPoint, setConsoleShown, sleep, updateConsole, viewport } from "./stage.js";
 import { discardLayout } from "./discard-layout.js";
+import { convexHull } from "./label-place.js";
 import { hideSeatLabels, placeSeatLabels, showSeatLabels } from "./seat-labels.js";
 
 const CALL_WORD = { pung: "Pung", kong: "Kong", chow: "Chow", mahjong: "Mah Jong" };
@@ -56,15 +57,24 @@ function refreshConsole(litView = state.payload.view) {
   updateConsole(info);
   // The centre pile has the middle: the console goes, and its news moves to the seats' edges (#122).
   setConsoleShown(!discardLayout.pile);
-  if (discardLayout.pile) showSeatLabels(info, labelScreenPoint);
+  if (discardLayout.pile) showSeatLabels(info, labelScene);
   else hideSeatLabels();
 }
 
-const labelScreenPoint = (rel) => screenPoint(board.labelPoint(rel));
-onViewChange(() => placeSeatLabels(labelScreenPoint));
+/** The seat labels' scene on the screen: each wall's face, the table's middle, the pile's box. */
+function labelScene() {
+  return {
+    anchor: (rel) => screenPoint(board.labelPoint(rel)),
+    centre: screenPoint(board.tableCentre()),
+    hull: convexHull(board.pileBox().map(screenPoint)),
+    tiles: board.pileTops().map((corners) => corners.map(screenPoint)),
+    view: { width: viewport.width, height: viewport.height },
+  };
+}
+onViewChange(() => placeSeatLabels(labelScene));
 // The camera also swings (the pond zoom): the labels follow it frame by frame, with the pile only.
 function followLabels() {
-  if (discardLayout.pile) placeSeatLabels(labelScreenPoint);
+  if (discardLayout.pile) placeSeatLabels(labelScene);
   requestAnimationFrame(followLabels);
 }
 requestAnimationFrame(followLabels);
