@@ -57,19 +57,22 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   seat's wind (coral for the dealer), score and fish move to a label on the
   felt just inside its wall, glowing cyan on the seat whose turn it is, and
   the round and wall count to a badge under the menu (`seat-labels.js`).
-  The felt inside the walls is the pile's, so a label never covers it:
-  labels keep their size on the screen while the table scales with screen,
-  camera and zoom, so each frame `label-place.js` moves each label from the
-  middle of its wall's inner face straight out, away from the table's
-  centre, until it clears the pile's whole box on the screen (`pileBox`, the
-  felt up to a lying tile's top): onto its wall and the backs of the hand
-  behind it. A label whose wall is off the screen (the zoomed
-  view) is held on the screen and slides along its edge to the nearest place
-  clear of the pile's tiles (`pileTops`). `test/app/pile.test.ts` proves no
-  two pile tiles overlap, no slide passes through a tile, none reaches the
-  walls, hands or melds, and the pile is round (half its tiles in the
-  diagonals, none far out); `test/app/label-place.test.ts` proves a label
-  clears the felt, and the tiles when held on the screen.
+  A label may cover bare felt or the dead wall (the last seven stacks before
+  the break, where loose tiles and replacements come from), never a discard,
+  a claimed meld or bonus tile, a player's wall, your hand strip or a panel.
+  Labels keep their size on the screen while the table scales with screen,
+  camera and zoom, so their places are found on the screen, at once when the
+  camera moves and every tenth of a second as the table changes: the board
+  offers each seat's spots best first (`labelSpots`: on the felt on its side
+  of the pile, nearest the pond and its middle first, then out where its wall
+  stands), and `label-place.js` gives each label the first spot clear of
+  every obstacle (`labelObstacles`, projected to screen rectangles, plus the
+  panels) and of the labels placed before it, or on a packed table the one it
+  overlaps least. `test/app/pile.test.ts` proves no two pile tiles overlap,
+  no slide passes through a tile, none reaches the walls, hands or melds, and
+  the pile is round (half its tiles in the diagonals, none far out);
+  `test/app/label-place.test.ts` proves a label takes the nearest clear spot
+  and never covers what it must not while one is left.
 - The wall is broken and drawn as *Illustrated* pp. 18-19 and p. 62 show: the
   dice (`breakFor`) name the wall and the stack counted from its right-hand
   end; that stack is lifted off. The wall is one ring read from the open end

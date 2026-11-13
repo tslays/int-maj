@@ -6,13 +6,13 @@
  * in the console's cyan. The round and the tiles left in the wall go in a
  * badge under the menu.
  *
- * The felt inside the walls belongs to the pile, so a label never covers it:
- * `label-place.js` moves each one out from its wall's inner face until it is
- * clear of the pile's box on the screen. Plain DOM over the canvas; the
- * labels follow the camera frame by frame (the zoomed view too).
+ * A label never covers a discard, a claimed meld, a player's wall or a
+ * panel (`label-place.js` finds its spot, nearest the pond on its seat's
+ * side). Plain DOM over the canvas; the labels follow the camera (the
+ * zoomed view too) and the table as it changes.
  */
 
-import { placeLabel } from "./label-place.js";
+import { placeLabels } from "./label-place.js";
 import { $ } from "./shared.js";
 
 const WIND_WORD = { E: "East", S: "South", W: "West", N: "North" };
@@ -60,19 +60,24 @@ export function showSeatLabels(info, scene) {
 }
 
 /**
- * Follow the camera. `scene()` gives, in CSS pixels: `anchor(rel)`, the
- * middle of the seat's wall's inner face; `centre`, the table's middle;
- * `hull`, the corners of the box the pile can fill; `tiles`, each pile tile's
- * top as a polygon; `view`, the screen size.
+ * Put the labels where they cover nothing they must not (label-place.js).
+ * `scene()` gives, in CSS pixels: `spots(rel)`, the seat's spots on the
+ * screen best first; `obstacles`, the rectangles no label may cover; `view`,
+ * the screen's size. The viewer's label is placed first, then the seat
+ * across, then the sides.
  */
 export function placeSeatLabels(scene) {
   if (labels === null || labels.every((element) => element.hidden)) return;
-  const { anchor, centre, hull, tiles, view } = scene();
-  labels.forEach((element, rel) => {
-    if (element.hidden) return;
-    const at = placeLabel({ anchor: anchor(rel), centre, hull, tiles, width: element.offsetWidth, height: element.offsetHeight, view });
-    element.style.left = `${at.x}px`;
-    element.style.top = `${at.y}px`;
+  const { spots, obstacles, view } = scene();
+  const order = [0, 2, 1, 3].filter((rel) => !labels[rel].hidden);
+  const places = placeLabels({
+    labels: order.map((rel) => ({ width: labels[rel].offsetWidth, height: labels[rel].offsetHeight, candidates: spots(rel) })),
+    obstacles,
+    view,
+  });
+  order.forEach((rel, index) => {
+    labels[rel].style.left = `${places[index].x}px`;
+    labels[rel].style.top = `${places[index].y}px`;
   });
 }
 

@@ -26,10 +26,10 @@ import { $, board, faceChip, request, scores, state, storage, toast } from "./sh
 import { sound } from "./sound.js";
 import { hideTip, tipForChoices, welcome } from "./tips.js";
 import { ALL_FACES, initTiles, preloadFaces, tileOrder } from "./tiles.js";
-import { mountStage, onViewChange, renderer, requestRender, screenPoint, setConsoleShown, sleep, updateConsole, viewport } from "./stage.js";
+import { handStripTop, mountStage, onViewChange, renderer, requestRender, screenPoint, setConsoleShown, sleep, tableCamera, updateConsole, viewport } from "./stage.js";
 import { discardLayout } from "./discard-layout.js";
 import { openClaims, refreshClaims } from "./claims.js";
-import { convexHull } from "./label-place.js";
+import { boundsOf } from "./label-place.js";
 import { hideSeatLabels, placeSeatLabels, showSeatLabels } from "./seat-labels.js";
 
 const CALL_WORD = { pung: "Pung", kong: "Kong", chow: "Chow", mahjong: "Mah Jong" };
@@ -62,20 +62,38 @@ function refreshConsole(litView = state.payload.view) {
   else hideSeatLabels();
 }
 
-/** The seat labels' scene on the screen: each wall's face, the table's middle, the pile's box. */
+/** The screen's panels a seat label must not cover. */
+const LABEL_PANELS = ".menu > :not([hidden]), .corner > :not([hidden]), #actions > *, #goulash:not([hidden])";
+
+/** The seat labels' scene on the screen: each seat's spots, and everything no label may cover (seat-labels.js). */
 function labelScene() {
+  const obstacles = board.labelObstacles().map((corners) => boundsOf(corners.map(screenPoint)));
+  for (const element of document.querySelectorAll(LABEL_PANELS)) {
+    const rect = element.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) obstacles.push(rect);
+  }
+  // Your hand's strip along the bottom, as far as it shows (it slides away for the zoomed view).
+  obstacles.push({ left: 0, right: viewport.width, top: handStripTop(), bottom: viewport.height });
   return {
-    anchor: (rel) => screenPoint(board.labelPoint(rel)),
-    centre: screenPoint(board.tableCentre()),
-    hull: convexHull(board.pileBox().map(screenPoint)),
-    tiles: board.pileTops().map((corners) => corners.map(screenPoint)),
+    spots: (rel) => board.labelSpots(rel).map(screenPoint),
+    obstacles,
     view: { width: viewport.width, height: viewport.height },
   };
 }
 onViewChange(() => placeSeatLabels(labelScene));
-// The camera also swings (the pond zoom): the labels follow it frame by frame, with the pile only.
-function followLabels() {
-  if (discardLayout.pile) placeSeatLabels(labelScene);
+// The labels follow the camera frame by frame while it swings (the pond zoom),
+// and the table as it changes, looked at again every tenth of a second.
+let labelCamera = "";
+let labelAt = 0;
+function followLabels(now) {
+  if (discardLayout.pile) {
+    const camera = tableCamera.matrixWorld.elements.join(",");
+    if (camera !== labelCamera || now - labelAt > 100) {
+      labelCamera = camera;
+      labelAt = now;
+      placeSeatLabels(labelScene);
+    }
+  }
   requestAnimationFrame(followLabels);
 }
 requestAnimationFrame(followLabels);

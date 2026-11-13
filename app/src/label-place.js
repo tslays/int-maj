@@ -1,131 +1,87 @@
 /**
- * Where a seat label goes on the screen with the centre pile (#122): never
- * over the felt the pile can cover.
+ * Where the seat labels go on the screen with the centre pile (#122).
  *
- * The labels keep their size on the screen while the table grows and shrinks
- * with the screen, the camera and the pond zoom, so no patch of felt measured
- * in table units can be kept for them. Instead the board projects the box the
- * pile can ever fill (the felt inside the walls, up to a lying tile's height)
- * onto the screen, and each label starts at the middle of its seat's wall's
- * inner face and moves straight out from the table's centre until it is
- * clear of that box: onto its wall and the backs of the hand behind it. A
- * label that would leave the screen (a wall the zoomed view has cut off) is
- * kept on it, and then slides along the screen's edge to the nearest place
- * clear of the pile's tiles themselves (`tiles`, each one's top on the
- * screen): the round pile leaves the felt's corners open.
+ * A label may cover bare felt, the loose tiles' end of the wall (the dead
+ * wall) or an empty stretch where a wall stood, but never a discard, a
+ * claimed meld or bonus tile, a player's wall, the hand strip or one of the
+ * screen's panels. The labels keep their size on the screen while the table
+ * grows and shrinks with the screen and the pond zoom, so their places are
+ * found on the screen, every time the view or the table changes:
+ *
+ *   - the board offers each seat's spots, best first (`candidates`): on the
+ *     felt on the seat's side of the pile, nearest the pond and the seat's
+ *     middle first, then further out, then out where its wall stands;
+ *   - each label takes the first spot where it lies wholly on the screen and
+ *     clear of every `obstacle` (screen rectangles: the tiles it must never
+ *     cover, the panels) and of the labels placed before it;
+ *   - when no spot is clear (a packed table), the one it overlaps least.
  *
  * Plain numbers in CSS pixels, so `test/app/label-place.test.ts` needs no
  * browser.
  */
 
-/** Pixels kept between a label and the pile's box, and between a label and the screen's edge. */
-export const LABEL_GAP = 4;
-export const SCREEN_MARGIN = 4;
+/** Pixels kept between a label and what it must not cover, and the screen's edge. */
+export const LABEL_GAP = 3;
 
-/** The convex hull of `points` ({ x, y }), anticlockwise on the screen (monotone chain). */
-export function convexHull(points) {
-  const sorted = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
-  if (sorted.length < 3) return sorted;
-  const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
-  const half = (list) => {
-    const out = [];
-    for (const point of list) {
-      while (out.length >= 2 && cross(out[out.length - 2], out[out.length - 1], point) <= 0) out.pop();
-      out.push(point);
-    }
-    out.pop();
-    return out;
-  };
-  return [...half(sorted), ...half([...sorted].reverse())];
+/** A label of `width` x `height` centred on `at`, as a rectangle. */
+export function labelRect(at, width, height) {
+  return { left: at.x - width / 2, top: at.y - height / 2, right: at.x + width / 2, bottom: at.y + height / 2 };
 }
 
-function rectCorners(centre, width, height) {
-  const w = width / 2;
-  const h = height / 2;
-  return [
-    { x: centre.x - w, y: centre.y - h },
-    { x: centre.x + w, y: centre.y - h },
-    { x: centre.x + w, y: centre.y + h },
-    { x: centre.x - w, y: centre.y + h },
-  ];
+/** How many square pixels two rectangles share, with `gap` added round `a`. */
+export function overlapArea(a, b, gap = 0) {
+  const w = Math.min(a.right + gap, b.right) - Math.max(a.left - gap, b.left);
+  const h = Math.min(a.bottom + gap, b.bottom) - Math.max(a.top - gap, b.top);
+  return w > 0 && h > 0 ? w * h : 0;
 }
 
-function axes(polygon) {
-  return polygon.map((a, index) => {
-    const b = polygon[(index + 1) % polygon.length];
-    const length = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-    return { x: -(b.y - a.y) / length, y: (b.x - a.x) / length };
-  });
-}
-
-function span(points, axis) {
-  let min = Infinity;
-  let max = -Infinity;
+/** The screen rectangle round some projected points ({ x, y }). */
+export function boundsOf(points) {
+  let left = Infinity;
+  let top = Infinity;
+  let right = -Infinity;
+  let bottom = -Infinity;
   for (const point of points) {
-    const value = point.x * axis.x + point.y * axis.y;
-    min = Math.min(min, value);
-    max = Math.max(max, value);
+    left = Math.min(left, point.x);
+    right = Math.max(right, point.x);
+    top = Math.min(top, point.y);
+    bottom = Math.max(bottom, point.y);
   }
-  return { min, max };
-}
-
-/** True when the two convex polygons come within `gap` pixels of each other (separating axes). */
-export function screenOverlap(a, b, gap = 0) {
-  for (const axis of [...axes(a), ...axes(b)]) {
-    const p = span(a, axis);
-    const q = span(b, axis);
-    if (p.max + gap <= q.min || q.max + gap <= p.min) return false;
-  }
-  return true;
+  return { left, top, right, bottom };
 }
 
 /**
- * The centre of a `width` x `height` label: from `anchor` (its wall's inner
- * face) straight out, away from `centre` (the table's middle), until it is
- * clear of `hull` (the pile's box on the screen); then kept on a `view` of
- * `{ width, height }`. All in CSS pixels.
+ * Place every label. `labels` is a list of `{ width, height, candidates }`,
+ * `candidates` the label's screen spots best first; `obstacles` the screen
+ * rectangles no label may cover; `view` the screen's `{ width, height }`.
+ * Returns one `{ x, y, clear }` per label, its centre, in order.
  */
-export function placeLabel({ anchor, centre, hull, tiles = [], width, height, view }) {
-  let dx = anchor.x - centre.x;
-  let dy = anchor.y - centre.y;
-  const length = Math.hypot(dx, dy);
-  if (length < 1e-6) {
-    dx = 0;
-    dy = 1;
-  } else {
-    dx /= length;
-    dy /= length;
-  }
-  // Far enough to clear any box on the screen: past it, the label is surely clear.
-  const limit = Math.hypot(view.width, view.height) + width + height;
-  let at = anchor;
-  for (let travelled = 0; travelled <= limit; travelled += 1) {
-    at = { x: anchor.x + dx * travelled, y: anchor.y + dy * travelled };
-    if (!screenOverlap(rectCorners(at, width, height), hull, LABEL_GAP)) break;
-  }
-  const kept = keep(at, width, height, view);
-  if (Math.hypot(kept.x - at.x, kept.y - at.y) < 0.5) return kept;
-  // Kept on the screen, so over the felt: along the edge it was pushed against, the nearest
-  // place clear of every tile (or where it was kept, when there is none).
-  const clearOfTiles = (point) => {
-    const rect = rectCorners(point, width, height);
-    return tiles.every((tile) => !screenOverlap(rect, tile, LABEL_GAP));
-  };
-  if (clearOfTiles(kept)) return kept;
-  const along = Math.abs(kept.y - at.y) > Math.abs(kept.x - at.x) ? { x: 1, y: 0 } : { x: 0, y: 1 };
-  const reach = along.x !== 0 ? view.width : view.height;
-  for (let shift = 2; shift <= reach; shift += 2) {
-    for (const sign of [1, -1]) {
-      const moved = { x: kept.x + along.x * shift * sign, y: kept.y + along.y * shift * sign };
-      const held = keep(moved, width, height, view);
-      if (Math.hypot(held.x - moved.x, held.y - moved.y) < 0.5 && clearOfTiles(held)) return held;
+export function placeLabels({ labels, obstacles, view }) {
+  const taken = [];
+  return labels.map(({ width, height, candidates }) => {
+    let best = null;
+    for (const at of candidates) {
+      const rect = labelRect(at, width, height);
+      const onScreen =
+        rect.left >= LABEL_GAP && rect.top >= LABEL_GAP && rect.right <= view.width - LABEL_GAP && rect.bottom <= view.height - LABEL_GAP;
+      if (!onScreen) continue;
+      let cost = 0;
+      for (const other of taken) cost += overlapArea(rect, other, LABEL_GAP) * 4;
+      for (const obstacle of obstacles) {
+        cost += overlapArea(rect, obstacle, LABEL_GAP);
+        if (best !== null && cost >= best.cost) break;
+      }
+      if (best === null || cost < best.cost) best = { at, cost, rect };
+      if (cost === 0) break;
     }
-  }
-  return kept;
-}
-
-/** The label's centre, moved the least to keep the whole label on a `view` (CSS pixels). */
-function keep(at, width, height, view) {
-  const clamp = (value, half, size) => Math.min(Math.max(value, half + SCREEN_MARGIN), Math.max(half + SCREEN_MARGIN, size - half - SCREEN_MARGIN));
-  return { x: clamp(at.x, width / 2, view.width), y: clamp(at.y, height / 2, view.height) };
+    if (best === null) {
+      // No spot on the screen at all: the first, kept on the screen.
+      const at = candidates[0] ?? { x: view.width / 2, y: view.height / 2 };
+      const x = Math.min(Math.max(at.x, width / 2 + LABEL_GAP), view.width - width / 2 - LABEL_GAP);
+      const y = Math.min(Math.max(at.y, height / 2 + LABEL_GAP), view.height - height / 2 - LABEL_GAP);
+      best = { at: { x, y }, cost: Infinity, rect: labelRect({ x, y }, width, height) };
+    }
+    taken.push(best.rect);
+    return { x: best.at.x, y: best.at.y, clear: best.cost === 0 };
+  });
 }

@@ -507,6 +507,8 @@ export function setPondReach(extent) {
 }
 
 export const pondZoomed = () => zoom.on;
+/** Where your hand's strip begins on the screen, as far as it shows (it slides away as the view zooms). */
+export const handStripTop = () => viewport.height - viewport.strip * (1 - zoom.k);
 
 /** Swing to the top-down view of the ponds, or back to the table. */
 export function setPondZoom(on) {
