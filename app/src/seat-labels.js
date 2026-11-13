@@ -6,13 +6,14 @@
  * in the console's cyan. The round and the tiles left in the wall go in a
  * badge under the menu.
  *
- * A label never covers a discard, a claimed meld, a player's wall or a
- * panel (`label-place.js` finds its spot, nearest the pond on its seat's
- * side). Plain DOM over the canvas; the labels follow the camera (the
- * zoomed view too) and the table as it changes.
+ * Each label has one fixed place against the inside of its wall, on a strip
+ * of felt the pile keeps clear (layout.js `labelPad`); the seats to the sides
+ * turn theirs on end, along their wall. Plain DOM over the canvas; the labels
+ * follow the camera (the zoomed view too), and nothing else moves them.
  */
 
-import { placeLabels } from "./label-place.js";
+import { placeLabel } from "./label-place.js";
+import { labelPad } from "./layout.js";
 import { $ } from "./shared.js";
 
 const WIND_WORD = { E: "East", S: "South", W: "West", N: "North" };
@@ -60,24 +61,28 @@ export function showSeatLabels(info, scene) {
 }
 
 /**
- * Put the labels where they cover nothing they must not (label-place.js).
- * `scene()` gives, in CSS pixels: `spots(rel)`, the seat's spots on the
- * screen best first; `obstacles`, the rectangles no label may cover; `view`,
- * the screen's size. The viewer's label is placed first, then the seat
- * across, then the sides.
+ * Put each label in its fixed place (label-place.js). `scene()` gives, in CSS
+ * pixels: `anchor(rel)`, the middle of the seat's wall's inner face on the
+ * screen; `centre`, the table's middle; `view`, the screen's size. Only the
+ * camera moves them.
  */
 export function placeSeatLabels(scene) {
   if (labels === null || labels.every((element) => element.hidden)) return;
-  const { spots, obstacles, view } = scene();
-  const order = [0, 2, 1, 3].filter((rel) => !labels[rel].hidden);
-  const places = placeLabels({
-    labels: order.map((rel) => ({ width: labels[rel].offsetWidth, height: labels[rel].offsetHeight, candidates: spots(rel) })),
-    obstacles,
-    view,
-  });
-  order.forEach((rel, index) => {
-    labels[rel].style.left = `${places[index].x}px`;
-    labels[rel].style.top = `${places[index].y}px`;
+  const { anchor, centre, view } = scene();
+  labels.forEach((element, rel) => {
+    if (element.hidden) return;
+    const at = placeLabel({
+      anchor: anchor(rel),
+      centre,
+      width: element.offsetWidth,
+      height: element.offsetHeight,
+      turned: rel % 2 === 1,
+      over: labelPad(rel).OVER,
+      view,
+    });
+    element.style.left = `${at.x}px`;
+    element.style.top = `${at.y}px`;
+    element.classList.toggle("off-screen", !at.shown);
   });
 }
 
