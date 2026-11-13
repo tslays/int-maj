@@ -6,6 +6,7 @@ import { houseRules } from "./options.js";
 import { bookPages } from "./pages.js";
 import { explainSettlement } from "./settlement.js";
 import { sound } from "./sound.js";
+import { showTip } from "./tips.js";
 import { rankSeats, winnerLine } from "./standings.js";
 import { tileOrder } from "./tiles.js";
 import { $, WIND_NAME, board, companionRules, faceChip, request, scores, seatName, state, storage, toast } from "./shared.js";
@@ -39,6 +40,7 @@ export async function showOutcome() {
     await callOut(state.payload.view.dealer, "Drawn", 900);
   }
   renderOutcome(outcome);
+  showTip("result", "Tap a seat to see who paid what, and why.", "The result");
 }
 
 function renderOutcome(outcome) {

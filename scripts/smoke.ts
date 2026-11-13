@@ -394,6 +394,11 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.waitForSelector("#options-sheet:not([hidden])", { timeout: 5000 });
   await page.click("#help");
   await page.waitForSelector("#help-sheet:not([hidden])", { timeout: 5000 });
+  // The guide: tabs of cards, each tab its own cards.
+  await page.waitForSelector("#guide-body .guide-card-item", { timeout: 5000 });
+  await page.click(".guide-tab:nth-child(3)");
+  const callsTab = await page.textContent("#guide-body");
+  if (!callsTab?.includes("Mah Jong")) throw new Error("the guide's Calls tab did not open");
   await page.click("#help-close");
   await page.waitForSelector("#help-sheet", { state: "hidden", timeout: 5000 });
   // Pace is a device preference that takes effect at once.
