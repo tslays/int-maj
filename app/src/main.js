@@ -24,6 +24,7 @@ import "./report.js";
 import { installResult, showOutcome } from "./result.js";
 import { $, board, faceChip, request, scores, state, storage, toast } from "./shared.js";
 import { sound } from "./sound.js";
+import { hideTip, tipForChoices, welcome } from "./tips.js";
 import { ALL_FACES, initTiles, preloadFaces, tileOrder } from "./tiles.js";
 import { mountStage, renderer, requestRender, screenPoint, sleep, updateConsole, viewport } from "./stage.js";
 
@@ -192,6 +193,7 @@ async function act(action) {
 
 function hideChoices() {
   $("#actions").replaceChildren();
+  hideTip();
 }
 
 function button(label, kind, onClick, tiles = []) {
@@ -248,6 +250,7 @@ function showChoices({ chime = true } = {}) {
   if (legal.some((action) => action.type === "GoulashExchange")) {
     resetGoulash();
     refreshGoulash();
+    tipForChoices(legal, { callsOff: state.callsOff });
     const confirm = button("Pass 3 tiles", "claim", () => {
       const keys = goulashKeys().sort();
       const action = legal.find(
@@ -282,6 +285,7 @@ function showChoices({ chime = true } = {}) {
   if (fishing) bar.append(button("Fishing", "claim", () => void act(fishing), fishing.wait.slice(0, 4)));
   const win = wins[0] ?? mahjongClaim;
   if (win) bar.append(button("Mah Jong", "win", () => void act(win)));
+  tipForChoices(legal, { callsOff: state.callsOff });
 }
 
 /** `?seed=` pins the first game's seed (tests and bug reports); the next new game is random again. */
@@ -347,6 +351,7 @@ async function boot() {
     void run();
     return;
   }
+  await welcome();
   await newGame();
 }
 

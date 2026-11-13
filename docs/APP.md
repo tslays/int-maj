@@ -117,7 +117,15 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   sheet with the book's own sample hand, and the Hints toggle), `handbook.js`
   (the index of all hands), `result.js` (the result card and the final
   standings), `menu.js`
-  (the Calls, Sort, New game buttons and the help sheet), `options.js` (the
+  (the Calls, Sort and Help buttons and closing the help sheet), `guide.js`
+  (Help: a guide in tabs - Basics, Your turn, Calls, Helpers, More - of short
+  cards, each with a picture made of tile faces, copies of the game's buttons
+  or a small sketch), `tips.js` (first-game tips: a note at the top of the
+  table the first time each kind of decision comes up, and after the first
+  result; each shows once per device, "No more tips" stops them, the guide's
+  "Show tips again" brings them back, review boards show none; and the
+  welcome card before the first deal on a device, offering the guide, which
+  a review board or a `?seed=` link skips), `options.js` (the
   Options sheet: the Sound switch, the Large discards switch (phones only), the Pace choice, the Bot level, the house rules, and the Help and Report
   buttons) and `report.js` (report a problem). Modules that need the loop (`input`,
   `result`, `menu`) get its functions from `main.js` through an `installX`

@@ -80,6 +80,7 @@
       <button class="ghost on" id="sort" type="button" aria-pressed="true"><span>Sort</span></button>
       <button class="ghost on" id="hints" type="button" aria-pressed="true"><span>Hints</span></button>
       <button class="ghost" id="options" type="button"><span>Options</span></button>
+      <button class="ghost" id="menu-help" type="button"><span>Help</span></button>
       <small class="build-label" id="build-label"></small>
     </nav>
     <script type="module">
@@ -196,127 +197,13 @@
       </div>
     </div>
     <div class="hand-detail" id="help-sheet" hidden>
-      <div class="detail-card help-card" role="dialog" aria-modal="true" aria-label="How to use the app">
-        <button class="detail-close" id="help-close" type="button" aria-label="Close">&times;</button>
-        <h2>How to use the app</h2>
-        <p class="help-intro">
-          You play international mahjong against three bots, offline on this device. This sheet is about the
-          app; the rules are in the book.
-        </p>
-        <div class="detail-line">
-          <h3>The table</h3>
-          <ul>
-            <li>You sit at the bottom, your hand along the lower edge. The bots sit left, across and right.</li>
-            <li>
-              The panel in the centre shows the round and hand (for example East 2), the tiles left in the wall,
-              and every seat's wind and score. The dealer's wind is coral, and a soft light marks whose turn it
-              is.
-            </li>
-            <li>
-              Each seat's discards lie in front of it; the newest one rests on a light plate. Melds and bonus
-              tiles sit beside each wall.
-            </li>
-            <li>
-              <b>Study the discards:</b> tap the middle of the table to see them large, from above. Tap anywhere
-              to go back. It works while the bots play too.
-            </li>
-          </ul>
-        </div>
-        <div class="detail-line">
-          <h3>Your turn: discarding</h3>
-          <ul>
-            <li>Tap a tile to lift it, tap it again to throw it. Or hold it and swipe up, then let go; slide back down to cancel.</li>
-            <li>With a tile lifted, tapping another moves the lift, so you can compare. Tap empty table to put it down.</li>
-            <li>With a mouse, the tile under the pointer lifts by itself and one click throws it.</li>
-            <li>To arrange your hand yourself, drag a tile sideways, at any time (even while the bots play); it trades places with the tiles it passes. That turns <b>Sort</b> off. Throwing a tile is only possible on your turn.</li>
-          </ul>
-        </div>
-        <div class="detail-line">
-          <h3>The buttons above your hand</h3>
-          <p>They appear only when the game offers you the choice, with a chime. Draws, and discards you cannot claim, happen by themselves.</p>
-          <ul>
-            <li><b>Pung</b>, <b>Chow</b>: take the discard shown at the left of the bar. With several possible chows, tap Chow, then the run you want (<b>Back</b> returns).</li>
-            <li><b>Kong</b>: declare a kong from your own tiles.</li>
-            <li><b>Mah Jong</b>: declare your winning hand, from the wall or on a discard.</li>
-            <li><b>Fishing</b>: announce that you are one tile from winning; the tiles shown are the ones you wait on. <b>Don't announce</b> keeps it to yourself.</li>
-            <li><b>Pass</b>: decline the discard.</li>
-            <li><b>Reshuffle</b>: on your first turn, when the deal gives you nothing to build on, ask for a new deal.</li>
-            <li><b>Pass 3 tiles</b>: in a Goulash, tap three tiles to pass to the seat named on the banner, then confirm.</li>
-          </ul>
-        </div>
-        <div class="detail-line">
-          <h3>Menu</h3>
-          <ul>
-            <li><b>Calls</b>: lit, you are asked about every discard you could claim. Off, you are not asked about Pung, Chow or Kong, which cuts the pauses. You are still asked about Mah Jong.</li>
-            <li><b>Sort</b>: lit, the game keeps your hand in order. After you have rearranged it by hand, tap it to sort again.</li>
-            <li><b>Hints</b>: show or hide the Closest hands panel.</li>
-            <li><b>Options</b>: opens a sheet in three groups. <b>Play</b>: <b>Bot level</b> (how well the bots play: Easy, Medium or Hard, Medium to start with; Easy bots chase fewer special hands, call almost any discard, never play safe and often throw a useful tile; a change takes effect with their next move), <b>Pace</b> (how quickly the bots play and the tiles move: Slower, Normal or Faster) and <b>Dice and dealing</b> (Show or Skip the throw for East, the break of the wall and the deal at the start of a hand; a tap skips it too). <b>Table</b>: the <b>Sound</b> switch (on iPhone the silent switch also mutes it) and, on a phone, <b>Large discards</b> (the tiles thrown this round show a face twice the size until you throw; on to start with). <b>House rules</b>: which hands are in play (All, Companion or Companion pictured, below). Under the groups: <b>New game</b> (start again from the first hand; it asks first, as the game in progress and its scores end), <b>Install app</b> (in a phone's browser), <b>Help</b>, this sheet, and <b>Report a problem</b> (below). The small label under the menu is the build you are playing.</li>
-          </ul>
-          <p>A lit button is on. Hints, Sound, Large discards, Pace, Bot level, Dice and dealing and the house rules are remembered on this device.</p>
-        </div>
-        <div class="detail-line">
-          <h3>Closest hands</h3>
-          <p>
-            The panel at the top right lists up to three hands your tiles are nearest to: its name, then how it
-            is played in the book's own word (Concealed: calling a discard rules it out; Exposed: exposed melds
-            are fine), how many tiles you still need and its value. It updates as
-            your tiles change. Tap a row for the hand's sheet: the book's sample hand, what it is, what it
-            pays and the tiles you still need. Tap the first chip on a sheet ("Concealed") for what it
-            means, and the pin at its top right to keep the hand in the panel.
-          </p>
-        </div>
-        <div class="detail-line">
-          <h3>All hands</h3>
-          <p>
-            The button above that panel opens a list of every hand in play, even with Hints off. With all hands in play that is every hand in both books. Search
-            by name or tiles ("dragon pairs", "1-9"), or filter by kind, value, concealed or exposed play and
-            book. During a hand each card says how many tiles you are away, and <b>Order</b> can put the
-            nearest first. Tap a card for its sheet. The cross, a tap outside or Escape closes a sheet.
-          </p>
-        </div>
-        <div class="detail-line">
-          <h3>After a hand</h3>
-          <p>
-            The result card names the winning hand and what it scored, or says the hand was drawn. Each seat
-            shows its change in green or red and its new total; tap a seat to see who paid what, and why.
-            <b>Next hand</b> deals again; the small <b>Play this hand again</b> link under it deals the same
-            hand from the start, with the same tiles, to try other hands or another line of play (your scores
-            from before the hand are kept). After the last hand, <b>Final standings</b> ranks the seats, and
-            <b>New game</b> starts over.
-          </p>
-        </div>
-        <div class="detail-line">
-          <h3>House rules</h3>
-          <p>
-            Options has the table's house rules, such as which hands are in play: all of them, only the
-            Companion's, or only the Companion's that come with a sample picture. A change never touches
-            the hand being played: it takes effect with the next hand, for you and for the other players alike.
-          </p>
-        </div>
-        <div class="detail-line">
-          <h3>Saving</h3>
-          <p>
-            The game saves after every move, on this device only, and picks up where you left off, also after a
-            reload. If an update changes the game, the hand starts again with your scores kept.
-          </p>
-        </div>
-        <div class="detail-line">
-          <h3>Install on your phone</h3>
-          <p>
-            Play with the phone on its side. If it will not turn, switch off its orientation lock (iPhone:
-            Control Center; Android: Auto-rotate in Quick Settings). To install: on iPhone tap Share, then Add
-            to Home Screen; on Android open the browser menu, then Add to Home screen. <b>Install app</b> at the
-            foot of <b>Options</b> shows the steps for your phone. Installed, it runs full screen and offline.
-          </p>
-        </div>
-        <div class="detail-line" id="help-report">
-          <h3>Report a problem</h3>
-          <p>
-            Open <b>Options</b>, tap <b>Report a problem</b>, add a line about what you saw if you like, and tap <b>Send</b>. It goes to the
-            developers with the build, your device and every move of this game, so the hand can be replayed. No
-            name or account. Without a connection, <b>Share it instead</b> sends it as a message.
-          </p>
-        </div>
+      <div class="detail-card guide-card" role="dialog" aria-modal="true" aria-label="Guide">
+        <header class="guide-head">
+          <h2>Guide</h2>
+          <nav class="guide-tabs" id="guide-tabs" role="tablist" aria-label="Guide topics"></nav>
+          <button class="detail-close" id="help-close" type="button" aria-label="Close">&times;</button>
+        </header>
+        <div class="guide-body" id="guide-body" role="tabpanel"></div>
       </div>
     </div>
     <div class="hand-detail" id="install-sheet" hidden>
