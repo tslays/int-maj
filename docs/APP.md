@@ -43,8 +43,10 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   costs one throw. The board places each seat's discards where the pile says
   (`discardRest`), animates a throw as a hop well over the thrower's wall
   that drops almost straight onto the felt one run (`PILE.RUN`, the last
-  stretch of the checked line) short of its place, then the slide in at one
-  constant speed (`flickIntoPile`); a claimed tile lifts off before it flies,
+  stretch of the checked line) short of its place, then the slide in: the same flick every
+  time, slowed evenly by the felt's friction, meeting the pile while still
+  moving when its run is cut short (`flickIntoPile`); the knock comes as it
+  arrives; a claimed tile lifts off before it flies,
   knocks the tiles it reaches as it arrives (`nudgePile`), turns the latest-discard plate
   with its tile, hides the seat pads and frames the zoomed view on the pile.
   With the pile the middle console is put away (`setConsoleShown`): each

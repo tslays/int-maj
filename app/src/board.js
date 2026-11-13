@@ -31,8 +31,12 @@ const GAP = 0.02;
 /* The pile's throw: the hop onto the felt, the slide into the pile, and when the slide reaches the tiles it knocks. */
 const PILE_HOP_MS = 260;
 const PILE_HOP_APEX = 3.0; // well over a wall two tiles high
-const PILE_SLIDE_MS = 300; // the full run, at one speed
-const PILE_KNOCK_MS = PILE_HOP_MS + PILE_SLIDE_MS;
+const PILE_SLIDE_MS = 420; // a full run, from the flick to a stop
+
+/** How long a slide of `run` takes: the same flick and friction every time, cut short where it meets the pile. */
+function slideMsFor(run) {
+  return PILE_SLIDE_MS * (1 - Math.sqrt(Math.max(0, 1 - Math.min(1, run / PILE.RUN))));
+}
 
 /**
  * Lay a meld's tiles in a row; a kong is a pung with its fourth tile on top of
@@ -143,6 +147,15 @@ export class Board {
     if (this.pilePoses === null) return [];
     const work = [];
     let knocked = false;
+    // The knock comes the moment the thrown tile arrives.
+    let arrive = PILE_HOP_MS;
+    for (const seat of SEATS) {
+      this.seats[seat].discards.forEach((item, index) => {
+        if (!fresh.has(item)) return;
+        const { rest, land } = this.discardRest(seat, index);
+        if (land !== null) arrive = Math.max(arrive, PILE_HOP_MS + slideMsFor(Math.hypot(rest.position.x - land.x, rest.position.z - land.z)));
+      });
+    }
     for (const seat of SEATS) {
       const state = this.seats[seat];
       state.discards.forEach((item, index) => {
@@ -161,7 +174,7 @@ export class Board {
         // Knocked as the flicked tile slides in among them.
         const from = { x: tile.position.x, z: tile.position.z, yaw: tile.rotation.z };
         work.push(
-          new Promise((resolve) => setTimeout(resolve, pace.scale(PILE_KNOCK_MS))).then(() =>
+          new Promise((resolve) => setTimeout(resolve, pace.scale(arrive))).then(() =>
             animate(240, (t) => {
               const k = easeOutCubic(t);
               tile.position.x = from.x + (rest.position.x - from.x) * k;
@@ -172,7 +185,7 @@ export class Board {
         );
       });
     }
-    if (knocked) sound.cue("clack", { delay: pace.scale(PILE_KNOCK_MS / 1000), intensity: 0.35 });
+    if (knocked) sound.cue("clack", { delay: pace.scale(arrive / 1000), intensity: 0.35 });
     return work;
   }
 
@@ -440,7 +453,7 @@ export class Board {
    * table into the pile. The slide is the straight line `pile.js` checked
    * tile by tile, at the tile's final turn, so it never passes through
    * another; the tiles it crashes into are knocked as it arrives
-   * (`nudgePile`, timed by `PILE_KNOCK_MS`).
+   * (`nudgePile`, timed to its arrival).
    */
   flickIntoPile(seat, item, from, rest, land) {
     const tile = item.tile;
@@ -459,16 +472,23 @@ export class Board {
       tile.rotation.x = startRotation.x + (rest.rotation.x - startRotation.x) * k;
       tile.rotation.z = startRotation.z + (rest.rotation.z - startRotation.z) * k;
     });
-    // One speed for every slide; the run is the same length but for a throw stopped early.
+    // Every slide leaves at the same speed and the felt's friction slows it evenly to a stop:
+    // a full run takes PILE_SLIDE_MS; a run cut short stops sooner, as the same slide would.
     const run = Math.hypot(rest.position.x - touch.x, rest.position.z - touch.z);
-    const slideMs = PILE_SLIDE_MS * Math.min(1, run / PILE.RUN);
+    const slideMs = slideMsFor(run);
     return hop.then(() => {
       tile.position.copy(touch);
       tile.rotation.x = rest.rotation.x;
       tile.rotation.z = rest.rotation.z;
+      // Constant deceleration: the distance covered by the full run's clock, scaled to this run.
+      const full = run > 0 ? Math.min(1, run / PILE.RUN) : 1;
+      const used = slideMs / PILE_SLIDE_MS;
       return animate(slideMs, (t) => {
-        tile.position.x = touch.x + (rest.position.x - touch.x) * t;
-        tile.position.z = touch.z + (rest.position.z - touch.z) * t;
+        const clock = t * used; // where on the full run's clock this slide is
+        const covered = (clock * (2 - clock)) / full; // ease-out: v falls linearly to 0 at the full run's end
+        const k = Math.min(1, covered);
+        tile.position.x = touch.x + (rest.position.x - touch.x) * k;
+        tile.position.z = touch.z + (rest.position.z - touch.z) * k;
       });
     }).then(() => {
       tile.position.copy(rest.position);
