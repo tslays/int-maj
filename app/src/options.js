@@ -1,5 +1,5 @@
 /**
- * The Options sheet: sound, large discards (phones only), the pace, the bot
+ * The Options sheet: sound, large discards (phones only), the discard layout, the pace, the bot
  * level, dice and dealing, the house rules, and the doors to New game, Help
  * and Report a problem.
  *
@@ -9,6 +9,7 @@
  */
 
 import { largeDiscards } from "./large-discards.js";
+import { discardLayout } from "./discard-layout.js";
 import { roundLayersWanted } from "./layout.js";
 import { level } from "./level.js";
 import { openingPref } from "./opening.js";
@@ -83,6 +84,12 @@ function showLargeDiscards() {
   $("#large-discards").setAttribute("aria-checked", String(largeDiscards.on));
 }
 
+function showDiscardLayout() {
+  for (const button of document.querySelectorAll("#discard-layout [data-layout]")) {
+    button.setAttribute("aria-checked", String(button.dataset.layout === discardLayout.id));
+  }
+}
+
 function showPace() {
   for (const button of document.querySelectorAll("#pace [data-pace]")) {
     button.setAttribute("aria-checked", String(button.dataset.pace === pace.id));
@@ -127,6 +134,7 @@ function closeOptions() {
 export function installOptions({ newGame }) {
   showSound();
   showLargeDiscards();
+  showDiscardLayout();
   showPace();
   showLevel();
   showOpening();
@@ -189,6 +197,14 @@ export function installOptions({ newGame }) {
     if (button === null) return;
     pace.set(button.dataset.pace);
     showPace();
+  });
+
+  /* Discards: rows or the centre pile (#122); the table re-lays them at once. */
+  $("#discard-layout").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-layout]");
+    if (button === null) return;
+    discardLayout.set(button.dataset.layout);
+    showDiscardLayout();
   });
 
   /* Bot level: sent with every bot move, so the next one already plays at it. */

@@ -486,9 +486,13 @@ function poseTableCamera() {
 
 /** How many discards each seat (by `rel`) has: the zoomed view frames them all. */
 export function setPondCounts(counts) {
-  const next = pondExtent(counts);
-  if (Math.abs(next - pondReach) < 0.01) return;
-  pondReach = next;
+  setPondReach(pondExtent(counts));
+}
+
+/** Frame the zoomed view on discards reaching `extent` from the centre (the rows, or the pile). */
+export function setPondReach(extent) {
+  if (Math.abs(extent - pondReach) < 0.01) return;
+  pondReach = extent;
   fit();
 }
 

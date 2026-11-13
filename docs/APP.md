@@ -26,6 +26,23 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   to the right as the wall in front of them is used up (the wall never
   slides). `test/app/layout.test.ts` proves no meld
   touches a wall, a hand, a discard or another player's melds.
+- `app/src/pile.js` is the other discard layout, the **centre pile** (Options,
+  Discards: Rows or Pile, a device preference `int-maj.discard-layout`,
+  `discard-layout.js`; #122). Every discard is thrown into one pond round the
+  console: the first lands beside it, each later throw aims close beside a
+  tile already there, knocks the tiles it lands on a short way along the
+  throw, and slides back until it lies clear; nothing shows who threw a tile
+  or when. It is deterministic from the hand's seed and the throw order
+  (`pond` in the payload, built by `pondOf` from the hand's events, with
+  claimed tiles marked `taken`: they leave the pile, the knocks they gave
+  stay), so a reload or a review board settles the same pile;
+  `createPile(seed).settle(pond)` reuses every earlier throw, so a new discard
+  costs one throw. The board places each seat's discards where the pile says
+  (`discardRest`), animates a throw touching down at its aim and sliding
+  clear, eases the knocked tiles (`nudgePile`), turns the latest-discard plate
+  with its tile, hides the seat pads and frames the zoomed view on the pile.
+  `test/app/pile.test.ts` proves no two pile tiles overlap and none covers the
+  console or reaches the walls, hands or melds.
 - The wall is broken and drawn as *Illustrated* pp. 18-19 and p. 62 show: the
   dice (`breakFor`) name the wall and the stack counted from its right-hand
   end; that stack is lifted off. The wall is one ring read from the open end
@@ -126,7 +143,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   "Show tips again" brings them back, review boards show none; and the
   welcome card before the first deal on a device, offering the guide, which
   a review board or a `?seed=` link skips), `options.js` (the
-  Options sheet: the Sound switch, the Large discards switch (phones only), the Pace choice, the Bot level, the house rules, and the Help and Report
+  Options sheet: the Sound switch, the Large discards switch (phones only), the Discards choice (Rows or Pile), the Pace choice, the Bot level, the house rules, and the Help and Report
   buttons) and `report.js` (report a problem). Modules that need the loop (`input`,
   `result`, `menu`) get its functions from `main.js` through an `installX`
   call, so imports never run in a circle.

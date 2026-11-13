@@ -70,6 +70,7 @@ declare global {
       lifted(): string | null;
       hand(): string[];
       received(): string[];
+      pile(): boolean;
       act(action: unknown): Promise<void>;
       sound: { readonly samplesLoaded: number };
     };
@@ -452,6 +453,12 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   assert.equal(fishRule.winNeedsFish, true, "the fishing rule is kept on the device");
   await page.click("#fish-rule");
   await page.waitForSelector("#fish-rule[aria-checked=false]", { timeout: 5000 });
+  // Discards: the centre pile re-lays the table at once, and back to rows (#122).
+  await page.click('#discard-layout [data-layout="pile"]');
+  await page.waitForSelector('#discard-layout [data-layout="pile"][aria-checked=true]', { timeout: 5000 });
+  assert.equal(await page.evaluate(() => window.mahjong!.pile()), true, "the table lays its discards in the pile");
+  await page.click('#discard-layout [data-layout="rows"]');
+  assert.equal(await page.evaluate(() => window.mahjong!.pile()), false, "and back in rows");
   // New game asks first; Keep playing leaves the game as it was.
   await page.click("#new-game");
   await page.waitForSelector("#new-game-confirm:not([hidden])", { timeout: 5000 });
@@ -459,7 +466,7 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.waitForSelector("#new-game-confirm", { state: "hidden", timeout: 5000 });
   await page.click("#options-close");
   await page.waitForSelector("#options-sheet", { state: "hidden", timeout: 5000 });
-  console.log("  ok  hints toggle, options sheet, help sheet, hand set choice, Goulash and fishing rule switches, new game asks first");
+  console.log("  ok  hints toggle, options sheet, help sheet, hand set choice, Goulash and fishing rule switches, discard layout, new game asks first");
 
 
   // The index of all hands: opens, filters by a book heading, searches, opens a hand's sheet.
