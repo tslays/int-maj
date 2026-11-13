@@ -14,7 +14,7 @@
 
 import * as THREE from "three";
 import { D, H, W, makeTile, roundedRect, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, TABLE } from "./tiles.js";
-import { discardSlot, latestPlate, LATEST_MARGIN, meldLayout, pondPad } from "./layout.js";
+import { discardSlot, labelPad, latestPlate, LATEST_MARGIN, meldLayout, pondPad, WALL_INNER } from "./layout.js";
 import { createPile, PILE, pileReach } from "./pile.js";
 import { discardLayout } from "./discard-layout.js";
 import { pace } from "./pace.js";
@@ -234,9 +234,20 @@ export class Board {
     return this.frames[this.rel(seat)];
   }
 
-  /** Where a seat's label sits with the centre pile: on the felt just inside its wall, in world space. */
-  labelPoint(rel) {
-    return this.frames[rel].localToWorld(new THREE.Vector3(0, 0.5, WALL_R - 1.2));
+  /**
+   * The middle of seat `rel`'s wall's inner face (world space), where its
+   * label stands (seat-labels.js): at the wall's top for the seats whose wall
+   * stands between the camera and the felt, so the label clears the whole
+   * wall; on the felt for the seat across, whose label lies half over it.
+   */
+  labelAnchor(rel) {
+    const height = labelPad(rel).OVER > 0 ? 0 : 2 * D;
+    return this.frames[rel].localToWorld(new THREE.Vector3(0, height, WALL_INNER));
+  }
+
+  /** The table's middle, on the felt (world space). */
+  tableCentre() {
+    return this.frames[0].localToWorld(new THREE.Vector3(0, 0, 0));
   }
 
   /** Where a seat sounds from: the side you hear it on, and how far off it is. */
