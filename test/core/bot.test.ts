@@ -18,7 +18,8 @@ import {
   type Action,
   type GameState,
 } from "../../src/core/game/index.ts";
-import { BOT_LEVELS, chooseAction, isBotLevel, type BotLevel } from "../../src/core/game/bot.ts";
+import { BOT_LEVELS, chooseAction, isBotLevel, situationFor, type BotLevel } from "../../src/core/game/bot.ts";
+import { completion, countsOf, indexOf, type Goal, type Odds } from "../../src/core/game/bot/plan.ts";
 import { fixture, play } from "../helpers/game-fixture.ts";
 
 /** A wall long enough that the bot still expects to draw for a while. */
@@ -351,5 +352,42 @@ describe("bot levels", () => {
       lastDraw: { seat: "E", tile: "b5", end: "front" },
     });
     for (const level of BOT_LEVELS) assert.equal(chooseAction(viewFor(state, "E"), "E", level)?.type, "Win", level);
+  });
+});
+
+describe("the race discount (haste)", () => {
+  // Two missing tiles of one kind, every copy still unseen.
+  const goal: Goal = {
+    need: countsOf(["c5", "c5", "c5"]),
+    keys: [indexOf("c5")],
+    value: 100,
+    selfDrawnOnly: false,
+    pattern: "test",
+  };
+  const hand = countsOf(["c5"]);
+  const odds = (haste: number): Odds => ({
+    draw: 0.2,
+    last: 0.6,
+    draws: 10,
+    unseen: countsOf(["c5", "c5", "c5"]),
+    haste,
+  });
+
+  it("leaves the chance alone at 1 and scales it by haste per missing tile", () => {
+    const plain = completion(goal, hand, odds(1));
+    assert.ok(plain > 0 && plain < 1);
+    assert.ok(Math.abs(completion(goal, hand, odds(0.55)) - plain * 0.55 ** 2) < 1e-12);
+  });
+
+  it("never discounts a hand that is already complete", () => {
+    assert.equal(completion(goal, countsOf(["c5", "c5", "c5"]), odds(0.5)), 1);
+  });
+
+  it("is on for hard only", () => {
+    const state = newGame("haste-levels").state;
+    const view = viewFor(state, state.turn);
+    assert.equal(situationFor(view, state.turn, "hard").haste, 0.55);
+    assert.equal(situationFor(view, state.turn, "medium").haste, 1);
+    assert.equal(situationFor(view, state.turn, "easy").haste, 1);
   });
 });

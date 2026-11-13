@@ -211,7 +211,11 @@ Other seats see only that a player is fishing, never the wait (`viewFor`,
 Each seat has a temperament (`temperamentOf`: steady, ambitious, quick,
 careful) that scales its appetite for special hands, calls and caution. On top
 of it, `chooseAction(view, seat, level)` takes a `BotLevel` (`easy`, `medium`,
-`hard`; hard by default, the policy above as it stands). Medium halves the
+`hard`; hard by default). Hard races: four seats share one wall, so it
+discounts every hand by 0.55 per tile still missing (`Situation.haste`), chases
+special hands at 0.6 of its ambition and calls a discard even when the hand is
+worth up to 35 % less after it, so it goes out sooner (#120). Medium plays the
+policy above without that race and halves the
 defensive penalties and misjudges each discard by up to 30 % of the best
 discard's value; Easy never defends, chases special hands at 0.6 of its
 ambition, calls a discard even when the hand is worth up to 35 % less after
@@ -219,7 +223,11 @@ it, and misjudges discards by up to 80 %. The misjudgement is a hash of the
 view and the tile, never a random source, so a level stays deterministic. In
 120 bot-only hands (two seats at a level against two at Hard, same deals,
 2026-11-12) the two seats netted +12,400 at Hard, -10,900 at Medium and
--39,800 at Easy. The bot never sees another seat's hand. `node scripts/bot-targets.ts` regenerates the
+-39,800 at Easy. The racing Hard was chosen with `node scripts/bot-duel.ts
+[hands] [challenger] [field] [seed-prefix]` (`npm run bot-duel`; South at one
+level against three at another) and confirmed on fresh deals: one seat at the
+new Hard against three at the old one won 157 of 800 hands to 134 and netted
++34,600 to the old Hard's -30,100 in the same seat (2026-11-13). The bot never sees another seat's hand. `node scripts/bot-targets.ts` regenerates the
 target table from the catalogue fixtures; every target is re-checked against
 its pattern in `test/core/bot-targets.test.ts`.
 

@@ -81,7 +81,7 @@ const TABLE = {
 
   fishing: {
     title: "Fishing announced",
-    seed: "fishing-scene-8",
+    seed: "fishing-scene-3",
     at: (view) =>
       view.phase === "discard" &&
       view.turn !== view.seat &&
@@ -100,7 +100,7 @@ const TABLE = {
 
   ron: {
     title: "A winning tile in the claim window",
-    seed: "ron-v11-3",
+    seed: "ron-v12-20",
     at: (view) =>
       view.phase === "claim" &&
       view.turn === view.seat &&
@@ -109,7 +109,7 @@ const TABLE = {
 
   win: {
     title: "A winning hand and its pattern",
-    seed: "win-v3-0",
+    seed: "win-v12-1",
     at: (view) =>
       view.result !== null &&
       view.result.kind === "win" &&
@@ -125,7 +125,7 @@ const TABLE = {
 
   result: {
     title: "The result panel with payments and fishing",
-    seed: "result-v11-91",
+    seed: "result-v12-31",
     at: (_view, state) =>
       state.result !== null &&
       state.result.kind === "win" &&

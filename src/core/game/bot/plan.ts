@@ -78,6 +78,11 @@ export interface Situation {
   readonly seasons: readonly string[];
   /** Multiplier on fixed-tier (special) hand values: a bot's ambition. */
   readonly ambition: number;
+  /**
+   * Per tile still missing, the chance the race is not lost to another seat
+   * first; 1 ignores the other seats. Below 1, near hands gain on far ones.
+   */
+  readonly haste?: number;
   /** House rule: hands this table plays without; never a goal. */
   readonly excluded?: readonly string[];
 }
@@ -444,13 +449,21 @@ export interface Odds {
   readonly last: number;
   readonly draws: number;
   readonly unseen: Counts;
+  /** Per missing tile, the chance no other seat goes out first (1 = no race). */
+  readonly haste: number;
 }
 
 export function oddsFor(situation: Situation): Odds {
   let pool = 0;
   for (let index = 0; index < KINDS; index++) pool += situation.unseen[index]!;
   const draw = pool > 0 ? Math.min(0.95, situation.draws / pool) : 0;
-  return { draw, last: Math.min(0.95, draw * 3), draws: situation.draws, unseen: situation.unseen };
+  return {
+    draw,
+    last: Math.min(0.95, draw * 3),
+    draws: situation.draws,
+    unseen: situation.unseen,
+    haste: situation.haste ?? 1,
+  };
 }
 
 /**
@@ -486,7 +499,7 @@ export function completion(goal: Goal, hand: Counts, odds: Odds): number {
     const chance = others * lasts[i]!;
     if (chance > best) best = chance;
   }
-  return Math.min(1, best);
+  return Math.min(1, best) * odds.haste ** short;
 }
 
 const COMBINED = 6;

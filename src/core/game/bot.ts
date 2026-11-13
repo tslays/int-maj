@@ -100,16 +100,23 @@ interface Skill {
   readonly callShift: number;
   /** Discard misjudgement, as a fraction of the best discard's value. */
   readonly noise: number;
+  /** The race discount per missing tile (`Situation.haste`). */
+  readonly haste: number;
 }
 
 const SKILLS: Readonly<Record<BotLevel, Skill>> = {
-  easy: { ambition: 0.6, caution: 0, callShift: -0.35, noise: 0.8 },
-  medium: { ambition: 1, caution: 0.5, callShift: 0, noise: 0.3 },
-  hard: { ambition: 1, caution: 1, callShift: 0, noise: 0 },
+  easy: { ambition: 0.6, caution: 0, callShift: -0.35, noise: 0.8, haste: 1 },
+  medium: { ambition: 1, caution: 0.5, callShift: 0, noise: 0.3, haste: 1 },
+  // Hard races: four seats share one wall, so a near ordinary hand beats a far
+  // special one more often than its points suggest (#120). Measured with
+  // scripts/bot-duel.ts: one seat at these settings against three at the old
+  // ones (ambition 1, callShift 0, haste 1) won 157 of 800 hands to 134 and
+  // came out ahead on points, on deals not used to choose the numbers.
+  hard: { ambition: 0.6, caution: 1, callShift: -0.35, noise: 0, haste: 0.55 },
 };
 
 /** A seat's temperament at a level: the style stays, the skill changes. */
-function playing(seat: Seat, level: BotLevel): Temperament & { readonly noise: number } {
+function playing(seat: Seat, level: BotLevel): Temperament & { readonly noise: number; readonly haste: number } {
   const base = temperamentOf(seat);
   const skill = SKILLS[level];
   return {
@@ -118,6 +125,7 @@ function playing(seat: Seat, level: BotLevel): Temperament & { readonly noise: n
     caution: base.caution * skill.caution,
     callMargin: base.callMargin + skill.callShift,
     noise: skill.noise,
+    haste: skill.haste,
   };
 }
 
@@ -168,6 +176,7 @@ export function situationFor(view: GameView, seat: Seat, level: BotLevel = DEFAU
     flowers: view.player.flowers,
     seasons: view.player.seasons,
     ambition: playing(seat, level).ambition,
+    haste: playing(seat, level).haste,
     excluded: view.excludedHands,
   };
 }
