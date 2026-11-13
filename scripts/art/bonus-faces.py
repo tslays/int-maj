@@ -2,9 +2,10 @@
 
 Each face is a small painting a player recognises without reading Chinese:
 four plants for the flowers (plum, orchid, chrysanthemum, bamboo) and four
-pictures of the year for the seasons (a seedling with a butterfly, the sun
-over the sea, maple leaves, a snowflake). The shapes are shaded with
-gradients and outlined in a darker tone of their own colour. The table prints
+pictures of the year for the seasons (a seedling with a butterfly, the sun,
+maple leaves, a snowflake). The shapes are shaded with gradients and outlined
+in a darker tone of their own colour, and each picture sits on a card of its
+own colour (`tiles` below), so the eight are told apart by colour first. The table prints
 the number in the top-left corner (`app/src/tiles.js`), red for flowers and
 green for seasons, the colouring *The Game of Mah Jong Illustrated* calls
 usual (p. 9); the art keeps that corner clear.
@@ -17,6 +18,11 @@ browser when the table paints them onto a canvas.
 import math, sys
 
 OUT = sys.argv[1]
+
+# The coloured card each picture sits on: below the table's corner number,
+# and the picture is scaled to fit inside it.
+PANEL = (4, 46, 292, 350)
+ART_SCALE = 0.9
 
 
 # --- Drawing helpers -------------------------------------------------------
@@ -62,10 +68,18 @@ class Face:
         self.defs.append(f'<radialGradient id="{gid}" cx="{f(cx)}" cy="{f(cy)}" r="{f(r)}"{focus}{units}>{self._stops(stops)}</radialGradient>')
         return f"url(#{gid})"
 
-    def svg(self, name):
+    def svg(self, name, theme):
+        light, mid, dark = theme
+        card = self.rad([(0, light), (0.55, mid), (1, dark)], 0.5, 0.45, 0.75)
+        panel = (f'<rect x="{PANEL[0]}" y="{PANEL[1]}" width="{PANEL[2]}" height="{PANEL[3]}" rx="28" fill="{card}"/>'
+                 f'<rect x="{PANEL[0] + 8}" y="{PANEL[1] + 8}" width="{PANEL[2] - 16}" height="{PANEL[3] - 16}" rx="21" '
+                 f'fill="none" stroke="#ffffff" stroke-width="3" stroke-opacity="0.7"/>')
+        x, y, w, h = PANEL
+        fit = f"translate({f(x + w / 2)} {f(y + h / 2)}) scale({ART_SCALE}) translate(-150 -200)"
         return (f'<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400">\n'
                 f'  <!-- {name}: drawn for this project (original art). -->\n'
-                f'  <defs>{"".join(self.defs)}</defs>\n  ' + "\n  ".join(self.body) + "\n</svg>\n")
+                f'  <defs>{"".join(self.defs)}<clipPath id="card"><rect x="{x + 3}" y="{y + 3}" width="{w - 6}" height="{h - 6}" rx="25"/></clipPath></defs>\n'
+                f'  {panel}\n  <g clip-path="url(#card)"><g transform="{fit}">\n  ' + "\n  ".join(self.body) + "\n  </g></g>\n</svg>\n")
 
 
 def shape(d, fill, stroke="none", width=0, extra=""):
@@ -159,7 +173,7 @@ def ground_shadow(face, x, y, rx, ry):
 # --- Flowers ---------------------------------------------------------------
 
 def plum_blossom(face, x, y, r, turn=0):
-    petal = face.lin([(0, "#7d0f26"), (0.35, "#c92a40"), (0.8, "#ef6670"), (1, "#f98a8c")])
+    petal = face.lin([(0, "#8a0a3a"), (0.35, "#d81e5b"), (0.8, "#f75f8f"), (1, "#ff9ab8")])
     out = ""
     for k in range(5):
         out += placed(shape(petal_d(r, r * 0.5, "notch"), petal, "#6a0c1e", 2.6), x, y, turn - 90 + 72 * k)
@@ -213,19 +227,19 @@ def plum():
 
 
 def orchid_bloom(face, x, y, r, tilt=0):
-    petal = face.lin([(0, "#fff4f8"), (0.4, "#f19ac2"), (0.85, "#cc3d86"), (1, "#a8296a")])
-    edge = "#7a1450"
+    petal = face.lin([(0, "#ffffff"), (0.45, "#f4e8ff"), (0.85, "#c08af0"), (1, "#8f4ad8")])
+    edge = "#4a167f"
     out = ""
     for deg, length, w in ((-90, 1.0, .34), (148, .95, .32), (32, .95, .32), (-152, .78, .3), (-28, .78, .3)):
         out += placed(shape(petal_d(r * length, r * w, "point"), petal, edge, 2.4), x, y, tilt + deg)
         out += placed(line(f"M{pt(r * .1, 0)} L{pt(r * length * .8, 0)}", "#7a1450", 1.4, 0.35), x, y, tilt + deg)
-    lip = face.rad([(0, "#ffffff"), (0.7, "#fbe6ef"), (1, "#e9a8c6")], 0.5, 0.3, 0.7)
+    lip = face.rad([(0, "#ffffff"), (0.6, "#e6c8ff"), (1, "#a86ae8")], 0.5, 0.3, 0.7)
     lx, ly = polar(x, y, r * .34, tilt + 90)
     out += placed(shape(f"M{pt(-r * .3, -r * .1)} C{pt(-r * .42, r * .3)} {pt(-r * .1, r * .42)} 0,{f(r * .4)} "
                         f"C{pt(r * .1, r * .42)} {pt(r * .42, r * .3)} {pt(r * .3, -r * .1)} Z", lip, edge, 2.2), lx, ly - r * .12, tilt)
     for dx, dy in ((-.12, .05), (.1, .08), (0, .18), (-.06, .26), (.08, .24), (.16, .14), (-.18, .16)):
         sx, sy = lx + dx * r, ly + dy * r - r * .05
-        out += f'<circle cx="{f(sx)}" cy="{f(sy)}" r="{f(r * .035)}" fill="#b0124e"/>'
+        out += f'<circle cx="{f(sx)}" cy="{f(sy)}" r="{f(r * .035)}" fill="#6a1fb0"/>'
     column = face.lin([(0, "#fff7b0"), (1, "#e6b326")], 0, 0, 0, 1)
     cx, cy = polar(x, y, r * .08, tilt + 90)
     out += f'<ellipse cx="{f(cx)}" cy="{f(cy)}" rx="{f(r * .1)}" ry="{f(r * .14)}" fill="{column}" stroke="#8a6200" stroke-width="1.6"/>'
@@ -252,17 +266,16 @@ def orchid():
     face.add(orchid_bloom(face, 92, 184, 54, -14))
     face.add(orchid_bloom(face, 196, 132, 64, 6))
     # A blue-and-white pot.
-    body = face.lin([(0, "#123278"), (0.3, "#3f6fd0"), (0.55, "#2a55b0"), (1, "#0c2160")])
-    face.add(shape("M62,324 L238,324 C236,350 226,378 206,396 L94,396 C74,378 64,350 62,324Z", body, "#071640", 3))
-    band = face.lin([(0, "#ffffff"), (1, "#dbe6fb")], 0, 0, 0, 1)
-    face.add(shape("M68,344 L232,344 C230,354 228,362 224,370 L76,370 C72,362 70,354 68,344Z", band, "#071640", 2))
+    body = face.lin([(0, "#c8b6e6"), (0.3, "#ffffff"), (0.6, "#efe8fa"), (1, "#a890d4")])
+    face.add(shape("M62,324 L238,324 C236,350 226,378 206,396 L94,396 C74,378 64,350 62,324Z", body, "#3a1470", 3))
+    band = face.lin([(0, "#9a5ad8"), (1, "#6a2ab0")], 0, 0, 0, 1)
+    face.add(shape("M68,344 L232,344 C230,354 228,362 224,370 L76,370 C72,362 70,354 68,344Z", band, "#3a1470", 2))
     for k in range(6):
         cx = 86 + k * 26
-        face.add(line(f"M{cx - 10},363 Q{cx - 5},350 {cx},357 Q{cx + 5},364 {cx + 10},351", "#2a55b0", 3))
-    rim = face.lin([(0, "#5d8be0"), (1, "#1a3c90")], 0, 0, 0, 1)
-    face.add(f'<rect x="54" y="314" width="192" height="16" rx="6" fill="{rim}" stroke="#071640" stroke-width="3"/>')
-    face.add(line("M64,318 L236,318", "#cfe0ff", 2.5, 0.7))
-    face.add(line("M84,382 Q90,352 80,332", "#ffffff", 4, 0.3))
+        face.add(line(f"M{cx - 10},363 Q{cx - 5},350 {cx},357 Q{cx + 5},364 {cx + 10},351", "#ffffff", 3))
+    rim = face.lin([(0, "#ffffff"), (1, "#b8a4dc")], 0, 0, 0, 1)
+    face.add(f'<rect x="54" y="314" width="192" height="16" rx="6" fill="{rim}" stroke="#3a1470" stroke-width="3"/>')
+    face.add(line("M84,382 Q90,352 80,374", "#ffffff", 4, 0.0))
     return face
 
 
@@ -275,8 +288,8 @@ def chrysanthemum():
     face.add(leaf(face, 150, 380, 84, -38, 24, lobes=2))
     x, y = 150, 168
     head = ""
-    rings = ((26, 122, 10, 0, ("#c25e08", "#f39a1c", "#ffd44a", "#ffe58a")),
-             (22, 100, 10, 7, ("#b8560a", "#f08e18", "#ffcd3e", "#ffe07a")),
+    rings = ((26, 122, 10, 0, ("#d86a00", "#ffb000", "#ffe14a", "#fff6b0")),
+             (22, 100, 10, 7, ("#cc6000", "#ffa800", "#ffdc3e", "#fff2a0")),
              (18, 76, 9.5, 3, ("#a84a06", "#e88314", "#ffc634", "#ffd96a")),
              (14, 52, 9, 11, ("#9a4204", "#df7810", "#fbbb2c", "#ffd25a")),
              (10, 30, 8, 5, ("#8a3a02", "#d06a0c", "#f2aa24", "#ffc94a")))
@@ -385,35 +398,17 @@ def spring():
 
 def summer():
     face = Face()
-    x, y = 150, 176
-    glow = face.rad([(0, "#ffe9a0", 0.9), (1, "#ffe9a0", 0)])
-    face.add(f'<circle cx="{x}" cy="{y}" r="150" fill="{glow}"/>')
+    x, y = 150, 200
     for k in range(16):
         deg = -90 + k * 22.5
         long = k % 2 == 0
-        L, w = (142, 20) if long else (118, 16)
-        fill = face.lin([(0, "#f06a1a"), (0.5, "#f8a21c"), (1, "#ffd94a")] if long else [(0, "#e04a18"), (1, "#f8902a")])
+        L, w = (150, 22) if long else (124, 18)
+        fill = face.lin([(0, "#e8400c"), (0.5, "#ff7a14"), (1, "#ffb21e")] if long else [(0, "#d42a10"), (1, "#ff5a1a")])
         ray = f"M60,{f(-w)} Q{f(L * .75)},{f(-w * .5)} {f(L)},0 Q{f(L * .75)},{f(w * .5)} 60,{f(w)}Z"
         face.add(placed(shape(ray, fill, "#9a3a06", 2.4), x, y, deg))
-    disc = face.rad([(0, "#fffbe0"), (0.35, "#ffe066"), (0.75, "#ffb21e"), (1, "#f07a12")], 0.42, 0.4, 0.62)
-    face.add(f'<circle cx="{x}" cy="{y}" r="74" fill="{disc}" stroke="#9a3a06" stroke-width="3.5"/>')
-    face.add(line(f"M{x - 50},{y - 22} A56 56 0 0 1 {x - 6},{y - 58}", "#ffffff", 7, 0.55))
-    # The sea below the sun.
-    for top, cols, edge in ((300, ("#8fdcf6", "#3a9ad8"), "#1a5a9a"), (330, ("#5ac0ee", "#1f6fbf"), "#123f80"),
-                            (362, ("#2f8fd8", "#134f9a"), "#0a2a60")):
-        fill = face.lin([(0, cols[0]), (1, cols[1])], 0, 0, 0, 1)
-        d = f"M-10,{top}"
-        for k in range(5):
-            x0 = -10 + k * 64
-            d += f" Q{x0 + 16},{top - 18} {x0 + 32},{top} Q{x0 + 48},{top + 14} {x0 + 64},{top}"
-        d += " L310,410 L-10,410Z"
-        face.add(shape(d, fill, edge, 2.6))
-        crest = f"M-10,{top}"
-        for k in range(5):
-            x0 = -10 + k * 64
-            crest += f" Q{x0 + 16},{top - 18} {x0 + 32},{top}"
-            crest += f" M{x0 + 64},{top}"
-        face.add(line(crest, "#ffffff", 3, 0.8))
+    disc = face.rad([(0, "#fff4c0"), (0.35, "#ffc21e"), (0.75, "#ff8a12"), (1, "#f0500c")], 0.42, 0.4, 0.62)
+    face.add(f'<circle cx="{x}" cy="{y}" r="84" fill="{disc}" stroke="#9a3a06" stroke-width="4"/>')
+    face.add(line(f"M{x - 58},{y - 24} A64 64 0 0 1 {x - 8},{y - 66}", "#ffffff", 8, 0.6))
     return face
 
 
@@ -445,18 +440,16 @@ def maple(face, x, y, size, deg, stops, edge, vein):
 def autumn():
     face = Face()
     face.add(maple(face, 224, 112, 82, 28, [(0, "#fff0a0"), (0.5, "#f6c43a"), (1, "#d88a12")], "#7a4a06", "#a86a0a"))
-    face.add(maple(face, 70, 330, 60, -32, [(0, "#ffd68a"), (0.5, "#ee8a2a"), (1, "#b8460e")], "#6a2a06", "#8a3a0a"))
-    face.add(maple(face, 146, 210, 150, -6, [(0, "#ffd24a"), (0.3, "#f6902a"), (0.7, "#dc3c1e"), (1, "#9a1414")], "#5a0a0a", "#8a1a10"))
+    face.add(maple(face, 70, 330, 60, -32, [(0, "#d84a2a"), (0.5, "#a81e12"), (1, "#6a0e08")], "#3a0604", "#ff9a6a"))
+    face.add(maple(face, 146, 210, 150, -6, [(0, "#fff4a8"), (0.35, "#ffc832"), (0.75, "#ff8a1a"), (1, "#e8561a")], "#5a1a06", "#b0400a"))
     return face
 
 
 def winter():
     face = Face()
     x, y = 150, 200
-    glow = face.rad([(0, "#cfeaff", 0.95), (0.7, "#cfeaff", 0.35), (1, "#cfeaff", 0)])
-    face.add(f'<circle cx="{x}" cy="{y}" r="148" fill="{glow}"/>')
-    ice = face.lin([(0, "#e6f6ff"), (0.4, "#7cc4f2"), (1, "#1f62b0")], 0, 0, 0, 1)
-    edge = "#0f3270"
+    ice = face.lin([(0, "#ffffff"), (0.55, "#eef8ff"), (1, "#a8d4ff")], 0, 0, 0, 1)
+    edge = "#0a2a78"
 
     def rod(length, w):
         return shape(f"M0,0 L{f(w * .6)},{f(-w / 2)} L{f(length - w * .6)},{f(-w / 2)} L{f(length)},0 "
@@ -470,19 +463,27 @@ def winter():
             arm += placed(rod(length, 14), at, 0, -50) + placed(rod(length, 14), at, 0, 50)
         tip = ('<polygon points="132,0 144,-9 156,0 144,9" fill="' + ice + f'" stroke="{edge}" stroke-width="2.4" stroke-linejoin="round"/>')
         face.add(placed(arm + tip, x, y, a))
-    hexa = face.rad([(0, "#ffffff"), (0.6, "#cdeeff"), (1, "#6fb4ea")])
+    hexa = face.rad([(0, "#ffffff"), (0.6, "#e6f4ff"), (1, "#9cccff")])
     face.add(f'<polygon points="{" ".join(pt(*polar(x, y, 30, 30 + 60 * k)) for k in range(6))}" fill="{hexa}" stroke="{edge}" stroke-width="3"/>')
     face.add(f'<polygon points="{" ".join(pt(*polar(x, y, 14, 60 * k)) for k in range(6))}" fill="none" stroke="{edge}" stroke-width="1.8" stroke-opacity="0.6"/>')
-    for sx, sy, r in ((52, 70, 6), (256, 66, 5), (250, 350, 7), (46, 340, 5), (210, 380, 4), (92, 384, 4), (270, 210, 4), (30, 210, 4)):
+    for sx, sy, r in ((40, 60, 7), (262, 56, 6), (256, 352, 8), (40, 350, 6), (214, 384, 5), (92, 386, 5)):
         face.add(f'<circle cx="{sx}" cy="{sy}" r="{r}" fill="#ffffff" stroke="{edge}" stroke-width="1.6"/>')
     return face
 
 
+# Each face has a colour of its own, light at the centre to strong at the edge,
+# so a player knows it by its colour before reading the picture.
 tiles = {
-    "f1": ("Plum", plum), "f2": ("Orchid", orchid), "f3": ("Chrysanthemum", chrysanthemum), "f4": ("Bamboo", bamboo_plant),
-    "s1": ("Spring", spring), "s2": ("Summer", summer), "s3": ("Autumn", autumn), "s4": ("Winter", winter),
+    "f1": ("Plum", plum, ("#ffeef5", "#ffa6c9", "#e0457f")),
+    "f2": ("Orchid", orchid, ("#f6eeff", "#c49af5", "#7a3fd0")),
+    "f3": ("Chrysanthemum", chrysanthemum, ("#fff2e0", "#ffad5a", "#ec6a0c")),
+    "f4": ("Bamboo", bamboo_plant, ("#e4fbf6", "#7ddccd", "#0f9a8c")),
+    "s1": ("Spring", spring, ("#f2fde0", "#aee67e", "#3a9e2c")),
+    "s2": ("Summer", summer, ("#fffbe2", "#ffe45e", "#f2b200")),
+    "s3": ("Autumn", autumn, ("#ffeee6", "#ff9580", "#d42a2a")),
+    "s4": ("Winter", winter, ("#eaf5ff", "#86c2ff", "#2a64dc")),
 }
-for key, (name, draw) in tiles.items():
+for key, (name, draw, theme) in tiles.items():
     with open(f"{OUT}/{key}.svg", "w", encoding="utf-8") as out:
-        out.write(draw().svg(name))
+        out.write(draw().svg(name, theme))
 print("wrote", len(tiles))

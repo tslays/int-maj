@@ -39,7 +39,10 @@ chrysanthemum, bamboo) and `s1.svg`-`s4.svg` (spring, summer, autumn, winter)
 are original faces drawn for this project by `scripts/art/bonus-faces.py`:
 small shaded paintings a player recognises without reading Chinese - a plum
 branch, a potted orchid, a chrysanthemum and a bamboo grove; a seedling with a
-butterfly, the sun over the sea, maple leaves and a snowflake. They use
+butterfly, the sun, maple leaves and a snowflake. Each sits on a card of its
+own colour, so a player knows it by colour first: pink plum, violet orchid,
+orange chrysanthemum, teal bamboo; green spring, yellow summer, red autumn,
+blue winter. They use
 gradients only (no SVG filters), so they paint the same onto the table's
 canvas in every browser. The table prints the number in the top-left corner,
 red for flowers and green for seasons, the colouring *The Game of Mah Jong
