@@ -239,7 +239,6 @@ function alertFor(legal) {
 
 function showChoices({ chime = true } = {}) {
   const legal = state.payload.legalActions;
-  const view = state.payload.view;
   const bar = $("#actions");
   bar.replaceChildren();
   // A tile you pre-selected while the bots played stays up when your turn (and your new tile) comes;
@@ -277,19 +276,8 @@ function showChoices({ chime = true } = {}) {
   if (reshuffle) bar.append(button("Reshuffle", "pass", () => void act(reshuffle)));
   const sortTiles = (tiles) => [...tiles].sort((a, b) => tileOrder(a) - tileOrder(b));
   const chows = claims.filter((claim) => claim.kind === "chow");
-  if (chows.length === 1) {
-    bar.append(button("Chow", "claim", () => void act(chows[0]), sortTiles(chows[0].tiles)));
-  } else if (chows.length > 1) {
-    // Several runs: one Chow button, then the runs to pick from.
-    bar.append(
-      button("Chow", "claim", () => {
-        bar.replaceChildren(
-          button("Back", "pass", () => showChoices({ chime: false })),
-          ...chows.map((claim) => button("", "claim", () => void act(claim), sortTiles(claim.tiles))),
-        );
-      }),
-    );
-  }
+  // Every possible run gets its own Chow button, so one tap claims it.
+  for (const chow of chows) bar.append(button("Chow", "claim", () => void act(chow), sortTiles(chow.tiles)));
   for (const claim of claims.filter((item) => item.kind !== "chow")) {
     bar.append(button(CALL_WORD[claim.kind], "claim", () => void act(claim), sortTiles(claim.tiles)));
   }
@@ -297,17 +285,7 @@ function showChoices({ chime = true } = {}) {
   if (fishing) bar.append(button("Fishing", "claim", () => void act(fishing), fishing.wait.slice(0, 4)));
   const win = wins[0] ?? mahjongClaim;
   if (win) bar.append(button("Mah Jong", "win", () => void act(win)));
-
-  if (view.claimWindow !== null && view.phase === "claim") {
-    bar.prepend(faceChipLarge(view.claimWindow.tile));
-  }
   tipForChoices(legal, { callsOff: state.callsOff });
-}
-
-function faceChipLarge(key) {
-  const chip = faceChip(key);
-  chip.classList.add("chip-large");
-  return chip;
 }
 
 /** `?seed=` pins the first game's seed (tests and bug reports); the next new game is random again. */

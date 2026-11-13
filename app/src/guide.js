@@ -207,8 +207,8 @@ const TABS = [
     cards: [
       {
         title: "Take a discard",
-        text: "The tile on offer shows at the left of the buttons. Pung or Chow takes it into a set; with several chows, pick the run you want.",
-        picture: () => row(faceChip("o4"), act("Pung", "claim", ["o4", "o4"]), act("Chow", "claim", ["o2", "o3"])),
+        text: "Each button shows the set the tile just thrown would make. Pung or Chow takes it; when it fits more than one run, each run has its own Chow button.",
+        picture: () => row(act("Pung", "claim", ["o4", "o4", "o4"]), act("Chow", "claim", ["o2", "o3", "o4"]), act("Chow", "claim", ["o3", "o4", "o5"])),
       },
       {
         title: "Let it go",

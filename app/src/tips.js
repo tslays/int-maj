@@ -137,7 +137,7 @@ export function tipForChoices(legal, { callsOff }) {
   if (!callsOff && has((a) => a.type === "Claim" && a.kind !== "mahjong")) {
     candidates.push([
       "claim",
-      "You can use the tile just thrown (shown left of the buttons). Take it with a call, or Pass to let it go.",
+      "You can use the tile just thrown: each button shows the set it would make. Take it, or Pass to let it go.",
       "A call",
     ]);
   }
