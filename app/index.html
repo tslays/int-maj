@@ -28,6 +28,11 @@
         <line x1="28" y1="51" x2="36" y2="51" />
       </svg>
       Turn your phone sideways to play
+      <p class="rotate-lock" id="rotate-lock">
+        <span data-lock="ios" hidden>Won't turn? Open Control Center and switch off <b>Orientation Lock</b>.</span>
+        <span data-lock="android" hidden>Won't turn? Open Quick Settings and switch on <b>Auto-rotate</b>.</span>
+        <span data-lock="other" hidden>Won't turn? Switch off the screen's rotation lock.</span>
+      </p>
       <div class="install" id="install" hidden>
         <h2>Better as an app</h2>
         <p>Full screen, with its own icon, and it works offline.</p>
@@ -71,7 +76,6 @@
       </div>
     </div>
     <nav class="menu">
-      <button class="ghost" id="new-game" type="button"><span>New game</span></button>
       <button class="ghost on" id="calls" type="button" aria-pressed="true"><span>Calls</span></button>
       <button class="ghost on" id="sort" type="button" aria-pressed="true"><span>Sort</span></button>
       <button class="ghost on" id="hints" type="button" aria-pressed="true"><span>Hints</span></button>
@@ -118,59 +122,77 @@
     </div>
     <div class="hand-detail" id="hand-detail" hidden></div>
     <div class="hand-detail" id="options-sheet" hidden>
-      <div class="detail-card help-card" role="dialog" aria-modal="true" aria-label="Options">
+      <div class="detail-card options-card" role="dialog" aria-modal="true" aria-label="Options">
         <button class="detail-close" id="options-close" type="button" aria-label="Close">&times;</button>
         <h2>Options</h2>
-        <div class="detail-line option-row">
-          <h3>Sound</h3>
-          <p>On an iPhone the silent switch also mutes it.</p>
-          <button class="ghost on" id="sound" type="button" aria-pressed="true" aria-label="Sound"><span>On</span></button>
-        </div>
-        <div class="detail-line option-row" id="large-discards-row" hidden>
-          <h3>Large discards</h3>
-          <p>This round's discards show a face twice the size until you throw.</p>
-          <button class="ghost on" id="large-discards" type="button" aria-pressed="true" aria-label="Large discards"><span>On</span></button>
-        </div>
-        <div class="detail-line">
-          <h3>Pace</h3>
-          <p>How fast the bots play and the tiles move.</p>
-          <div class="segmented" id="pace" role="radiogroup" aria-label="Pace">
-            <button class="ghost" type="button" role="radio" aria-checked="false" data-pace="slower"><span>Slower</span></button>
-            <button class="ghost" type="button" role="radio" aria-checked="true" data-pace="normal"><span>Normal</span></button>
-            <button class="ghost" type="button" role="radio" aria-checked="false" data-pace="faster"><span>Faster</span></button>
+        <div class="options-grid">
+          <div class="options-col">
+          <section class="option-group" aria-labelledby="group-play">
+            <h3 id="group-play">Play</h3>
+            <div class="setting">
+              <div class="setting-text"><b id="level-label">Bot level</b><small>How well they play</small></div>
+              <div class="seg" id="level" role="radiogroup" aria-labelledby="level-label">
+                <button type="button" role="radio" aria-checked="false" data-level="easy">Easy</button>
+                <button type="button" role="radio" aria-checked="true" data-level="medium">Medium</button>
+                <button type="button" role="radio" aria-checked="false" data-level="hard">Hard</button>
+              </div>
+            </div>
+            <div class="setting">
+              <div class="setting-text"><b id="pace-label">Pace</b><small>Speed of play</small></div>
+              <div class="seg" id="pace" role="radiogroup" aria-labelledby="pace-label">
+                <button type="button" role="radio" aria-checked="false" data-pace="slower">Slower</button>
+                <button type="button" role="radio" aria-checked="true" data-pace="normal">Normal</button>
+                <button type="button" role="radio" aria-checked="false" data-pace="faster">Faster</button>
+              </div>
+            </div>
+            <div class="setting">
+              <div class="setting-text"><b id="opening-label">Dice and dealing</b><small>Before each hand</small></div>
+              <div class="seg" id="opening-pref" role="radiogroup" aria-labelledby="opening-label">
+                <button type="button" role="radio" aria-checked="true" data-opening="on">Show</button>
+                <button type="button" role="radio" aria-checked="false" data-opening="off">Skip</button>
+              </div>
+            </div>
+          </section>
+          <nav class="option-links" id="option-links" aria-label="More">
+            <button class="option-link" id="new-game" type="button">New game</button>
+            <button class="option-link" id="install-open" type="button" hidden>Install app</button>
+            <button class="option-link" id="help" type="button">Help</button>
+            <button class="option-link" id="report" type="button" aria-label="Report a problem">Report a problem</button>
+          </nav>
+          <div class="option-confirm" id="new-game-confirm" role="alertdialog" aria-labelledby="new-game-ask" hidden>
+            <p id="new-game-ask"><b>Start a new game?</b> This game and its scores end.</p>
+            <div class="option-confirm-buttons">
+              <button class="option-link" id="new-game-keep" type="button">Keep playing</button>
+              <button class="option-link option-danger" id="new-game-go" type="button">Start over</button>
+            </div>
           </div>
-        </div>
-        <div class="detail-line">
-          <h3>Bot level</h3>
-          <p>How well the bots play. A change takes effect with their next move.</p>
-          <div class="segmented" id="level" role="radiogroup" aria-label="Bot level">
-            <button class="ghost" type="button" role="radio" aria-checked="false" data-level="easy"><span>Easy</span></button>
-            <button class="ghost" type="button" role="radio" aria-checked="true" data-level="medium"><span>Medium</span></button>
-            <button class="ghost" type="button" role="radio" aria-checked="false" data-level="hard"><span>Hard</span></button>
           </div>
-        </div>
-        <div class="detail-line">
-          <h3>Dice and dealing</h3>
-          <p>At the start of a hand: throw for East, break the wall and deal the tiles. Off goes straight to play.</p>
-          <div class="segmented" id="opening-pref" role="radiogroup" aria-label="Dice and dealing">
-            <button class="ghost" type="button" role="radio" aria-checked="true" data-opening="on"><span>Show</span></button>
-            <button class="ghost" type="button" role="radio" aria-checked="false" data-opening="off"><span>Skip</span></button>
+          <div class="options-col">
+          <section class="option-group" aria-labelledby="group-table">
+            <h3 id="group-table">Table</h3>
+            <div class="setting">
+              <div class="setting-text"><b id="sound-label">Sound</b><small>On iPhone the silent switch mutes it too</small></div>
+              <button class="switch" id="sound" type="button" role="switch" aria-checked="true" aria-labelledby="sound-label"></button>
+            </div>
+            <div class="setting" id="large-discards-row" hidden>
+              <div class="setting-text"><b id="large-discards-label">Large discards</b><small>This round's tiles at twice the size</small></div>
+              <button class="switch" id="large-discards" type="button" role="switch" aria-checked="true" aria-labelledby="large-discards-label"></button>
+            </div>
+          </section>
+          <section class="option-group option-rules" aria-labelledby="group-rules">
+            <h3 id="group-rules">House rules</h3>
+            <div class="setting setting-wide">
+              <div class="setting-text"><b id="hand-set-label">Hands in play</b></div>
+              <div class="seg" id="hand-set" role="radiogroup" aria-labelledby="hand-set-label">
+                <button type="button" role="radio" aria-checked="true" data-set="all">All</button>
+                <button type="button" role="radio" aria-checked="false" data-set="companion">Companion</button>
+                <button type="button" role="radio" aria-checked="false" data-set="companion-pictured">Pictured</button>
+              </div>
+              <p class="option-note" id="hand-set-note"></p>
+              <p class="option-note option-pending" id="hand-set-pending" hidden>Takes effect with the next hand.</p>
+            </div>
+          </section>
           </div>
-        </div>
-        <div class="detail-line">
-          <h3>House rules</h3>
-          <p><b>Which hands are in play</b></p>
-          <div class="segmented" id="hand-set" role="radiogroup" aria-label="Which hands are in play">
-            <button class="ghost" type="button" role="radio" aria-checked="true" data-set="all"><span>All hands</span></button>
-            <button class="ghost" type="button" role="radio" aria-checked="false" data-set="companion"><span>Companion hands</span></button>
-            <button class="ghost" type="button" role="radio" aria-checked="false" data-set="companion-pictured"><span>Companion, pictured</span></button>
-          </div>
-          <p class="option-note" id="hand-set-note"></p>
-          <p class="option-note option-pending" id="hand-set-pending" hidden>Takes effect with the next hand.</p>
-        </div>
-        <div class="detail-line option-buttons">
-          <button class="ghost" id="help" type="button"><span>Help</span></button>
-          <button class="ghost" id="report" type="button" aria-label="Report a problem"><span>Report</span></button>
         </div>
       </div>
     </div>

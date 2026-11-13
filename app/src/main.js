@@ -115,6 +115,7 @@ async function run() {
   state.busy = true;
   try {
     for (;;) {
+      if (state.newGameWanted) return; // asked for while the bots played
       if (state.payload.outcome !== null) {
         await showOutcome();
         return;
@@ -154,6 +155,7 @@ async function run() {
   } finally {
     state.busy = false;
   }
+  if (state.newGameWanted) void newGame();
 }
 
 /** With calls off: a claim window offering nothing but calls (and Pass) is passed. */
@@ -240,7 +242,9 @@ function showChoices({ chime = true } = {}) {
   const view = state.payload.view;
   const bar = $("#actions");
   bar.replaceChildren();
-  clearSelection();
+  // A tile you pre-selected while the bots played stays up when your turn (and your new tile) comes;
+  // only the goulash exchange, which lifts its own picks, starts clean.
+  clearSelection(!legal.some((action) => action.type === "GoulashExchange"));
   void refreshHints(true);
   if (chime) alertFor(legal);
 
@@ -310,7 +314,12 @@ function faceChipLarge(key) {
 let pinnedSeed = new URLSearchParams(window.location.search).get("seed");
 
 async function newGame() {
-  if (state.busy) return;
+  // Mid-move: the turn loop stops at its next step and starts it then.
+  if (state.busy) {
+    state.newGameWanted = true;
+    return;
+  }
+  state.newGameWanted = false;
   state.busy = true;
   $("#result").hidden = true;
   $("#result").dataset.hand = "";
@@ -373,6 +382,7 @@ async function boot() {
 window.mahjong = {
   state: () => state.payload,
   busy: () => state.busy,
+  lifted: () => board.lifted?.key ?? null,
   act: (action) => act(action),
   next: () => $("#result .result-next")?.click(),
   sound,
@@ -381,6 +391,6 @@ window.mahjong = {
 installInput({ act });
 installResult({ callOut, apply, run, hideChoices, newGame });
 installMenu({ run, newGame });
-installOptions();
+installOptions({ newGame });
 
 void boot();

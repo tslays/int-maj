@@ -117,7 +117,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   sheet with the book's own sample hand, and the Hints toggle), `handbook.js`
   (the index of all hands), `result.js` (the result card and the final
   standings), `menu.js`
-  (the Calls, Sort, New game and Help buttons and closing the help sheet), `guide.js`
+  (the Calls, Sort and Help buttons and closing the help sheet), `guide.js`
   (Help: a guide in tabs - Basics, Your turn, Calls, Helpers, More - of short
   cards, each with a picture made of tile faces, copies of the game's buttons
   or a small sketch), `tips.js` (first-game tips: a note at the top of the
@@ -150,7 +150,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
 - `app/src/sound.js` is the sound, synthesised live with Web Audio: no audio
   files, so nothing to license, ship or cache. See "Sound" below.
 
-Tap a tile to lift it and tap it again to discard; or hold it and swipe up (a mouse can drag it up the same way) and let go to throw it onto the table: it swells once the swipe is far enough, and sliding back down cancels. Tap a second tile while one is lifted and the lift moves to it (so touch can compare discard options like hovering with a mouse); drag a tile along the hand and it trades places with every tile it passes, so you can arrange the hand your own way (it stays arranged for the hand). Arranging, and lifting a tile to look at it, works at any time, the bots' turns included (issue #99); only a throw needs your turn, so a tile swiped up or clicked on the bots' turns just settles back into the hand, and a hover lifts nothing. Claims, kongs, fishing,
+Tap a tile to lift it and tap it again to discard; or hold it and swipe up (a mouse can drag it up the same way) and let go to throw it onto the table: it swells once the swipe is far enough, and sliding back down cancels. Tap a second tile while one is lifted and the lift moves to it (so touch can compare discard options like hovering with a mouse); drag a tile along the hand and it trades places with every tile it passes, so you can arrange the hand your own way (it stays arranged for the hand). Arranging, and lifting a tile to look at it, works at any time, the bots' turns included (issue #99); only a throw needs your turn, so a tile swiped up or clicked on the bots' turns just settles back into the hand. A mouse hover lifts a tile on the bots' turns too and gold-marks its copies in the ponds and melds, so you can weigh your discards early; the bots' moves (their throws, draws and claims) neither lower that tile nor wipe its marks (a new copy in the pond is marked as it lands), and a claim window leaves it up. It stays up when your own turn comes and your new tile arrives, ready to throw with a click or a second tap. It goes down only when you move off it, tap it again with nothing to throw (touch), throw something, or the Goulash exchange starts. Claims, kongs, fishing,
 Mah Jong, reshuffle and the Goulash exchange appear as buttons when the engine
 offers them. The table is landscape only.
 

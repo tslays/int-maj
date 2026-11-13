@@ -70,6 +70,7 @@ export class Board {
     this.hand = []; // { key, tile, drawn }
     this.custom = false; // true once you have arranged the hand yourself
     this.carried = null; // the hand tile under your pointer: no animation moves it
+    this.lifted = null; // the hand tile you have raised (hover or tap): it stays up, and marked, while the table moves
     this.lastThrowX = 0;
     this.raycaster = new THREE.Raycaster();
     this.marked = [];
@@ -100,6 +101,8 @@ export class Board {
     this.handGroup.clear();
     this.hand = [];
     this.carried = null;
+    this.lifted = null;
+    this.clearMarks();
     this.setCustom(false);
     this.seats = {};
     this.clearRound();
@@ -136,7 +139,8 @@ export class Board {
    * started has finished. Returns what happened worth announcing.
    */
   async reconcile(payload, { animated = true } = {}) {
-    this.clearMarks();
+    // A tile you are studying keeps its gold marks while the bots play; they are refreshed at the end.
+    if (this.lifted === null) this.clearMarks();
     this.me = payload.seat;
     const handId = `${payload.game}:${payload.view.handNumber}`;
     if (handId !== this.handId) {
@@ -177,7 +181,19 @@ export class Board {
     requestRender();
     await Promise.all(work);
     this.markThrower(payload);
+    this.keepLift();
     return calls;
+  }
+
+  /** After the table moved: a lifted tile still in your hand keeps its marks (a new discard gets one); one that left drops them. */
+  keepLift() {
+    if (this.lifted === null) return;
+    if (!this.hand.includes(this.lifted)) {
+      this.lifted = null;
+      this.clearMarks();
+      return;
+    }
+    this.markCopies(this.lifted.key);
   }
 
   /* ------------------------------------------------------- discards */
@@ -362,7 +378,6 @@ export class Board {
 
   /** Gold-mark every identical tile already open on the table (discards, melds), never your own hand. */
   markCopies(key) {
-    this.clearMarks();
     const found = [];
     for (const seat of SEATS) {
       const state = this.seats[seat];
@@ -370,6 +385,10 @@ export class Board {
       for (const item of state.discards) if (item.key === key) found.push(item.layer?.visible ? item.layer : item.tile);
       for (const tile of state.melds.children) if (tile.userData.key === key) found.push(tile);
     }
+    // The very same tiles are already marked (the table moved but nothing changed for this tile): leave the glow breathing.
+    const same = found.length === this.marked.length && found.every((tile) => this.marked.some((frame) => frame.parent === tile));
+    if (same && found.length > 0) return;
+    this.clearMarks();
     if (found.length === 0) return;
     for (const tile of found) this.marked.push(markTile(tile));
     const id = ++this.markId;

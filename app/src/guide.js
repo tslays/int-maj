@@ -266,8 +266,8 @@ const TABS = [
     cards: [
       {
         title: "The menu",
-        text: "New game starts over. Calls, Sort and Hints switch on and off; a green light is on. Options has sound, pace, the bots' level, dice and dealing, and the house rules.",
-        picture: () => row(ghost("New game"), ghost("Hints", true), ghost("Options")),
+        text: "Calls, Sort and Hints switch on and off; a green light is on. Options has the bots' level, pace, sound, dice and dealing, the house rules, and New game.",
+        picture: () => row(ghost("Calls", true), ghost("Hints", true), ghost("Options")),
       },
       {
         title: "Saving",
@@ -281,7 +281,7 @@ const TABS = [
       },
       {
         title: "Report a problem",
-        text: "Options, then Report: add a line if you like and Send. It goes to the developers with the build, your device and this game's moves; no name or account.",
+        text: "Options, then Report a problem: add a line if you like and Send. It goes to the developers with the build, your device and this game's moves; no name or account.",
         picture: () => icon('<path d="M10 10h28v20H22l-8 7v-7h-4z"/><path d="M24 15v7M24 26v.5"/>'),
       },
       {

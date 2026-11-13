@@ -1,14 +1,14 @@
 /**
- * The menu: the Calls, Sort and New game buttons, and closing the help sheet
- * (the guide itself is `guide.js`). Sound,
- * the house rules and the Help and Report buttons live in `options.js`.
+ * The menu: the Calls, Sort and Help buttons, and closing the help sheet (the
+ * guide itself is `guide.js`). Sound, the house
+ * rules, New game and the Help and Report buttons live in `options.js`.
  */
 
 import { openGuide } from "./guide.js";
 import { $, board, showToggle, state } from "./shared.js";
 
-/** `hooks.run` resumes the turn loop; `hooks.newGame` starts a fresh game. */
-export function installMenu({ run, newGame }) {
+/** `hooks.run` resumes the turn loop. */
+export function installMenu({ run }) {
   /* Calls: lit = you are offered calls on each discard; off = you are not asked. */
   $("#calls").addEventListener("click", () => {
     state.callsOff = !state.callsOff;
@@ -29,8 +29,6 @@ export function installMenu({ run, newGame }) {
     if (board.custom) void board.autoSort();
     else board.setCustom(true);
   });
-
-  $("#new-game").addEventListener("click", () => void newGame());
 }
 
 /* --------------------------------------------------------- help sheet */
