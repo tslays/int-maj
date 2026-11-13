@@ -24,6 +24,7 @@ import "./report.js";
 import { installResult, showOutcome } from "./result.js";
 import { $, board, faceChip, request, scores, state, storage, toast } from "./shared.js";
 import { sound } from "./sound.js";
+import { hideTip, tipForChoices, welcome } from "./tips.js";
 import { ALL_FACES, initTiles, preloadFaces, tileOrder } from "./tiles.js";
 import { mountStage, renderer, requestRender, screenPoint, sleep, updateConsole, viewport } from "./stage.js";
 
@@ -190,6 +191,7 @@ async function act(action) {
 
 function hideChoices() {
   $("#actions").replaceChildren();
+  hideTip();
 }
 
 function button(label, kind, onClick, tiles = []) {
@@ -245,6 +247,7 @@ function showChoices({ chime = true } = {}) {
   if (legal.some((action) => action.type === "GoulashExchange")) {
     resetGoulash();
     refreshGoulash();
+    tipForChoices(legal, { callsOff: state.callsOff });
     const confirm = button("Pass 3 tiles", "claim", () => {
       const keys = goulashKeys().sort();
       const action = legal.find(
@@ -294,6 +297,7 @@ function showChoices({ chime = true } = {}) {
   if (view.claimWindow !== null && view.phase === "claim") {
     bar.prepend(faceChipLarge(view.claimWindow.tile));
   }
+  tipForChoices(legal, { callsOff: state.callsOff });
 }
 
 function faceChipLarge(key) {
@@ -360,6 +364,7 @@ async function boot() {
     void run();
     return;
   }
+  await welcome();
   await newGame();
 }
 

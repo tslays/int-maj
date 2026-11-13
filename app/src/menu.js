@@ -1,8 +1,10 @@
 /**
- * The menu: the Calls, Sort and New game buttons, and the help sheet. Sound,
+ * The menu: the Calls, Sort and New game buttons, and closing the help sheet
+ * (the guide itself is `guide.js`). Sound,
  * the house rules and the Help and Report buttons live in `options.js`.
  */
 
+import { openGuide } from "./guide.js";
 import { $, board, showToggle, state } from "./shared.js";
 
 /** `hooks.run` resumes the turn loop; `hooks.newGame` starts a fresh game. */
@@ -36,10 +38,8 @@ export function installMenu({ run, newGame }) {
 function closeHelp() {
   $("#help-sheet").hidden = true;
 }
-$("#help").addEventListener("click", () => {
-  $("#help-sheet").hidden = false;
-  $("#help-close").focus();
-});
+$("#help").addEventListener("click", openGuide);
+$("#menu-help").addEventListener("click", openGuide);
 $("#help-close").addEventListener("click", closeHelp);
 $("#help-sheet").addEventListener("click", (event) => {
   if (event.target === event.currentTarget) closeHelp();
