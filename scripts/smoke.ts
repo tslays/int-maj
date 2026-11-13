@@ -67,6 +67,7 @@ declare global {
     mahjong?: {
       state(): Payload | null;
       busy(): boolean;
+      lifted(): string | null;
       act(action: unknown): Promise<void>;
       sound: { readonly samplesLoaded: number };
     };
@@ -278,6 +279,18 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   );
   console.log("  ok  tap twice to throw");
 
+  // The bots play on: a mouse over a hand tile pre-selects it (to see its copies in the ponds), and the
+  // bots' moves do not put it down again. Only checked while the table is still busy, as a bot's turn
+  // can end at any moment (your turn lowers the tile by design).
+  await page.mouse.move(tile.x, tile.y);
+  await page.waitForTimeout(150);
+  for (const wait of [0, 350, 350]) {
+    await page.waitForTimeout(wait);
+    const seen = await page.evaluate(() => ({ busy: window.mahjong!.busy(), lifted: window.mahjong!.lifted() }));
+    if (seen.busy) assert.notEqual(seen.lifted, null, "a hovered tile stays lifted while the bots play");
+  }
+  console.log("  ok  hover lifts a tile while the bots play");
+
   // The bots play on: a swipe up on a hand tile throws nothing. The swipe is dispatched as pointer
   // events in one synchronous step, so no bot turn can land between the check and the swipe: if the
   // table is busy at that moment, it stays busy through the swipe. (Our turn returning first makes
@@ -333,6 +346,14 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   );
   await page.click("#sort");
   console.log("  ok  arrange the hand while the bots play, nothing thrown");
+
+  // A tile pre-selected by hover while the bots play is still up when your turn (and new tile) arrives.
+  await page.mouse.move(tile.x, tile.y);
+  payload = await yourMove(page);
+  assert.notEqual(await page.evaluate(() => window.mahjong!.lifted()), null, "the pre-selected tile stays up on your turn");
+  console.log("  ok  a pre-selected tile stays up when your turn comes");
+  await page.mouse.move(VIEWPORT.width / 2, VIEWPORT.height * 0.4); // off the hand: the tile goes down
+  await page.waitForTimeout(300);
 
   // A tap on the ponds zooms onto them from above; a second tap goes back.
   payload = await yourMove(page);

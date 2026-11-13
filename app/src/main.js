@@ -240,7 +240,9 @@ function showChoices({ chime = true } = {}) {
   const view = state.payload.view;
   const bar = $("#actions");
   bar.replaceChildren();
-  clearSelection();
+  // A tile you pre-selected while the bots played stays up when your turn (and your new tile) comes;
+  // only the goulash exchange, which lifts its own picks, starts clean.
+  clearSelection(!legal.some((action) => action.type === "GoulashExchange"));
   void refreshHints(true);
   if (chime) alertFor(legal);
 
@@ -375,6 +377,7 @@ async function boot() {
 window.mahjong = {
   state: () => state.payload,
   busy: () => state.busy,
+  lifted: () => board.lifted?.key ?? null,
   act: (action) => act(action),
   next: () => $("#result .result-next")?.click(),
   sound,
