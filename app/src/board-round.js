@@ -5,8 +5,10 @@
  * or zooming. One at a time (owner ruling for alpha.7: the whole round at
  * once was too distracting): each new throw takes the large face from the one
  * before. It appears only once its tile has landed and settled, expanding
- * briefly out of the tile, and it goes when your own turn comes (you draw and
- * throw with a quiet table) or when the tile is claimed. Options has a switch
+ * briefly out of the tile. The tile the player on your left throws keeps its
+ * large face into your turn (it is the one you most want to read); your own
+ * throw takes it away, and nothing is enlarged until the next player throws.
+ * A claimed tile takes its large face with it. Options has a switch
  * for it (on by default, `large-discards.js`). It has the latest discard's
  * cyan edge (it covers that plate).
  *
@@ -36,15 +38,9 @@ export const roundMethods = {
     return largeDiscards.on && roundLayersWanted(viewport.width, viewport.height);
   },
 
-  /** Your own turn to draw or throw: the table stays quiet, with no large face. */
-  ownTurn() {
-    const view = this.lastPayload?.view;
-    return view !== undefined && view.turn === this.me && (view.phase === "draw" || view.phase === "discard");
-  },
-
   /** An opponent's discard has landed and settled: lay its face over it, expanding out of the tile; the one before goes. */
   addRoundLayer(item) {
-    if (!item.tile.parent || this.round.includes(item) || this.ownTurn()) return;
+    if (!item.tile.parent || this.round.includes(item)) return;
     this.clearRound();
     const order = this.round.length;
     const { group, edge } = makeFaceLayer(item.key);

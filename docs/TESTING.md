@@ -36,7 +36,7 @@ turned sideways. Everything else, the app shows you: tap **Help**.
 - **Two new house rules:** *No half-limit hands in a Goulash* (on) and
   *Announce fishing to win* (off).
 - **Calmer Large discards** on phones: only the tile just thrown is shown
-  large, and nothing while it is your turn.
+  large, and your own throw clears it.
 - **Harder Hard bots.**
 - **New flower and season tiles:** big pictures you can recognise.
 - **Help as a visual guide,** tips in your first game, and a redesigned
