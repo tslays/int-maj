@@ -22,6 +22,7 @@ import type { Action } from "./actions.ts";
 import { seatIndex, wallRemaining } from "./state.ts";
 import { legalActions } from "./legal.ts";
 import { goulashPartner } from "./reduce.ts";
+import { exclusionsOf } from "./hands.ts";
 
 export interface PlayerView {
   readonly seat: Seat;
@@ -85,7 +86,11 @@ export interface GameView {
   readonly fishingTier: Tier | null;
   /** During a Goulash: which of the three exchanges, and your partner in it. */
   readonly goulash: { readonly stage: 0 | 1 | 2; readonly partner: Seat } | null;
-  /** House rule: hands this table plays without (public, the same for every seat). */
+  /**
+   * House rules: hands this hand is played without (public, the same for
+   * every seat), by id or as a tier (`tierExclusion`, e.g. half limit in a
+   * Goulash). Pass it to the matcher as `excluded`.
+   */
   readonly excludedHands: readonly string[];
 }
 
@@ -155,6 +160,6 @@ export function viewFor(state: GameState, seat: Seat): GameView {
       state.phase === "exchange"
         ? { stage: state.goulashStage ?? 0, partner: goulashPartner(state.goulashStage ?? 0, seat) }
         : null,
-    excludedHands: [...(state.excludedHands ?? [])],
+    excludedHands: [...exclusionsOf(state)],
   };
 }

@@ -17,8 +17,22 @@ export interface PatternMatch {
 }
 
 /**
- * `excluded` names hands the table has agreed to play without (a house rule):
- * they are skipped, so a hand that also makes another pattern scores as that.
+ * An `excluded` entry that bars every hand at one tier rather than one hand
+ * by id: "tier:half" leaves out whatever would score at half limit, so a hand
+ * that is half limit only when exposed still counts concealed.
+ */
+export function tierExclusion(tier: Tier): string {
+  return `tier:${tier}`;
+}
+
+/** True when `excluded` leaves out this pattern, by id or by the tier it scores at. */
+export function isExcluded(excluded: readonly string[], patternId: string, tier: Tier): boolean {
+  return excluded.includes(patternId) || excluded.includes(tierExclusion(tier));
+}
+
+/**
+ * `excluded` names hands the table has agreed to play without (a house rule),
+ * by id or by tier (`tierExclusion`): they are skipped, so a hand that also makes another pattern scores as that.
  */
 export function matchHand(
   hand: Hand,
@@ -38,7 +52,7 @@ export function matchHand(
     if (pattern.requiresSelfDrawn && !hand.selfDrawn) continue;
     const tier = concealed ? pattern.tier : pattern.exposedTier;
     if (tier === null) continue;
-    if (excluded.includes(pattern.id)) continue;
+    if (isExcluded(excluded, pattern.id, tier)) continue;
     if (!pattern.match(context)) continue;
     matches.push({ pattern, tier, points: TIER_POINTS[tier], concealed });
   }
@@ -55,7 +69,7 @@ export function matchHand(
  */
 export function matchesAny(
   hand: Hand,
-  accept: (pattern: HandPattern) => boolean,
+  accept: (pattern: HandPattern, tier: Tier) => boolean,
   shape: HandShape = normalizeHand(hand),
 ): boolean {
   const concealed = isConcealed(hand);
@@ -64,7 +78,7 @@ export function matchesAny(
     if (pattern.requiresSelfDrawn && !hand.selfDrawn) continue;
     const tier = concealed ? pattern.tier : pattern.exposedTier;
     if (tier === null) continue;
-    if (!accept(pattern)) continue;
+    if (!accept(pattern, tier)) continue;
     if (pattern.match(context)) return true;
   }
   return false;

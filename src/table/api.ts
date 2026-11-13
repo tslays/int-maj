@@ -24,7 +24,8 @@
  *   POST /api/next            deal the next hand after a finished one, under
  *                             `{ houseRules }` when they are given
  *
- * `houseRules` is `{ handSet: "all" | "companion" | "companion-pictured" }`; a hand keeps the rules
+ * `houseRules` is `{ handSet: "all" | "companion" | "companion-pictured",
+ * goulashNoHalfLimit: boolean }` (each optional, defaulting to all and true); a hand keeps the rules
  * it was dealt with, so a change shows from the next deal.
  */
 
@@ -129,7 +130,11 @@ function optionalHouseRules(record: Record<string, unknown>): HouseRules | undef
   if (!isHandSet(handSet)) {
     throw new ApiError(400, `houseRules.handSet must be one of ${HAND_SETS.join(", ")}`);
   }
-  return { handSet };
+  const goulashNoHalfLimit = rules.goulashNoHalfLimit ?? DEFAULT_HOUSE_RULES.goulashNoHalfLimit;
+  if (typeof goulashNoHalfLimit !== "boolean") {
+    throw new ApiError(400, "houseRules.goulashNoHalfLimit must be true or false");
+  }
+  return { handSet, goulashNoHalfLimit };
 }
 
 /** The public event log as text lines the client can append to its log. */

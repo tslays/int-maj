@@ -72,7 +72,9 @@ export function buildReport(session: WebSession, info: ReportInfo): string {
     `Build: ${oneLine(info.build, 40)}`,
     `User agent: ${oneLine(info.userAgent, 300)}`,
     `Hand: ${session.state.handNumber} (${session.state.phase})`,
-    `House rules: hand set ${houseRulesOf(session.state).handSet}`,
+    `House rules: hand set ${houseRulesOf(session.state).handSet}, half-limit hands in a Goulash ${
+      houseRulesOf(session.state).goulashNoHalfLimit ? "barred" : "allowed"
+    }`,
     `Decisions: ${session.steps.length} (yours: ${session.humanSteps.length})`,
     `Note: ${note === "" ? "(none)" : note}`,
     "",
