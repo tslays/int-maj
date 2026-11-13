@@ -133,6 +133,21 @@ const TABLE = {
       state.fishing.length >= 1,
   },
 
+  claims: {
+    title: "Melds, a kong and bonus tiles on the table",
+    seed: "claims-76",
+    at: (view) => {
+      if (view.phase !== "discard" || view.turn !== view.seat) return false;
+      if (!view.legalActions.some((action) => action.type === "Discard")) return false;
+      const seats = [view.player, ...view.opponents];
+      return (
+        seats.filter((seat) => seat.melds.some((meld) => meld.exposed)).length >= 2 &&
+        seats.reduce((sum, seat) => sum + seat.melds.length, 0) >= 3 &&
+        seats.some((seat) => seat.melds.some((meld) => meld.kind === "kong"))
+      );
+    },
+  },
+
   goulash: {
     title: "The first Goulash exchange",
     seed: "goulash-0",

@@ -94,6 +94,18 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   hand tile lifted only puts the tile down. With `prefers-reduced-motion` the
   view changes at once. `test/app/view.test.ts` proves every discard is on
   screen and larger than in the table view.
+- The claims sheet (`app/src/claims.js`): a tap between a seat's wall and
+  the rail, near any of its laid-out tiles, or on its seat label opens a
+  sheet over the table with every seat's flowers and seasons, then its
+  exposed melds in the order made, as large upright 2D faces, one row per
+  seat (right, across, left, then you), the tapped seat's row lit in the turn
+  cyan. A concealed kong keeps its two end tiles face down, as on the table;
+  copies of a lifted hand tile are gold-outlined. It follows the table while
+  open (a new meld glows in once) and a tap anywhere closes it. Who a tap
+  asks for is `layout.js` `claimsSeatAt` (nearest laid-out tile, else the
+  side of the table); `test/app/layout.test.ts` proves every meld tile asks
+  for its own seat and no discard asks at all. In the hand strip's headroom
+  only a tap near a tile counts, and never one on the hand's row.
 - The round layers, on phones only (`app/src/board-round.js`;
   `makeFaceLayer` in `tiles.js`; `ROUND_LAYER`, `roundLayerZ` and
   `roundLayersWanted` in `layout.js`): the tile another player has just
@@ -294,7 +306,7 @@ Two URL options help when testing:
 
 | URL | Opens |
 | --- | --- |
-| `/?state=turn\|claim\|wait\|fishing\|announce\|ron\|win\|drawn\|result\|goulash` | one fixed review board, replayed from a seed |
+| `/?state=turn\|claim\|wait\|fishing\|announce\|ron\|win\|drawn\|result\|goulash\|claims` | one fixed review board, replayed from a seed (`claims` opens on the claims sheet) |
 | `/?phone` | the table inside an iPhone-landscape frame, on any screen |
 | `/?install=ios\|android\|ios-webview\|android-webview` | that install guide on the turn-your-phone screen, on any phone held upright |
 

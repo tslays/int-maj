@@ -28,6 +28,7 @@ import { hideTip, tipForChoices, welcome } from "./tips.js";
 import { ALL_FACES, initTiles, preloadFaces, tileOrder } from "./tiles.js";
 import { mountStage, onViewChange, renderer, requestRender, screenPoint, setConsoleShown, sleep, updateConsole, viewport } from "./stage.js";
 import { discardLayout } from "./discard-layout.js";
+import { openClaims, refreshClaims } from "./claims.js";
 import { hideSeatLabels, placeSeatLabels, showSeatLabels } from "./seat-labels.js";
 
 const CALL_WORD = { pung: "Pung", kong: "Kong", chow: "Chow", mahjong: "Mah Jong" };
@@ -130,6 +131,7 @@ async function apply(next, { animated = true, opening = false } = {}) {
   if (!open) refreshConsole(before?.view ?? next.view);
   const calls = open ? await playOpening(next, { onSeated: () => refreshConsole() }) : await board.reconcile(next, { animated });
   refreshConsole();
+  refreshClaims();
   refreshGoulash();
   markReceivedTiles(before, next);
   const announcements = [];
@@ -391,6 +393,8 @@ async function boot() {
   if (review !== null) {
     try {
       await apply(await request(`/api/scenario?state=${encodeURIComponent(review)}`), { animated: false });
+      // The claims board opens on the sheet, lit on the seat to your right.
+      if (review === "claims") openClaims(1);
       void run();
       return;
     } catch (error) {

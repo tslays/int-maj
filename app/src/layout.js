@@ -240,6 +240,36 @@ export function meldRects(rel, groupSizes, wallExtent, handCount, options = {}) 
   return tiles.map((tile) => tileRect(rel, tile.x, tile.z, W * scale, H * scale));
 }
 
+/** How far past the rail a tap still counts for a seat's claims. */
+const CLAIMS_REACH = TABLE.TABLE_HALF + 1.5;
+/** A tap this near a laid-out tile's centre asks for that tile's seat. */
+export const CLAIMS_NEAR = 1.6;
+
+/**
+ * Whose claims a tap on the felt at table point (x, z) asks for, as a `rel`,
+ * or null. `tiles` are the centres of every seat's laid-out tiles
+ * ({ rel, x, z }, table space): a tap near one asks for its seat, as the
+ * lanes run on into the corners. Anywhere else from the walls out to the
+ * rail, the side of the table decides (unless `nearOnly`). The ponds inside
+ * the walls are the pond zoom's.
+ */
+export function claimsSeatAt(x, z, tiles = [], { nearOnly = false } = {}) {
+  if (Math.max(Math.abs(x), Math.abs(z)) > CLAIMS_REACH) return null;
+  if (Math.abs(x) < WALL_INNER && Math.abs(z) < WALL_INNER) return null;
+  let nearest = null;
+  let best = CLAIMS_NEAR;
+  for (const tile of tiles) {
+    const distance = Math.hypot(tile.x - x, tile.z - z);
+    if (distance < best) {
+      best = distance;
+      nearest = tile.rel;
+    }
+  }
+  if (nearest !== null || nearOnly) return nearest;
+  if (Math.abs(z) >= Math.abs(x)) return z > 0 ? 0 : 2;
+  return x > 0 ? 1 : 3;
+}
+
 /** Table-space rectangles of the wall stacks still standing, `slots` in the seat's frame. */
 export function wallRects(rel, slots) {
   return slots.map((slot) => tileRect(rel, wallSlotX(slot), WALL_R, W, H));

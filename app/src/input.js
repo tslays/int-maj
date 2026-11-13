@@ -8,6 +8,7 @@
 import { showGoulashPicked } from "./goulash.js";
 import { $, board, state } from "./shared.js";
 import { pondTap, pondZoomed, renderer, setPondZoom } from "./stage.js";
+import { claimsTap, openClaims } from "./claims.js";
 import { sound } from "./sound.js";
 
 let press = null; // the tile under a held pointer
@@ -75,7 +76,15 @@ renderer.domElement.addEventListener("pointerdown", (event) => {
   // A tap on the ponds (not on a hand tile, and with no tile lifted to put
   // down) zooms in on them from above; a tap anywhere zooms back. It works
   // while the bots play too: that is when you study the discards.
-  if (entry === null && (pondZoomed() || board.lifted === null || state.busy || state.payload === null) && pondTap(event)) {
+  const free = entry === null && (pondZoomed() || board.lifted === null || state.busy || state.payload === null);
+  // A tap between a seat's wall and the rail, or on its melds, opens the
+  // claims sheet on that seat: every player's melds and bonus tiles, upright.
+  const claims = free && !pondZoomed() ? claimsTap(event) : null;
+  if (claims !== null) {
+    openClaims(claims);
+    return;
+  }
+  if (free && pondTap(event)) {
     setPondZoom(!pondZoomed());
     return;
   }
