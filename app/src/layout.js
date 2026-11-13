@@ -117,6 +117,38 @@ export function discardRect(rel, index) {
 export const WALL_INNER = WALL_R - H / 2;
 
 /**
+ * Seat labels with the centre pile (seat-labels.js): each seat's wind and
+ * score on the felt against the inside of its wall. The pile keeps off a pad
+ * under each one, so no discard ever lies beneath a label. In the seat's own
+ * frame a pad is `HALF` either side of the seat's middle and `DEPTH` in from
+ * the wall. The viewer and the seat across read their label in one line,
+ * along their wall; the seats to the sides stack it (wind over score), so it
+ * runs into the felt only as far as its score is wide. The label keeps its
+ * size on the screen, so the far seat's, where the table is smallest, covers
+ * the most felt (sized on a phone held sideways, the tightest view). The
+ * label is drawn centred on its pad (`labelPad(rel).centre`).
+ */
+export const LABEL_PAD = Object.freeze({
+  NEAR: Object.freeze({ HALF: 3.4, DEPTH: 1.4 }),
+  SIDE: Object.freeze({ HALF: 1.8, DEPTH: 3.4 }),
+  FAR: Object.freeze({ HALF: 3.9, DEPTH: 2.1 }),
+});
+
+/** Seat `rel`'s label pad: its table-space rectangle and the label's centre in the seat's frame. */
+export function labelPad(rel) {
+  const { HALF, DEPTH } = rel === 0 ? LABEL_PAD.NEAR : rel === 2 ? LABEL_PAD.FAR : LABEL_PAD.SIDE;
+  const a = toTable(rel, -HALF, WALL_INNER - DEPTH);
+  const b = toTable(rel, HALF, WALL_INNER);
+  return {
+    minX: Math.min(a.x, b.x),
+    maxX: Math.max(a.x, b.x),
+    minZ: Math.min(a.z, b.z),
+    maxZ: Math.max(a.z, b.z),
+    centre: { x: 0, z: WALL_INNER - DEPTH / 2 },
+  };
+}
+
+/**
  * The round layers, for phones only. Each tile the other players throw this
  * round gets its face laid flat on top of it - the same place, angle and
  * orientation as the tile - `SCALE` times the tile's size, until you throw

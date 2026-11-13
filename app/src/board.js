@@ -14,7 +14,7 @@
 
 import * as THREE from "three";
 import { D, H, W, makeTile, roundedRect, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, TABLE } from "./tiles.js";
-import { discardSlot, latestPlate, LATEST_MARGIN, meldLayout, pondPad } from "./layout.js";
+import { discardSlot, labelPad, latestPlate, LATEST_MARGIN, meldLayout, pondPad } from "./layout.js";
 import { createPile, PILE, pileReach } from "./pile.js";
 import { discardLayout } from "./discard-layout.js";
 import { pace } from "./pace.js";
@@ -234,9 +234,10 @@ export class Board {
     return this.frames[this.rel(seat)];
   }
 
-  /** Where a seat's label sits with the centre pile: on the felt just inside its wall, in world space. */
+  /** Where a seat's label sits with the centre pile: on its pad against the inside of its wall, which the pile keeps clear (world space). */
   labelPoint(rel) {
-    return this.frames[rel].localToWorld(new THREE.Vector3(0, 0.5, WALL_R - 1.2));
+    const { centre } = labelPad(rel);
+    return this.frames[rel].localToWorld(new THREE.Vector3(centre.x, 0.5, centre.z));
   }
 
   /** Where a seat sounds from: the side you hear it on, and how far off it is. */

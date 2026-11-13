@@ -10,9 +10,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 // @ts-expect-error - a plain browser module without type declarations
-import { corners, createPile, inPond, PILE, pileReach, polygonsOverlap, settlePile } from "../../app/src/pile.js";
+import { corners, createPile, inPond, offLabels, PILE, pileReach, polygonsOverlap, settlePile } from "../../app/src/pile.js";
 // @ts-expect-error - a plain browser module without type declarations
-import { handRects, meldRects, TABLE, WALL_INNER, wallRects } from "../../app/src/layout.js";
+import { handRects, labelPad, meldRects, TABLE, WALL_INNER, wallRects } from "../../app/src/layout.js";
 
 interface Pose {
   readonly x: number;
@@ -99,6 +99,32 @@ describe("the centre pile", () => {
       }
     }
     assert.ok(PILE.OUTER < WALL_INNER);
+  });
+
+  it("leaves every seat label's pad clear, so no discard lies under a wind and score", () => {
+    for (const { seed, pond } of HANDS) {
+      for (const pose of (settlePile(pond, `hand-${seed}`) as Pose[]).filter((p) => p.live)) {
+        assert.ok(offLabels(pose), `hand ${seed}: a pile tile lies on a label's pad`);
+      }
+    }
+    for (let rel = 0; rel < 4; rel++) {
+      const pad = labelPad(rel);
+      assert.ok(Math.max(Math.abs(pad.minX), Math.abs(pad.maxX), Math.abs(pad.minZ), Math.abs(pad.maxZ)) <= WALL_INNER + 1e-9, "a pad lies inside the walls");
+    }
+  });
+
+  it("grows round, as much into the diagonals as towards the seats (no cross)", () => {
+    let diagonal = 0;
+    let all = 0;
+    for (const { seed, pond } of HANDS) {
+      for (const pose of (settlePile(pond.slice(0, 75), `hand-${seed}`) as Pose[]).filter((p) => p.live)) {
+        const angle = ((((Math.atan2(pose.z, pose.x) * 180) / Math.PI) % 90) + 90) % 90;
+        all += 1;
+        if (Math.abs(angle - 45) < 22.5) diagonal += 1;
+      }
+    }
+    // Half the table's angles are diagonal; the old pile, which grew arms at the seats, put 31% there.
+    assert.ok(diagonal / all > 0.42, `only ${((100 * diagonal) / all).toFixed(0)}% of the pile lies in the diagonals`);
   });
 
   it("settles the same discards the same way, and the incremental pile agrees with a fresh one", () => {

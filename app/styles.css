@@ -117,6 +117,14 @@ button {
   pointer-events: none;
   transition: box-shadow 220ms, border-color 220ms;
 }
+/* The seats to the sides stack their label, wind over score, so it runs into
+   the felt no further than the pad the pile keeps clear (layout.js LABEL_PAD). */
+.seat-label[data-rel="1"],
+.seat-label[data-rel="3"] {
+  flex-direction: column;
+  gap: 0;
+  padding: 3px 7px;
+}
 .seat-label[hidden] {
   display: none;
 }
