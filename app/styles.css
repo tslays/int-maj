@@ -149,8 +149,11 @@ button {
   right: var(--safe-r);
   bottom: calc(var(--hand-top, var(--strip)) + 10px);
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: 10px;
+  max-width: calc(100vw - var(--safe-r) - 20px);
 }
 .act {
   display: inline-flex;
