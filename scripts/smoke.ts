@@ -103,6 +103,9 @@ const BOARD_CHECKS: Readonly<Record<ScenarioName, (payload: Payload, page: Page)
   fishing: async (payload) => {
     assert.equal(payload.view.phase, "discard");
   },
+  botfishing: async (payload) => {
+    assert.equal(payload.view.phase, "discard");
+  },
   announce: async (payload) => {
     assert.ok(payload.legalActions.some((action) => action.type === "DeclareFishing"), "you may declare fishing");
   },

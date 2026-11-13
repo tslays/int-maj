@@ -89,6 +89,18 @@ const TABLE = {
       view.fishing.some((entry) => entry.seat === view.seat),
   },
 
+  botfishing: {
+    title: "A bot with a meld has shown its fish",
+    seed: "botfish-27",
+    at: (view) =>
+      view.phase === "discard" &&
+      view.turn === view.seat &&
+      view.legalActions.some((action) => action.type === "Discard") &&
+      view.fishing.some(
+        (entry) => entry.seat !== view.seat && (view.opponents.find((other) => other.seat === entry.seat)?.melds.length ?? 0) >= 1,
+      ),
+  },
+
   announce: {
     title: "Your turn to declare fishing",
     seed: "offer-announce-v11-2",

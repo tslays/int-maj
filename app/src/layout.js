@@ -117,14 +117,6 @@ export function discardRect(rel, index) {
 export const WALL_INNER = WALL_R - H / 2;
 
 /**
- * The seat labels with the centre pile (seat-labels.js): each seat's wind
- * letter stands in one fixed place, on top of its wall at the wall's dead
- * centre. The wall's stacks sit `(W - H) / 2` off the seat's middle (the
- * walls meet corner to corner), so its centre is there, not at x = 0.
- */
-export const WALL_TOP_CENTRE = Object.freeze({ x: (W - H) / 2, z: WALL_R });
-
-/**
  * The round layers, for phones only. Each tile the other players throw this
  * round gets its face laid flat on top of it - the same place, angle and
  * orientation as the tile - `SCALE` times the tile's size, until you throw

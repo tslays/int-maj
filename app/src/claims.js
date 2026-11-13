@@ -1,17 +1,17 @@
 /**
  * The claims sheet: every player's flowers, seasons and exposed melds, large
  * and upright, for when the lanes along the walls are too small to read (a
- * phone). A tap on a seat's lane, or on its seat label, opens it with that
+ * phone). A tap on a seat's lane opens it with that
  * seat's row lit; a tap anywhere closes it. It shows only what the table
  * already shows face up (a concealed kong keeps its ends face down), and it
  * follows the table while open: a new meld appears in its row with a glow.
  *
- * Plain DOM over the canvas, like the seat labels.
+ * Plain DOM over the canvas.
  */
 
 import { claimsSeatAt } from "./layout.js";
 import { board, faceChip, scores, state } from "./shared.js";
-import { FISH } from "./seat-labels.js";
+import { FISH } from "./round-badge.js";
 import { feltPoint, renderer, viewport } from "./stage.js";
 
 /** Rows in the order the others play after you, then you, by `rel`. */
@@ -152,9 +152,3 @@ function render() {
   const size = widest > 0 && room > 0 ? Math.min(40, Math.floor(room / widest) - 2) : 40;
   panel.style.setProperty("--claims-w", `${Math.max(14, size)}px`);
 }
-
-/** The seat labels open the sheet too (they sit on the felt with the centre pile). */
-document.addEventListener("click", (event) => {
-  const label = event.target instanceof Element ? event.target.closest(".seat-label") : null;
-  if (label !== null) openClaims(Number(label.dataset.rel));
-});
