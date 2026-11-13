@@ -49,7 +49,7 @@ const ROUND_MS = 45_000;
 /** What the page's debug handle (`window.mahjong`) answers; see app/src/main.js. */
 interface Payload {
   readonly seat: string;
-  readonly legalActions: readonly { readonly type: string }[];
+  readonly legalActions: readonly { readonly type: string; readonly kind?: string }[];
   readonly outcome: { readonly kind: string } | null;
   readonly wall: { readonly remaining: number };
   readonly table: readonly { readonly seat: string; readonly discards: readonly string[] }[];
@@ -82,7 +82,10 @@ const BOARD_CHECKS: Readonly<Record<ScenarioName, (payload: Payload, page: Page)
   },
   claim: async (payload, page) => {
     assert.equal(payload.view.phase, "claim");
-    assert.deepEqual(await buttons(page), ["Pass", "Chow"]);
+    // Every possible run is its own Chow button.
+    const runs = payload.legalActions.filter((action) => action.type === "Claim" && action.kind === "chow").length;
+    assert.ok(runs >= 2, "the board offers several runs");
+    assert.deepEqual(await buttons(page), ["Pass", ...Array<string>(runs).fill("Chow")]);
   },
   wait: async (payload, page) => {
     assert.equal(payload.view.phase, "claim");
