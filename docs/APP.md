@@ -28,10 +28,10 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   touches a wall, a hand, a discard or another player's melds.
 - `app/src/pile.js` is the other discard layout, the **centre pile** (Options,
   Discards: Rows or Pile, a device preference `int-maj.discard-layout`,
-  `discard-layout.js`; #122). Every discard is thrown into one pond round the
-  console: the first lands beside it, each later throw aims close beside a
+  `discard-layout.js`; #122). Every discard is thrown into one pond in the
+  middle: the first lands near the centre, each later throw aims close beside a
   tile already there, knocks the tiles it lands on a short way along the
-  throw, and slides back until it lies clear; nothing shows who threw a tile
+  throw, and slides back a little or settles into the nearest gap; nothing shows who threw a tile
   or when. It is deterministic from the hand's seed and the throw order
   (`pond` in the payload, built by `pondOf` from the hand's events, with
   claimed tiles marked `taken`: they leave the pile, the knocks they gave
@@ -41,8 +41,12 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   (`discardRest`), animates a throw touching down at its aim and sliding
   clear, eases the knocked tiles (`nudgePile`), turns the latest-discard plate
   with its tile, hides the seat pads and frames the zoomed view on the pile.
-  `test/app/pile.test.ts` proves no two pile tiles overlap and none covers the
-  console or reaches the walls, hands or melds.
+  With the pile the middle console is put away (`setConsoleShown`): each
+  seat's wind (coral for the dealer), score and fish move to a label on the
+  felt just inside its wall, glowing cyan on the seat whose turn it is, and
+  the round and wall count to a badge under the menu (`seat-labels.js`).
+  `test/app/pile.test.ts` proves no two pile tiles overlap and none reaches
+  the walls, hands or melds.
 - The wall is broken and drawn as *Illustrated* pp. 18-19 and p. 62 show: the
   dice (`breakFor`) name the wall and the stack counted from its right-hand
   end; that stack is lifted off. The wall is one ring read from the open end

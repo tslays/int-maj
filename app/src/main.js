@@ -26,7 +26,9 @@ import { $, board, faceChip, request, scores, state, storage, toast } from "./sh
 import { sound } from "./sound.js";
 import { hideTip, tipForChoices, welcome } from "./tips.js";
 import { ALL_FACES, initTiles, preloadFaces, tileOrder } from "./tiles.js";
-import { mountStage, renderer, requestRender, screenPoint, sleep, updateConsole, viewport } from "./stage.js";
+import { mountStage, onViewChange, renderer, requestRender, screenPoint, setConsoleShown, sleep, updateConsole, viewport } from "./stage.js";
+import { discardLayout } from "./discard-layout.js";
+import { hideSeatLabels, placeSeatLabels, showSeatLabels } from "./seat-labels.js";
 
 const CALL_WORD = { pung: "Pung", kong: "Kong", chow: "Chow", mahjong: "Mah Jong" };
 const BEAT_AFTER_THROW = 320;
@@ -37,7 +39,7 @@ function refreshConsole(litView = state.payload.view) {
   const view = state.payload.view;
   const totals = scores();
   const fishing = new Set(view.fishing.map((entry) => entry.seat));
-  updateConsole({
+  const info = {
     round: view.prevailingWind,
     hand: view.handNumber,
     wall: state.payload.wall.remaining,
@@ -50,8 +52,25 @@ function refreshConsole(litView = state.payload.view) {
       fishing: fishing.has(entry.seat),
       turn: litView.phase !== "finished" && litView.turn === entry.seat,
     })),
-  });
+  };
+  updateConsole(info);
+  // The centre pile has the middle: the console goes, and its news moves to the seats' edges (#122).
+  setConsoleShown(!discardLayout.pile);
+  if (discardLayout.pile) showSeatLabels(info, labelScreenPoint);
+  else hideSeatLabels();
 }
+
+const labelScreenPoint = (rel) => screenPoint(board.labelPoint(rel));
+onViewChange(() => placeSeatLabels(labelScreenPoint));
+// The camera also swings (the pond zoom): the labels follow it frame by frame, with the pile only.
+function followLabels() {
+  if (discardLayout.pile) placeSeatLabels(labelScreenPoint);
+  requestAnimationFrame(followLabels);
+}
+requestAnimationFrame(followLabels);
+discardLayout.onChange(() => {
+  if (state.payload !== null) refreshConsole();
+});
 
 /* --------------------------------------------------------- call-outs */
 

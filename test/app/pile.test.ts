@@ -1,7 +1,8 @@
 /**
  * The centre pile (#122): however a hand runs, no two discards in the pile
- * overlap, every one stays off the console and inside the walls, clear of the
+ * overlap, every one stays inside the walls, clear of the
  * walls, hands and melds, and the same discards always settle the same way.
+ * The pile has the whole middle: the console is put away in this layout.
  * `app/src/pile.js` is plain numbers, so this needs no browser.
  */
 
@@ -65,7 +66,7 @@ describe("the centre pile", () => {
   // A hand has at most about 75 discards on the table; 90 leaves room.
   const HANDS = Array.from({ length: 24 }, (_, seed) => ({ seed, pond: pondFor(seed, 90) }));
 
-  it("never lets two tiles overlap, and keeps every tile off the console and inside the walls", () => {
+  it("never lets two tiles overlap, and keeps every tile inside the walls", () => {
     for (const { seed, pond } of HANDS) {
       const poses: Pose[] = settlePile(pond, `hand-${seed}`);
       assert.equal(poses.length, pond.length);
@@ -75,10 +76,6 @@ describe("the centre pile", () => {
         assert.ok(inPond(pose), `hand ${seed}: a tile left the pond`);
         for (const point of corners(pose) as { x: number; z: number }[]) {
           assert.ok(Math.abs(point.x) < WALL_INNER && Math.abs(point.z) < WALL_INNER, `hand ${seed}: a tile reaches the walls`);
-          assert.ok(
-            Math.abs(point.x) > TABLE.CENTER_HALF || Math.abs(point.z) > TABLE.CENTER_HALF,
-            `hand ${seed}: a tile covers the console`,
-          );
         }
       }
       for (let i = 0; i < live.length; i++) {

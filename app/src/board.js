@@ -213,6 +213,11 @@ export class Board {
     return this.frames[this.rel(seat)];
   }
 
+  /** Where a seat's label sits with the centre pile: on the felt just inside its wall, in world space. */
+  labelPoint(rel) {
+    return this.frames[rel].localToWorld(new THREE.Vector3(0, 0.5, WALL_R - 1.2));
+  }
+
   /** Where a seat sounds from: the side you hear it on, and how far off it is. */
   ear(seat) {
     const rel = this.rel(seat);

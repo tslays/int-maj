@@ -154,6 +154,14 @@ const consoleTexture = new THREE.CanvasTexture(consoleCanvas);
 consoleTexture.colorSpace = THREE.SRGBColorSpace;
 consoleTexture.anisotropy = maxAnisotropy;
 let consoleKey = "";
+let consolePanel = null;
+
+/** The centre pile has the middle of the table: the console is put away (seat labels show its news). */
+export function setConsoleShown(on) {
+  if (consolePanel === null || consolePanel.visible === on) return;
+  consolePanel.visible = on;
+  requestRender();
+}
 
 function buildConsole() {
   // No clearcoat: seen from straight above (the zoomed pond view), its mirror
@@ -167,6 +175,7 @@ function buildConsole() {
   panel.castShadow = true;
   panel.receiveShadow = true;
   tableScene.add(panel);
+  consolePanel = panel;
 }
 
 const WIND_WORD = { E: "EAST", S: "SOUTH", W: "WEST", N: "NORTH" };

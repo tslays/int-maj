@@ -1,21 +1,23 @@
 /**
- * The centre pile (#122): every discard thrown into one shared pond around
- * the console, the way a real table plays it, instead of six-wide rows in
- * front of each seat. Nothing in the pile says who threw a tile or when.
+ * The centre pile (#122): every discard thrown into one shared pond in the
+ * middle of the table, the way a real table plays it, instead of six-wide
+ * rows in front of each seat. Nothing in the pile says who threw a tile or
+ * when. With the pile the middle console is put away (each seat's wind and
+ * score move to a label at its edge), so the pile has the whole centre.
  *
  * Plain numbers, no 3D library, so `test/app/pile.test.ts` can prove the
- * pile never overlaps itself, the console, the walls, hands or melds.
+ * pile never overlaps itself, the walls, hands or melds.
  *
  * A simple physics, deterministic: the same discards always settle the same
  * way, so a reload, a replay or a review board shows the same pile.
  *
- *   - The first tile lands just in front of the console on the thrower's
- *     side. Every later throw aims at a tile already in the pile near the
- *     thrower's side (a seeded pick among the nearest few), a little short of
- *     it, with a seeded scatter and a seeded turn.
+ *   - The first tile lands near the middle. Every later throw aims close
+ *     beside a tile already in the pile (a seeded pick among the few nearest
+ *     a seeded spot near the middle), with a seeded scatter and a seeded turn.
  *   - Where the throw lands on tiles, it knocks them: each tile it touches is
  *     pushed a short way along the throw, if it has room to go. The thrown
- *     tile then slides back along its throw until it lies clear.
+ *     tile then slides back a little along its throw, or settles into the
+ *     nearest gap beside where it landed.
  *   - A tile claimed by another player leaves the pile at once; the knocks
  *     its throw gave stay.
  *
@@ -30,16 +32,15 @@ const HALF_W = (W * S) / 2;
 const HALF_H = (H * S) / 2;
 
 export const PILE = Object.freeze({
-  /** The console square the pile keeps off, with a margin. */
-  CONSOLE_HALF: TABLE.CENTER_HALF + 0.12,
   /** No corner of a pile tile goes past this, well inside the walls. */
   OUTER: WALL_INNER - 0.75,
   /** Where a throw starts, in the thrower's frame (z). */
   START_Z: WALL_INNER - 0.4,
   /** How far a knocked tile moves, at most. */
   PUSH: 0.42,
-  /** The step the thrown tile slides back by until it lies clear. */
+  /** The step the thrown tile slides back by, and how many before it settles into the nearest gap instead. */
   BACK_STEP: 0.1,
+  SLIDE_STEPS: 6,
   /** Clearance kept between tiles. */
   GAP: 0.04,
 });
@@ -105,21 +106,9 @@ export function polygonsOverlap(a, b, gap = 0) {
   return true;
 }
 
-const CONSOLE = (() => {
-  const c = PILE.CONSOLE_HALF;
-  return [
-    { x: -c, z: -c },
-    { x: c, z: -c },
-    { x: c, z: c },
-    { x: -c, z: c },
-  ];
-})();
-
-/** True when the tile lies inside the pond: off the console and within the outer edge. */
+/** True when the tile lies inside the pond, well within the walls. */
 export function inPond(pose) {
-  const points = corners(pose);
-  if (points.some((point) => Math.abs(point.x) > PILE.OUTER || Math.abs(point.z) > PILE.OUTER)) return false;
-  return !polygonsOverlap(points, CONSOLE);
+  return corners(pose).every((point) => Math.abs(point.x) <= PILE.OUTER && Math.abs(point.z) <= PILE.OUTER);
 }
 
 /** Two tiles further apart than this cannot touch: the quick test before the exact one. */
@@ -202,10 +191,10 @@ function throwTile(entry, index, seed, before) {
   const live = before.map((tile) => ({ ...tile }));
   const tag = `${seed}|${index}|${entry.key}`;
   const start = toTable(entry.rel, 0, PILE.START_Z);
-  // A spot beside the console, anywhere but straight across from the thrower, so the
-  // four seats' tiles mix: the pile has no side that belongs to anyone.
+  // A spot near the middle, a little towards the thrower, so the four seats'
+  // tiles mix: the pile has no side that belongs to anyone.
   const around = Math.atan2(start.z, start.x) + (unit(`${tag}|around`) - 0.5) * Math.PI * 1.5;
-  const ring = PILE.CONSOLE_HALF + HALF_H + 0.4 + unit(`${tag}|ring`) * 1.2;
+  const ring = unit(`${tag}|ring`) * 1.6;
   const front = { x: Math.cos(around) * ring, z: Math.sin(around) * ring };
 
   // Aim: that spot on the first throw, else close beside one of the tiles nearest to it.
@@ -243,9 +232,9 @@ function throwTile(entry, index, seed, before) {
     }
   }
 
-  // Slide back along the throw until clear; if the pile is too full there, the nearest free spot.
+  // Slide back a little along the throw; if that does not clear it, it settles into the nearest gap.
   let pose = null;
-  for (let step = 0; step <= 100; step++) {
+  for (let step = 0; step <= PILE.SLIDE_STEPS; step++) {
     const candidate = placed({
       x: aim.x - along.x * PILE.BACK_STEP * step,
       z: aim.z - along.z * PILE.BACK_STEP * step,
@@ -274,8 +263,8 @@ function unitVector(from, to) {
 
 /** The free spot nearest `aim` on a widening ring of tries, turned square to the thrower if need be. */
 function nearestFree(aim, angle, live, facing) {
-  for (let radius = 0.3; radius < 2 * PILE.OUTER; radius += 0.3) {
-    const tries = Math.max(8, Math.round(radius * 8));
+  for (let radius = 0.2; radius < 2 * PILE.OUTER; radius += 0.2) {
+    const tries = Math.max(8, Math.round(radius * 12));
     for (let k = 0; k < tries; k++) {
       const a = (k / tries) * Math.PI * 2;
       for (const turn of [angle, facing + Math.PI / 2]) {
