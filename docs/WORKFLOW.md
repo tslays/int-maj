@@ -160,6 +160,31 @@ Worker (`src/worker/`) files the report as an issue labelled `report` in this
 repository. Sessions read those issues with the GitHub tools and replay them
 with `npm run replay` (`docs/APP.md`, "Report a problem").
 
+### Handling a wave of reports
+
+Testers send reports in batches. The way that worked for alpha.7 (#118-#122):
+
+1. **Triage first, in one session.** Read every new `report` issue: the note,
+   the hand and the house rules. Check whether each is already fixed since the
+   last tag (`git log v0.1.0-alpha.N..origin/main`).
+2. **Sort each report** as one of four: *as designed* (answer with the rule's
+   page), *needs an owner ruling* (a rule the books leave open, or a design
+   choice), *visual*, or *engine*. Ask the owner every ruling up front, in one
+   go, before any code.
+3. **Plan the wave** (plan mode): one step and one pull request per report, in
+   order, non-visual and rule changes first, the largest layout change last.
+   The plan is the release: nothing else joins it.
+4. **One step at a time.** Restart the branch from `main`, build, test, open
+   the pull request with `Closes #N`; a visual one waits for the owner's phone
+   check and "merge". Draft the reply to the tester; post it only when the
+   owner agrees.
+5. **Release.** `docs/CHANGELOG.md` gets the version's New, Changed, Fixed and
+   "What works differently now"; `docs/TESTING.md` gets the guide and the
+   WhatsApp message; `npm run tester-guide` makes the PDF. A final check on
+   `main` (tests, type check, smoke, the review boards on the dev site), then
+   tell the owner the tag and the commit to tag, and hand over the PDF and the
+   message.
+
 The Worker needs a GitHub token, set up once by the owner:
 
 1. GitHub > Settings > Developer settings > Fine-grained tokens > Generate
