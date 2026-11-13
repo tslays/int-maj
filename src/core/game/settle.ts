@@ -23,7 +23,7 @@ import {
   type Seat,
 } from "./state.ts";
 import type { ApplyError, Draft, Emit } from "./draft.ts";
-import { ORDINARY_PATTERNS, allowedPattern, buildHand, waitsOf } from "./hands.ts";
+import { ORDINARY_PATTERNS, allowedPattern, buildHand, exclusionsOf, waitsOf } from "./hands.ts";
 
 /** Payments are made to the nearest 100; over 50 rounds up, 50 or less down. */
 export function roundTo100(points: number): number {
@@ -49,7 +49,7 @@ function losingHandPoints(draft: Draft, seat: Seat): number {
       limit,
       withoutMahJongBonus: true,
       goulash: draft.goulash === true,
-      excluded: draft.excludedHands,
+      excluded: exclusionsOf(draft as GameState),
     });
     if (score.ground !== null) best = Math.max(best, score.ground);
   }
@@ -68,7 +68,7 @@ function heldDoubles(draft: Draft, seat: Seat): number {
     const score = scoreHand(hand, {
       limit: draft.limit ?? DEFAULT_LIMIT,
       goulash: draft.goulash === true,
-      excluded: draft.excludedHands,
+      excluded: exclusionsOf(draft as GameState),
     });
     return score.doubles ?? 0;
   }
@@ -292,7 +292,7 @@ export function finishWin(
   const score = scoreHand(hand, {
     limit: draft.limit ?? DEFAULT_LIMIT,
     goulash: draft.goulash === true,
-    excluded: draft.excludedHands,
+    excluded: exclusionsOf(draft as GameState),
     wonOnLooseTile: selfDrawn && draft.lastDraw?.end === "loose",
     wonOnLastWallTile:
       selfDrawn &&
@@ -303,7 +303,7 @@ export function finishWin(
   if (winning === null) {
     return { error: "hand does not match any catalogue pattern", state: draft as GameState };
   }
-  if (!allowedPattern(draft as GameState, winning.pattern.id)) {
+  if (!allowedPattern(draft as GameState, winning.pattern.id, winning.tier)) {
     return {
       error: `pattern not allowed at this table: ${winning.pattern.id}`,
       state: draft as GameState,

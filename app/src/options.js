@@ -28,15 +28,25 @@ const HAND_SET_TEXT = {
 };
 
 function savedRules() {
+  const rules = { handSet: "all", goulashNoHalfLimit: true };
   try {
     const saved = JSON.parse(storage()?.getItem(RULES_KEY) ?? "{}");
-    if (HAND_SETS.includes(saved?.handSet)) return { handSet: saved.handSet };
+    if (HAND_SETS.includes(saved?.handSet)) rules.handSet = saved.handSet;
     // The first version of this option was a plain on/off switch.
-    if (saved?.companionHandsOnly === true) return { handSet: "companion" };
+    else if (saved?.companionHandsOnly === true) rules.handSet = "companion";
+    if (typeof saved?.goulashNoHalfLimit === "boolean") rules.goulashNoHalfLimit = saved.goulashNoHalfLimit;
   } catch {
     // Unreadable: start from the default.
   }
-  return { handSet: "all" };
+  return rules;
+}
+
+function saveRules() {
+  try {
+    storage()?.setItem(RULES_KEY, JSON.stringify(rules));
+  } catch {
+    // Storage refused: the choice lasts until the page is closed.
+  }
 }
 
 const rules = savedRules();
@@ -58,6 +68,7 @@ function showRules() {
   // Pending: the hand on the table was dealt under another set.
   const inForce = state.payload?.houseRules?.handSet;
   $("#hand-set-pending").hidden = inForce === undefined || inForce === rules.handSet;
+  $("#goulash-rule").setAttribute("aria-checked", String(rules.goulashNoHalfLimit));
 }
 
 function showSound() {
@@ -190,11 +201,13 @@ export function installOptions({ newGame }) {
     const button = event.target.closest("[data-set]");
     if (button === null) return;
     rules.handSet = button.dataset.set;
-    try {
-      storage()?.setItem(RULES_KEY, JSON.stringify(rules));
-    } catch {
-      // Storage refused: the choice lasts until the page is closed.
-    }
+    saveRules();
+    showRules();
+  });
+
+  $("#goulash-rule").addEventListener("click", () => {
+    rules.goulashNoHalfLimit = !rules.goulashNoHalfLimit;
+    saveRules();
     showRules();
   });
 }

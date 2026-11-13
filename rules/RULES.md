@@ -1128,6 +1128,13 @@ All four are optional table agreements. They do not alter Part I's rule that a
 Goulash follows a drawn hand; §4 lists the Companion sentence that does, and
 why it is not applied.
 
+Item 4 is a house rule at this table, **on by default** (owner ruling,
+2026-11-13, after a tester report): in a Goulash hand nothing that scores at
+half limit is a win or a fishing hand; tiles that also make another hand score
+as that hand. A hand that is half limit only when exposed (for example Dragon's
+Tail, C p. 12) still counts concealed, at limit. The table may turn the rule
+off. `[A]` (ASSUMPTIONS.md, "No half-limit hands in a Goulash")
+
 ### 3.4 Showing that you are fishing `[C p. 55]`
 
 > "Many players display a small fish (not real!) to indicate that they are

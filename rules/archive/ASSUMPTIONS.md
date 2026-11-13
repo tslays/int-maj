@@ -332,3 +332,30 @@ wind), where it used to deal to you as East; the seed fixes the throw, so a
 saved game or report replays to the same East. Any other tie-break (only the
 tied players throw again) would change nothing else.
 
+## No half-limit hands in a Goulash (2026-11-13)
+
+*Companion* p. 55 ("Interesting ideas suggested by experienced players", 5),
+read on the page: "No half-limit hands are permitted during a Goulash." The
+*Illustrated* (p. 21, R100-R104) prints no such limit. The owner made it a
+house rule, on by default, after tester report #119.
+
+Narrowest reading kept by the engine:
+
+- "Half-limit hands" are hands that score at the half-limit tier as the hand
+  stands. The bar is on the tier, not the name: a hand printed "LIMIT
+  (Concealed) HALF LIMIT (Exposed)" is allowed concealed and barred exposed.
+  Limit and double-limit hands stay allowed; the sentence names half limit only.
+- "Not permitted" means the hand is no win; tiles that also make another hand
+  (an ordinary hand, or a higher one) score as that hand, as with the hand
+  sets. A wait that only completes a half-limit hand is no wait, so it is no
+  fishing hand and earns no fishing figure.
+- It applies to Goulash hands only (`state.goulash`), and it is fixed at the
+  deal like the hand sets: the token `rule:goulash-no-half-limit` rides in
+  `excludedHands`, and `exclusionsOf` turns it into `tier:half` for a Goulash
+  hand. A hand dealt before the rule existed carries no token and plays
+  without it.
+
+Uncertainty: the Companion offers it as an idea, not a printed law, and does
+not say whether a barred hand may still go out as an ordinary hand; the
+narrowest reading lets the tiles count as whatever else they make.
+

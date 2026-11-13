@@ -421,6 +421,14 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   }
   await page.click('#hand-set [data-set="all"]');
   await page.waitForSelector("#hand-set-pending", { state: "hidden", timeout: 5000 });
+  // The Goulash house rule is on by default; the switch turns it off for the next deal.
+  await page.waitForSelector("#goulash-rule[aria-checked=true]", { timeout: 5000 });
+  await page.click("#goulash-rule");
+  await page.waitForSelector("#goulash-rule[aria-checked=false]", { timeout: 5000 });
+  const savedRule = await page.evaluate(() => JSON.parse(localStorage.getItem("int-maj:house-rules") ?? "{}"));
+  assert.equal(savedRule.goulashNoHalfLimit, false, "the switch is kept on the device");
+  await page.click("#goulash-rule");
+  await page.waitForSelector("#goulash-rule[aria-checked=true]", { timeout: 5000 });
   // New game asks first; Keep playing leaves the game as it was.
   await page.click("#new-game");
   await page.waitForSelector("#new-game-confirm:not([hidden])", { timeout: 5000 });
@@ -428,7 +436,7 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.waitForSelector("#new-game-confirm", { state: "hidden", timeout: 5000 });
   await page.click("#options-close");
   await page.waitForSelector("#options-sheet", { state: "hidden", timeout: 5000 });
-  console.log("  ok  hints toggle, options sheet, help sheet, hand set choice, new game asks first");
+  console.log("  ok  hints toggle, options sheet, help sheet, hand set choice, Goulash rule switch, new game asks first");
 
 
   // The index of all hands: opens, filters by a book heading, searches, opens a hand's sheet.

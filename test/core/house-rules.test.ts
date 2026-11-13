@@ -22,8 +22,10 @@ import {
   stepsFromEvents,
   viewFor,
   fishingValueFor,
+  GOULASH_NO_HALF_LIMIT,
   waitsOf,
 } from "../../src/core/game/index.ts";
+import { tierExclusion } from "../../src/core/match.ts";
 import { planGoals } from "../../src/core/game/bot/plan.ts";
 import { createHand } from "../../src/core/hand.ts";
 import {
@@ -220,5 +222,69 @@ describe("the Companion's values govern", () => {
     const wait = waitsOf(state, "E");
     assert.ok(wait.includes("b1"));
     assert.deepEqual(fishingValueFor(state, "E", wait), { tier: "double", value: 800 });
+  });
+});
+
+// Five Odd Honours (C p. 11): half limit, and no other hand.
+const FIVE_ODD_HONOURS = "b1 b2 b3 b4 b5 b6 b7 b8 b9 wE wS wW wN dR";
+const FIVE_ODD_WAITING = "b1 b2 b3 b4 b5 b6 b7 b8 b9 wE wS wW wN";
+
+describe("no half-limit hands in a Goulash (C p. 55)", () => {
+  const base = { hands: { E: FIVE_ODD_HONOURS, ...OTHERS }, wall: LONG_WALL, phase: "discard", turn: "E" } as const;
+  const waiting = { ...base, hands: { E: FIVE_ODD_WAITING, ...OTHERS }, phase: "draw" } as const;
+  const RULE = [GOULASH_NO_HALF_LIMIT];
+
+  it("bars a half-limit hand by the tier it scores at, not by its name", () => {
+    const concealed = createHand({ concealed: FIVE_ODD_HONOURS, selfDrawn: true });
+    assert.equal(scoreHand(concealed).winning?.tier, "half");
+    assert.equal(scoreHand(concealed, { excluded: [tierExclusion("half")] }).winning, null);
+    // Dragon's Tail is limit concealed and half limit exposed (C p. 12).
+    const tail = createHand({ concealed: "b1 b2 b3 b4 b5 b6 b7 b8 b9 wE wE wE dR dR", selfDrawn: true });
+    assert.equal(scoreHand(tail, { excluded: [tierExclusion("half")] }).winning?.tier, "limit");
+    const exposed = createHand({
+      concealed: "b1 b2 b3 b4 b5 b6 b7 b8 b9 dR dR",
+      melds: [{ kind: "pung", tiles: "wE wE wE", exposed: true }],
+      selfDrawn: true,
+    });
+    assert.equal(scoreHand(exposed).winning?.tier, "half");
+    assert.equal(scoreHand(exposed, { excluded: [tierExclusion("half")] }).winning, null);
+  });
+
+  it("is no win and no wait in a Goulash hand under the rule", () => {
+    const house = { ...base, goulash: true, excludedHands: RULE } as const;
+    assert.equal(handIsComplete(fixture(house), "E", "dR"), null);
+    const waits = waitsOf(fixture({ ...waiting, goulash: true, excludedHands: RULE }), "E");
+    assert.ok(!waits.some((tile) => tile.startsWith("d")), `the dragons only make Five Odd Honours: ${waits}`);
+    assert.equal(fishingValueFor(fixture({ ...waiting, goulash: true, excludedHands: RULE }), "E", ["dR"]), null);
+  });
+
+  it("changes nothing outside a Goulash, or with the rule off", () => {
+    for (const options of [{ goulash: false, excludedHands: RULE }, { goulash: true }, {}] as const) {
+      assert.equal(handIsComplete(fixture({ ...base, ...options }), "E", "dR")?.winning?.pattern.id, "five-odd-honours");
+      assert.ok(waitsOf(fixture({ ...waiting, ...options }), "E").includes("dR"));
+      assert.equal(fishingValueFor(fixture({ ...waiting, ...options }), "E", ["dR"])?.tier, "half");
+    }
+  });
+
+  it("shows the tier, never the token, and keeps it out of hints and plans", () => {
+    const outside = viewFor(fixture({ ...waiting, excludedHands: RULE }), "E");
+    assert.deepEqual(outside.excludedHands, []);
+    const inside = viewFor(fixture({ ...waiting, goulash: true, excludedHands: RULE }), "E");
+    assert.deepEqual(inside.excludedHands, [tierExclusion("half")]);
+    assert.ok(closestHands(inside, 50).every((hand) => hand.tier !== "half"));
+    assert.ok(closestHands(outside, 50).some((hand) => hand.tier === "half"));
+    const goals = planGoals(situationFor(inside, "E"));
+    const tierOf = new Map(PATTERNS.map((pattern) => [pattern.id, pattern.tier]));
+    assert.ok(goals.every((goal) => tierOf.get(goal.pattern) !== "half"));
+  });
+
+  it("is dealt with the game and kept by the next hand", () => {
+    const dealt = newGame("goulash-rule", { dealer: "E", excludedHands: RULE });
+    assert.deepEqual(dealt.state.excludedHands, RULE);
+    const finished = fixture({ excludedHands: RULE, phase: "finished", result: { ...drawnResult(), nextDealer: "S" } });
+    const next = nextHand(finished);
+    assert.deepEqual(next.state.excludedHands, RULE);
+    const barred = next.state.goulash === true ? [tierExclusion("half")] : [];
+    assert.deepEqual(viewFor(next.state, "E").excludedHands, barred);
   });
 });
