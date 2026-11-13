@@ -107,13 +107,18 @@ interface Skill {
 const SKILLS: Readonly<Record<BotLevel, Skill>> = {
   easy: { ambition: 0.6, caution: 0, callShift: -0.35, noise: 0.8, haste: 1 },
   medium: { ambition: 1, caution: 0.5, callShift: 0, noise: 0.3, haste: 1 },
-  hard: { ambition: 1, caution: 1, callShift: 0, noise: 0, haste: 1 },
+  // Hard races: four seats share one wall, so a near ordinary hand beats a far
+  // special one more often than its points suggest (#120). Measured with
+  // scripts/bot-duel.ts: one seat at these settings against three at the old
+  // ones (ambition 1, callShift 0, haste 1) won 157 of 800 hands to 134 and
+  // came out ahead on points, on deals not used to choose the numbers.
+  hard: { ambition: 0.6, caution: 1, callShift: -0.35, noise: 0, haste: 0.55 },
 };
 
 /** A seat's temperament at a level: the style stays, the skill changes. */
 function playing(seat: Seat, level: BotLevel): Temperament & { readonly noise: number; readonly haste: number } {
   const base = temperamentOf(seat);
-  const skill = ((globalThis as any).__SKILL?.[level] as Skill | undefined) ?? SKILLS[level];
+  const skill = SKILLS[level];
   return {
     ...base,
     ambition: base.ambition * skill.ambition,
