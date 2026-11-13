@@ -1,15 +1,19 @@
 /**
  * Seat labels (#122): with the centre pile the middle console is put away, so
- * what it showed moves to the edges. Each seat gets a small label on the felt
- * just inside its wall - its wind (coral for the dealer, as on the console),
- * its score, a fish once it has shown one (C p. 55) - and the seat whose turn
- * it is glows in the console's cyan. The round and the tiles left in the wall
- * go in a badge under the menu.
+ * what it showed moves to the edges. Each seat gets a small label at its
+ * wall - its wind (coral for the dealer, as on the console), its score, a
+ * fish once it has shown one (C p. 55) - and the seat whose turn it is glows
+ * in the console's cyan. The round and the tiles left in the wall go in a
+ * badge under the menu.
  *
- * Plain DOM over the canvas. `place` gets each seat's point on the screen
- * from the board, so the labels follow the camera (the zoomed view too).
+ * Each label has one fixed place against the inside of its wall, on a strip
+ * of felt the pile keeps clear (layout.js `labelPad`); the seats to the sides
+ * turn theirs on end, along their wall. Plain DOM over the canvas; the labels
+ * follow the camera (the zoomed view too), and nothing else moves them.
  */
 
+import { placeLabel } from "./label-place.js";
+import { labelPad } from "./layout.js";
 import { $ } from "./shared.js";
 
 const WIND_WORD = { E: "East", S: "South", W: "West", N: "North" };
@@ -32,10 +36,10 @@ function build() {
 
 /**
  * Show the labels for `info` (the console's: `round`, `hand`, `wall`, and
- * `seats` with `rel`, `wind`, `score`, `dealer`, `fishing`, `turn`), at the
- * screen points `point(rel)` gives.
+ * `seats` with `rel`, `wind`, `score`, `dealer`, `fishing`, `turn`), placed
+ * by `scene()` (see `placeSeatLabels`).
  */
-export function showSeatLabels(info, point) {
+export function showSeatLabels(info, scene) {
   if (labels === null) build();
   for (const seat of info.seats) {
     const element = labels[seat.rel];
@@ -50,20 +54,35 @@ export function showSeatLabels(info, point) {
     }
     element.hidden = false;
   }
-  placeSeatLabels(point);
+  placeSeatLabels(scene);
   const badge = $("#wall-badge");
   badge.hidden = false;
   badge.textContent = `${WIND_WORD[info.round]} ${info.hand} · ${info.wall} left`;
 }
 
-/** Follow the camera: put each label at its seat's point on the screen. */
-export function placeSeatLabels(point) {
-  if (labels === null) return;
+/**
+ * Put each label in its fixed place (label-place.js). `scene()` gives, in CSS
+ * pixels: `anchor(rel)`, the middle of the seat's wall's inner face on the
+ * screen; `centre`, the table's middle; `view`, the screen's size. Only the
+ * camera moves them.
+ */
+export function placeSeatLabels(scene) {
+  if (labels === null || labels.every((element) => element.hidden)) return;
+  const { anchor, centre, view } = scene();
   labels.forEach((element, rel) => {
     if (element.hidden) return;
-    const at = point(rel);
+    const at = placeLabel({
+      anchor: anchor(rel),
+      centre,
+      width: element.offsetWidth,
+      height: element.offsetHeight,
+      turned: rel % 2 === 1,
+      over: labelPad(rel).OVER,
+      view,
+    });
     element.style.left = `${at.x}px`;
     element.style.top = `${at.y}px`;
+    element.classList.toggle("off-screen", !at.shown);
   });
 }
 

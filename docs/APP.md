@@ -29,12 +29,16 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
 - `app/src/pile.js` is the other discard layout, the **centre pile** (Options,
   Discards: Rows or Pile, a device preference `int-maj.discard-layout`,
   `discard-layout.js`; #122). Every discard is thrown into one heap in the
-  middle: it meets the felt in the lane just inside the thrower's wall and
+  middle: it meets the felt in the lane just inside the thrower's wall
+  (anywhere along it, so throws come in from the corners too) and
   slides in a straight line at the pile, stopping just short of the first
   tile it would touch (checked every 0.05 of a tile, so it never passes
   through one); the tiles it crashes into are knocked on along the throw,
-  each until it meets another. Of a few seeded throws the one that ends
-  nearest the pile's middle is made, so the heap stays round; nothing shows
+  each until it meets another. Each throw aims at a spot in a disc that
+  widens with the pile, and of a few seeded throws the one that ends nearest
+  the table's centre is made, so gaps near the middle fill first and the heap
+  grows as a disc, into the diagonals as much as towards the seats (aiming at
+  the heap's own middle let it grow arms straight at the seat labels); nothing shows
   who threw a tile or when. It is deterministic from the hand's seed and the throw order
   (`pond` in the payload, built by `pondOf` from the hand's events, with
   claimed tiles marked `taken`: they leave the pile, the knocks they gave
@@ -53,8 +57,19 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   seat's wind (coral for the dealer), score and fish move to a label on the
   felt just inside its wall, glowing cyan on the seat whose turn it is, and
   the round and wall count to a badge under the menu (`seat-labels.js`).
+  Each label has one fixed place, so it never moves as tiles are thrown or
+  claimed, only with the camera: against the inside of its wall, in the
+  middle, on a strip of felt the pile keeps clear (`LABEL_PAD`, `labelPad` in
+  layout.js; `offLabels` in pile.js: a throw that would stop there is not
+  made, a knock stops at its edge). The seats to the sides stand theirs on
+  end along their wall, foot towards the player; the seat across lies half
+  over its wall; yours and the sides' clear their wall's top. `label-place.js`
+  puts each one there from the wall's face on the screen (`labelAnchor`); a
+  label whose place is off the screen (the zoomed view) is not shown.
   `test/app/pile.test.ts` proves no two pile tiles overlap, no slide passes
-  through a tile, and none reaches the walls, hands or melds.
+  through a tile, none reaches the walls, hands, melds or label strips, and
+  the pile is round (half its tiles in the diagonals);
+  `test/app/label-place.test.ts` proves each label's place.
 - The wall is broken and drawn as *Illustrated* pp. 18-19 and p. 62 show: the
   dice (`breakFor`) name the wall and the stack counted from its right-hand
   end; that stack is lifted off. The wall is one ring read from the open end

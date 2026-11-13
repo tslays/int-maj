@@ -26,7 +26,7 @@ import { $, board, faceChip, request, scores, state, storage, toast } from "./sh
 import { sound } from "./sound.js";
 import { hideTip, tipForChoices, welcome } from "./tips.js";
 import { ALL_FACES, initTiles, preloadFaces, tileOrder } from "./tiles.js";
-import { mountStage, onViewChange, renderer, requestRender, screenPoint, setConsoleShown, sleep, updateConsole, viewport } from "./stage.js";
+import { mountStage, onViewChange, renderer, requestRender, screenPoint, setConsoleShown, sleep, tableCamera, updateConsole, viewport } from "./stage.js";
 import { discardLayout } from "./discard-layout.js";
 import { openClaims, refreshClaims } from "./claims.js";
 import { hideSeatLabels, placeSeatLabels, showSeatLabels } from "./seat-labels.js";
@@ -57,15 +57,29 @@ function refreshConsole(litView = state.payload.view) {
   updateConsole(info);
   // The centre pile has the middle: the console goes, and its news moves to the seats' edges (#122).
   setConsoleShown(!discardLayout.pile);
-  if (discardLayout.pile) showSeatLabels(info, labelScreenPoint);
+  if (discardLayout.pile) showSeatLabels(info, labelScene);
   else hideSeatLabels();
 }
 
-const labelScreenPoint = (rel) => screenPoint(board.labelPoint(rel));
-onViewChange(() => placeSeatLabels(labelScreenPoint));
-// The camera also swings (the pond zoom): the labels follow it frame by frame, with the pile only.
+/** The seat labels' scene on the screen: each wall's face, and the table's middle (seat-labels.js). */
+function labelScene() {
+  return {
+    anchor: (rel) => screenPoint(board.labelAnchor(rel)),
+    centre: screenPoint(board.tableCentre()),
+    view: { width: viewport.width, height: viewport.height },
+  };
+}
+onViewChange(() => placeSeatLabels(labelScene));
+// The labels follow the camera frame by frame while it swings (the pond zoom); nothing else moves them.
+let labelCamera = "";
 function followLabels() {
-  if (discardLayout.pile) placeSeatLabels(labelScreenPoint);
+  if (discardLayout.pile) {
+    const camera = tableCamera.matrixWorld.elements.join(",");
+    if (camera !== labelCamera) {
+      labelCamera = camera;
+      placeSeatLabels(labelScene);
+    }
+  }
   requestAnimationFrame(followLabels);
 }
 requestAnimationFrame(followLabels);
