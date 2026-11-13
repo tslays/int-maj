@@ -63,8 +63,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   middle of its wall's inner face straight out, away from the table's
   centre, until it clears the pile's whole box on the screen (`pileBox`, the
   felt up to a lying tile's top): onto its wall and the backs of the hand
-  behind it. The side seats stand theirs on end (wind and fish over score),
-  so it reaches less far. A label whose wall is off the screen (the zoomed
+  behind it. A label whose wall is off the screen (the zoomed
   view) is held on the screen and slides along its edge to the nearest place
   clear of the pile's tiles (`pileTops`). `test/app/pile.test.ts` proves no
   two pile tiles overlap, no slide passes through a tile, none reaches the

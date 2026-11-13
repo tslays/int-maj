@@ -46,8 +46,9 @@ export function showSeatLabels(info, scene) {
     if (element.dataset.key !== key) {
       element.dataset.key = key;
       element.innerHTML =
-        `<span class="seat-head"><b class="seat-wind${seat.dealer ? " dealer" : ""}">${seat.wind}</b>${seat.fishing ? FISH : ""}</span>` +
-        `<span class="seat-score">${seat.score.toLocaleString("en")}</span>`;
+        `<b class="seat-wind${seat.dealer ? " dealer" : ""}">${seat.wind}</b>` +
+        `<span class="seat-score">${seat.score.toLocaleString("en")}</span>` +
+        (seat.fishing ? FISH : "");
       element.classList.toggle("turn", seat.turn);
     }
     element.hidden = false;

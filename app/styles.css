@@ -117,20 +117,6 @@ button {
   pointer-events: none;
   transition: box-shadow 220ms, border-color 220ms;
 }
-.seat-head {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-/* The seats to the sides stand their label on end, wind (and fish) over
-   score: it lies over their wall and the backs of their hand, so the narrower
-   the better (label-place.js). */
-.seat-label[data-rel="1"],
-.seat-label[data-rel="3"] {
-  flex-direction: column;
-  gap: 0;
-  padding: 3px 7px;
-}
 .seat-label[hidden] {
   display: none;
 }
