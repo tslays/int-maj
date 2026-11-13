@@ -14,10 +14,12 @@
 
 import * as THREE from "three";
 import { D, H, W, makeTile, roundedRect, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, TABLE } from "./tiles.js";
-import { discardSlot, latestPlate, meldLayout, pondPad } from "./layout.js";
+import { discardSlot, latestPlate, LATEST_MARGIN, meldLayout, pondPad } from "./layout.js";
+import { createPile, PILE, pileReach } from "./pile.js";
+import { discardLayout } from "./discard-layout.js";
 import { pace } from "./pace.js";
 import { sound } from "./sound.js";
-import { animate, easeInOutCubic, easeOutBack, easeOutCubic, handScene, onViewChange, requestRender, setPondCounts, tableScene, tween } from "./stage.js";
+import { animate, easeInOutCubic, easeOutBack, easeOutCubic, handScene, onViewChange, requestRender, setPondCounts, setPondReach, tableScene, tween } from "./stage.js";
 import { handMethods } from "./board-hand.js";
 import { wallMethods } from "./board-wall.js";
 import { roundMethods } from "./board-round.js";
@@ -26,6 +28,15 @@ import { largeDiscards } from "./large-discards.js";
 const SEATS = ["E", "S", "W", "N"];
 const { WALL_STACKS, WALL_R, HAND_Z, DISCARD_SCALE } = TABLE;
 const GAP = 0.02;
+/* The pile's throw: the hop onto the felt, the slide into the pile, and when the slide reaches the tiles it knocks. */
+const PILE_HOP_MS = 260;
+const PILE_HOP_APEX = 3.0; // well over a wall two tiles high
+const PILE_SLIDE_MS = 420; // a full run, from the flick to a stop
+
+/** How long a slide of `run` takes: the same flick and friction every time, cut short where it meets the pile. */
+function slideMsFor(run) {
+  return PILE_SLIDE_MS * (1 - Math.sqrt(Math.max(0, 1 - Math.min(1, run / PILE.RUN))));
+}
 
 /**
  * Lay a meld's tiles in a row; a kong is a pung with its fourth tile on top of
@@ -79,6 +90,137 @@ export class Board {
     this.round = []; // this round's opponent discards, each with its face layer on a phone (board-round.js)
     onViewChange(() => this.refreshRound());
     largeDiscards.onChange(() => this.refreshRound());
+    // The centre pile (#122): where each discard lies, per seat, in the seat's own frame.
+    this.pileSim = null;
+    this.pilePoses = null;
+    this.lastPayload = null;
+    discardLayout.onChange(() => this.relayDiscards());
+  }
+
+  /** Where the pile puts each seat's live discards this hand, in table space; null in rows. */
+  layoutPile(payload) {
+    if (!discardLayout.pile) return null;
+    const seed = `${payload.seed}:${payload.view.handNumber}`;
+    if (this.pileSim?.seed !== seed) this.pileSim = createPile(seed);
+    const pond = payload.pond.map((entry) => ({ rel: this.rel(entry.seat), key: entry.tile, taken: entry.taken }));
+    const poses = this.pileSim.settle(pond);
+    const bySeat = new Map(SEATS.map((seat) => [seat, []]));
+    payload.pond.forEach((entry, index) => {
+      if (!entry.taken) bySeat.get(entry.seat).push(poses[index]);
+    });
+    return bySeat;
+  }
+
+  /** A pile pose (table space) in `seat`'s frame: { x, z, yaw }. */
+  pileLocal(seat, pose) {
+    const rel = this.rel(seat);
+    const a = (-rel * Math.PI) / 2;
+    const cos = Math.cos(a);
+    const sin = Math.sin(a);
+    return {
+      x: pose.x * cos + pose.z * sin,
+      z: -pose.x * sin + pose.z * cos,
+      yaw: pose.angle - (rel * Math.PI) / 2,
+      fromX: pose.fromX * cos + pose.fromZ * sin,
+      fromZ: -pose.fromX * sin + pose.fromZ * cos,
+    };
+  }
+
+  /** Where discard `index` of `seat` rests: its row slot, or its place in the pile. */
+  discardRest(seat, index) {
+    const rest = new THREE.Object3D();
+    const pose = this.pilePoses?.get(seat)?.[index];
+    if (pose === undefined) {
+      const slot = discardSlot(index);
+      poseFaceUp(rest, slot.x, slot.z, index * 7 + SEATS.indexOf(seat), DISCARD_SCALE);
+      return { rest, land: null };
+    }
+    const local = this.pileLocal(seat, pose);
+    poseFaceUp(rest, local.x, local.z, 0, DISCARD_SCALE);
+    rest.position.set(local.x, rest.position.y, local.z);
+    rest.rotation.z = local.yaw;
+    return { rest, land: { x: local.fromX, z: local.fromZ } };
+  }
+
+  /** The pile settled under every discard: tiles a throw knocked slide to their new places. */
+  nudgePile(fresh, animated) {
+    if (this.pilePoses === null) return [];
+    const work = [];
+    let knocked = false;
+    // The knock comes the moment the thrown tile arrives.
+    let arrive = PILE_HOP_MS;
+    for (const seat of SEATS) {
+      this.seats[seat].discards.forEach((item, index) => {
+        if (!fresh.has(item)) return;
+        const { rest, land } = this.discardRest(seat, index);
+        if (land !== null) arrive = Math.max(arrive, PILE_HOP_MS + slideMsFor(Math.hypot(rest.position.x - land.x, rest.position.z - land.z)));
+      });
+    }
+    for (const seat of SEATS) {
+      const state = this.seats[seat];
+      state.discards.forEach((item, index) => {
+        if (fresh.has(item)) return;
+        const { rest } = this.discardRest(seat, index);
+        const tile = item.tile;
+        const far = Math.hypot(tile.position.x - rest.position.x, tile.position.z - rest.position.z);
+        const turn = Math.abs(tile.rotation.z - rest.rotation.z);
+        if (far < 1e-3 && turn < 1e-3) return;
+        if (!animated) {
+          tile.position.copy(rest.position);
+          tile.rotation.z = rest.rotation.z;
+          return;
+        }
+        knocked = true;
+        // Knocked as the flicked tile slides in among them.
+        const from = { x: tile.position.x, z: tile.position.z, yaw: tile.rotation.z };
+        work.push(
+          new Promise((resolve) => setTimeout(resolve, pace.scale(arrive))).then(() =>
+            animate(240, (t) => {
+              const k = easeOutCubic(t);
+              tile.position.x = from.x + (rest.position.x - from.x) * k;
+              tile.position.z = from.z + (rest.position.z - from.z) * k;
+              tile.rotation.z = from.yaw + (rest.rotation.z - from.yaw) * k;
+            }),
+          ),
+        );
+      });
+    }
+    if (knocked) sound.cue("clack", { delay: pace.scale(arrive / 1000), intensity: 0.35 });
+    return work;
+  }
+
+  /** The layout changed in Options: lay every discard again, without animation. */
+  relayDiscards() {
+    const payload = this.lastPayload;
+    if (payload === null || this.handId === null) return;
+    for (const seat of SEATS) {
+      const state = this.seats[seat];
+      if (state === undefined) continue;
+      for (const item of state.discards) {
+        this.dropRoundLayer(item);
+        item.tile.removeFromParent();
+      }
+      state.discards = [];
+    }
+    this.pilePoses = this.layoutPile(payload);
+    for (const entry of payload.table) {
+      entry.discards.forEach((key, index) => void this.addDiscard(entry.seat, key, index, false));
+    }
+    this.showPond(payload);
+    this.markThrower(payload);
+    this.keepLift();
+  }
+
+  /** Frame the zoomed view on the rows or the pile; the pads tint the rows only. */
+  showPond(payload) {
+    if (this.pilePoses === null) {
+      setPondCounts(payload.table.map((entry) => entry.discards.length));
+    } else {
+      setPondReach(pileReach([...this.pilePoses.values()].flat()));
+    }
+    for (const seat of SEATS) {
+      if (this.seats[seat]?.pad) this.seats[seat].pad.visible = this.pilePoses === null;
+    }
   }
 
   rel(seat) {
@@ -87,6 +229,11 @@ export class Board {
 
   frameOf(seat) {
     return this.frames[this.rel(seat)];
+  }
+
+  /** Where a seat's label sits with the centre pile: on the felt just inside its wall, in world space. */
+  labelPoint(rel) {
+    return this.frames[rel].localToWorld(new THREE.Vector3(0, 0.5, WALL_R - 1.2));
   }
 
   /** Where a seat sounds from: the side you hear it on, and how far off it is. */
@@ -170,11 +317,15 @@ export class Board {
     const w = payload.wall;
     const used = Math.max(0, w.size - w.front - (w.remaining + w.loose + w.dead)) + (144 - w.size);
     work.push(...this.setWall(w.front, used, w.loose, animated));
+    this.lastPayload = payload;
+    this.pilePoses = this.layoutPile(payload);
+    const fresh = new Set();
     for (const entry of payload.table) {
-      work.push(...this.reconcileDiscards(entry, meldsGrew, animated));
+      work.push(...this.reconcileDiscards(entry, meldsGrew, animated, fresh));
     }
-    // The zoomed view frames every pond, however far a fourth row has run.
-    setPondCounts(payload.table.map((entry) => entry.discards.length));
+    work.push(...this.nudgePile(fresh, animated));
+    // The zoomed view frames every pond, however far a fourth row has run (or the pile spreads).
+    this.showPond(payload);
     for (const entry of payload.table) {
       if (entry.seat !== this.me) work.push(...this.reconcileRow(entry, animated));
       work.push(...this.reconcileMelds(entry, meldsGrew.has(entry.seat)));
@@ -208,7 +359,17 @@ export class Board {
     const last = payload.view.lastDiscard;
     const state = last ? this.seats[last.seat] : null;
     if (state && state.discards.length > 0 && state.discards[state.discards.length - 1].key === last.tile) {
-      this.plate = flatPlate(latestPlate(state.discards.length - 1), plateMaterial, 0.2, 0.012);
+      const index = state.discards.length - 1;
+      const pose = this.pilePoses?.get(last.seat)?.[index];
+      if (pose === undefined) {
+        this.plate = flatPlate(latestPlate(index), plateMaterial, 0.2, 0.012);
+      } else {
+        // Under the pile's latest tile, turned with it, so a claim can still find it.
+        const local = this.pileLocal(last.seat, pose);
+        const box = { x: local.x, z: local.z, width: W * DISCARD_SCALE + LATEST_MARGIN * 2, depth: H * DISCARD_SCALE + LATEST_MARGIN * 2 };
+        this.plate = flatPlate(box, plateMaterial, 0.2, 0.012);
+        this.plate.rotation.z = local.yaw;
+      }
       this.frameOf(last.seat).add(this.plate);
       // Opened mid-hand (a reload, a review board): the round starts with the latest discard, if not yours.
       if (this.round.length === 0 && last.seat !== this.me) this.addRoundLayer(state.discards[state.discards.length - 1]);
@@ -216,7 +377,7 @@ export class Board {
     requestRender();
   }
 
-  reconcileDiscards(entry, meldsGrew, animated) {
+  reconcileDiscards(entry, meldsGrew, animated, fresh = new Set()) {
     const state = this.seats[entry.seat];
     const before = state.discards.map((item) => item.key);
     const after = entry.discards;
@@ -226,6 +387,7 @@ export class Board {
     if (after.length >= before.length && samePrefix(before.length)) {
       for (let index = before.length; index < after.length; index++) {
         work.push(this.addDiscard(entry.seat, after[index], index, animated && after.length - before.length <= 2));
+        fresh.add(state.discards.at(-1));
       }
     } else if (after.length === before.length - 1 && samePrefix(after.length)) {
       const taken = state.discards.pop();
@@ -238,16 +400,18 @@ export class Board {
         item.tile.removeFromParent();
       }
       state.discards = [];
-      after.forEach((key, index) => work.push(this.addDiscard(entry.seat, key, index, false)));
+      after.forEach((key, index) => {
+        work.push(this.addDiscard(entry.seat, key, index, false));
+        fresh.add(state.discards.at(-1));
+      });
     }
     return work;
   }
 
   addDiscard(seat, key, index, animated) {
     const state = this.seats[seat];
-    const slot = discardSlot(index);
     const tile = makeTile(key);
-    const rest = poseFaceUp(new THREE.Object3D(), slot.x, slot.z, index * 7 + SEATS.indexOf(seat), DISCARD_SCALE);
+    const { rest, land } = this.discardRest(seat, index);
     tile.scale.copy(rest.scale);
     this.frameOf(seat).add(tile);
     const item = { key, tile };
@@ -264,6 +428,7 @@ export class Board {
     const from = new THREE.Vector3(fromX, 1.4, HAND_Z - (seat === this.me ? -0.5 : 0.8));
     tile.position.copy(from);
     tile.rotation.set(seat === this.me ? -0.35 : 0.2, 0, 0);
+    if (land !== null) return this.flickIntoPile(seat, item, from, rest, land);
     // The arc touches down at about 0.36 of its 0.4 s: that is when it clacks.
     sound.cue("clack", { delay: pace.scale(0.36), intensity: seat === this.me ? 1 : 0.85, ...this.ear(seat) });
     const startRotation = tile.rotation.clone();
@@ -282,6 +447,55 @@ export class Board {
     });
   }
 
+  /**
+   * The centre pile's throw (#122): a short, low hop over the thrower's own
+   * wall onto the felt, turning face up in the air, then a flick along the
+   * table into the pile. The slide is the straight line `pile.js` checked
+   * tile by tile, at the tile's final turn, so it never passes through
+   * another; the tiles it crashes into are knocked as it arrives
+   * (`nudgePile`, timed to its arrival).
+   */
+  flickIntoPile(seat, item, from, rest, land) {
+    const tile = item.tile;
+    const y = rest.position.y;
+    const touch = new THREE.Vector3(land.x, y, land.z);
+    const startRotation = tile.rotation.clone();
+    // Up and over the wall, then down almost straight onto its spot on the felt:
+    // it reaches the spot early and drops the last of the way, clipping nothing.
+    sound.cue("clack", { delay: pace.scale(PILE_HOP_MS / 1000), intensity: seat === this.me ? 0.9 : 0.75, ...this.ear(seat) });
+    const hop = animate(PILE_HOP_MS, (t) => {
+      // By the time it is low enough to touch a neighbour it is within a hair of its spot.
+      const k = 1 - Math.pow(1 - t, 4);
+      tile.position.x = from.x + (touch.x - from.x) * k;
+      tile.position.z = from.z + (touch.z - from.z) * k;
+      tile.position.y = (1 - t) * (1 - t) * from.y + 2 * (1 - t) * t * PILE_HOP_APEX + t * t * y;
+      tile.rotation.x = startRotation.x + (rest.rotation.x - startRotation.x) * k;
+      tile.rotation.z = startRotation.z + (rest.rotation.z - startRotation.z) * k;
+    });
+    // Every slide leaves at the same speed and the felt's friction slows it evenly to a stop:
+    // a full run takes PILE_SLIDE_MS; a run cut short stops sooner, as the same slide would.
+    const run = Math.hypot(rest.position.x - touch.x, rest.position.z - touch.z);
+    const slideMs = slideMsFor(run);
+    return hop.then(() => {
+      tile.position.copy(touch);
+      tile.rotation.x = rest.rotation.x;
+      tile.rotation.z = rest.rotation.z;
+      // Constant deceleration: the distance covered by the full run's clock, scaled to this run.
+      const full = run > 0 ? Math.min(1, run / PILE.RUN) : 1;
+      const used = slideMs / PILE_SLIDE_MS;
+      return animate(slideMs, (t) => {
+        const clock = t * used; // where on the full run's clock this slide is
+        const covered = (clock * (2 - clock)) / full; // ease-out: v falls linearly to 0 at the full run's end
+        const k = Math.min(1, covered);
+        tile.position.x = touch.x + (rest.position.x - touch.x) * k;
+        tile.position.z = touch.z + (rest.position.z - touch.z) * k;
+      });
+    }).then(() => {
+      tile.position.copy(rest.position);
+      if (seat !== this.me) this.addRoundLayer(item);
+    });
+  }
+
   /** A claimed discard flies from the heap towards the claimer and goes into the meld. */
   flyToClaimer(tile, claimer) {
     tableScene.attach(tile);
@@ -289,9 +503,10 @@ export class Board {
     const from = tile.position.clone();
     sound.cue("clack", { delay: pace.scale(0.33), intensity: 0.7, ...this.ear(claimer) });
     return animate(360, (t) => {
-      const k = easeInOutCubic(t);
+      // It lifts off before it travels, so it leaves the heap without brushing its neighbours.
+      const k = easeInOutCubic(Math.max(0, (t - 0.25) / 0.75));
       tile.position.lerpVectors(from, target, k);
-      tile.position.y += Math.sin(Math.PI * t) * 1.2;
+      tile.position.y += Math.sin(Math.PI * t) * 1.4;
       tile.scale.setScalar(DISCARD_SCALE * (1 - 0.3 * k));
     }).then(() => tile.removeFromParent());
   }

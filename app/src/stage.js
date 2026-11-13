@@ -154,6 +154,14 @@ const consoleTexture = new THREE.CanvasTexture(consoleCanvas);
 consoleTexture.colorSpace = THREE.SRGBColorSpace;
 consoleTexture.anisotropy = maxAnisotropy;
 let consoleKey = "";
+let consolePanel = null;
+
+/** The centre pile has the middle of the table: the console is put away (seat labels show its news). */
+export function setConsoleShown(on) {
+  if (consolePanel === null || consolePanel.visible === on) return;
+  consolePanel.visible = on;
+  requestRender();
+}
 
 function buildConsole() {
   // No clearcoat: seen from straight above (the zoomed pond view), its mirror
@@ -167,6 +175,7 @@ function buildConsole() {
   panel.castShadow = true;
   panel.receiveShadow = true;
   tableScene.add(panel);
+  consolePanel = panel;
 }
 
 const WIND_WORD = { E: "EAST", S: "SOUTH", W: "WEST", N: "NORTH" };
@@ -486,9 +495,13 @@ function poseTableCamera() {
 
 /** How many discards each seat (by `rel`) has: the zoomed view frames them all. */
 export function setPondCounts(counts) {
-  const next = pondExtent(counts);
-  if (Math.abs(next - pondReach) < 0.01) return;
-  pondReach = next;
+  setPondReach(pondExtent(counts));
+}
+
+/** Frame the zoomed view on discards reaching `extent` from the centre (the rows, or the pile). */
+export function setPondReach(extent) {
+  if (Math.abs(extent - pondReach) < 0.01) return;
+  pondReach = extent;
   fit();
 }
 
