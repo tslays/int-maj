@@ -71,6 +71,7 @@ export class Board {
     this.custom = false; // true once you have arranged the hand yourself
     this.carried = null; // the hand tile under your pointer: no animation moves it
     this.lifted = null; // the hand tile you have raised (hover or tap): it stays up, and marked, while the table moves
+    this.raised = new Set(); // tiles picked for a Goulash pass: up together, unmarked
     this.lastThrowX = 0;
     this.raycaster = new THREE.Raycaster();
     this.marked = [];
@@ -102,6 +103,7 @@ export class Board {
     this.hand = [];
     this.carried = null;
     this.lifted = null;
+    this.raised.clear();
     this.clearMarks();
     this.setCustom(false);
     this.seats = {};
