@@ -505,6 +505,10 @@ it does not require an announcement or say that the wait is told to anyone.
 Showing that one is fishing, and only that, is the Companion's display (C p. 55,
 §3.4): it is the fishing player's choice, and a fishing score is claimed only
 when it was shown `[A]` (ASSUMPTIONS.md, "Showing the fish").
+A table may also agree that **a win needs the fish shown**: a house rule
+neither book prints, off by default (owner ruling 2026-11-13, tester report
+#118). Under it a player who was offered the announcement goes out only after
+showing the fish `[A]` (ASSUMPTIONS.md, "A win needs the fish shown").
 > "When a player requires only one more tile to complete his hand for Mah Jong,
 > his hand is said to be 'fishing' or 'calling'. When a player is fishing for a
 > special hand, and another player goes Mah Jong, certain conditions apply to

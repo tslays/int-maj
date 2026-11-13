@@ -94,8 +94,8 @@ describe("problem report", () => {
 describe("house rules at the table", () => {
   // These cases are about the hand set; the Goulash rule is off so the
   // exclusion lists hold hands only.
-  const COMPANION = { handSet: "companion", goulashNoHalfLimit: false } as const;
-  const PICTURED = { handSet: "companion-pictured", goulashNoHalfLimit: false } as const;
+  const COMPANION = { handSet: "companion", goulashNoHalfLimit: false, winNeedsFish: false } as const;
+  const PICTURED = { handSet: "companion-pictured", goulashNoHalfLimit: false, winNeedsFish: false } as const;
   const ILLUSTRATED = ["all-kong", "buried-treasure", "mixed-pung"];
   const UNPICTURED = [
     "blue-mountains", "down-you-go", "dragons-run", "dragons-scales", "driven-snow",
@@ -136,17 +136,17 @@ describe("house rules at the table", () => {
     assert.equal(plain.houseRules.goulashNoHalfLimit, true, "on by default");
     const off = (await api.request("/api/new", {
       seed: "goulash-rule",
-      houseRules: { goulashNoHalfLimit: false },
+      houseRules: { goulashNoHalfLimit: false, winNeedsFish: false },
     })) as Dealt;
     assert.equal(off.houseRules.goulashNoHalfLimit, false);
     await assert.rejects(api.request("/api/new", { seed: "x", houseRules: { goulashNoHalfLimit: "yes" } }));
 
     // A hand dealt before the rule existed reads back as played without it.
     const store = new GameStore();
-    const { session } = store.create("goulash-rule-old", { handSet: "all", goulashNoHalfLimit: false });
+    const { session } = store.create("goulash-rule-old", { handSet: "all", goulashNoHalfLimit: false, winNeedsFish: false });
     assert.equal(store.state(session.id)!.excludedHands, undefined);
     assert.equal(houseRulesOf(store.state(session.id)!).goulashNoHalfLimit, false);
-    assert.match(buildReport(store.get(session.id)!, INFO), /^House rules: hand set all, half-limit hands in a Goulash allowed$/m);
+    assert.match(buildReport(store.get(session.id)!, INFO), /^House rules: hand set all, half-limit hands in a Goulash allowed, a win needs no announcement$/m);
   });
 
   it("changes the hand set only at the next deal, and the report replays it", () => {
@@ -156,7 +156,7 @@ describe("house rules at the table", () => {
     assert.equal(houseRulesOf(store.state(session.id)!).handSet, "companion-pictured");
 
     // Same rules: an ordinary step. Changed rules: the step carries the new list.
-    const next = store.next(session.id, { handSet: "all", goulashNoHalfLimit: false });
+    const next = store.next(session.id, { handSet: "all", goulashNoHalfLimit: false, winNeedsFish: false });
     assert.ok(!("error" in next));
     assert.deepEqual(next.session.steps.at(-1), { type: "NextHand", excludedHands: [] });
     assert.equal(store.state(session.id)!.excludedHands, undefined);
@@ -164,7 +164,7 @@ describe("house rules at the table", () => {
 
     const live = store.get(session.id)!;
     const text = buildReport(live, INFO);
-    assert.match(text, /^House rules: hand set all, half-limit hands in a Goulash allowed$/m);
+    assert.match(text, /^House rules: hand set all, half-limit hands in a Goulash allowed, a win needs no announcement$/m);
     const parsed = parseReport(text);
     assert.ok(!("error" in parsed));
     assert.equal(parsed.excludedHands?.length, ILLUSTRATED.length + UNPICTURED.length);

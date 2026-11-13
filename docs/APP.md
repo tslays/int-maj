@@ -358,11 +358,14 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   (`GameState.excludedHands`), so a change made mid-hand reads "Takes effect
   with the next hand" until then. Every payload carries the rules in force
   (`houseRules`), `/api/house-rules` names the hands each hand set leaves out, and a
-  problem report carries the rules so it replays. There are two rules: which hands are in play
+  problem report carries the rules so it replays. There are three rules: which hands are in play
   (all, the Companion's, or the Companion's with sample pictures), and the
   switch "No half-limit hands in a Goulash" (C p. 55, on by default; it rides
   in `excludedHands` as the token `rule:goulash-no-half-limit`, read by
-  `exclusionsOf` in `src/core/game/hands.ts`). For the hand set, see
+  `exclusionsOf` in `src/core/game/hands.ts`), and "Announce fishing to win"
+  (off by default; token `rule:win-needs-fish`, read by `mayGoOut`, #118). A
+  seat that has shown the fish carries a small fish beside its wind on the
+  middle console (`drawFish` in `stage.js`). For the hand set, see
   `rules/RULES.md` Part III §5. Hand values are the Companion's in every set;
   in the two Companion sets the hand sheet and result card name only Companion
   pages (`pages.js`) and the payment explanations drop their Illustrated page

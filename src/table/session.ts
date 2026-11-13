@@ -39,7 +39,7 @@ import { viewFor, type GameView, type PlayerView } from "../core/game/view.ts";
 import type { Wind } from "../core/tiles.ts";
 import type { PageRefs, Tier } from "../core/patterns/types.ts";
 import { HAND_SET_EXCLUDED, HAND_SETS, PATTERNS, type HandSet } from "../core/patterns/table.ts";
-import { GOULASH_NO_HALF_LIMIT } from "../core/game/hands.ts";
+import { GOULASH_NO_HALF_LIMIT, WIN_NEEDS_FISH } from "../core/game/hands.ts";
 
 /**
  * Your fixed place at the table (the bottom of the screen). It is a position,
@@ -66,9 +66,18 @@ export interface HouseRules {
    * a table turns it off. A hand dealt before this rule existed plays without it.
    */
   readonly goulashNoHalfLimit: boolean;
+  /**
+   * A player must show the fish before going out (#118). Neither book asks
+   * for it, so it is off unless a table turns it on.
+   */
+  readonly winNeedsFish: boolean;
 }
 
-export const DEFAULT_HOUSE_RULES: HouseRules = Object.freeze({ handSet: "all", goulashNoHalfLimit: true });
+export const DEFAULT_HOUSE_RULES: HouseRules = Object.freeze({
+  handSet: "all",
+  goulashNoHalfLimit: true,
+  winNeedsFish: false,
+});
 
 export function isHandSet(value: unknown): value is HandSet {
   return typeof value === "string" && (HAND_SETS as readonly string[]).includes(value);
@@ -76,8 +85,12 @@ export function isHandSet(value: unknown): value is HandSet {
 
 /** The engine's exclusion list for a set of house rules. */
 export function excludedHandsFor(rules: HouseRules): readonly string[] {
+  const tokens = [
+    ...(rules.goulashNoHalfLimit ? [GOULASH_NO_HALF_LIMIT] : []),
+    ...(rules.winNeedsFish ? [WIN_NEEDS_FISH] : []),
+  ];
   const hands = HAND_SET_EXCLUDED[rules.handSet];
-  return rules.goulashNoHalfLimit ? [...hands, GOULASH_NO_HALF_LIMIT] : hands;
+  return tokens.length === 0 ? hands : [...hands, ...tokens];
 }
 
 /** The house rules a hand is being played under, read back from its state. */
@@ -87,6 +100,7 @@ export function houseRulesOf(state: GameState): HouseRules {
   return {
     handSet: has("companion-pictured") ? "companion-pictured" : has("companion") ? "companion" : "all",
     goulashNoHalfLimit: excluded.includes(GOULASH_NO_HALF_LIMIT),
+    winNeedsFish: excluded.includes(WIN_NEEDS_FISH),
   };
 }
 

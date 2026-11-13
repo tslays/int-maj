@@ -327,6 +327,42 @@ setInterval(() => {
  *
  * `info.seats` is [{ rel, wind, score, dealer, turn }] with rel 0 = you.
  */
+/**
+ * The fish a seat shows once it has announced fishing (C p. 55: "Many players
+ * display a small fish"). Our own drawing: a plump body, a forked tail, an eye.
+ * `x`, `y` is the centre of the body in the console's seat frame.
+ */
+function drawFish(context, x, y) {
+  context.save();
+  context.translate(x, y);
+  context.scale(1.45, 1.45);
+  context.fillStyle = "#ff9a3c";
+  context.strokeStyle = "#7a3a06";
+  context.lineWidth = 3;
+  // Tail first, so the body overlaps its root.
+  context.beginPath();
+  context.moveTo(14, 0);
+  context.lineTo(36, -17);
+  context.quadraticCurveTo(30, 0, 36, 17);
+  context.closePath();
+  context.fill();
+  context.stroke();
+  context.beginPath();
+  context.ellipse(-6, 0, 26, 16, 0, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
+  // A fin and the eye.
+  context.beginPath();
+  context.moveTo(-10, -14);
+  context.quadraticCurveTo(-2, -26, 8, -13);
+  context.stroke();
+  context.fillStyle = "#1b2326";
+  context.beginPath();
+  context.arc(-20, -4, 3.6, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+}
+
 export function updateConsole(info) {
   const turnSeat = info.seats.find((seat) => seat.turn);
   const key = JSON.stringify({ ...info, seats: info.seats.map(({ turn, ...rest }) => rest) });
@@ -365,6 +401,7 @@ export function updateConsole(info) {
       context.fillStyle = "#f2d36b";
       context.font = `600 52px -apple-system, "Helvetica Neue", Arial, sans-serif`;
       context.fillText(seat.score.toLocaleString("en"), 46, size / 2 - 36);
+      if (seat.fishing) drawFish(context, -176, size / 2 - 54);
       context.restore();
     }
   }
