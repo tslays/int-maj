@@ -35,6 +35,8 @@ turned sideways. Everything else, the app shows you: tap **Help**.
   just received are marked in teal.
 - **Two new house rules:** *No half-limit hands in a Goulash* (on) and
   *Announce fishing to win* (off).
+- **Calmer Large discards** on phones: only the tile just thrown is shown
+  large, and nothing while it is your turn.
 - **Harder Hard bots.**
 - **New flower and season tiles:** big pictures you can recognise.
 - **Help as a visual guide,** tips in your first game, and a redesigned
@@ -73,6 +75,8 @@ Thank you to everyone who sent a report. From the last round:
 - If a hand is drawn, try the **Goulash** passes: arranging, the teal tiles,
   and whether the half-limit rule feels right.
 - Try **Hard**. Too hard now, or just right?
+- On a phone: is the single **large discard** easier to follow than the
+  whole round was?
 - Do you recognise every **flower and season** tile at a glance?
 - Anything that broke, looked wrong or surprised you.
 

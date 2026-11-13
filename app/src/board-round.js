@@ -1,12 +1,14 @@
 /**
- * The round layers, on phones only: each tile the other players throw this
- * round gets its face laid flat on top of it, larger, in the tile's own place,
- * angle and orientation, so a glance tells what the round threw without
- * leaning in or zooming. A layer appears only once its tile has landed and
- * settled, and expands briefly out of the tile; your own throw clears them
- * all, and the next round starts. Options has a switch for them (on by
- * default, `large-discards.js`). A claimed tile takes its layer with it. The
- * newest layer has the latest discard's cyan edge (it covers that plate).
+ * The large discard, on phones only: the tile another player has just thrown
+ * gets its face laid flat on top of it, larger, in the tile's own place,
+ * angle and orientation, so a glance tells what was thrown without leaning in
+ * or zooming. One at a time (owner ruling for alpha.7: the whole round at
+ * once was too distracting): each new throw takes the large face from the one
+ * before. It appears only once its tile has landed and settled, expanding
+ * briefly out of the tile, and it goes when your own turn comes (you draw and
+ * throw with a quiet table) or when the tile is claimed. Options has a switch
+ * for it (on by default, `large-discards.js`). It has the latest discard's
+ * cyan edge (it covers that plate).
  *
  * Each layer is a child of its tile (`makeFaceLayer` in `tiles.js`), so it
  * goes wherever the tile goes. Sizes and the phone test are plain numbers in
@@ -34,9 +36,16 @@ export const roundMethods = {
     return largeDiscards.on && roundLayersWanted(viewport.width, viewport.height);
   },
 
-  /** An opponent's discard has landed and settled: lay its face over it, expanding out of the tile. */
+  /** Your own turn to draw or throw: the table stays quiet, with no large face. */
+  ownTurn() {
+    const view = this.lastPayload?.view;
+    return view !== undefined && view.turn === this.me && (view.phase === "draw" || view.phase === "discard");
+  },
+
+  /** An opponent's discard has landed and settled: lay its face over it, expanding out of the tile; the one before goes. */
   addRoundLayer(item) {
-    if (!item.tile.parent || this.round.includes(item)) return;
+    if (!item.tile.parent || this.round.includes(item) || this.ownTurn()) return;
+    this.clearRound();
     const order = this.round.length;
     const { group, edge } = makeFaceLayer(item.key);
     group.visible = this.roundShown();

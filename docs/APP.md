@@ -95,13 +95,14 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   screen and larger than in the table view.
 - The round layers, on phones only (`app/src/board-round.js`;
   `makeFaceLayer` in `tiles.js`; `ROUND_LAYER`, `roundLayerZ` and
-  `roundLayersWanted` in `layout.js`): each tile the other players throw
-  this round gets its face laid flat on top of it, twice its size, in the
+  `roundLayersWanted` in `layout.js`): the tile another player has just
+  thrown gets its face laid flat on top of it, twice its size, in the
   tile's own place, angle and orientation (a layer is a child of its tile).
-  A layer appears only once its tile has landed and settled, expanding out
-  of the tile in 0.2 s; your own throw clears them all as it leaves your
-  hand, and the next round starts. A claimed tile takes its layer with it.
-  The newest layer has the cyan edge of the latest-discard plate it covers,
+  One at a time (alpha.7; the whole round at once was too distracting):
+  each new throw takes the large face from the one before. It appears only
+  once its tile has landed and settled, expanding out of the tile in 0.2 s,
+  and goes when your own turn to draw and throw comes (`ownTurn`) or when
+  the tile is claimed. It has the cyan edge of the latest-discard plate it covers,
   and the gold marks for a selected tile go on a layer rather than the tile
   under it. With `prefers-reduced-motion` a layer appears at full size. A
   screen whose short side is at most 500 CSS pixels is a phone (every
@@ -109,7 +110,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   keep the plain table. Options has a **Large discards** switch for them,
   shown only on a phone and on by default (`app/src/large-discards.js`, kept
   on the device; the players it helps most are the least likely to look for
-  a setting); turning it off hides the layers at once, mid-round too.
+  a setting); turning it off hides the layer at once.
   `test/app/layout.test.ts` proves a layer lies above
   its tile's face, and a later one above an earlier one, at every size.
 - The turn light (`stage.js`, `updateConsole`): the console is painted in three

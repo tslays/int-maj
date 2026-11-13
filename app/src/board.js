@@ -371,9 +371,11 @@ export class Board {
         this.plate.rotation.z = local.yaw;
       }
       this.frameOf(last.seat).add(this.plate);
-      // Opened mid-hand (a reload, a review board): the round starts with the latest discard, if not yours.
+      // Opened mid-hand (a reload, a review board): the latest discard, if not yours, gets its large face.
       if (this.round.length === 0 && last.seat !== this.me) this.addRoundLayer(state.discards[state.discards.length - 1]);
     }
+    // Your turn to draw and throw: the large face goes, so nothing distracts you.
+    if (this.ownTurn()) this.clearRound();
     requestRender();
   }
 
