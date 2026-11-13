@@ -1,46 +1,32 @@
 """Draw the eight flower and season faces for the 3D table (original art).
 
-Each face is a picture a player recognises without reading Chinese - four
-plants for the flowers, four emblems of the year for the seasons - drawn in
-the inks and flat, outlined style of the riichi set the other faces come from
-(see `app/assets/faces/LICENSE.md`). Like the tiles printed in *The Game of
-Mah Jong Illustrated* (p. 9), the number sits in the top-left corner (the
-table adds it, `app/src/tiles.js`) and a small kanji in the top-right; the
-book's usual colouring numbers flowers in red and seasons in green, and the
-kanji follow the number's ink.
+Each face is a small painting a player recognises without reading Chinese:
+four plants for the flowers (plum, orchid, chrysanthemum, bamboo) and four
+pictures of the year for the seasons (a seedling with a butterfly, the sun
+over the sea, maple leaves, a snowflake). The shapes are shaded with
+gradients and outlined in a darker tone of their own colour. The table prints
+the number in the top-left corner (`app/src/tiles.js`), red for flowers and
+green for seasons, the colouring *The Game of Mah Jong Illustrated* calls
+usual (p. 9); the art keeps that corner clear.
 
-The kanji are outlines from `bonus-glyphs.json` (see `bonus-glyphs.py`), not
-live text, so the faces look the same on every device.
+Only gradients are used, no SVG filters, so the faces draw the same in every
+browser when the table paints them onto a canvas.
 
     python3 scripts/art/bonus-faces.py app/assets/faces
 """
-import json, math, os, sys
+import math, sys
 
 OUT = sys.argv[1]
-GLYPHS = json.load(open(os.path.join(os.path.dirname(__file__), "bonus-glyphs.json"), encoding="utf-8"))
-
-# The riichi set's inks.
-RED, GREEN, NAVY, BLUE, WHITE = "#b93c3c", "#004900", "#000037", "#19328c", "#ffffff"
-LEAF, AMBER, GOLD, EARTH = "#2f7a32", "#cf6a1f", "#e0a526", "#6b3e1f"
-FLOWER_INK, SEASON_INK = RED, GREEN
-
-# Small kanji in the top-right corner, opposite the table's number.
-KANJI_CENTRE, KANJI_SIZE = (246, 46), 64
-# The picture sits centred below that header row, with a margin all round.
-CX, CY = 150, 236
 
 
-def kanji(char, colour):
-    g = GLYPHS["kanji"][char]
-    x0, y0, x1, y1 = g["bounds"]
-    scale = KANJI_SIZE / max(x1 - x0, y1 - y0)
-    tx = KANJI_CENTRE[0] - (x0 + x1) / 2 * scale
-    ty = KANJI_CENTRE[1] + (y0 + y1) / 2 * scale  # font y runs up
-    return f'<path d="{g["d"]}" fill="{colour}" transform="translate({tx:.1f} {ty:.1f}) scale({scale:.4f} {-scale:.4f})"/>'
+# --- Drawing helpers -------------------------------------------------------
+
+def f(v):
+    return f"{v:.1f}".rstrip("0").rstrip(".")
 
 
 def pt(x, y):
-    return f"{x:.1f},{y:.1f}"
+    return f"{f(x)},{f(y)}"
 
 
 def polar(cx, cy, r, deg):
@@ -48,218 +34,455 @@ def polar(cx, cy, r, deg):
     return cx + r * math.cos(a), cy + r * math.sin(a)
 
 
-def poly(points, fill, stroke=NAVY, width=5):
-    return f'<polygon points="{" ".join(pt(*p) for p in points)}" fill="{fill}" stroke="{stroke}" stroke-width="{width}" stroke-linejoin="round"/>'
+class Face:
+    """One face: its gradient definitions and its shapes."""
+
+    def __init__(self):
+        self.defs, self.body = [], []
+
+    def add(self, svg):
+        self.body.append(svg)
+
+    def _stops(self, stops):
+        out = ""
+        for s in stops:
+            op = f' stop-opacity="{s[2]}"' if len(s) > 2 else ""
+            out += f'<stop offset="{s[0]}" stop-color="{s[1]}"{op}/>'
+        return out
+
+    def lin(self, stops, x1=0, y1=0, x2=1, y2=0):
+        gid = f"g{len(self.defs)}"
+        self.defs.append(f'<linearGradient id="{gid}" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}">{self._stops(stops)}</linearGradient>')
+        return f"url(#{gid})"
+
+    def rad(self, stops, cx=0.5, cy=0.5, r=0.5, fx=None, fy=None, user=False):
+        gid = f"g{len(self.defs)}"
+        units = ' gradientUnits="userSpaceOnUse"' if user else ""
+        focus = f' fx="{f(fx)}" fy="{f(fy)}"' if fx is not None else ""
+        self.defs.append(f'<radialGradient id="{gid}" cx="{f(cx)}" cy="{f(cy)}" r="{f(r)}"{focus}{units}>{self._stops(stops)}</radialGradient>')
+        return f"url(#{gid})"
+
+    def svg(self, name):
+        return (f'<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400">\n'
+                f'  <!-- {name}: drawn for this project (original art). -->\n'
+                f'  <defs>{"".join(self.defs)}</defs>\n  ' + "\n  ".join(self.body) + "\n</svg>\n")
 
 
-def circle(x, y, r, fill, stroke=NAVY, width=5):
-    return f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r:.1f}" fill="{fill}" stroke="{stroke}" stroke-width="{width}"/>'
+def shape(d, fill, stroke="none", width=0, extra=""):
+    s = f' stroke="{stroke}" stroke-width="{f(width)}" stroke-linejoin="round" stroke-linecap="round"' if stroke != "none" else ""
+    return f'<path d="{d}" fill="{fill}"{s}{extra}/>'
 
 
-def path(d, fill="none", stroke=NAVY, width=5, cap="round"):
-    return f'<path d="{d}" fill="{fill}" stroke="{stroke}" stroke-width="{width}" stroke-linecap="{cap}" stroke-linejoin="round"/>'
+def line(d, stroke, width, opacity=1):
+    op = f' stroke-opacity="{opacity}"' if opacity != 1 else ""
+    return f'<path d="{d}" fill="none" stroke="{stroke}" stroke-width="{f(width)}" stroke-linecap="round" stroke-linejoin="round"{op}/>'
 
 
-def leaf(x, y, length, deg, width, fill=LEAF, vein=True):
-    """A pointed leaf from its base (x, y) along `deg`."""
-    tx, ty = polar(x, y, length, deg)
-    l1 = polar(x, y, length * 0.5, deg - 90)
-    m1 = polar(*polar(x, y, length * 0.45, deg), width, deg - 90)
-    m2 = polar(*polar(x, y, length * 0.45, deg), width, deg + 90)
-    d = f"M{pt(x, y)} Q{pt(*m1)} {pt(tx, ty)} Q{pt(*m2)} {pt(x, y)}Z"
-    out = path(d, fill, NAVY, 4)
-    if vein:
-        vx, vy = polar(x, y, length * 0.8, deg)
-        out += path(f"M{pt(x, y)} L{pt(vx, vy)}", stroke=WHITE, width=2.5)
-    return out
+def placed(svg, x, y, deg=0, sx=1, sy=1):
+    scale = f" scale({f(sx)} {f(sy)})" if (sx, sy) != (1, 1) else ""
+    return f'<g transform="translate({f(x)} {f(y)}) rotate({f(deg)}){scale}">{svg}</g>'
+
+
+def petal_d(length, w, tip="round"):
+    """A petal from its base at the origin along +x, half-width w."""
+    L = length
+    if tip == "point":
+        return f"M0,0 C{pt(.3*L, -w)} {pt(.7*L, -.75*w)} {pt(L, 0)} C{pt(.7*L, .75*w)} {pt(.3*L, w)} 0,0Z"
+    if tip == "notch":
+        return (f"M0,0 C{pt(.05*L, -.9*w)} {pt(.7*L, -1.2*w)} {pt(.96*L, -.45*w)} "
+                f"Q{pt(.99*L, -.08*w)} {pt(.86*L, 0)} Q{pt(.99*L, .08*w)} {pt(.96*L, .45*w)} "
+                f"C{pt(.7*L, 1.2*w)} {pt(.05*L, .9*w)} 0,0Z")
+    return f"M0,0 C{pt(.1*L, -.9*w)} {pt(.55*L, -1.1*w)} {pt(.88*L, -.75*w)} Q{pt(1.04*L, 0)} {pt(.88*L, .75*w)} C{pt(.55*L, 1.1*w)} {pt(.1*L, .9*w)} 0,0Z"
+
+
+def bezier(p0, p1, p2, p3, n=36):
+    pts = []
+    for i in range(n + 1):
+        t = i / n
+        a, b, c, d = (1 - t) ** 3, 3 * (1 - t) ** 2 * t, 3 * (1 - t) * t ** 2, t ** 3
+        pts.append((a * p0[0] + b * p1[0] + c * p2[0] + d * p3[0], a * p0[1] + b * p1[1] + c * p2[1] + d * p3[1]))
+    return pts
+
+
+def tapered(pts, w0, w1):
+    """A filled stroke along `pts` whose width runs from w0 to w1."""
+    left, right = [], []
+    for i, (x, y) in enumerate(pts):
+        ax, ay = pts[max(i - 1, 0)]
+        bx, by = pts[min(i + 1, len(pts) - 1)]
+        dx, dy = bx - ax, by - ay
+        n = math.hypot(dx, dy) or 1
+        nx, ny = -dy / n, dx / n
+        w = (w0 + (w1 - w0) * i / (len(pts) - 1)) / 2
+        left.append((x + nx * w, y + ny * w))
+        right.append((x - nx * w, y - ny * w))
+    ring = left + right[::-1]
+    return "M" + " L".join(pt(*p) for p in ring) + "Z"
+
+
+def leaf_d(length, w, lobes=0):
+    """A leaf from its base at the origin along +x; lobes give a toothed edge."""
+    top, bottom = [], []
+    n = 40
+    for i in range(n + 1):
+        t = i / n
+        env = w * math.sin(math.pi * min(t * 1.08, 1)) ** 0.75 * (1 - 0.15 * t)
+        if lobes:
+            env *= 1 - 0.32 * abs(math.sin(lobes * math.pi * t)) ** 1.5
+        top.append((length * t, -env))
+        bottom.append((length * t, env))
+    ring = top + bottom[::-1]
+    return "M" + " L".join(pt(*p) for p in ring) + "Z"
+
+
+# Leaf colours: light top edge to dark bottom edge.
+LEAF_STOPS = [(0, "#9fd36b"), (0.45, "#4f9a3a"), (1, "#1d5a26")]
+LEAF_EDGE = "#14401b"
+
+
+def leaf(face, x, y, length, deg, w, lobes=0, stops=LEAF_STOPS, edge=LEAF_EDGE, veins=True):
+    fill = face.lin(stops, 0, 0, 0, 1)
+    out = shape(leaf_d(length, w, lobes), fill, edge, 2.6)
+    if veins:
+        out += line(f"M{pt(length * .04, 0)} Q{pt(length * .5, -w * .08)} {pt(length * .9, 0)}", "#e8f5c8", 2.2, 0.75)
+        for t in (0.3, 0.5, 0.7):
+            out += line(f"M{pt(length * t, 0)} L{pt(length * (t + .12), -w * .55)}", "#e8f5c8", 1.3, 0.45)
+            out += line(f"M{pt(length * t, 0)} L{pt(length * (t + .12), w * .55)}", LEAF_EDGE, 1.3, 0.35)
+    return placed(out, x, y, deg)
+
+
+def ground_shadow(face, x, y, rx, ry):
+    fill = face.rad([(0, "#3a2a18", 0.28), (1, "#3a2a18", 0)])
+    return f'<ellipse cx="{f(x)}" cy="{f(y)}" rx="{f(rx)}" ry="{f(ry)}" fill="{fill}"/>'
 
 
 # --- Flowers ---------------------------------------------------------------
 
-def blossom(x, y, r, fill=RED):
-    """A five-petalled plum blossom."""
+def plum_blossom(face, x, y, r, turn=0):
+    petal = face.lin([(0, "#7d0f26"), (0.35, "#c92a40"), (0.8, "#ef6670"), (1, "#f98a8c")])
     out = ""
     for k in range(5):
-        px, py = polar(x, y, r * 0.6, -90 + 72 * k)
-        out += circle(px, py, r * 0.5, fill, NAVY, 5)
+        out += placed(shape(petal_d(r, r * 0.5, "notch"), petal, "#6a0c1e", 2.6), x, y, turn - 90 + 72 * k)
     for k in range(5):
-        px, py = polar(x, y, r * 0.6, -90 + 72 * k)
-        out += circle(px, py, r * 0.5 - 2.5, fill, fill, 0)
-    out += circle(x, y, r * 0.3, GOLD, NAVY, 4)
-    for k in range(5):
-        sx, sy = polar(x, y, r * 0.52, -54 + 72 * k)
-        out += circle(sx, sy, 3.5, NAVY, NAVY, 0)
+        a = turn - 90 + 72 * k
+        out += line(f"M{pt(*polar(x, y, r * .2, a))} L{pt(*polar(x, y, r * .6, a))}", "#ffd2d2", 1.6, 0.5)
+    for k in range(14):
+        a = turn + k * 360 / 14
+        tip = polar(x, y, r * (0.42 if k % 2 else 0.52), a)
+        out += line(f"M{pt(x, y)} L{pt(*tip)}", "#7a1020", 1.6)
+        out += f'<circle cx="{f(tip[0])}" cy="{f(tip[1])}" r="{f(r * .06)}" fill="#ffd54a" stroke="#9a6a00" stroke-width="1"/>'
+    centre = face.rad([(0, "#fff3a6"), (1, "#e09a14")])
+    out += f'<circle cx="{f(x)}" cy="{f(y)}" r="{f(r * .16)}" fill="{centre}" stroke="#8a5200" stroke-width="1.6"/>'
+    return out
+
+
+def plum_bud(face, x, y, r, deg):
+    fill = face.rad([(0, "#f98a8c"), (0.6, "#d0324a"), (1, "#7d0f26")], 0.4, 0.35, 0.7)
+    bud = f'<ellipse cx="{f(r * .9)}" cy="0" rx="{f(r)}" ry="{f(r * .8)}" fill="{fill}" stroke="#6a0c1e" stroke-width="2.4"/>'
+    sepal = face.lin([(0, "#5a2a14"), (1, "#8a4a22")])
+    bud += shape(f"M0,0 Q{pt(r * .5, -r * .9)} {pt(r * .9, -r * .55)} Q{pt(r * .5, 0)} {pt(r * .9, r * .55)} Q{pt(r * .5, r * .9)} 0,0Z", sepal, "#3a1a0a", 1.8)
+    return placed(bud, x, y, deg)
+
+
+def branch(face, pts, w0, w1):
+    bark = face.lin([(0, "#9a6a46"), (0.45, "#5d3820"), (1, "#2e1a0c")], 0, 0, 1, 1)
+    out = shape(tapered(pts, w0, w1), bark, "#24130a", 2.6)
+    hi = [(x - 2, y - 2) for x, y in pts[2:-4]]
+    out += line("M" + " L".join(pt(*p) for p in hi[::2]), "#c79a72", max(w1 * .35, 1.5), 0.55)
     return out
 
 
 def plum():
-    branch = path("M64 396 C74 340 96 300 124 266 C150 232 154 196 146 150", stroke=NAVY, width=30)
-    branch += path("M124 266 C156 254 196 240 226 204", stroke=NAVY, width=20)
-    branch += path("M64 396 C74 340 96 300 124 266 C150 232 154 196 146 150", stroke=EARTH, width=20)
-    branch += path("M124 266 C156 254 196 240 226 204", stroke=EARTH, width=11)
-    buds = circle(186, 240, 13, RED, NAVY, 5) + circle(96, 196, 12, RED, NAVY, 5)
-    flowers = blossom(142, 136, 62) + blossom(228, 196, 50) + blossom(90, 300, 48)
-    return branch + buds + flowers
+    face = Face()
+    face.add(branch(face, bezier((40, 402), (60, 320), (138, 290), (146, 210)), 30, 15))
+    face.add(branch(face, bezier((146, 212), (150, 160), (196, 130), (214, 84)), 15, 5))
+    face.add(branch(face, bezier((118, 300), (170, 290), (226, 272), (262, 222)), 13, 4))
+    face.add(branch(face, bezier((146, 220), (116, 196), (92, 164), (70, 136)), 10, 3))
+    face.add(branch(face, bezier((74, 360), (110, 360), (140, 356), (168, 344)), 9, 3))
+    for x, y in ((92, 330), (134, 250)):
+        face.add(f'<ellipse cx="{x}" cy="{y}" rx="7" ry="4" fill="#24130a" opacity="0.6" transform="rotate(-40 {x} {y})"/>')
+    face.add(plum_bud(face, 214, 84, 13, -70))
+    face.add(plum_bud(face, 262, 222, 12, -50))
+    face.add(plum_bud(face, 168, 344, 11, -15))
+    face.add(plum_bud(face, 206, 150, 10, -10))
+    face.add(plum_blossom(face, 146, 176, 68, 8))
+    face.add(plum_blossom(face, 222, 268, 56, -14))
+    face.add(plum_blossom(face, 80, 124, 46, 20))
+    face.add(plum_blossom(face, 104, 334, 42, -8))
+    return face
 
 
-def orchid_bloom(x, y, r, tilt=0):
+def orchid_bloom(face, x, y, r, tilt=0):
+    petal = face.lin([(0, "#fff4f8"), (0.4, "#f19ac2"), (0.85, "#cc3d86"), (1, "#a8296a")])
+    edge = "#7a1450"
     out = ""
-    for k, length in ((0, 1.0), (1, 0.85), (2, 0.85), (3, 1.0), (4, 1.0)):
-        deg = tilt + [-90, -22, -158, 38, 142][k]
-        tx, ty = polar(x, y, r * length, deg)
-        a1 = polar(x, y, r * 0.5, deg - 32)
-        a2 = polar(x, y, r * 0.5, deg + 32)
-        out += path(f"M{pt(x, y)} Q{pt(*a1)} {pt(tx, ty)} Q{pt(*a2)} {pt(x, y)}Z", RED, NAVY, 5)
-    lx, ly = polar(x, y, r * 0.36, tilt + 90)
-    out += f'<ellipse cx="{lx:.1f}" cy="{ly:.1f}" rx="{r * 0.3:.1f}" ry="{r * 0.24:.1f}" fill="{WHITE}" stroke="{NAVY}" stroke-width="4.5"/>'
-    out += circle(x, y, r * 0.16, GOLD, NAVY, 3.5)
+    for deg, length, w in ((-90, 1.0, .34), (148, .95, .32), (32, .95, .32), (-152, .78, .3), (-28, .78, .3)):
+        out += placed(shape(petal_d(r * length, r * w, "point"), petal, edge, 2.4), x, y, tilt + deg)
+        out += placed(line(f"M{pt(r * .1, 0)} L{pt(r * length * .8, 0)}", "#7a1450", 1.4, 0.35), x, y, tilt + deg)
+    lip = face.rad([(0, "#ffffff"), (0.7, "#fbe6ef"), (1, "#e9a8c6")], 0.5, 0.3, 0.7)
+    lx, ly = polar(x, y, r * .34, tilt + 90)
+    out += placed(shape(f"M{pt(-r * .3, -r * .1)} C{pt(-r * .42, r * .3)} {pt(-r * .1, r * .42)} 0,{f(r * .4)} "
+                        f"C{pt(r * .1, r * .42)} {pt(r * .42, r * .3)} {pt(r * .3, -r * .1)} Z", lip, edge, 2.2), lx, ly - r * .12, tilt)
+    for dx, dy in ((-.12, .05), (.1, .08), (0, .18), (-.06, .26), (.08, .24), (.16, .14), (-.18, .16)):
+        sx, sy = lx + dx * r, ly + dy * r - r * .05
+        out += f'<circle cx="{f(sx)}" cy="{f(sy)}" r="{f(r * .035)}" fill="#b0124e"/>'
+    column = face.lin([(0, "#fff7b0"), (1, "#e6b326")], 0, 0, 0, 1)
+    cx, cy = polar(x, y, r * .08, tilt + 90)
+    out += f'<ellipse cx="{f(cx)}" cy="{f(cy)}" rx="{f(r * .1)}" ry="{f(r * .14)}" fill="{column}" stroke="#8a6200" stroke-width="1.6"/>'
     return out
 
 
 def orchid():
-    pot = poly([(80, 330), (220, 330), (202, 396), (98, 396)], NAVY, NAVY, 5)
-    pot += path("M90 346 L210 346", stroke=WHITE, width=4)
-    leaves = ""
-    for d in ("M136 332 C100 250 58 214 14 198 C70 236 106 276 118 332Z",
-              "M150 332 C156 240 128 170 98 112 C150 172 176 250 170 332Z",
-              "M160 332 C200 262 242 230 288 222 C246 252 214 290 184 332Z",
-              "M126 332 C102 296 70 288 30 300 C78 296 104 312 112 332Z",
-              "M176 332 C200 296 232 290 272 304 C232 304 206 316 194 332Z"):
-        leaves += path(d, LEAF, NAVY, 5)
-    stem = path("M164 330 C176 270 192 226 204 160", stroke=NAVY, width=11)
-    stem += path("M164 330 C176 270 192 226 204 160", stroke=GREEN, width=5)
-    blooms = orchid_bloom(204, 150, 56, 5) + orchid_bloom(92, 186, 46, -15)
-    return leaves + stem + pot + blooms
+    face = Face()
+    face.add(ground_shadow(face, 150, 392, 112, 10))
+    blade = face.lin([(0, "#2a6a2c"), (0.5, "#5aa648"), (1, "#1c4f22")], 0, 0, 1, 0)
+    for p in (((140, 324), (110, 250), (60, 214), (14, 216)),
+              ((146, 324), (130, 230), (96, 160), (70, 98)),
+              ((160, 324), (200, 250), (250, 220), (290, 230)),
+              ((134, 324), (100, 290), (60, 280), (24, 298)),
+              ((166, 324), (196, 292), (240, 286), (278, 304)),
+              ((152, 324), (164, 260), (190, 200), (236, 160))):
+        face.add(shape(tapered(bezier(*p), 15, 1.5), blade, LEAF_EDGE, 2.4))
+        face.add(line("M" + " L".join(pt(x - 1, y - 1) for x, y in bezier(*p, n=12)[1:-3]), "#c8eaa0", 1.6, 0.5))
+    stem = face.lin([(0, "#7fbf5a"), (1, "#3f7f2a")])
+    for p in (((156, 322), (170, 260), (190, 200), (198, 150)), ((150, 322), (140, 260), (112, 220), (96, 196)),
+              ((160, 322), (186, 290), (214, 262), (226, 250))):
+        face.add(shape(tapered(bezier(*p), 6, 3.5), stem, "#2e5a20", 1.6))
+    face.add(orchid_bloom(face, 232, 250, 42, 22))
+    face.add(orchid_bloom(face, 92, 184, 54, -14))
+    face.add(orchid_bloom(face, 196, 132, 64, 6))
+    # A blue-and-white pot.
+    body = face.lin([(0, "#123278"), (0.3, "#3f6fd0"), (0.55, "#2a55b0"), (1, "#0c2160")])
+    face.add(shape("M62,324 L238,324 C236,350 226,378 206,396 L94,396 C74,378 64,350 62,324Z", body, "#071640", 3))
+    band = face.lin([(0, "#ffffff"), (1, "#dbe6fb")], 0, 0, 0, 1)
+    face.add(shape("M68,344 L232,344 C230,354 228,362 224,370 L76,370 C72,362 70,354 68,344Z", band, "#071640", 2))
+    for k in range(6):
+        cx = 86 + k * 26
+        face.add(line(f"M{cx - 10},363 Q{cx - 5},350 {cx},357 Q{cx + 5},364 {cx + 10},351", "#2a55b0", 3))
+    rim = face.lin([(0, "#5d8be0"), (1, "#1a3c90")], 0, 0, 0, 1)
+    face.add(f'<rect x="54" y="314" width="192" height="16" rx="6" fill="{rim}" stroke="#071640" stroke-width="3"/>')
+    face.add(line("M64,318 L236,318", "#cfe0ff", 2.5, 0.7))
+    face.add(line("M84,382 Q90,352 80,332", "#ffffff", 4, 0.3))
+    return face
 
 
 def chrysanthemum():
-    stem = path("M150 250 C146 300 152 340 150 398", stroke=NAVY, width=17)
-    stem += path("M150 250 C146 300 152 340 150 398", stroke=LEAF, width=9)
-    leaves = leaf(146, 340, 112, 200, 36) + leaf(154, 316, 112, -20, 36)
+    face = Face()
+    stem = face.lin([(0, "#3f7f2a"), (0.5, "#7fbf5a"), (1, "#2e5a20")])
+    face.add(shape(tapered(bezier((150, 240), (146, 300), (156, 350), (150, 400)), 10, 14), stem, "#1f4016", 2.2))
+    face.add(leaf(face, 150, 340, 116, 198, 34, lobes=3))
+    face.add(leaf(face, 152, 304, 112, -22, 32, lobes=3))
+    face.add(leaf(face, 150, 380, 84, -38, 24, lobes=2))
+    x, y = 150, 168
     head = ""
-    x, y = 150, 182
-    for count, length, width, fill, offset in ((20, 124, 20, RED, 0), (16, 88, 17, "#d4574f", 11), (12, 54, 14, RED, 4)):
+    rings = ((26, 122, 10, 0, ("#c25e08", "#f39a1c", "#ffd44a", "#ffe58a")),
+             (22, 100, 10, 7, ("#b8560a", "#f08e18", "#ffcd3e", "#ffe07a")),
+             (18, 76, 9.5, 3, ("#a84a06", "#e88314", "#ffc634", "#ffd96a")),
+             (14, 52, 9, 11, ("#9a4204", "#df7810", "#fbbb2c", "#ffd25a")),
+             (10, 30, 8, 5, ("#8a3a02", "#d06a0c", "#f2aa24", "#ffc94a")))
+    for count, length, w, offset, cols in rings:
+        fill = face.lin([(0, cols[0]), (0.35, cols[1]), (0.8, cols[2]), (1, cols[3])])
         for k in range(count):
             deg = offset + 360 * k / count
-            tx, ty = polar(x, y, length, deg)
-            a1 = polar(*polar(x, y, length * 0.6, deg), width, deg - 90)
-            a2 = polar(*polar(x, y, length * 0.6, deg), width, deg + 90)
-            head += path(f"M{pt(x, y)} Q{pt(*a1)} {pt(tx, ty)} Q{pt(*a2)} {pt(x, y)}Z", fill, NAVY, 4)
-    head += circle(x, y, 20, GOLD, NAVY, 5)
-    return stem + leaves + head
+            p = shape(petal_d(length, w, "round"), fill, "#7a3a02", 1.8)
+            p += line(f"M{pt(length * .25, 0)} L{pt(length * .8, 0)}", "#fff2b0", 1.4, 0.5)
+            head += placed(p, x, y, deg)
+    centre = face.rad([(0, "#ffe27a"), (0.6, "#e08a12"), (1, "#a85006")])
+    head += f'<circle cx="{x}" cy="{y}" r="15" fill="{centre}" stroke="#7a3a02" stroke-width="2"/>'
+    face.add(f'<g transform="translate({x} {y}) scale(1 0.94) translate(-{x} -{y})">{head}</g>')
+    return face
+
+
+def culm(face, x, y, height, w, deg, segments):
+    body = face.lin([(0, "#1f5a22"), (0.22, "#4f9a3a"), (0.42, "#a8dc78"), (0.62, "#5aa646"), (1, "#18461c")])
+    out, seg = "", height / segments
+    for i in range(segments):
+        top = -(i + 1) * seg
+        out += f'<rect x="{f(-w / 2)}" y="{f(top + 2)}" width="{f(w)}" height="{f(seg - 4)}" rx="{f(w * .18)}" fill="{body}" stroke="#123a16" stroke-width="2.4"/>'
+    node = face.lin([(0, "#2c6a2a"), (0.45, "#cdeaa0"), (1, "#204e20")])
+    for i in range(1, segments):
+        out += f'<rect x="{f(-w / 2 - 3)}" y="{f(-i * seg - 4)}" width="{f(w + 6)}" height="8" rx="4" fill="{node}" stroke="#123a16" stroke-width="2.2"/>'
+    cut = face.rad([(0, "#2a4a18"), (0.7, "#5f8a3a"), (1, "#cfe8a0")])
+    out += f'<ellipse cx="0" cy="{f(-height + 2)}" rx="{f(w / 2)}" ry="{f(w * .2)}" fill="{cut}" stroke="#123a16" stroke-width="2.2"/>'
+    return placed(out, x, y, deg)
+
+
+def spray(face, x, y, deg, n=3, length=86):
+    out = ""
+    for k in range(n):
+        out += leaf(face, x, y, length - 10 * k, deg + (k - (n - 1) / 2) * 26, 13)
+    return out
 
 
 def bamboo_plant():
-    out = ""
-    for x0, x1, top in ((108, 96, 104), (190, 204, 136)):
-        out += path(f"M{x0} 398 L{x1} {top}", stroke=NAVY, width=40, cap="butt")
-        out += path(f"M{x0} 396 L{x1} {top + 3}", stroke=LEAF, width=28, cap="butt")
-        for k in range(1, 5):
-            t = k / 5
-            nx, ny = x0 + (x1 - x0) * t, 398 + (top - 398) * t
-            out += path(f"M{nx - 19:.1f} {ny:.1f} L{nx + 19:.1f} {ny:.1f}", stroke=NAVY, width=7)
-        out += path(f"M{x0 - 6} 386 L{x1 - 6} {top + 16}", stroke="#7fbf6a", width=5)
-    for x, y, deg in ((100, 160, 205), (100, 160, 235), (102, 220, -25), (102, 220, -55),
-                      (200, 190, -15), (200, 190, -50), (194, 270, 195), (194, 270, 160),
-                      (96, 112, -70), (204, 144, -105)):
-        out += leaf(x, y, 108, deg, 22)
-    return out
+    face = Face()
+    face.add(ground_shadow(face, 150, 394, 110, 9))
+    face.add(culm(face, 150, 396, 200, 20, 2, 4))
+    face.add(culm(face, 106, 398, 320, 32, -4, 5))
+    face.add(culm(face, 196, 398, 260, 28, 5, 4))
+    twig = "#2e5a20"
+    for x0, y0, x1, y1 in ((96, 206, 70, 180), (112, 140, 150, 112), (206, 200, 234, 172), (212, 150, 190, 120), (98, 268, 72, 252)):
+        face.add(line(f"M{x0},{y0} L{x1},{y1}", twig, 4))
+    face.add(spray(face, 70, 180, 160, 3, 74))
+    face.add(spray(face, 150, 112, 22, 3, 80))
+    face.add(spray(face, 234, 172, 40, 3, 68))
+    face.add(spray(face, 190, 120, 205, 3, 70))
+    face.add(spray(face, 72, 252, 150, 2, 62))
+    face.add(spray(face, 96, 80, -60, 2, 58))
+    return face
 
 
 # --- Seasons ---------------------------------------------------------------
 
+def butterfly(face, x, y, s, deg):
+    wing = face.rad([(0, "#fff3a0"), (0.5, "#ffc93a"), (0.85, "#f08a18"), (1, "#c45a0a")], 0.3, 0.7, 0.9)
+    low = face.rad([(0, "#fff3a0"), (0.6, "#ffb02e"), (1, "#c45a0a")], 0.3, 0.2, 0.9)
+    edge = "#3a1c08"
+    out = ""
+    for side in (-1, 1):
+        up = f"M0,-4 C{pt(side * 20, -60)} {pt(side * 80, -66)} {pt(side * 82, -30)} C{pt(side * 84, -6)} {pt(side * 40, 4)} 0,2Z"
+        lo = f"M0,4 C{pt(side * 46, 6)} {pt(side * 64, 34)} {pt(side * 48, 54)} C{pt(side * 32, 70)} {pt(side * 6, 44)} 0,8Z"
+        out += shape(lo, low, edge, 2.6) + shape(up, wing, edge, 2.6)
+        out += line(f"M{pt(side * 62, -58)} C{pt(side * 84, -48)} {pt(side * 86, -20)} {pt(side * 70, -8)}", edge, 6, 0.85)
+        for cx, cy, r in ((70, -44, 4), (78, -26, 3.5), (52, 50, 3.5)):
+            out += f'<circle cx="{f(side * cx)}" cy="{cy}" r="{r}" fill="#ffffff" stroke="{edge}" stroke-width="1"/>'
+        out += f'<circle cx="{f(side * 38)}" cy="-26" r="9" fill="#f08a18" stroke="{edge}" stroke-width="1.8"/>'
+        out += line(f"M0,-14 Q{pt(side * 10, -40)} {pt(side * 22, -48)}", edge, 2)
+        out += f'<circle cx="{f(side * 22)}" cy="-48" r="3" fill="{edge}"/>'
+    body = face.lin([(0, "#6a4022"), (0.5, "#2a160a"), (1, "#120802")])
+    out += f'<ellipse cx="0" cy="6" rx="5.5" ry="30" fill="{body}"/>'
+    out += '<circle cx="0" cy="-20" r="7" fill="#2a160a"/>'
+    return placed(out, x, y, deg, s, s)
+
+
+def daisy(face, x, y, r):
+    petal = face.lin([(0, "#f4d7e6"), (1, "#ffffff")])
+    out = ""
+    for k in range(10):
+        out += placed(shape(petal_d(r, r * .24, "round"), petal, "#b88aa8", 1.4), x, y, k * 36)
+    centre = face.rad([(0, "#fff3a0"), (1, "#e8a414")])
+    return out + f'<circle cx="{f(x)}" cy="{f(y)}" r="{f(r * .3)}" fill="{centre}" stroke="#9a6a00" stroke-width="1.4"/>'
+
+
 def spring():
-    """A seedling with a swallow overhead."""
-    out = path("M18 398 C60 340 240 340 282 398Z", EARTH, NAVY, 6)
-    out += path("M150 366 C150 300 146 262 150 226", stroke=NAVY, width=17)
-    out += path("M150 366 C150 300 146 262 150 226", stroke=LEAF, width=9)
-    out += leaf(150, 280, 118, 200, 44) + leaf(150, 246, 122, -25, 46)
-    out += leaf(150, 230, 64, -95, 20)
-    # Swallow: a forked tail and swept wings, flying right.
-    swallow = ("M120 128 C150 104 190 102 226 116 C200 120 186 126 176 136 C196 150 210 168 214 190 "
-               "C196 168 176 156 160 150 C150 160 124 174 92 176 C110 164 120 152 126 142 "
-               "C100 146 76 140 58 126 C80 130 102 130 120 128Z")
-    bird = path(swallow, NAVY, NAVY, 4)
-    bird += path("M226 116 C236 112 244 114 252 120 C242 120 234 122 226 124Z", RED, NAVY, 3)
-    bird += circle(214, 116, 4, WHITE, WHITE, 0)
-    out += f'<g transform="translate(150 140) scale(1.3) translate(-158 -140)">{bird}</g>'
-    return out
+    face = Face()
+    soil = face.rad([(0, "#9a6a42"), (0.7, "#6b4224"), (1, "#4a2a14")], 0.5, 0.3, 0.7)
+    face.add(shape("M14,402 C40,344 260,344 286,402Z", soil, "#2e1a0c", 3))
+    grass = face.lin([(0, "#2f7a26"), (1, "#8fcf5a")], 0, 1, 0, 0)
+    for x, h, lean in ((40, 40, -10), (60, 30, 8), (236, 36, 10), (258, 44, -6), (110, 24, -8), (192, 26, 6)):
+        face.add(shape(f"M{x - 5},{390} Q{x + lean / 2},{390 - h / 2} {x + lean},{390 - h} Q{x + lean / 2 + 4},{390 - h / 2} {x + 5},{390}Z", grass, "#1d4a18", 1.6))
+    stem = face.lin([(0, "#3f8a2a"), (0.5, "#9fd36b"), (1, "#2e6a20")])
+    face.add(shape(tapered(bezier((150, 368), (152, 320), (144, 290), (150, 244)), 12, 8), stem, "#1d4a18", 2.2))
+    fresh = [(0, "#d8f59a"), (0.5, "#7cc44a"), (1, "#2f7a26")]
+    face.add(leaf(face, 148, 266, 112, 196, 42, stops=fresh))
+    face.add(leaf(face, 152, 250, 118, -24, 44, stops=fresh))
+    face.add(leaf(face, 150, 246, 56, -98, 17, stops=fresh))
+    face.add(daisy(face, 72, 364, 17))
+    face.add(daisy(face, 228, 366, 15))
+    face.add(butterfly(face, 168, 128, 0.95, 14))
+    return face
 
 
 def summer():
-    """The sun."""
-    x, y = CX, CY - 12
-    out = ""
-    for k in range(12):
-        deg = -90 + 30 * k
-        r = 142 if k % 2 == 0 else 122
-        out += poly([polar(x, y, 80, deg - 12), polar(x, y, r, deg), polar(x, y, 80, deg + 12)],
-                    GOLD if k % 2 else RED, NAVY, 5)
-    out += circle(x, y, 86, RED, NAVY, 7)
-    out += circle(x, y, 64, "#d4574f", "#d4574f", 0)
-    out += path(f"M{x - 44} {y - 26} A52 52 0 0 1 {x + 8} {y - 58}", stroke=WHITE, width=8)
-    return out
+    face = Face()
+    x, y = 150, 176
+    glow = face.rad([(0, "#ffe9a0", 0.9), (1, "#ffe9a0", 0)])
+    face.add(f'<circle cx="{x}" cy="{y}" r="150" fill="{glow}"/>')
+    for k in range(16):
+        deg = -90 + k * 22.5
+        long = k % 2 == 0
+        L, w = (142, 20) if long else (118, 16)
+        fill = face.lin([(0, "#f06a1a"), (0.5, "#f8a21c"), (1, "#ffd94a")] if long else [(0, "#e04a18"), (1, "#f8902a")])
+        ray = f"M60,{f(-w)} Q{f(L * .75)},{f(-w * .5)} {f(L)},0 Q{f(L * .75)},{f(w * .5)} 60,{f(w)}Z"
+        face.add(placed(shape(ray, fill, "#9a3a06", 2.4), x, y, deg))
+    disc = face.rad([(0, "#fffbe0"), (0.35, "#ffe066"), (0.75, "#ffb21e"), (1, "#f07a12")], 0.42, 0.4, 0.62)
+    face.add(f'<circle cx="{x}" cy="{y}" r="74" fill="{disc}" stroke="#9a3a06" stroke-width="3.5"/>')
+    face.add(line(f"M{x - 50},{y - 22} A56 56 0 0 1 {x - 6},{y - 58}", "#ffffff", 7, 0.55))
+    # The sea below the sun.
+    for top, cols, edge in ((300, ("#8fdcf6", "#3a9ad8"), "#1a5a9a"), (330, ("#5ac0ee", "#1f6fbf"), "#123f80"),
+                            (362, ("#2f8fd8", "#134f9a"), "#0a2a60")):
+        fill = face.lin([(0, cols[0]), (1, cols[1])], 0, 0, 0, 1)
+        d = f"M-10,{top}"
+        for k in range(5):
+            x0 = -10 + k * 64
+            d += f" Q{x0 + 16},{top - 18} {x0 + 32},{top} Q{x0 + 48},{top + 14} {x0 + 64},{top}"
+        d += " L310,410 L-10,410Z"
+        face.add(shape(d, fill, edge, 2.6))
+        crest = f"M-10,{top}"
+        for k in range(5):
+            x0 = -10 + k * 64
+            crest += f" Q{x0 + 16},{top - 18} {x0 + 32},{top}"
+            crest += f" M{x0 + 64},{top}"
+        face.add(line(crest, "#ffffff", 3, 0.8))
+    return face
+
+
+def maple(face, x, y, size, deg, stops, edge, vein):
+    lobes = [(162, .62), (-142, .9), (-90, 1.0), (-38, .9), (18, .62)]
+    pts = [polar(0, 0, size * .18, 118)]
+    for i, (a, r) in enumerate(lobes):
+        r *= size
+        pts += [polar(0, 0, r * .5, a - 22), polar(0, 0, r * .66, a - 17), polar(0, 0, r * .6, a - 13),
+                polar(0, 0, r * .8, a - 10), polar(0, 0, r * .74, a - 6), polar(0, 0, r, a),
+                polar(0, 0, r * .74, a + 6), polar(0, 0, r * .8, a + 10), polar(0, 0, r * .6, a + 13),
+                polar(0, 0, r * .66, a + 17), polar(0, 0, r * .5, a + 22)]
+        if i < len(lobes) - 1:
+            pts.append(polar(0, 0, r * .3, a + 26))
+    pts.append(polar(0, 0, size * .18, 62))
+    fill = face.rad(stops, 0.5, 0.62, 0.62)
+    out = line(f"M0,{f(size * .1)} C4,{f(size * .45)} {f(size * .1)},{f(size * .7)} {f(size * .24)},{f(size * .95)}", edge, 7)
+    out += line(f"M0,{f(size * .1)} C4,{f(size * .45)} {f(size * .1)},{f(size * .7)} {f(size * .24)},{f(size * .95)}", "#a8521a", 3.5)
+    out += shape("M" + " L".join(pt(*p) for p in pts) + "Z", fill, edge, 3)
+    for a, r in lobes:
+        out += line(f"M0,{f(size * .06)} L{pt(*polar(0, 0, r * size * .82, a))}", vein, 2.6, 0.75)
+        for t in (.35, .6):
+            bx, by = polar(0, 0, r * size * t, a)
+            out += line(f"M{pt(bx, by)} L{pt(*polar(bx, by, r * size * .18, a - 30))}", vein, 1.4, 0.55)
+            out += line(f"M{pt(bx, by)} L{pt(*polar(bx, by, r * size * .18, a + 30))}", vein, 1.4, 0.55)
+    return placed(out, x, y, deg)
 
 
 def autumn():
-    """A maple leaf."""
-    x, y = CX, CY - 10
-    # Lobes (direction, length), from the lower left round to the lower right.
-    lobes = [(162, 96), (-142, 140), (-90, 160), (-38, 140), (18, 96)]
-    pts = [polar(x, y, 30, 118)]
-    for i, (deg, r) in enumerate(lobes):
-        pts += [polar(x, y, r * 0.55, deg - 20), polar(x, y, r * 0.72, deg - 14), polar(x, y, r * 0.62, deg - 9),
-                polar(x, y, r, deg),
-                polar(x, y, r * 0.62, deg + 9), polar(x, y, r * 0.72, deg + 14), polar(x, y, r * 0.55, deg + 20)]
-        if i < len(lobes) - 1:
-            pts.append(polar(x, y, r * 0.32, deg + 26))
-    pts.append(polar(x, y, 30, 62))
-    out = path(f"M{x} {y + 20} C{x + 4} {y + 60} {x + 14} {y + 100} {x + 32} {y + 150}", stroke=NAVY, width=17)
-    out += path(f"M{x} {y + 20} C{x + 4} {y + 60} {x + 14} {y + 100} {x + 32} {y + 150}", stroke=EARTH, width=8)
-    out += poly(pts, AMBER, NAVY, 6)
-    for deg, r in lobes:
-        vx, vy = polar(x, y, r * 0.8, deg)
-        out += path(f"M{x} {y + 10} L{vx:.1f} {vy:.1f}", stroke=RED, width=5)
-    return out
+    face = Face()
+    face.add(maple(face, 224, 112, 82, 28, [(0, "#fff0a0"), (0.5, "#f6c43a"), (1, "#d88a12")], "#7a4a06", "#a86a0a"))
+    face.add(maple(face, 70, 330, 60, -32, [(0, "#ffd68a"), (0.5, "#ee8a2a"), (1, "#b8460e")], "#6a2a06", "#8a3a0a"))
+    face.add(maple(face, 146, 210, 150, -6, [(0, "#ffd24a"), (0.3, "#f6902a"), (0.7, "#dc3c1e"), (1, "#9a1414")], "#5a0a0a", "#8a1a10"))
+    return face
 
 
 def winter():
-    """A snowflake."""
-    out = ""
-    x, y = CX, CY - 12
-    arms = ""
-    for k in range(6):
-        deg = -90 + 60 * k
-        tip = polar(x, y, 134, deg)
-        arms += f"M{x} {y} L{pt(*tip)}"
-        for at, length in ((0.42, 46), (0.7, 34)):
-            bx, by = polar(x, y, 134 * at, deg)
-            arms += f" M{pt(bx, by)} L{pt(*polar(bx, by, length, deg - 45))} M{pt(bx, by)} L{pt(*polar(bx, by, length, deg + 45))} "
-    out += path(arms, stroke=NAVY, width=22)
-    out += path(arms, stroke=BLUE, width=11)
-    for k in range(6):
-        out += circle(*polar(x, y, 134, -90 + 60 * k), 10, BLUE, NAVY, 5)
-    out += poly([polar(x, y, 28, 30 + 60 * k) for k in range(6)], WHITE, NAVY, 6)
-    return out
+    face = Face()
+    x, y = 150, 200
+    glow = face.rad([(0, "#cfeaff", 0.95), (0.7, "#cfeaff", 0.35), (1, "#cfeaff", 0)])
+    face.add(f'<circle cx="{x}" cy="{y}" r="148" fill="{glow}"/>')
+    ice = face.lin([(0, "#e6f6ff"), (0.4, "#7cc4f2"), (1, "#1f62b0")], 0, 0, 0, 1)
+    edge = "#0f3270"
 
+    def rod(length, w):
+        return shape(f"M0,0 L{f(w * .6)},{f(-w / 2)} L{f(length - w * .6)},{f(-w / 2)} L{f(length)},0 "
+                     f"L{f(length - w * .6)},{f(w / 2)} L{f(w * .6)},{f(w / 2)}Z", ice, edge, 2.4) \
+            + line(f"M{f(w * .6)},0 L{f(length - w * .6)},0", "#ffffff", 1.6, 0.8)
 
-def tile(name, char, colour, art):
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400">
-  <!-- {name}: drawn for this project (original art; glyph from Ma Shan Zheng, SIL OFL 1.1). -->
-  <g transform="translate(150 258) scale(0.82) translate(-150 -244)">{art}</g>
-  {kanji(char, colour)}
-</svg>
-'''
+    for k in range(6):
+        a = -90 + 60 * k
+        arm = rod(132, 22)
+        for at, length in ((50, 46), (88, 34), (114, 18)):
+            arm += placed(rod(length, 14), at, 0, -50) + placed(rod(length, 14), at, 0, 50)
+        tip = ('<polygon points="132,0 144,-9 156,0 144,9" fill="' + ice + f'" stroke="{edge}" stroke-width="2.4" stroke-linejoin="round"/>')
+        face.add(placed(arm + tip, x, y, a))
+    hexa = face.rad([(0, "#ffffff"), (0.6, "#cdeeff"), (1, "#6fb4ea")])
+    face.add(f'<polygon points="{" ".join(pt(*polar(x, y, 30, 30 + 60 * k)) for k in range(6))}" fill="{hexa}" stroke="{edge}" stroke-width="3"/>')
+    face.add(f'<polygon points="{" ".join(pt(*polar(x, y, 14, 60 * k)) for k in range(6))}" fill="none" stroke="{edge}" stroke-width="1.8" stroke-opacity="0.6"/>')
+    for sx, sy, r in ((52, 70, 6), (256, 66, 5), (250, 350, 7), (46, 340, 5), (210, 380, 4), (92, 384, 4), (270, 210, 4), (30, 210, 4)):
+        face.add(f'<circle cx="{sx}" cy="{sy}" r="{r}" fill="#ffffff" stroke="{edge}" stroke-width="1.6"/>')
+    return face
 
 
 tiles = {
-    "f1": ("Plum", "梅", plum), "f2": ("Orchid", "兰", orchid),
-    "f3": ("Chrysanthemum", "菊", chrysanthemum), "f4": ("Bamboo", "竹", bamboo_plant),
-    "s1": ("Spring", "春", spring), "s2": ("Summer", "夏", summer),
-    "s3": ("Autumn", "秋", autumn), "s4": ("Winter", "冬", winter),
+    "f1": ("Plum", plum), "f2": ("Orchid", orchid), "f3": ("Chrysanthemum", chrysanthemum), "f4": ("Bamboo", bamboo_plant),
+    "s1": ("Spring", spring), "s2": ("Summer", summer), "s3": ("Autumn", autumn), "s4": ("Winter", winter),
 }
-for key, (name, char, draw) in tiles.items():
-    colour = FLOWER_INK if key.startswith("f") else SEASON_INK
+for key, (name, draw) in tiles.items():
     with open(f"{OUT}/{key}.svg", "w", encoding="utf-8") as out:
-        out.write(tile(name, char, colour, draw()))
+        out.write(draw().svg(name))
 print("wrote", len(tiles))
