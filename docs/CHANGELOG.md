@@ -10,13 +10,17 @@ testers get it at https://int.mah-jong.workers.dev.
 
 - **Discards in a pile, like a real table.** Options › Discards › Pile throws
   every discard into one shared heap in the middle of the table. Each tile
-  slides in from the thrower's side and nudges the tiles it hits; nothing
-  shows who threw what, or when. In this layout the middle console steps
-  aside: each player's wind and score sit at their edge of the table (the
-  player whose turn it is glows), and the round and tiles left are under
-  the menu. Rows, as before, stay the default.
+  slides in from the thrower's side and nudges the tiles it hits; the heap
+  grows round, and nothing shows who threw what, or when. In this layout the
+  middle console steps aside: a small badge under the menu shows the round,
+  the hand, your own wind and the tiles left in the wall. Rows, as before,
+  stay the default.
+- **See every player's claims.** Tap a player's side of the table, where
+  their flowers, seasons and melds lie, to open a sheet with everyone's
+  claimed tiles shown large, one row per player. A tap closes it.
 - **See who is fishing.** A player who has announced fishing shows a small
-  fish for the rest of the hand, beside their wind.
+  fish for the rest of the hand: beside their wind on the console with
+  rows; with the pile, next to their melds (your own fish is on the badge).
 - **Goulash: arrange while you pass.** During the three exchanges you can
   drag tiles sideways to arrange your hand, and a tap still picks a tile to
   pass. After each exchange the tiles you just received are marked in teal.
@@ -28,18 +32,20 @@ testers get it at https://int.mah-jong.workers.dev.
     this, so it is **off** by default.
 - **Help is a visual guide**, with tips during your first game and a welcome
   card.
-- **Options redesigned.** New game is now inside Options. Phones that will
-  not turn sideways get help, and the app offers to install itself.
+- **Options redesigned.** New game and Help are now inside Options. Phones
+  that will not turn sideways get help, and the app offers to install
+  itself.
 
 **Changed**
 
 - **Hard bots are harder.** They go for quick hands instead of chasing big
   special hands, and call tiles more readily. In our tests a Hard bot now
   wins clearly more often than the previous Hard bot.
-- **Flower and season tiles show pictures** (plum, orchid, chrysanthemum,
-  bamboo; seedling, sun, maple, snowflake) instead of brush characters. The
-  pictures are big, with a thin frame in each tile's own colour, and the
-  number in the corner as before (red flowers, green seasons).
+- **Flower and season tiles look like a real set's**: the traditional
+  pictures of plum, orchid, chrysanthemum and bamboo, and of the four
+  seasons, each with its character and its number printed on the tile, as
+  on the tiles you play with at home (from Cangjie6's tile set on Wikimedia
+  Commons, CC BY-SA 4.0).
 - **Large discards** (phones) show only the tile just thrown, not the whole
   round, each for the same short beat, so the table stays calm.
 - The extra copy of the discarded tile beside the claim buttons is gone.
@@ -55,7 +61,7 @@ testers get it at https://int.mah-jong.workers.dev.
   the new house rule off). If the tiles also make another hand, they score
   as that hand.
 - Hard is noticeably tougher. Medium is still the starting level.
-- New game has moved from the menu into Options.
+- New game and Help have moved from the menu into Options.
 
 ## alpha.6 (12 November 2026)
 
