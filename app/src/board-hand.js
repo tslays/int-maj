@@ -218,8 +218,11 @@ export const handMethods = {
     return this.layoutHand(new Set(), true);
   },
 
-  /** Carry a tile with the pointer; it trades places with each tile it passes. */
-  dragTo(entry, event) {
+  /**
+   * Carry a tile with the pointer; with `reorder` it trades places with each
+   * tile it passes (and so takes the hand off auto sort), otherwise it only follows.
+   */
+  dragTo(entry, event, reorder = true) {
     const x = this.handX(event);
     if (x === null) return;
     const { places, total } = this.handPlaces();
@@ -237,7 +240,7 @@ export const handMethods = {
       }
     });
     let at = this.hand.indexOf(entry);
-    if (at === target) return;
+    if (!reorder || at === target) return;
     while (at !== target) {
       const step = target > at ? 1 : -1;
       this.swap(entry, this.hand[at + step]);

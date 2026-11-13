@@ -106,6 +106,8 @@ renderer.domElement.addEventListener("pointerdown", (event) => {
 });
 
 const DRAG_SLOP = 6;
+/** Sideways travel (css px), more than the rise, before a drag counts as re-arranging the hand. */
+const SORT_SLOP = 28;
 /** A carried tile swiped this far up (css px), more up than sideways, is thrown on release. */
 const THROW_RISE = 56;
 
@@ -152,7 +154,11 @@ renderer.domElement.addEventListener("pointermove", (event) => {
     press.armed = armed;
     if (board.armThrow(press.entry, armed) && armed) tickFor(press.entry);
   }
-  board.dragTo(press.entry, event);
+  // Re-arranging (which turns auto sort off) starts only once the drag is clearly
+  // sideways; a swipe up that merely drifts left or right must not reorder.
+  const across = Math.abs(event.clientX - press.x);
+  if (!press.sideways && across >= SORT_SLOP && across > press.y - event.clientY) press.sideways = true;
+  board.dragTo(press.entry, event, press.sideways === true && !armed);
 });
 
 function endPress(event, cancelled) {
