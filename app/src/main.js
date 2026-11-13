@@ -55,17 +55,16 @@ function refreshConsole(litView = state.payload.view) {
     })),
   };
   updateConsole(info);
-  // The centre pile has the middle: the console goes, and its news moves to the seats' edges (#122).
+  // The centre pile has the middle: the console goes, and each seat's wind stands on its wall (#122).
   setConsoleShown(!discardLayout.pile);
   if (discardLayout.pile) showSeatLabels(info, labelScene);
   else hideSeatLabels();
 }
 
-/** The seat labels' scene on the screen: each wall's face, and the table's middle (seat-labels.js). */
+/** The seat labels' scene on the screen: the top centre of each wall (seat-labels.js). */
 function labelScene() {
   return {
     anchor: (rel) => screenPoint(board.labelAnchor(rel)),
-    centre: screenPoint(board.tableCentre()),
     view: { width: viewport.width, height: viewport.height },
   };
 }

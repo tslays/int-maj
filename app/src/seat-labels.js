@@ -1,19 +1,16 @@
 /**
- * Seat labels (#122): with the centre pile the middle console is put away, so
- * what it showed moves to the edges. Each seat gets a small label at its
- * wall - its wind (coral for the dealer, as on the console), its score, a
- * fish once it has shown one (C p. 55) - and the seat whose turn it is glows
- * in the console's cyan. The round and the tiles left in the wall go in a
- * badge under the menu.
+ * Seat labels (#122): with the centre pile the middle console is put away.
+ * Each seat then shows only its wind letter (coral for the dealer, as on the
+ * console), and a fish once it has shown one (C p. 55); no scores. The seat
+ * whose turn it is glows in the console's cyan. The round and the tiles left
+ * in the wall go in a badge under the menu.
  *
- * Each label has one fixed place against the inside of its wall, on a strip
- * of felt the pile keeps clear (layout.js `labelPad`); the seats to the sides
- * turn theirs on end, along their wall. Plain DOM over the canvas; the labels
- * follow the camera (the zoomed view too), and nothing else moves them.
+ * Each letter has one fixed place: on top of its seat's wall, at the wall's
+ * dead centre (layout.js `WALL_TOP_CENTRE`). Plain DOM over the canvas; the
+ * labels follow the camera (the zoomed view too), and nothing else moves them.
  */
 
 import { placeLabel } from "./label-place.js";
-import { labelPad } from "./layout.js";
 import { $ } from "./shared.js";
 
 const WIND_WORD = { E: "East", S: "South", W: "West", N: "North" };
@@ -36,19 +33,18 @@ function build() {
 
 /**
  * Show the labels for `info` (the console's: `round`, `hand`, `wall`, and
- * `seats` with `rel`, `wind`, `score`, `dealer`, `fishing`, `turn`), placed
+ * `seats` with `rel`, `wind`, `dealer`, `fishing`, `turn`), placed
  * by `scene()` (see `placeSeatLabels`).
  */
 export function showSeatLabels(info, scene) {
   if (labels === null) build();
   for (const seat of info.seats) {
     const element = labels[seat.rel];
-    const key = JSON.stringify(seat);
+    const key = JSON.stringify([seat.wind, seat.dealer, seat.fishing, seat.turn]);
     if (element.dataset.key !== key) {
       element.dataset.key = key;
       element.innerHTML =
         `<b class="seat-wind${seat.dealer ? " dealer" : ""}">${seat.wind}</b>` +
-        `<span class="seat-score">${seat.score.toLocaleString("en")}</span>` +
         (seat.fishing ? FISH : "");
       element.classList.toggle("turn", seat.turn);
     }
@@ -62,24 +58,15 @@ export function showSeatLabels(info, scene) {
 
 /**
  * Put each label in its fixed place (label-place.js). `scene()` gives, in CSS
- * pixels: `anchor(rel)`, the middle of the seat's wall's inner face on the
- * screen; `centre`, the table's middle; `view`, the screen's size. Only the
- * camera moves them.
+ * pixels: `anchor(rel)`, the top centre of the seat's wall on the screen;
+ * `view`, the screen's size. Only the camera moves them.
  */
 export function placeSeatLabels(scene) {
   if (labels === null || labels.every((element) => element.hidden)) return;
-  const { anchor, centre, view } = scene();
+  const { anchor, view } = scene();
   labels.forEach((element, rel) => {
     if (element.hidden) return;
-    const at = placeLabel({
-      anchor: anchor(rel),
-      centre,
-      width: element.offsetWidth,
-      height: element.offsetHeight,
-      turned: rel % 2 === 1,
-      over: labelPad(rel).OVER,
-      view,
-    });
+    const at = placeLabel({ anchor: anchor(rel), width: element.offsetWidth, height: element.offsetHeight, view });
     element.style.left = `${at.x}px`;
     element.style.top = `${at.y}px`;
     element.classList.toggle("off-screen", !at.shown);

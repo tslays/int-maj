@@ -54,18 +54,14 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   knocks the tiles it reaches as it arrives (`nudgePile`), turns the latest-discard plate
   with its tile, hides the seat pads and frames the zoomed view on the pile.
   With the pile the middle console is put away (`setConsoleShown`): each
-  seat's wind (coral for the dealer), score and fish move to a label on the
-  felt just inside its wall, glowing cyan on the seat whose turn it is, and
-  the round and wall count to a badge under the menu (`seat-labels.js`).
-  Each label has one fixed place, so it never moves as tiles are thrown or
-  claimed, only with the camera: against the inside of its wall, in the
-  middle, on a strip of felt the pile keeps clear (`LABEL_PAD`, `labelPad` in
-  layout.js; `offLabels` in pile.js: a throw that would stop there is not
-  made, a knock stops at its edge). The seats to the sides stand theirs on
-  end along their wall, foot towards the player; the seat across lies half
-  over its wall; yours and the sides' clear their wall's top. `label-place.js`
-  puts each one there from the wall's face on the screen (`labelAnchor`); a
-  label whose place is off the screen (the zoomed view) is not shown.
+  seat shows only its wind letter (coral for the dealer) and its fish, no
+  score, glowing cyan on the seat whose turn it is, and the round and wall
+  count go to a badge under the menu (`seat-labels.js`). Each letter has one
+  fixed place, so it never moves as tiles are thrown, claimed or drawn, only
+  with the camera: on top of its seat's wall, at the wall's dead centre
+  (`WALL_TOP_CENTRE` in layout.js, `labelAnchor` in board.js;
+  `label-place.js` centres it there). A label whose place is off the screen
+  (the zoomed view) is not shown.
   `test/app/pile.test.ts` proves no two pile tiles overlap, no slide passes
   through a tile, none reaches the walls, hands, melds or label strips, and
   the pile is round (half its tiles in the diagonals);
