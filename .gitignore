@@ -20,3 +20,6 @@ dist/
 /*.jpg
 /*.wav
 /*.mp3
+
+# The tester guide PDF (npm run tester-guide): handed to the owner, never committed.
+int-maj-*-testers.pdf
