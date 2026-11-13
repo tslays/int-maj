@@ -2,8 +2,8 @@
  * The centre pile (#122): every discard thrown into one shared pond in the
  * middle of the table, the way a real table plays it, instead of six-wide
  * rows in front of each seat. Nothing in the pile says who threw a tile or
- * when. With the pile the middle console is put away (each seat's wind and
- * score move to a label at its edge), so the pile has the whole centre.
+ * when. With the pile the middle console is put away (each seat's wind
+ * moves to a letter on top of its wall), so the pile has the whole centre.
  *
  * Plain numbers, no 3D library, so `test/app/pile.test.ts` can prove the
  * pile never overlaps itself, the walls, hands or melds.
@@ -16,8 +16,6 @@
  *     disc round the table's centre that widens as the pile grows (seeded
  *     picks, a seeded turn). Of a few such throws the one that ends nearest
  *     the centre is made, so the pile grows round, not in arms at the seats.
- *   - No tile comes to rest on a seat label's strip (layout.js `labelPad`):
- *     each label has a fixed place on clear felt.
  *   - It stops just short of the first tile it would touch, checked every
  *     `STEP` along the way, so it never passes through one. The tiles it
  *     crashes into are knocked on along the throw, each until it meets
@@ -29,7 +27,7 @@
  * the viewer sits at +z). `rel` is the thrower's seat relative to the viewer.
  */
 
-import { H, labelPad, TABLE, W, WALL_INNER, toTable } from "./layout.js";
+import { H, TABLE, W, WALL_INNER, toTable } from "./layout.js";
 
 const S = TABLE.DISCARD_SCALE;
 const HALF_W = (W * S) / 2;
@@ -125,28 +123,6 @@ const REACH = 2 * Math.hypot(HALF_W, HALF_H) + PILE.GAP;
 
 function touches(a, b) {
   return Math.abs(a.x - b.x) < REACH && Math.abs(a.z - b.z) < REACH && polygonsOverlap(a.points, b.points, PILE.GAP);
-}
-
-/** The four seat labels' strips (layout.js `labelPad`), as polygons: no pile tile comes to rest on one. */
-const PADS = [0, 1, 2, 3].map((rel) => {
-  const pad = labelPad(rel);
-  return [
-    { x: pad.minX, z: pad.minZ },
-    { x: pad.maxX, z: pad.minZ },
-    { x: pad.maxX, z: pad.maxZ },
-    { x: pad.minX, z: pad.maxZ },
-  ];
-});
-
-/** True when the tile lies clear of every seat label's strip. */
-export function offLabels(pose) {
-  const points = pose.points ?? corners(pose);
-  return PADS.every((pad) => !polygonsOverlap(points, pad));
-}
-
-/** Where a tile may come to rest: inside the walls and off the labels' strips. */
-function restsWell(pose) {
-  return inPond(pose) && offLabels(pose);
 }
 
 function clear(pose, others, skip = null) {
@@ -255,7 +231,7 @@ function throwTile(entry, index, seed, before) {
       let moved = other;
       for (let travelled = PILE.STEP; travelled <= PILE.PUSH + 1e-9; travelled += PILE.STEP) {
         const next = placed({ x: other.x + best.along.x * travelled, z: other.z + best.along.z * travelled, angle: other.angle });
-        if (!restsWell(next) || touches(next, pose) || live.some((tile) => tile !== other && touches(next, tile))) break;
+        if (!inPond(next) || touches(next, pose) || live.some((tile) => tile !== other && touches(next, tile))) break;
         moved = next;
       }
       Object.assign(other, { x: moved.x, z: moved.z, points: moved.points });
@@ -306,8 +282,6 @@ function slideOf(entry, tag, angle, live) {
     if (hit.length > 0) break;
     pose = next;
   }
-  // A slide that would stop on a label's strip is not a throw anyone makes.
-  if (!offLabels(pose)) return null;
   return { start, pose, hit, along };
 }
 
@@ -328,7 +302,7 @@ function nearestFree(aim, angle, live, facing) {
       const a = (k / tries) * Math.PI * 2;
       for (const turn of [angle, facing + Math.PI / 2]) {
         const candidate = placed({ x: aim.x + Math.cos(a) * radius, z: aim.z + Math.sin(a) * radius, angle: turn });
-        if (clear(candidate, live) && offLabels(candidate)) return candidate;
+        if (clear(candidate, live)) return candidate;
       }
     }
   }
@@ -337,7 +311,7 @@ function nearestFree(aim, angle, live, facing) {
     for (let x = -PILE.OUTER; x <= PILE.OUTER; x += 0.1) {
       for (const turn of [0, Math.PI / 2]) {
         const candidate = placed({ x, z, angle: turn });
-        if (clear(candidate, live) && offLabels(candidate)) return candidate;
+        if (clear(candidate, live)) return candidate;
       }
     }
   }
