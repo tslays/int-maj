@@ -101,9 +101,10 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   One at a time (alpha.7; the whole round at once was too distracting):
   each new throw takes the large face from the one before. It appears only
   once its tile has landed and settled, expanding out of the tile in 0.2 s,
-  and keeps it into your turn (the left player's tile is the one you most
-  want to read); your own throw takes it away, and nothing is enlarged
-  until the next player throws. A claimed tile takes it with it. It has the cyan edge of the latest-discard plate it covers,
+  and the tile the player on your left throws, which no next throw
+  replaces, clears by itself after as long as the two before it stayed up
+  (measured, `layerHolds`, so it keeps the rhythm at any pace); your own
+  throw clears it too. A claimed tile takes it with it. It has the cyan edge of the latest-discard plate it covers,
   and the gold marks for a selected tile go on a layer rather than the tile
   under it. With `prefers-reduced-motion` a layer appears at full size. A
   screen whose short side is at most 500 CSS pixels is a phone (every

@@ -41,7 +41,7 @@ testers get it at https://int.mah-jong.workers.dev.
   pictures are big, with a thin frame in each tile's own colour, and the
   number in the corner as before (red flowers, green seasons).
 - **Large discards** (phones) show only the tile just thrown, not the whole
-  round; your own throw clears it, so the table stays calm.
+  round, each for the same short beat, so the table stays calm.
 - The extra copy of the discarded tile beside the claim buttons is gone.
 
 **Fixed**

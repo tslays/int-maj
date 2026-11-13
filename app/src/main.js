@@ -417,6 +417,7 @@ window.mahjong = {
   hand: () => board.hand.map((entry) => entry.key),
   received: () => board.hand.filter((entry) => entry.received).map((entry) => entry.key),
   pile: () => board.pilePoses !== null,
+  largeFace: () => (board.round[0] ? `${board.round[0].key}` : null),
   act: (action) => act(action),
   next: () => $("#result .result-next")?.click(),
   sound,

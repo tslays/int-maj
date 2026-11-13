@@ -88,6 +88,9 @@ export class Board {
     this.marked = [];
     this.markId = 0;
     this.round = []; // this round's opponent discards, each with its face layer on a phone (board-round.js)
+    this.layerShownAt = null; // when the large face now up appeared (board-round.js)
+    this.layerHolds = []; // how long the last two stayed up
+    this.layerTimer = 0;
     onViewChange(() => this.refreshRound());
     largeDiscards.onChange(() => this.refreshRound());
     // The centre pile (#122): where each discard lies, per seat, in the seat's own frame.
@@ -254,7 +257,7 @@ export class Board {
     this.clearMarks();
     this.setCustom(false);
     this.seats = {};
-    this.clearRound();
+    this.endRound();
     for (const seat of SEATS) {
       this.seats[seat] = {
         discards: [],
@@ -372,7 +375,7 @@ export class Board {
       }
       this.frameOf(last.seat).add(this.plate);
       // Opened mid-hand (a reload, a review board): the latest discard, if not yours, gets its large face.
-      if (this.round.length === 0 && last.seat !== this.me) this.addRoundLayer(state.discards[state.discards.length - 1]);
+      if (this.round.length === 0 && last.seat !== this.me) this.addRoundLayer(state.discards[state.discards.length - 1], last.seat);
     }
     requestRender();
   }
@@ -422,7 +425,7 @@ export class Board {
       return Promise.resolve();
     }
     // Your throw ends the round: this round's face layers go as it leaves your hand.
-    if (seat === this.me) this.clearRound();
+    if (seat === this.me) this.endRound();
     // Thrown from the seat's hand, in an arc, turning face up as it lands.
     const fromX = seat === this.me ? this.lastThrowX * 0.45 : 0;
     const from = new THREE.Vector3(fromX, 1.4, HAND_Z - (seat === this.me ? -0.5 : 0.8));
@@ -443,7 +446,7 @@ export class Board {
       return tween(tile.position, { y: y + 0.05 }, 60).then(() => tween(tile.position, { y }, 90));
     }).then(() => {
       // Only once the throw has landed and settled does its face layer appear.
-      if (seat !== this.me) this.addRoundLayer(item);
+      if (seat !== this.me) this.addRoundLayer(item, seat);
     });
   }
 
@@ -492,7 +495,7 @@ export class Board {
       });
     }).then(() => {
       tile.position.copy(rest.position);
-      if (seat !== this.me) this.addRoundLayer(item);
+      if (seat !== this.me) this.addRoundLayer(item, seat);
     });
   }
 
