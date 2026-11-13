@@ -188,7 +188,7 @@ export function welcome() {
           <button class="act act-win" id="welcome-guide" type="button"><span>Show me how</span></button>
           <button class="act act-pass" id="welcome-play" type="button"><span>Just play</span></button>
         </div>
-        <p class="welcome-fine">Help in the menu opens the guide at any time.</p>
+        <p class="welcome-fine">Help in Options opens the guide at any time.</p>
       </div>`;
     document.body.append(box);
     const done = () => {

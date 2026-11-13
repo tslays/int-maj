@@ -26,10 +26,10 @@ import { $, board, faceChip, request, scores, state, storage, toast } from "./sh
 import { sound } from "./sound.js";
 import { hideTip, tipForChoices, welcome } from "./tips.js";
 import { ALL_FACES, initTiles, preloadFaces, tileOrder } from "./tiles.js";
-import { mountStage, onViewChange, renderer, requestRender, screenPoint, setConsoleShown, sleep, tableCamera, updateConsole, viewport } from "./stage.js";
+import { mountStage, renderer, requestRender, screenPoint, setConsoleShown, sleep, updateConsole, viewport } from "./stage.js";
 import { discardLayout } from "./discard-layout.js";
 import { openClaims, refreshClaims } from "./claims.js";
-import { hideSeatLabels, placeSeatLabels, showSeatLabels } from "./seat-labels.js";
+import { hideRoundBadge, showRoundBadge } from "./round-badge.js";
 
 const CALL_WORD = { pung: "Pung", kong: "Kong", chow: "Chow", mahjong: "Mah Jong" };
 const BEAT_AFTER_THROW = 320;
@@ -55,33 +55,11 @@ function refreshConsole(litView = state.payload.view) {
     })),
   };
   updateConsole(info);
-  // The centre pile has the middle: the console goes, and each seat's wind stands on its wall (#122).
+  // The centre pile has the middle: the console goes, and the round badge under the menu tells the round and your seat (#122).
   setConsoleShown(!discardLayout.pile);
-  if (discardLayout.pile) showSeatLabels(info, labelScene);
-  else hideSeatLabels();
+  if (discardLayout.pile) showRoundBadge(info);
+  else hideRoundBadge();
 }
-
-/** The seat labels' scene on the screen: the top centre of each wall (seat-labels.js). */
-function labelScene() {
-  return {
-    anchor: (rel) => screenPoint(board.labelAnchor(rel)),
-    view: { width: viewport.width, height: viewport.height },
-  };
-}
-onViewChange(() => placeSeatLabels(labelScene));
-// The labels follow the camera frame by frame while it swings (the pond zoom); nothing else moves them.
-let labelCamera = "";
-function followLabels() {
-  if (discardLayout.pile) {
-    const camera = tableCamera.matrixWorld.elements.join(",");
-    if (camera !== labelCamera) {
-      labelCamera = camera;
-      placeSeatLabels(labelScene);
-    }
-  }
-  requestAnimationFrame(followLabels);
-}
-requestAnimationFrame(followLabels);
 discardLayout.onChange(() => {
   if (state.payload !== null) refreshConsole();
 });

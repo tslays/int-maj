@@ -109,7 +109,7 @@ The full workflow is `docs/WORKFLOW.md`. The rules every session follows:
   reads them. After changing anything under `app/`, also run `npm run smoke`
   (the built app in headless Chromium, a few minutes). `npm run dev` builds
   and serves the app; review boards
-  (`/?state=turn|claim|wait|fishing|announce|ron|win|drawn|result|goulash|claims`) and
+  (`/?state=turn|claim|wait|fishing|botfishing|announce|ron|win|drawn|result|goulash|claims`) and
   `/?phone` show a screen without playing to it.
 - **Deliver autonomously** (owner-authorized, `docs/WORKFLOW.md` "Autonomous
   delivery loop"): on the session's `claude/...` branch, open a pull request

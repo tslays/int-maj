@@ -14,7 +14,7 @@
 
 import * as THREE from "three";
 import { D, H, W, makeTile, roundedRect, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, TABLE } from "./tiles.js";
-import { discardSlot, latestPlate, LATEST_MARGIN, meldLayout, pondPad, WALL_TOP_CENTRE } from "./layout.js";
+import { discardSlot, latestPlate, LATEST_MARGIN, meldLayout, pondPad } from "./layout.js";
 import { createPile, PILE, pileReach } from "./pile.js";
 import { discardLayout } from "./discard-layout.js";
 import { pace } from "./pace.js";
@@ -42,6 +42,50 @@ function slideMsFor(run) {
  * Lay a meld's tiles in a row; a kong is a pung with its fourth tile on top of
  * the middle one, and a concealed kong shows its two outer tiles face down.
  */
+/**
+ * The fish a bot shows once it has announced it is fishing (C p. 55), lying
+ * in its claims lane two tiles' room after its last meld, as if it were one
+ * more claimed set. A sprite, so it faces the camera from every seat. One
+ * shared texture, painted once.
+ */
+let fishMaterial = null;
+function makeFishMarker(scale) {
+  if (fishMaterial === null) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 160;
+    const g = canvas.getContext("2d");
+    g.translate(132, 80);
+    g.scale(2.8, 2.8);
+    g.lineJoin = "round";
+    g.lineWidth = 3;
+    g.strokeStyle = "#7a3a06";
+    g.fillStyle = "#ff9a3c";
+    g.beginPath();
+    g.moveTo(14, 0);
+    g.lineTo(36, -17);
+    g.quadraticCurveTo(30, 0, 36, 17);
+    g.closePath();
+    g.fill();
+    g.stroke();
+    g.beginPath();
+    g.ellipse(-6, 0, 26, 16, 0, 0, Math.PI * 2);
+    g.fill();
+    g.stroke();
+    g.fillStyle = "#1b2326";
+    g.beginPath();
+    g.arc(-20, -4, 3.6, 0, Math.PI * 2);
+    g.fill();
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    fishMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+  }
+  const fish = new THREE.Sprite(fishMaterial);
+  fish.scale.set(2 * W * scale, 1.25 * W * scale, 1);
+  fish.userData.fish = true;
+  return fish;
+}
+
 function meldTiles(meld, scale) {
   return meld.tiles.map((key, index) => {
     const hidden = !meld.exposed && meld.kind === "kong" && (index === 0 || index === 2);
@@ -210,8 +254,11 @@ export class Board {
       entry.discards.forEach((key, index) => void this.addDiscard(entry.seat, key, index, false));
     }
     this.showPond(payload);
+    // A bot's fish lies in its claims lane with the pile only.
+    for (const entry of payload.table) this.reconcileMelds(entry, false, payload);
     this.markThrower(payload);
     this.keepLift();
+    requestRender();
   }
 
   /** Frame the zoomed view on the rows or the pile; the pads tint the rows only. */
@@ -232,15 +279,6 @@ export class Board {
 
   frameOf(seat) {
     return this.frames[this.rel(seat)];
-  }
-
-  /**
-   * The dead centre of the top of seat `rel`'s wall (world space), where its
-   * wind letter stands (seat-labels.js). Fixed: it stays put as the wall is
-   * drawn down.
-   */
-  labelAnchor(rel) {
-    return this.frames[rel].localToWorld(new THREE.Vector3(WALL_TOP_CENTRE.x, 2 * D, WALL_TOP_CENTRE.z));
   }
 
   /** Where a seat sounds from: the side you hear it on, and how far off it is. */
@@ -335,7 +373,7 @@ export class Board {
     this.showPond(payload);
     for (const entry of payload.table) {
       if (entry.seat !== this.me) work.push(...this.reconcileRow(entry, animated));
-      work.push(...this.reconcileMelds(entry, meldsGrew.has(entry.seat)));
+      work.push(...this.reconcileMelds(entry, meldsGrew.has(entry.seat), payload));
     }
     work.push(...this.reconcileHand(payload, animated));
     requestRender();
@@ -553,26 +591,42 @@ export class Board {
   /**
    * Every seat's melds and bonus tiles, face up in its own wall's lane: from
    * the table corner on its left, each new meld to the right of the last.
+   * With the pile, a bot that has shown its fish has a fish next, in one more
+   * slot of the lane (the console that shows it in rows is put away then).
    */
-  reconcileMelds(entry, fresh) {
+  reconcileMelds(entry, fresh, payload) {
     const state = this.seats[entry.seat];
     const groups = this.exposedGroups(entry);
-    const key = JSON.stringify([groups, this.wall?.extent[this.rel(entry.seat)] ?? WALL_STACKS]);
+    const rel = this.rel(entry.seat);
+    const fishing = discardLayout.pile && rel !== 0 && payload.view.fishing.some((item) => item.seat === entry.seat);
+    const key = JSON.stringify([groups, fishing, this.wall?.extent[rel] ?? WALL_STACKS]);
     if (key === state.meldsKey) return [];
+    const fishNew = fishing && !state.fishShown;
+    state.fishShown = fishing;
     state.meldsKey = key;
     state.melds.clear();
-    if (groups.length === 0) return [];
+    if (groups.length === 0 && !fishing) return [];
     const work = [];
     const bonusFirst = entry.flowers.length + entry.seasons.length > 0;
     const offset = bonusFirst ? 1 : 0;
     const kongs = entry.melds.flatMap((meld, index) => (meld.kind === "kong" ? [index + offset] : []));
-    const { scale, tiles } = meldLayout(
-      groups.map((group) => group.length),
-      this.wall?.extent[this.rel(entry.seat)] ?? WALL_STACKS,
-      entry.handCount,
-      { bonusFirst, rel: this.rel(entry.seat), kongs },
-    );
+    const sizes = groups.map((group) => group.length);
+    if (fishing) sizes.push(2); // the fish takes two tiles' room
+    const { scale, tiles } = meldLayout(sizes, this.wall?.extent[rel] ?? WALL_STACKS, entry.handCount, { bonusFirst, rel, kongs });
     for (const place of tiles) {
+      if (place.group === groups.length) {
+        if (place.index === 1) continue;
+        const fish = makeFishMarker(scale);
+        // Centred on its two slots, standing just above the felt.
+        fish.position.set(place.x + ((W + GAP) * scale) / 2, (W * scale * 1.25) / 2 + 0.05, place.z);
+        state.melds.add(fish);
+        if (fishNew) {
+          const { x, y } = fish.scale;
+          fish.scale.set(x * 0.01, y * 0.01, 1);
+          work.push(tween(fish.scale, { x, y }, 320, easeOutBack));
+        }
+        continue;
+      }
       const piece = groups[place.group][place.index];
       const tile = makeTile(piece.key);
       if (piece.faceUp) poseFaceUp(tile, place.x, place.z, place.group * 5 + place.index, scale);
@@ -586,7 +640,7 @@ export class Board {
       }
     }
     // The dropping tiles first meet the felt at about 0.45 of their 0.3 s.
-    if (fresh) sound.cue("meld", { delay: pace.scale(0.135), count: groups.at(-1).length, ...this.ear(entry.seat) });
+    if (fresh && groups.length > 0) sound.cue("meld", { delay: pace.scale(0.135), count: groups.at(-1).length, ...this.ear(entry.seat) });
     return work;
   }
 

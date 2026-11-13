@@ -97,6 +97,13 @@ describe("review states", () => {
       "the wait page shows your plain wait, not a fishing declaration",
     );
 
+    const botFishing = payloadFor("botfishing");
+    assert.ok(
+      botFishing.view.fishing.some(
+        (entry) => entry.seat !== "E" && (botFishing.view.opponents.find((other) => other.seat === entry.seat)?.melds.length ?? 0) >= 1,
+      ),
+      "the botfishing page has a bot with a meld that has shown its fish",
+    );
     const fishing = payloadFor("fishing");
     assert.equal(fishing.view.player.hand.length, 13);
     assert.ok(fishing.view.fishing.some((entry) => entry.seat === "E"));
