@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 // @ts-expect-error - a plain browser module without type declarations
-import { breakFor, DRAWN_SLIDE, handTileStart, wallLook, wallPlan, discardRect, discardSlot, frameRect, handRects, latestPlate, pondExtent, pondPad, meldLayout, ROUND_LAYER, roundLayersWanted, roundLayerZ, meldRects, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
+import { breakFor, DRAWN_SLIDE, handTileStart, wallLook, wallPlan, discardRect, discardSlot, frameRect, handRects, latestPlate, pondExtent, pondPad, meldLayout, ROUND_LAYER, roundLayersWanted, roundLayerZ, meldRects, claimsSeatAt, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
 
 interface Rect {
   readonly minX: number;
@@ -136,6 +136,13 @@ describe("3D table discard layout", () => {
           );
           for (const thing of solid) {
             assert.equal(overlaps(meld.rect, thing.rect), false, `${label}: seat ${meld.rel} melds cover ${thing.what}`);
+          }
+        }
+        // A tap on any part of a seat's melds opens the claims sheet on that seat.
+        const centres = melds.map((meld) => ({ rel: meld.rel, x: (meld.rect.minX + meld.rect.maxX) / 2, z: (meld.rect.minZ + meld.rect.maxZ) / 2 }));
+        for (const meld of centres) {
+          for (const [dx, dz] of [[0, 0], [-0.3, -0.3], [0.3, 0.3], [-0.3, 0.3], [0.3, -0.3]] as const) {
+            assert.equal(claimsSeatAt(meld.x + dx, meld.z + dz, centres), meld.rel, `${label}: a tap on seat ${meld.rel}'s melds asks for another seat`);
           }
         }
         for (let i = 0; i < melds.length; i++) {
@@ -398,5 +405,35 @@ describe("round layers (phones)", () => {
       }
     }
     assert.ok(ROUND_LAYER.SCALE > 1);
+  });
+});
+
+describe("claims taps", () => {
+  it("leave the ponds to the pond zoom and give every point from the walls to the rail to one seat", () => {
+    for (let rel = 0; rel < 4; rel++) {
+      for (let index = 0; index < 30; index++) {
+        const rect = discardRect(rel, index);
+        assert.equal(claimsSeatAt((rect.minX + rect.maxX) / 2, (rect.minZ + rect.maxZ) / 2), null, `discard ${index + 1} of seat ${rel}`);
+      }
+    }
+    const reach = TABLE.TABLE_HALF;
+    for (let x = -reach; x <= reach; x += 0.5) {
+      for (let z = -reach; z <= reach; z += 0.5) {
+        const inside = Math.abs(x) < WALL_INNER && Math.abs(z) < WALL_INNER;
+        const seat = claimsSeatAt(x, z);
+        assert.equal(seat === null, inside, `(${x}, ${z})`);
+      }
+    }
+    // Off the melds, the side of the table decides.
+    assert.equal(claimsSeatAt(0, WALL_INNER + 1), 0);
+    assert.equal(claimsSeatAt(WALL_INNER + 1, 0), 1);
+    assert.equal(claimsSeatAt(0, -WALL_INNER - 1), 2);
+    assert.equal(claimsSeatAt(-WALL_INNER - 1, 0), 3);
+    assert.equal(claimsSeatAt(0, TABLE.TABLE_HALF + 3), null, "off the table");
+    // Over your hand strip's headroom only a tap near a laid-out tile counts.
+    const mine = [{ rel: 0, x: -13, z: 11.6 }];
+    assert.equal(claimsSeatAt(-13, 12, mine, { nearOnly: true }), 0);
+    assert.equal(claimsSeatAt(5, 12, mine, { nearOnly: true }), null);
+    assert.equal(claimsSeatAt(5, 12, mine), 0);
   });
 });

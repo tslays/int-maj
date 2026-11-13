@@ -52,7 +52,13 @@ interface Payload {
   readonly legalActions: readonly { readonly type: string; readonly kind?: string }[];
   readonly outcome: { readonly kind: string } | null;
   readonly wall: { readonly remaining: number };
-  readonly table: readonly { readonly seat: string; readonly discards: readonly string[] }[];
+  readonly table: readonly {
+    readonly seat: string;
+    readonly discards: readonly string[];
+    readonly flowers: readonly string[];
+    readonly seasons: readonly string[];
+    readonly melds: readonly { readonly tiles: readonly string[] }[];
+  }[];
   readonly view: {
     readonly phase: string;
     readonly turn: string;
@@ -123,6 +129,22 @@ const BOARD_CHECKS: Readonly<Record<ScenarioName, (payload: Payload, page: Page)
     assert.equal(again.view.handNumber, hand, "the same hand is dealt again");
     assert.equal(again.outcome, null, "the hand is open again");
     assert.ok(again.legalActions.length > 0, "your first discard is up");
+  },
+  claims: async (payload, page) => {
+    assert.equal(payload.view.phase, "discard");
+    // The board opens on the claims sheet, lit on the seat to your right.
+    await page.waitForSelector(".claims-sheet:not([hidden])", { timeout: READY_MS });
+    assert.equal(await page.locator(".claims-row").count(), 4, "a row for every seat");
+    assert.equal(await page.getAttribute(".claims-row.lit", "data-rel"), "1");
+    // Every flower, season and meld tile is on it, each seat in its own row.
+    for (const entry of payload.table) {
+      const rel = (["E", "S", "W", "N"].indexOf(entry.seat) - ["E", "S", "W", "N"].indexOf(payload.seat) + 4) % 4;
+      const tiles = entry.flowers.length + entry.seasons.length + entry.melds.reduce((sum, meld) => sum + meld.tiles.length, 0);
+      assert.equal(await page.locator(`.claims-row[data-rel="${rel}"] .chip`).count(), tiles, `seat ${entry.seat}: its claims`);
+    }
+    // A tap anywhere closes it.
+    await page.mouse.click(20, 20);
+    await page.waitForSelector(".claims-sheet", { state: "hidden", timeout: READY_MS });
   },
   goulash: async (payload, page) => {
     assert.equal(payload.view.phase, "exchange");
