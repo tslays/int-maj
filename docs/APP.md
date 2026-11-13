@@ -104,7 +104,9 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   and the tile the player on your left throws, which no next throw
   replaces, clears by itself after as long as the two before it stayed up
   (measured, `layerHolds`, so it keeps the rhythm at any pace); your own
-  throw clears it too. A claimed tile takes it with it. It has the cyan edge of the latest-discard plate it covers,
+  throw clears it too. A claimed tile takes it with it. Going, a large
+  face shrinks back into its tile in 0.26 s, where it matches the face
+  exactly, and vanishes there. It has the cyan edge of the latest-discard plate it covers,
   and the gold marks for a selected tile go on a layer rather than the tile
   under it. With `prefers-reduced-motion` a layer appears at full size. A
   screen whose short side is at most 500 CSS pixels is a phone (every

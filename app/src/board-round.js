@@ -21,11 +21,13 @@
 
 import { layerEdge, makeFaceLayer } from "./tiles.js";
 import { ROUND_LAYER, roundLayersWanted, roundLayerZ } from "./layout.js";
-import { animate, easeOutCubic, requestRender, viewport } from "./stage.js";
+import { animate, easeInOutCubic, easeOutCubic, requestRender, viewport } from "./stage.js";
 import { pace } from "./pace.js";
 import { largeDiscards } from "./large-discards.js";
 
 const GROW_MS = 200;
+/** Going, a large face shrinks back into its own tile (where it matches the face exactly) and is gone. */
+const SHRINK_MS = 260;
 /** Before any large face has been timed (a new game), how long the left player's one stays up. */
 const FIRST_HOLD_MS = 1500;
 const SEATS = ["E", "S", "W", "N"];
@@ -114,10 +116,26 @@ export const roundMethods = {
     requestRender();
   },
 
+  /** The large face goes: it shrinks smoothly back into its tile and vanishes there, seamlessly. */
   removeLayer(item) {
-    item.layer?.removeFromParent();
+    const group = item.layer;
     item.layer = null;
     item.edge = null;
+    if (!group) return;
+    const from = group.scale.x;
+    if (reducedMotion.matches || !group.visible || from <= 1.001) {
+      group.removeFromParent();
+      return;
+    }
+    void animate(SHRINK_MS, (t) => {
+      const scale = from + (1 - from) * easeInOutCubic(t);
+      group.scale.setScalar(scale);
+      group.position.z = roundLayerZ(scale, 0);
+      return true;
+    }, { fixed: true }).then(() => {
+      group.removeFromParent();
+      requestRender();
+    });
   },
 
   /** The screen changed size or the switch was turned: show the layers, or hide them. */
