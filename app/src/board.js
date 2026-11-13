@@ -30,8 +30,8 @@ const { WALL_STACKS, WALL_R, HAND_Z, DISCARD_SCALE } = TABLE;
 const GAP = 0.02;
 /* The pile's throw: the hop onto the felt, the slide into the pile, and when the slide reaches the tiles it knocks. */
 const PILE_HOP_MS = 170;
-const PILE_SLIDE_MS = 480;
-const PILE_KNOCK_MS = PILE_HOP_MS + PILE_SLIDE_MS * 0.55;
+const PILE_SLIDE_MS = 460;
+const PILE_KNOCK_MS = PILE_HOP_MS + PILE_SLIDE_MS * 0.97;
 
 /**
  * Lay a meld's tiles in a row; a kong is a pung with its fourth tile on top of
@@ -116,8 +116,8 @@ export class Board {
       x: pose.x * cos + pose.z * sin,
       z: -pose.x * sin + pose.z * cos,
       yaw: pose.angle - (rel * Math.PI) / 2,
-      landX: pose.landX * cos + pose.landZ * sin,
-      landZ: -pose.landX * sin + pose.landZ * cos,
+      fromX: pose.fromX * cos + pose.fromZ * sin,
+      fromZ: -pose.fromX * sin + pose.fromZ * cos,
     };
   }
 
@@ -134,7 +134,7 @@ export class Board {
     poseFaceUp(rest, local.x, local.z, 0, DISCARD_SCALE);
     rest.position.set(local.x, rest.position.y, local.z);
     rest.rotation.z = local.yaw;
-    return { rest, land: { x: local.landX, z: local.landZ } };
+    return { rest, land: { x: local.fromX, z: local.fromZ } };
   }
 
   /** The pile settled under every discard: tiles a throw knocked slide to their new places. */
@@ -414,7 +414,7 @@ export class Board {
     const from = new THREE.Vector3(fromX, 1.4, HAND_Z - (seat === this.me ? -0.5 : 0.8));
     tile.position.copy(from);
     tile.rotation.set(seat === this.me ? -0.35 : 0.2, 0, 0);
-    if (land !== null) return this.flickIntoPile(seat, item, from, rest);
+    if (land !== null) return this.flickIntoPile(seat, item, from, rest, land);
     // The arc touches down at about 0.36 of its 0.4 s: that is when it clacks.
     sound.cue("clack", { delay: pace.scale(0.36), intensity: seat === this.me ? 1 : 0.85, ...this.ear(seat) });
     const startRotation = tile.rotation.clone();
@@ -435,17 +435,18 @@ export class Board {
 
   /**
    * The centre pile's throw (#122): a short, low hop over the thrower's own
-   * wall onto the felt, then a flick along the table straight into the pile,
-   * spinning a little as it slows; the tiles it reaches are knocked as it
-   * arrives (`nudgePile`, timed by `PILE_KNOCK_MS`).
+   * wall onto the felt, turning face up in the air, then a flick along the
+   * table into the pile. The slide is the straight line `pile.js` checked
+   * tile by tile, at the tile's final turn, so it never passes through
+   * another; the tiles it crashes into are knocked as it arrives
+   * (`nudgePile`, timed by `PILE_KNOCK_MS`).
    */
-  flickIntoPile(seat, item, from, rest) {
+  flickIntoPile(seat, item, from, rest, land) {
     const tile = item.tile;
     const y = rest.position.y;
-    // Where it meets the felt: just inside the thrower's wall, a little towards its place.
-    const touch = new THREE.Vector3(from.x * 0.5 + rest.position.x * 0.25, y, WALL_R - 1.5);
+    const touch = new THREE.Vector3(land.x, y, land.z);
     const startRotation = tile.rotation.clone();
-    const spin = rest.rotation.z + (rest.position.x >= touch.x ? -0.9 : 0.9);
+    const spin = rest.rotation.z;
     sound.cue("clack", { delay: pace.scale(PILE_HOP_MS / 1000), intensity: seat === this.me ? 0.9 : 0.75, ...this.ear(seat) });
     return animate(PILE_HOP_MS, (t) => {
       tile.position.lerpVectors(from, touch, t);
@@ -455,12 +456,12 @@ export class Board {
     }).then(() => {
       sound.cue("tick", { pitch: 0.1, ...this.ear(seat) });
       return animate(PILE_SLIDE_MS, (t) => {
-        // Fast off the flick, slowing on the felt; the spin dies away with it.
-        const k = 1 - Math.pow(1 - t, 2.4);
+        // Fast off the flick, still moving when it crashes into the pile.
+        const k = 1 - Math.pow(1 - t, 1.6);
         tile.position.x = touch.x + (rest.position.x - touch.x) * k;
         tile.position.z = touch.z + (rest.position.z - touch.z) * k;
         tile.position.y = y;
-        tile.rotation.z = spin + (rest.rotation.z - spin) * k;
+        tile.rotation.z = rest.rotation.z;
       });
     }).then(() => {
       tile.position.copy(rest.position);

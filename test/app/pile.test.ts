@@ -18,8 +18,8 @@ interface Pose {
   readonly x: number;
   readonly z: number;
   readonly angle: number;
-  readonly landX: number;
-  readonly landZ: number;
+  readonly fromX: number;
+  readonly fromZ: number;
   readonly live: boolean;
 }
 interface Entry {
@@ -120,14 +120,40 @@ describe("the centre pile", () => {
     assert.deepEqual(pile.settle(growing), settlePile(pond, "same"));
   });
 
-  it("knocks tiles but never moves one a throw did not reach, and a claimed tile's knocks stay", () => {
+  it("knocks a tile at most a short push per throw", () => {
     const pond = pondFor(9, 40);
+    const pile = createPile("knock");
+    let before: Pose[] = pile.settle(pond.slice(0, 1));
     for (let n = 2; n <= pond.length; n++) {
-      const before: Pose[] = settlePile(pond.slice(0, n - 1), "knock");
-      const after: Pose[] = settlePile(pond.slice(0, n), "knock");
+      const after: Pose[] = pile.settle(pond.slice(0, n));
       for (let i = 0; i < n - 1; i++) {
         const moved = Math.hypot(after[i]!.x - before[i]!.x, after[i]!.z - before[i]!.z);
         assert.ok(moved <= PILE.PUSH + 1e-9, `throw ${n} moved tile ${i} by ${moved}`);
+      }
+      before = after;
+    }
+  });
+
+  it("slides every throw on a straight line that passes through no tile", () => {
+    for (const seed of [2, 7, 11]) {
+      const pond = pondFor(seed, 70);
+      let before: Pose[] = [];
+      const pile = createPile(`slide-${seed}`);
+      for (let n = 1; n <= pond.length; n++) {
+        const after: Pose[] = pile.settle(pond.slice(0, n));
+        const thrown = after[n - 1]!;
+        const length = Math.hypot(thrown.x - thrown.fromX, thrown.z - thrown.fromZ);
+        const steps = Math.max(1, Math.ceil(length / 0.04));
+        for (let step = 0; step <= steps; step++) {
+          const k = step / steps;
+          const at = { x: thrown.fromX + (thrown.x - thrown.fromX) * k, z: thrown.fromZ + (thrown.z - thrown.fromZ) * k, angle: thrown.angle };
+          assert.ok(inPond(at), `hand ${seed}, throw ${n}: the slide leaves the table`);
+          for (const [i, tile] of before.entries()) {
+            if (!tile.live) continue;
+            assert.equal(polygonsOverlap(corners(at), corners(tile)), false, `hand ${seed}, throw ${n} slides through tile ${i}`);
+          }
+        }
+        before = after;
       }
     }
   });

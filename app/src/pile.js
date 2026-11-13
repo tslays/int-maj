@@ -11,13 +11,14 @@
  * A simple physics, deterministic: the same discards always settle the same
  * way, so a reload, a replay or a review board shows the same pile.
  *
- *   - The first tile lands near the middle. Every later throw aims close
- *     beside a tile already in the pile (a seeded pick among the few nearest
- *     a seeded spot near the middle), with a seeded scatter and a seeded turn.
- *   - Where the throw lands on tiles, it knocks them: each tile it touches is
- *     pushed a short way along the throw, if it has room to go. The thrown
- *     tile then slides back a little along its throw, or settles into the
- *     nearest gap beside where it landed.
+ *   - Each throw meets the felt in the lane just inside the thrower's wall,
+ *     at a clear spot, and slides in a straight line towards the pile: on
+ *     the first throw towards a spot near the middle, after that towards a
+ *     tile near such a spot (seeded picks, a seeded scatter and turn).
+ *   - It stops just short of the first tile it would touch, checked every
+ *     `STEP` along the way, so it never passes through one. The tiles it
+ *     crashes into are knocked on along the throw, each until it meets
+ *     another or has gone `PUSH`. A slide that meets nothing stops at its aim.
  *   - A tile claimed by another player leaves the pile at once; the knocks
  *     its throw gave stay.
  *
@@ -32,15 +33,14 @@ const HALF_W = (W * S) / 2;
 const HALF_H = (H * S) / 2;
 
 export const PILE = Object.freeze({
-  /** No corner of a pile tile goes past this, well inside the walls. */
-  OUTER: WALL_INNER - 0.75,
-  /** Where a throw starts, in the thrower's frame (z). */
-  START_Z: WALL_INNER - 0.4,
+  /** No corner of a pile tile goes past this, just inside the walls. */
+  OUTER: WALL_INNER - 0.08,
+  /** Where a throw meets the felt, in the thrower's frame (z): the lane just inside its wall. */
+  START_Z: WALL_INNER - 0.95,
+  /** How finely a slide is checked: a moving tile never passes through another. */
+  STEP: 0.05,
   /** How far a knocked tile moves, at most. */
   PUSH: 0.42,
-  /** The step the thrown tile slides back by, and how many before it settles into the nearest gap instead. */
-  BACK_STEP: 0.1,
-  SLIDE_STEPS: 6,
   /** Clearance kept between tiles. */
   GAP: 0.04,
 });
@@ -106,7 +106,7 @@ export function polygonsOverlap(a, b, gap = 0) {
   return true;
 }
 
-/** True when the tile lies inside the pond, well within the walls. */
+/** True when the tile lies inside the walls. */
 export function inPond(pose) {
   return corners(pose).every((point) => Math.abs(point.x) <= PILE.OUTER && Math.abs(point.z) <= PILE.OUTER);
 }
@@ -117,6 +117,8 @@ const REACH = 2 * Math.hypot(HALF_W, HALF_H) + PILE.GAP;
 function touches(a, b) {
   return Math.abs(a.x - b.x) < REACH && Math.abs(a.z - b.z) < REACH && polygonsOverlap(a.points, b.points, PILE.GAP);
 }
+
+const inWalls = inPond;
 
 function clear(pose, others, skip = null) {
   if (!inPond(pose)) return false;
@@ -138,9 +140,10 @@ function placed(pose) {
  * `pond` is every discard of the hand in throw order, `{ rel, key, taken }`
  * (`taken`: claimed by another player and gone from the table). `seed` names
  * the hand. Returns one entry per pond entry, in order:
- * `{ x, z, angle, landX, landZ, live }`. `x`, `z`, `angle` are where the tile
- * finally lies once every later throw has knocked it; `landX`, `landZ` are
- * where its own throw first touched down, before it slid clear; `live` is
+ * `{ x, z, angle, fromX, fromZ, live }`. `x`, `z`, `angle` are where the tile
+ * finally lies once every later throw has knocked it; `fromX`, `fromZ` are
+ * where its own throw met the felt and began its slide (a straight line to
+ * where it stopped, clear of every tile then on the table); `live` is
  * false for a taken tile (its pose is where it lay when it was claimed).
  */
 export function settlePile(pond, seed) {
@@ -180,76 +183,101 @@ export function createPile(seed) {
       const last = new Map((done.at(-1)?.live ?? []).map((tile) => [tile.index, tile]));
       return done.map(({ entry, tile }, index) => {
         const now = last.get(index) ?? tile;
-        return { x: now.x, z: now.z, angle: now.angle, landX: tile.landX, landZ: tile.landZ, live: !entry.taken };
+        return { x: now.x, z: now.z, angle: now.angle, fromX: tile.fromX, fromZ: tile.fromZ, live: !entry.taken };
       });
     },
   };
 }
 
 /** One throw onto the pile `before` (left untouched); the pile after it and the thrown tile. */
+/** Throws tried for each tile; the one that ends nearest the pile's middle is the one made. */
+const TRIES = 6;
+
 function throwTile(entry, index, seed, before) {
   const live = before.map((tile) => ({ ...tile }));
   const tag = `${seed}|${index}|${entry.key}`;
-  const start = toTable(entry.rel, 0, PILE.START_Z);
-  // A spot near the middle, a little towards the thrower, so the four seats'
-  // tiles mix: the pile has no side that belongs to anyone.
-  const around = Math.atan2(start.z, start.x) + (unit(`${tag}|around`) - 0.5) * Math.PI * 1.5;
-  const ring = unit(`${tag}|ring`) * 1.6;
-  const front = { x: Math.cos(around) * ring, z: Math.sin(around) * ring };
-
-  // Aim: that spot on the first throw, else close beside one of the tiles nearest to it.
-  let aim = front;
-  if (live.length > 0) {
-    const near = [...live].sort((a, b) => dist(a, front) - dist(b, front) || a.index - b.index).slice(0, 4);
-    const anchor = near[Math.floor(unit(`${tag}|anchor`) * near.length)];
-    const side = unit(`${tag}|side`) * Math.PI * 2;
-    const close = 1.1 + unit(`${tag}|close`) * 0.5;
-    aim = { x: anchor.x + Math.cos(side) * close, z: anchor.z + Math.sin(side) * close };
-  }
-  aim = {
-    x: aim.x + (unit(`${tag}|ax`) - 0.5) * 0.9,
-    z: aim.z + (unit(`${tag}|az`) - 0.5) * 0.9,
-  };
   const facing = (entry.rel * Math.PI) / 2;
-  // Square to the thrower or a quarter turn off, then a little askew: it landed as it fell.
+  // Square to the thrower or a quarter turn off, then a little askew: it lands as it fell.
   const angle = facing + (unit(`${tag}|quarter`) < 0.3 ? Math.PI / 2 : 0) + (unit(`${tag}|turn`) - 0.5) * 0.6;
-  const along = unitVector(start, aim);
+  // Players aim for the heart of the pile: of a few seeded throws, the one that ends nearest it.
+  const middle = live.length === 0 ? { x: 0, z: 0 } : {
+    x: live.reduce((sum, tile) => sum + tile.x, 0) / live.length,
+    z: live.reduce((sum, tile) => sum + tile.z, 0) / live.length,
+  };
+  let best = null;
+  for (let attempt = 0; attempt < TRIES; attempt++) {
+    const slide = slideOf(entry, `${tag}|${attempt}`, angle, live);
+    if (slide === null) continue;
+    const score = dist(slide.pose, middle);
+    if (best === null || score < best.score - 1e-9) best = { ...slide, score };
+  }
 
-  // Knock the tiles the throw lands on.
-  const land = placed({ x: aim.x, z: aim.z, angle });
-  for (const other of live) {
-    if (!touches(land, other)) continue;
-    for (const share of [1, 0.5, 0.25]) {
-      const moved = placed({
-        x: other.x + along.x * PILE.PUSH * share,
-        z: other.z + along.z * PILE.PUSH * share,
-        angle: other.angle + (unit(`${tag}|spin|${other.index}`) - 0.5) * 0.18 * share,
-      });
-      if (clear(moved, live, other)) {
-        Object.assign(other, moved);
-        break;
+  let pose;
+  let start;
+  if (best === null) {
+    // The lane is full where this seat throws (a very long hand): it is laid in the nearest gap.
+    pose = nearestFree(middle, angle, live, facing);
+    start = pose;
+  } else {
+    ({ pose, start } = best);
+    // The tiles it crashed into are knocked on along the throw, each until it meets another.
+    for (const other of best.hit) {
+      let moved = other;
+      for (let travelled = PILE.STEP; travelled <= PILE.PUSH + 1e-9; travelled += PILE.STEP) {
+        const next = placed({ x: other.x + best.along.x * travelled, z: other.z + best.along.z * travelled, angle: other.angle });
+        if (!inWalls(next) || touches(next, pose) || live.some((tile) => tile !== other && touches(next, tile))) break;
+        moved = next;
       }
+      Object.assign(other, { x: moved.x, z: moved.z, points: moved.points });
     }
   }
 
-  // Slide back a little along the throw; if that does not clear it, it settles into the nearest gap.
-  let pose = null;
-  for (let step = 0; step <= PILE.SLIDE_STEPS; step++) {
-    const candidate = placed({
-      x: aim.x - along.x * PILE.BACK_STEP * step,
-      z: aim.z - along.z * PILE.BACK_STEP * step,
-      angle,
-    });
+  const tile = { index, ...pose, fromX: start.x, fromZ: start.z };
+  if (!entry.taken) live.push(tile);
+  return { live, tile };
+}
+
+/**
+ * One possible throw: it meets the felt at a clear spot in the lane inside the
+ * thrower's wall and slides straight at a tile near the middle (on the first
+ * throw, at a spot near the middle), stopping just short of the first tile it
+ * would touch. Null when the lane has no clear spot.
+ */
+function slideOf(entry, tag, angle, live) {
+  const lane = (unit(`${tag}|lane`) - 0.5) * 7;
+  let start = null;
+  for (const shift of [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8, 2.4, -2.4, 3, -3, 3.6, -3.6]) {
+    const at = toTable(entry.rel, lane + shift, PILE.START_Z);
+    const candidate = placed({ x: at.x, z: at.z, angle });
     if (clear(candidate, live)) {
-      pose = candidate;
+      start = candidate;
       break;
     }
   }
-  if (pose === null) pose = nearestFree(aim, angle, live, facing);
+  if (start === null) return null;
 
-  const tile = { index, ...pose, landX: aim.x, landZ: aim.z };
-  if (!entry.taken) live.push(tile);
-  return { live, tile };
+  const around = unit(`${tag}|around`) * Math.PI * 2;
+  const ring = unit(`${tag}|ring`) * 1.6;
+  const spot = { x: Math.cos(around) * ring, z: Math.sin(around) * ring };
+  let aim = spot;
+  if (live.length > 0) {
+    const near = [...live].sort((a, b) => dist(a, spot) - dist(b, spot) || a.index - b.index).slice(0, 3);
+    aim = near[Math.floor(unit(`${tag}|anchor`) * near.length)];
+  }
+  aim = { x: aim.x + (unit(`${tag}|ax`) - 0.5) * 0.9, z: aim.z + (unit(`${tag}|az`) - 0.5) * 0.9 };
+
+  const along = unitVector(start, aim);
+  const length = dist(start, aim);
+  let pose = start;
+  let hit = [];
+  for (let travelled = PILE.STEP; travelled <= length; travelled += PILE.STEP) {
+    const next = placed({ x: start.x + along.x * travelled, z: start.z + along.z * travelled, angle });
+    if (!inWalls(next)) break;
+    hit = live.filter((other) => touches(next, other));
+    if (hit.length > 0) break;
+    pose = next;
+  }
+  return { start, pose, hit, along };
 }
 
 function dist(a, b) {

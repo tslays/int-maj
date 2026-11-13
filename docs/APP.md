@@ -28,26 +28,29 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   touches a wall, a hand, a discard or another player's melds.
 - `app/src/pile.js` is the other discard layout, the **centre pile** (Options,
   Discards: Rows or Pile, a device preference `int-maj.discard-layout`,
-  `discard-layout.js`; #122). Every discard is thrown into one pond in the
-  middle: the first lands near the centre, each later throw aims close beside a
-  tile already there, knocks the tiles it lands on a short way along the
-  throw, and slides back a little or settles into the nearest gap; nothing shows who threw a tile
-  or when. It is deterministic from the hand's seed and the throw order
+  `discard-layout.js`; #122). Every discard is thrown into one heap in the
+  middle: it meets the felt in the lane just inside the thrower's wall and
+  slides in a straight line at the pile, stopping just short of the first
+  tile it would touch (checked every 0.05 of a tile, so it never passes
+  through one); the tiles it crashes into are knocked on along the throw,
+  each until it meets another. Of a few seeded throws the one that ends
+  nearest the pile's middle is made, so the heap stays round; nothing shows
+  who threw a tile or when. It is deterministic from the hand's seed and the throw order
   (`pond` in the payload, built by `pondOf` from the hand's events, with
   claimed tiles marked `taken`: they leave the pile, the knocks they gave
   stay), so a reload or a review board settles the same pile;
   `createPile(seed).settle(pond)` reuses every earlier throw, so a new discard
   costs one throw. The board places each seat's discards where the pile says
   (`discardRest`), animates a throw as a short low hop over the thrower's
-  wall and a flick along the felt into its place (`flickIntoPile`), knocks
-  the tiles it reaches as it arrives (`nudgePile`), turns the latest-discard plate
+  wall onto that lane and the checked slide into its place (`flickIntoPile`),
+  knocks the tiles it reaches as it arrives (`nudgePile`), turns the latest-discard plate
   with its tile, hides the seat pads and frames the zoomed view on the pile.
   With the pile the middle console is put away (`setConsoleShown`): each
   seat's wind (coral for the dealer), score and fish move to a label on the
   felt just inside its wall, glowing cyan on the seat whose turn it is, and
   the round and wall count to a badge under the menu (`seat-labels.js`).
-  `test/app/pile.test.ts` proves no two pile tiles overlap and none reaches
-  the walls, hands or melds.
+  `test/app/pile.test.ts` proves no two pile tiles overlap, no slide passes
+  through a tile, and none reaches the walls, hands or melds.
 - The wall is broken and drawn as *Illustrated* pp. 18-19 and p. 62 show: the
   dice (`breakFor`) name the wall and the stack counted from its right-hand
   end; that stack is lifted off. The wall is one ring read from the open end
