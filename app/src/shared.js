@@ -15,6 +15,8 @@ export const state = {
   api: null,
   payload: null,
   busy: false,
+  /** New game was asked for while busy; the turn loop starts it when it stops. */
+  newGameWanted: false,
   callsOff: false,
 };
 export const board = new Board();
