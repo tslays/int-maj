@@ -4,8 +4,10 @@ Each face is a small painting a player recognises without reading Chinese:
 four plants for the flowers (plum, orchid, chrysanthemum, bamboo) and four
 pictures of the year for the seasons (a seedling with a butterfly, the sun,
 maple leaves, a snowflake). The shapes are shaded with gradients and outlined
-in a darker tone of their own colour, and each picture sits on a card of its
-own colour (`tiles` below), so the eight are told apart by colour first. The table prints
+in a darker tone of their own colour. Each face keeps a colour of its own
+(`tiles` below) as a thin frame round the picture, with no card behind it, so
+the eight are still told apart by colour while the picture fills the face
+(owner request on #121: the cards made the pictures small). The table prints
 the number in the top-left corner (`app/src/tiles.js`), red for flowers and
 green for seasons, the colouring *The Game of Mah Jong Illustrated* calls
 usual (p. 9); the art keeps that corner clear.
@@ -19,10 +21,19 @@ import math, sys
 
 OUT = sys.argv[1]
 
-# The coloured card each picture sits on: below the table's corner number,
-# and the picture is scaled to fit inside it.
-PANEL = (4, 46, 292, 350)
-ART_SCALE = 0.9
+# Where each picture may go: the whole face but the top-left corner, which
+# holds the table's number (svg y < 30 there). A picture is scaled about its
+# own outline to fill this, so a slim plant and a round sun come out alike.
+AREA = (0, 30, 300, 370)
+# Each picture's outline in its own drawing coordinates (x, y, width, height),
+# measured once with the browser's getBBox on the drawing below; re-measure
+# when a drawing changes. The frame then fits it to AREA.
+BOUNDS = {
+    "f1": (26, 57, 259, 349), "f2": (14, 67, 276, 335), "f3": (30, 58, 237, 343), "f4": (6, 21, 297, 382),
+    "s1": (14, 59, 272, 343), "s2": (0, 50, 300, 300), "s3": (2, 12, 312, 389), "s4": (-5, 44, 310, 347),
+}
+# A picture may grow at most this much, and may bleed this far past AREA (the face's edge clips it).
+MAX_SCALE, BLEED = 1.15, 1.04
 
 
 # --- Drawing helpers -------------------------------------------------------
@@ -68,18 +79,20 @@ class Face:
         self.defs.append(f'<radialGradient id="{gid}" cx="{f(cx)}" cy="{f(cy)}" r="{f(r)}"{focus}{units}>{self._stops(stops)}</radialGradient>')
         return f"url(#{gid})"
 
-    def svg(self, name, theme):
+    def svg(self, name, key, theme):
         light, mid, dark = theme
-        card = self.rad([(0, light), (0.55, mid), (1, dark)], 0.5, 0.45, 0.75)
-        panel = (f'<rect x="{PANEL[0]}" y="{PANEL[1]}" width="{PANEL[2]}" height="{PANEL[3]}" rx="28" fill="{card}"/>'
-                 f'<rect x="{PANEL[0] + 8}" y="{PANEL[1] + 8}" width="{PANEL[2] - 16}" height="{PANEL[3] - 16}" rx="21" '
-                 f'fill="none" stroke="#ffffff" stroke-width="3" stroke-opacity="0.7"/>')
-        x, y, w, h = PANEL
-        fit = f"translate({f(x + w / 2)} {f(y + h / 2)}) scale({ART_SCALE}) translate(-150 -200)"
+        bx, by, bw, bh = BOUNDS[key]
+        ax, ay, aw, ah = AREA
+        scale = min(MAX_SCALE, BLEED * min(aw / bw, ah / bh))
+        fit = (f"translate({f(ax + aw / 2)} {f(ay + ah / 2)}) scale({f(scale)}) "
+               f"translate({f(-(bx + bw / 2))} {f(-(by + bh / 2))})")
+        # The colour code: a thin frame in the face's own colour, open at the number's corner.
+        frame = (f'<path d="M58,6 H272 Q294,6 294,28 V372 Q294,394 272,394 H28 Q6,394 6,372 V64" '
+                 f'fill="none" stroke="{dark}" stroke-width="7" stroke-linecap="round" stroke-opacity="0.85"/>')
         return (f'<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400">\n'
                 f'  <!-- {name}: drawn for this project (original art). -->\n'
-                f'  <defs>{"".join(self.defs)}<clipPath id="card"><rect x="{x + 3}" y="{y + 3}" width="{w - 6}" height="{h - 6}" rx="25"/></clipPath></defs>\n'
-                f'  {panel}\n  <g clip-path="url(#card)"><g transform="{fit}">\n  ' + "\n  ".join(self.body) + "\n  </g></g>\n</svg>\n")
+                f'  <defs>{"".join(self.defs)}</defs>\n'
+                f'  {frame}\n  <g transform="{fit}">\n  ' + "\n  ".join(self.body) + "\n  </g>\n</svg>\n")
 
 
 def shape(d, fill, stroke="none", width=0, extra=""):
@@ -448,7 +461,7 @@ def autumn():
 def winter():
     face = Face()
     x, y = 150, 200
-    ice = face.lin([(0, "#ffffff"), (0.55, "#eef8ff"), (1, "#a8d4ff")], 0, 0, 0, 1)
+    ice = face.lin([(0, "#f4fbff"), (0.5, "#9fd0ff"), (1, "#3d8cf0")], 0, 0, 0, 1)
     edge = "#0a2a78"
 
     def rod(length, w):
@@ -463,7 +476,7 @@ def winter():
             arm += placed(rod(length, 14), at, 0, -50) + placed(rod(length, 14), at, 0, 50)
         tip = ('<polygon points="132,0 144,-9 156,0 144,9" fill="' + ice + f'" stroke="{edge}" stroke-width="2.4" stroke-linejoin="round"/>')
         face.add(placed(arm + tip, x, y, a))
-    hexa = face.rad([(0, "#ffffff"), (0.6, "#e6f4ff"), (1, "#9cccff")])
+    hexa = face.rad([(0, "#ffffff"), (0.6, "#b8dcff"), (1, "#4a94f2")])
     face.add(f'<polygon points="{" ".join(pt(*polar(x, y, 30, 30 + 60 * k)) for k in range(6))}" fill="{hexa}" stroke="{edge}" stroke-width="3"/>')
     face.add(f'<polygon points="{" ".join(pt(*polar(x, y, 14, 60 * k)) for k in range(6))}" fill="none" stroke="{edge}" stroke-width="1.8" stroke-opacity="0.6"/>')
     for sx, sy, r in ((40, 60, 7), (262, 56, 6), (256, 352, 8), (40, 350, 6), (214, 384, 5), (92, 386, 5)):
@@ -485,5 +498,5 @@ tiles = {
 }
 for key, (name, draw, theme) in tiles.items():
     with open(f"{OUT}/{key}.svg", "w", encoding="utf-8") as out:
-        out.write(draw().svg(name, theme))
+        out.write(draw().svg(name, key, theme))
 print("wrote", len(tiles))
