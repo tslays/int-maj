@@ -1,12 +1,16 @@
 /**
- * The round layers, on phones only: each tile the other players throw this
- * round gets its face laid flat on top of it, larger, in the tile's own place,
- * angle and orientation, so a glance tells what the round threw without
- * leaning in or zooming. A layer appears only once its tile has landed and
- * settled, and expands briefly out of the tile; your own throw clears them
- * all, and the next round starts. Options has a switch for them (on by
- * default, `large-discards.js`). A claimed tile takes its layer with it. The
- * newest layer has the latest discard's cyan edge (it covers that plate).
+ * The large discard, on phones only: the tile another player has just thrown
+ * gets its face laid flat on top of it, larger, in the tile's own place,
+ * angle and orientation, so a glance tells what was thrown without leaning in
+ * or zooming. One at a time (owner ruling for alpha.7: the whole round at
+ * once was too distracting): each new throw takes the large face from the one
+ * before. It appears only once its tile has landed and settled, expanding
+ * briefly out of the tile. The tile the player on your left throws has no next
+ * throw to replace it, so it clears by itself after as long as the two before
+ * it stayed up (measured, so it keeps the table's rhythm at any pace); your
+ * own throw clears it too. A claimed tile takes its large face with it. Options has a switch
+ * for it (on by default, `large-discards.js`). It has the latest discard's
+ * cyan edge (it covers that plate).
  *
  * Each layer is a child of its tile (`makeFaceLayer` in `tiles.js`), so it
  * goes wherever the tile goes. Sizes and the phone test are plain numbers in
@@ -17,10 +21,16 @@
 
 import { layerEdge, makeFaceLayer } from "./tiles.js";
 import { ROUND_LAYER, roundLayersWanted, roundLayerZ } from "./layout.js";
-import { animate, easeOutCubic, requestRender, viewport } from "./stage.js";
+import { animate, easeInOutCubic, easeOutCubic, requestRender, viewport } from "./stage.js";
+import { pace } from "./pace.js";
 import { largeDiscards } from "./large-discards.js";
 
 const GROW_MS = 200;
+/** Going, a large face shrinks back into its own tile (where it matches the face exactly) and is gone. */
+const SHRINK_MS = 260;
+/** Before any large face has been timed (a new game), how long the left player's one stays up. */
+const FIRST_HOLD_MS = 1500;
+const SEATS = ["E", "S", "W", "N"];
 const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)") ?? { matches: false };
 
 function setLayerScale(item, scale, order) {
@@ -34,9 +44,32 @@ export const roundMethods = {
     return largeDiscards.on && roundLayersWanted(viewport.width, viewport.height);
   },
 
-  /** An opponent's discard has landed and settled: lay its face over it, expanding out of the tile. */
-  addRoundLayer(item) {
+  /**
+   * An opponent's discard has landed and settled: lay its face over it,
+   * expanding out of the tile; the one before goes. `seat` threw it.
+   */
+  addRoundLayer(item, seat) {
     if (!item.tile.parent || this.round.includes(item)) return;
+    const now = performance.now();
+    // A face replaced by the next throw tells how long a large face stays up at this pace.
+    if (this.round.length > 0 && this.layerShownAt !== null) {
+      this.layerHolds = [...(this.layerHolds ?? []), now - this.layerShownAt].slice(-2);
+    }
+    this.clearRound();
+    this.layerShownAt = now;
+    // The player on your left throws last before you: nothing replaces it, so it goes by itself, on the beat.
+    const left = SEATS[(SEATS.indexOf(this.me) + 3) % 4];
+    if (seat === left) {
+      const holds = this.layerHolds ?? [];
+      const hold = holds.length > 0 ? holds.reduce((sum, ms) => sum + ms, 0) / holds.length : pace.scale(FIRST_HOLD_MS);
+      const token = (this.layerTimer = (this.layerTimer ?? 0) + 1);
+      setTimeout(() => {
+        if (this.layerTimer === token && this.round.includes(item)) {
+          this.clearRound();
+          this.layerShownAt = null;
+        }
+      }, hold);
+    }
     const order = this.round.length;
     const { group, edge } = makeFaceLayer(item.key);
     group.visible = this.roundShown();
@@ -58,11 +91,18 @@ export const roundMethods = {
     }, { fixed: true });
   },
 
-  /** Your own throw: the round is over, every layer goes. */
+  /** Your own throw (or the next throw): the large face goes. */
   clearRound() {
     for (const item of this.round) this.removeLayer(item);
     this.round = [];
     requestRender();
+  },
+
+  /** Your own throw: the large face goes, and the next one is not timed from it. */
+  endRound() {
+    this.clearRound();
+    this.layerShownAt = null;
+    this.layerTimer = (this.layerTimer ?? 0) + 1;
   },
 
   /** A discard leaves the pond (claimed, or the pond rebuilt): its layer goes with it. */
@@ -71,14 +111,31 @@ export const roundMethods = {
     if (index < 0) return;
     this.removeLayer(item);
     this.round.splice(index, 1);
+    this.layerShownAt = null;
     this.markNewestLayer();
     requestRender();
   },
 
+  /** The large face goes: it shrinks smoothly back into its tile and vanishes there, seamlessly. */
   removeLayer(item) {
-    item.layer?.removeFromParent();
+    const group = item.layer;
     item.layer = null;
     item.edge = null;
+    if (!group) return;
+    const from = group.scale.x;
+    if (reducedMotion.matches || !group.visible || from <= 1.001) {
+      group.removeFromParent();
+      return;
+    }
+    void animate(SHRINK_MS, (t) => {
+      const scale = from + (1 - from) * easeInOutCubic(t);
+      group.scale.setScalar(scale);
+      group.position.z = roundLayerZ(scale, 0);
+      return true;
+    }, { fixed: true }).then(() => {
+      group.removeFromParent();
+      requestRender();
+    });
   },
 
   /** The screen changed size or the switch was turned: show the layers, or hide them. */
