@@ -117,39 +117,12 @@ export function discardRect(rel, index) {
 export const WALL_INNER = WALL_R - H / 2;
 
 /**
- * The seat labels with the centre pile (seat-labels.js): each seat's wind and
- * score has one fixed place against the inside of its wall, and the pile
- * keeps off a strip of felt under it (`labelPad`), so no discard ever lies
- * beneath a label and a label never moves as tiles come and go.
- *
- * In the seat's own frame the strip runs `HALF` either side of the seat's
- * middle and `DEPTH` in from the wall's inner face. The seats to the sides
- * turn their label on end, along their wall, so it is slim across the felt.
- * The seat across reads its label half over its wall (`OVER` of it lies past
- * the wall's face), as the far side of the table is the smallest on the
- * screen; the others stand clear of their wall's top, which the camera sees
- * a little inside its foot, hence your seat's deeper strip. Sized for a phone
- * held sideways, the tightest view.
+ * The seat labels with the centre pile (seat-labels.js): each seat's wind
+ * letter stands in one fixed place, on top of its wall at the wall's dead
+ * centre. The wall's stacks sit `(W - H) / 2` off the seat's middle (the
+ * walls meet corner to corner), so its centre is there, not at x = 0.
  */
-export const LABEL_PAD = Object.freeze({
-  NEAR: Object.freeze({ HALF: 3.8, DEPTH: 4.0, OVER: 0 }),
-  SIDE: Object.freeze({ HALF: 4.6, DEPTH: 1.9, OVER: 0 }),
-  FAR: Object.freeze({ HALF: 4.2, DEPTH: 1.8, OVER: 0.5 }),
-});
-
-/** Seat `rel`'s label: its strip's table-space rectangle, and its size (`HALF`, `DEPTH`, `OVER`). */
-export function labelPad(rel) {
-  const size = rel === 0 ? LABEL_PAD.NEAR : rel === 2 ? LABEL_PAD.FAR : LABEL_PAD.SIDE;
-  const a = toTable(rel, -size.HALF, WALL_INNER - size.DEPTH);
-  const b = toTable(rel, size.HALF, WALL_INNER);
-  return {
-    minX: Math.min(a.x, b.x),
-    maxX: Math.max(a.x, b.x),
-    minZ: Math.min(a.z, b.z),
-    maxZ: Math.max(a.z, b.z),
-    ...size,
-  };
-}
+export const WALL_TOP_CENTRE = Object.freeze({ x: (W - H) / 2, z: WALL_R });
 
 /**
  * The round layers, for phones only. Each tile the other players throw this

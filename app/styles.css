@@ -86,9 +86,9 @@ button {
   align-items: flex-start;
   gap: 8px;
 }
-/* With the centre pile the console is put away: each seat's wind, score and
-   fish sit in a label just inside its wall, and the round and wall count in
-   this badge (seat-labels.js). */
+/* With the centre pile the console is put away: each seat's wind letter (and
+   fish) stands on top of its wall, dead centre, and the round and wall count
+   go in this badge (seat-labels.js). */
 .wall-badge {
   margin: 2px 0 0 4px;
   padding: 3px 9px;
@@ -105,8 +105,10 @@ button {
   transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 2px 9px;
+  gap: 4px;
+  min-width: 22px;
+  justify-content: center;
+  padding: 2px 6px;
   border-radius: 11px;
   background: rgba(27, 35, 38, 0.82);
   border: 1.5px solid rgba(120, 140, 150, 0.5);
@@ -117,14 +119,6 @@ button {
   /* A tap on a label opens the claims sheet on its seat (claims.js). */
   cursor: pointer;
   transition: box-shadow 220ms, border-color 220ms;
-}
-/* The seats to the sides stand their label on end along their wall, its
-   foot towards the player (layout.js LABEL_PAD). */
-.seat-label[data-rel="1"] {
-  transform: translate(-50%, -50%) rotate(-90deg);
-}
-.seat-label[data-rel="3"] {
-  transform: translate(-50%, -50%) rotate(90deg);
 }
 .seat-label.off-screen {
   visibility: hidden;
@@ -141,10 +135,6 @@ button {
 }
 .seat-wind.dealer {
   color: #ff6b5e;
-}
-.seat-score {
-  color: #f2d36b;
-  font-weight: 600;
 }
 .seat-fish {
   width: 24px;
