@@ -229,12 +229,6 @@ button {
 .chip-back {
   background: #8ccbea;
 }
-.chip-large {
-  width: 34px;
-  height: 46px;
-  border-radius: 6px;
-  box-shadow: inset 0 -3px 0 #8ccbea, 0 4px 12px rgba(0, 0, 0, 0.4);
-}
 
 .callout {
   position: fixed;

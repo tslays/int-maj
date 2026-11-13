@@ -235,7 +235,6 @@ function alertFor(legal) {
 
 function showChoices({ chime = true } = {}) {
   const legal = state.payload.legalActions;
-  const view = state.payload.view;
   const bar = $("#actions");
   bar.replaceChildren();
   clearSelection();
@@ -290,16 +289,6 @@ function showChoices({ chime = true } = {}) {
   if (fishing) bar.append(button("Fishing", "claim", () => void act(fishing), fishing.wait.slice(0, 4)));
   const win = wins[0] ?? mahjongClaim;
   if (win) bar.append(button("Mah Jong", "win", () => void act(win)));
-
-  if (view.claimWindow !== null && view.phase === "claim") {
-    bar.prepend(faceChipLarge(view.claimWindow.tile));
-  }
-}
-
-function faceChipLarge(key) {
-  const chip = faceChip(key);
-  chip.classList.add("chip-large");
-  return chip;
 }
 
 /** `?seed=` pins the first game's seed (tests and bug reports); the next new game is random again. */
