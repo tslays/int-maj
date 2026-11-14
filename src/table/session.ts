@@ -17,7 +17,7 @@
 
 import { checkHand, summarizeMatch, type MatchSummary } from "../core/check.ts";
 import { tileKey } from "../core/tiles.ts";
-import type { Action } from "../core/game/actions.ts";
+import { decisionOf, type Action } from "../core/game/actions.ts";
 import { chooseAction, DEFAULT_BOT_LEVEL, type BotLevel } from "../core/game/bot.ts";
 import { closestWithPins, type ClosestHand, type PinnedHand } from "../core/game/closest.ts";
 import type { Event } from "../core/game/events.ts";
@@ -392,7 +392,7 @@ function botStep(session: WebSession, level: BotLevel): SessionUpdate | null {
     session: {
       ...session,
       state: result.state,
-      steps: [...session.steps, action],
+      steps: [...session.steps, decisionOf(action)],
       events: [...session.events, ...result.events],
     },
     events: result.events,
@@ -794,7 +794,7 @@ export class GameStore {
     const next: WebSession = {
       ...session,
       state: result.state,
-      steps: [...session.steps, action],
+      steps: [...session.steps, decisionOf(action)],
       humanSteps: [...session.humanSteps, session.steps.length],
       events: [...session.events, ...result.events],
     };

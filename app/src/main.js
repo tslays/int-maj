@@ -240,7 +240,7 @@ function hideChoices() {
   hideTip();
 }
 
-function button(label, kind, onClick, tiles = [], drawOnly = []) {
+function button(label, kind, onClick, tiles = [], drawOnly = [], hand = "") {
   const element = document.createElement("button");
   element.type = "button";
   element.className = `act act-${kind}`;
@@ -248,6 +248,13 @@ function button(label, kind, onClick, tiles = [], drawOnly = []) {
     const text = document.createElement("span");
     text.textContent = label;
     element.append(text);
+  }
+  if (hand !== "") {
+    // The hand a Fishing offer is for, beside the label.
+    const name = document.createElement("span");
+    name.className = "act-hand";
+    name.textContent = hand;
+    element.append(name);
   }
   if (tiles.length > 0) {
     const row = document.createElement("span");
@@ -339,7 +346,7 @@ function showChoices({ chime = true } = {}) {
     bar.append(button(CALL_WORD[claim.kind], "claim", () => void act(claim), sortTiles(claim.tiles)));
   }
   for (const kong of kongs) bar.append(button("Kong", "claim", () => void act(kong), [kong.tile]));
-  if (fishing) bar.append(button("Fishing", "claim", () => void act(fishing), fishing.wait.slice(0, 4), state.payload.view.fishingDrawOnly ?? []));
+  if (fishing) bar.append(button("Fishing", "claim", () => void act(fishing), fishing.wait.slice(0, 4), state.payload.view.fishingDrawOnly ?? [], fishing.hand ?? ""));
   const win = wins[0] ?? mahjongClaim;
   if (win) bar.append(button("Mah Jong", "win", () => void act(win)));
   tipForChoices(legal, { callsOff: state.callsOff });

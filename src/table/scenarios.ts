@@ -15,7 +15,7 @@
  * next request rebuilds from the seed.
  */
 
-import type { Action } from "../core/game/actions.ts";
+import { decisionOf, type Action } from "../core/game/actions.ts";
 import { chooseAction } from "../core/game/bot.ts";
 import type { Event } from "../core/game/events.ts";
 import { isApplyError } from "../core/game/draft.ts";
@@ -223,7 +223,7 @@ export function buildScenario(name: ScenarioName): Omit<WebSession, "id"> {
       throw new Error(`${name}: ${applied.error}`);
     }
     if (action.seat === SEAT) humanSteps.push(steps.length);
-    steps.push(action);
+    steps.push(decisionOf(action));
     events.push(...applied.events);
     state = applied.state;
   }

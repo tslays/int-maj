@@ -92,6 +92,7 @@ export function legalActions(state: GameState, seat: Seat): Action[] {
         type: "DeclareFishing",
         seat,
         wait: sortKeys(declaration.wait),
+        hand: declaration.hand,
       });
     }
     actions.push({ type: "Pass", seat });

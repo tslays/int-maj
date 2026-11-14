@@ -221,7 +221,7 @@ describe("the Companion's values govern", () => {
     });
     const wait = waitsOf(state, "E");
     assert.ok(wait.includes("b1"));
-    assert.deepEqual(fishingValueFor(state, "E", wait), { tier: "double", value: 800 });
+    assert.deepEqual(fishingValueFor(state, "E", wait), { tier: "double", value: 800, hand: "Unique Wonder" });
   });
 });
 

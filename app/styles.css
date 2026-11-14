@@ -259,6 +259,15 @@ html.phone-frame .actions {
   display: inline-flex;
   gap: 0.1em;
 }
+/* The hand a Fishing offer is for, beside the label. */
+.act-hand {
+  font-size: 0.72em;
+  font-weight: 600;
+  opacity: 0.92;
+  max-width: 11em;
+  line-height: 1.1;
+  text-align: left;
+}
 .act .chip {
   width: 1.16em;
   height: 1.58em;
