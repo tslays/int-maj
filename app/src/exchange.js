@@ -8,7 +8,8 @@
  *
  * The sticks are only a picture: the rows start at the totals before the hand
  * and always end on the totals the table sent, whatever is skipped. A tap
- * anywhere, a key, or a reduced-motion setting ends it at once.
+ * anywhere, a key, or a reduced-motion setting ends it at once, and Options ›
+ * Table animations › Skip leaves it out.
  */
 
 import { exchangePlan, stickColor } from "./sticks.js";
@@ -50,6 +51,7 @@ function bump(element) {
  * @param {Record<string, number>} input.before  each seat's total before the hand
  * @param {Record<string, number>} input.deltas  each seat's change this hand
  * @param {(seat: string) => number} input.side  where a seat sits on screen: 0 you, 1 right, 2 across, 3 left
+ * @param {boolean} [input.animate] false shows the final numbers at once (Options › Table animations › Skip)
  * @param {(ms: number) => number} [input.scale] the table's pace
  * @param {(value: number, pan: number) => void} [input.onLand] a stick has landed (sound), panned -1..1 by where
  * @param {() => void} [input.onKnock] sticks knocked together (sound)
@@ -62,6 +64,7 @@ export function playExchange({
   before,
   deltas,
   side,
+  animate = true,
   scale = (ms) => ms,
   onLand = () => {},
   onKnock = () => {},
@@ -103,7 +106,7 @@ export function playExchange({
     }
     if (phase.transfers.some((transfer) => transfer.sticks.length > 0)) at += longest + scale(PHASE_GAP_MS);
   }
-  if (throws.length === 0 || reducedMotion.matches) {
+  if (!animate || throws.length === 0 || reducedMotion.matches) {
     finish();
     return { done, finish };
   }

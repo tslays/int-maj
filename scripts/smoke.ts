@@ -680,7 +680,7 @@ async function opening(browser: Browser, origin: string, shots: string | null): 
     console.log("  ok  a tap skips the opening");
   }
 
-  // Dice and dealing set to Skip: no opening at all, and the choice is remembered.
+  // Table animations set to Skip: no opening at all, no counters thrown, and the choice is remembered.
   {
     const errors: string[] = [];
     const page = await openPage(browser, errors);
@@ -703,9 +703,26 @@ async function opening(browser: Browser, origin: string, shots: string | null): 
     assert.equal(payload.view.dealer, "E");
     assert.equal(payload.view.player.hand.length, 14);
     assert.equal(await fresh.evaluate(() => (window as unknown as { openingSeen: boolean }).openingSeen), false, "no opening when it is off");
-    assert.deepEqual(errors, [], "opening off: no errors");
     await fresh.context().close();
-    console.log("  ok  Dice and dealing set to Skip goes straight to play");
+
+    // The result card shows the final numbers at once, with no sticks thrown.
+    const result = await openPage(browser, errors);
+    await result.addInitScript(() => localStorage.setItem("int-maj.opening", "off"));
+    await result.addInitScript(() => {
+      (window as unknown as { sticksSeen: boolean }).sticksSeen = false;
+      new MutationObserver(() => {
+        if (document.querySelector(".stick-throw")) (window as unknown as { sticksSeen: boolean }).sticksSeen = true;
+      }).observe(document, { subtree: true, childList: true });
+    });
+    await result.goto(`${origin}/?state=result`);
+    await result.waitForSelector("#result:not([hidden])", { timeout: READY_MS });
+    await result.waitForTimeout(1500);
+    assert.equal(await result.evaluate(() => (window as unknown as { sticksSeen: boolean }).sticksSeen), false, "no counters thrown when off");
+    const changes = await result.$$eval(".result-row span:nth-child(2)", (list) => list.map((cell) => cell.textContent));
+    assert.ok(changes.some((text) => text !== "±0"), "the result shows the hand's changes at once");
+    assert.deepEqual(errors, [], "table animations off: no errors");
+    await result.context().close();
+    console.log("  ok  Table animations set to Skip goes straight to play and to the numbers");
   }
 }
 

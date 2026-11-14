@@ -5,6 +5,7 @@
 import { houseRules } from "./options.js";
 import { bookPages } from "./pages.js";
 import { playExchange } from "./exchange.js";
+import { openingPref } from "./opening.js";
 import { pace } from "./pace.js";
 import { explainSettlement } from "./settlement.js";
 import { sound } from "./sound.js";
@@ -233,7 +234,8 @@ function renderOutcome(outcome) {
   panel.hidden = false;
 
   // The counters are thrown across the table, over the card, from each payer
-  // to the receiver; a tap anywhere skips to the end.
+  // to the receiver; a tap anywhere skips to the end, and Options › Table
+  // animations › Skip leaves them out.
   const before = Object.fromEntries(
     state.payload.table.map((entry) => [entry.seat, totals[entry.seat] - (outcome.totals[entry.seat] ?? 0)]),
   );
@@ -244,6 +246,7 @@ function renderOutcome(outcome) {
     before,
     deltas: outcome.totals,
     side: (seat) => board.rel(seat),
+    animate: openingPref.enabled,
     scale: (ms) => pace.scale(ms),
     onLand: (value, pan) => sound.cue("stick", { value, pan }),
     onKnock: () => sound.cue("stickKnock"),
