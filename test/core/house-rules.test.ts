@@ -212,7 +212,7 @@ describe("the Companion's values govern", () => {
   });
 
   it("fishes for a double-limit hand at 800, whichever book printed the hand (C p. 4)", () => {
-    // Unique Wonder (I p. 38, C p. 44), one tile from complete: the pair is any tile.
+    // Unique Wonder (I p. 39, C p. 44), one tile from complete: the pair is any tile.
     const state = fixture({
       hands: { E: "b1 b9 c1 c9 o1 o9 wE wS wW wN dG dR dW", ...OTHERS },
       wall: LONG_WALL,
