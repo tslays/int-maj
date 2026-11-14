@@ -4,7 +4,65 @@ Newest first. Written for players: what you will see, what was fixed, and
 what now works differently. Each version is a `v0.1.0-alpha.N` tag on `main`;
 testers get it at https://int.mah-jong.workers.dev.
 
-## alpha.7
+## alpha.8
+
+**New**
+
+- **Counter sticks fly across the table.** When a hand is settled, each
+  payer throws coloured counter sticks to the winner over the result card
+  (yellow 100, green 500, blue 1000, red 4000, the colours from the
+  Companion). They land, skid and knock together with a wooden click, and
+  the numbers on the card count up as each one lands. A tap skips it.
+- **The Fishing button names the hand** you would be fishing for, beside the
+  tiles you wait on. A tile that only wins if you draw it yourself (for
+  example for Buried Treasure) is shown faded and marked *own draw only*.
+- **Clearer hints.** The hand sheet now says when you need *one more* of a
+  tile you already hold, and which other tile would complete the hand
+  *instead*.
+- **Room for your melds.** Your own claimed sets get a second and a third
+  row when the wall leaves the lane short, so they stay large even with
+  four melds and flowers out.
+
+**Changed**
+
+- **Big Robert is one card** in the index of all hands, showing both
+  scorings: limit with the same numbers, half limit otherwise. *Dragon's
+  Tail* and *Buried Treasure* lose their bracketed extras.
+- **Goulash banner is quieter:** it shows only the exchange, who your tiles
+  go to and how many are picked. What a Goulash is, is now explained once in
+  the first-game tip. On a laptop the banner is solid and larger.
+- Options › *Dice and dealing* is now **Table animations**, and its Skip
+  also skips the counter sticks.
+- On a computer, no more grey browser tooltip boxes pop up on hover.
+
+**Fixed**
+
+- **Grand Sequence** (from your report): the two extra tiles pair with tiles
+  of the run (the same tile twice is fine too), not a separate pair of any
+  suit. A hand that was one tile away now counts as one tile away, and
+  Mah Jong is offered on the winning discard.
+- **Ordinary-hand scores checked line by line against the book's scoring
+  sheet:**
+  - a pung completed by a discard scores as exposed, not concealed;
+  - each double counts once (some hands counted their own flower or season,
+    "no chows" and similar doubles twice);
+  - every way of reading your tiles is scored and the best one counts;
+  - East's first discard, the only-possible chow and robbing a kong now earn
+    their bonus;
+  - a hand that is both a half-limit hand and a higher-scoring ordinary
+    hand is paid the higher score;
+  - four sets of honours and a suited pair is an ordinary hand.
+- **Buried Treasure** with a pung paid nothing when won on your own draw;
+  it now scores, and fishing on it is offered.
+
+**What works differently now**
+
+- Some ordinary hands score differently: usually less where a double was
+  counted twice, sometimes more where a bonus was missing.
+- Grand Sequence is easier to complete than before.
+- *Table animations › Skip* now also skips the counter sticks.
+
+## alpha.7 (13 November 2026)
 
 **New**
 
