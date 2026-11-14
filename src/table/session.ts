@@ -39,7 +39,8 @@ import { viewFor, type GameView, type PlayerView } from "../core/game/view.ts";
 import type { Wind } from "../core/tiles.ts";
 import type { PageRefs, Tier } from "../core/patterns/types.ts";
 import { HAND_SET_EXCLUDED, HAND_SETS, PATTERNS, type HandSet } from "../core/patterns/table.ts";
-import { GOULASH_NO_HALF_LIMIT, WIN_NEEDS_FISH } from "../core/game/hands.ts";
+import { GOULASH_NO_HALF_LIMIT, WIN_NEEDS_FISH, buildHand } from "../core/game/hands.ts";
+import { arrangeConcealed } from "../core/arrange.ts";
 
 /**
  * Your fixed place at the table (the bottom of the screen). It is a position,
@@ -213,6 +214,12 @@ export interface OutcomePayload {
    * Another seat's concealed hand is never part of any payload.
    */
   readonly hand: readonly string[] | null;
+  /**
+   * The winner's concealed tiles as the groups of the winning combination
+   * (a mixed chow stays one group), or null when it has none to show, such as
+   * seven pairs: then `hand` is shown as one sorted row.
+   */
+  readonly arrangement: readonly (readonly string[])[] | null;
   /** Public melds of the winner, or null for a drawn hand. */
   readonly melds: readonly MeldState[] | null;
   /** Public concealed-hand count of the winner. */
@@ -492,6 +499,7 @@ function outcomeFor(session: WebSession, view: GameView): OutcomePayload | null 
   const isWinner = result.winner !== null && result.winner === view.seat;
   let hand: readonly string[] | null = null;
   let melds: readonly MeldState[] | null = null;
+  let arrangement: readonly (readonly string[])[] | null = null;
   let handCount = 0;
   if (result.winner !== null) {
     // The hand is over, so the winning tiles are public: the result screen
@@ -499,6 +507,9 @@ function outcomeFor(session: WebSession, view: GameView): OutcomePayload | null 
     const winnerIndex = state.players.findIndex((entry) => entry.seat === result.winner);
     const winner = state.players[winnerIndex];
     hand = winner === undefined ? null : [...winner.hand];
+    const pattern = PATTERN_BY_ID.get(result.patternId ?? "");
+    const winning = buildHand(state, result.winner, { selfDrawn: result.selfDrawn });
+    if (pattern !== undefined && winning !== null) arrangement = arrangeConcealed(winning, pattern);
     if (isWinner) {
       melds = view.player.melds;
       handCount = view.player.hand.length;
@@ -526,6 +537,7 @@ function outcomeFor(session: WebSession, view: GameView): OutcomePayload | null 
     gameOver: endsGame(state),
     winningTile: win?.type === "WinDeclared" ? win.tile : null,
     hand,
+    arrangement,
     melds,
     handCount,
     matches:
