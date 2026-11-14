@@ -8,7 +8,7 @@ is new, what to try, how to report and what the app cannot do yet.
 
 <!-- guide:start -->
 
-# Mah Jong — test version alpha.7
+# Mah Jong — test version alpha.8
 
 **Play here:** https://int.mah-jong.workers.dev
 
@@ -18,73 +18,58 @@ International mahjong in your browser, against three bots, by the rules of
 ## Getting the new version
 
 Open the link (or the app on your home screen) and reload it once. The
-small label under the menu, top left, should read **alpha.7**. A game in progress carries on. If an update changes the game, the
+small label under the menu, top left, should read **alpha.8**. A game in progress carries on. If an update changes the game, the
 hand you were playing starts again with the scores kept.
 
 **New to the app?** On an iPhone open the link in Safari, tap Share, then
 *Add to Home Screen*, and play it from the home-screen icon with the phone
 turned sideways. Everything else, the app shows you: Options › **Help**.
 
-## New in alpha.7
+## New in alpha.8
 
-- **Discards in a pile, like a real table.** Options › Discards › *Pile*.
-  Every discard slides into one round heap in the middle; nobody can see who
-  threw what. The round, your wind and the wall count move to a small badge
-  under the menu.
-- **See everyone's claims:** tap a player's side of the table, where their
-  melds lie, for a sheet with every player's claimed tiles shown large.
-- **See who is fishing:** a small fish beside the player's wind, or with the
-  pile, next to their melds.
-- **Goulash:** drag to arrange your hand while you pass, and the tiles you
-  just received are marked in teal.
-- **Two new house rules:** *No half-limit hands in a Goulash* (on) and
-  *Announce fishing to win* (off).
-- **Calmer Large discards** on phones: only the tile just thrown is shown
-  large, each for the same short beat.
-- **Harder Hard bots.**
-- **New flower and season tiles:** the traditional pictures of a real set,
-  with their numbers printed on them.
-- **Help as a visual guide,** tips in your first game, and a redesigned
-  Options sheet with New game and Help inside it.
+- **Counter sticks fly across the table** when a hand is paid: coloured
+  sticks thrown from each payer to the winner, landing with a wooden click
+  while the scores count up. A tap skips them.
+- **The Fishing button names the hand** you are fishing for. Tiles that win
+  only on your own draw are faded and marked *own draw only*.
+- **Clearer hints:** the hand sheet says when you need *one more* of a tile
+  you already hold, and which other tile would do instead.
+- **Bigger melds:** your own claimed sets get a second and third row instead
+  of shrinking.
+- **Scoring checked line by line against the book.** Some ordinary hands
+  now score differently (see below).
+- **Big Robert** is one card in the index of all hands, with both scorings.
+- A quieter **Goulash banner**; the explanation is in the first-game tip.
 
 ## Fixed thanks to your reports
 
-Thank you to everyone who sent a report. From the last round:
+Thank you for your report. From the last round:
 
-- *"Discards organised in front of each player give away too much."* You can
-  now play with one shared pile in the middle (Options › Discards).
-- *"Flower tiles: make the numbers bigger and the pictures recognisable."*
-  The flowers and seasons now look like a real set's: the traditional
-  pictures, with the number printed large on each tile.
-- *"Hard feels too easy."* We measured it: a lucky deal is normal, about
-  one game in three starts three tiles or fewer from Mah Jong. But Hard was
-  too slow; it now races to go out and is clearly stronger.
-- *"Goulash: let me rearrange during the passes, show what I received, and
-  no half-limit hands."* All three are in.
-- *"I won without declaring fishing" and "show who is fishing."* Neither
-  book asks for an announcement to win, so by default you still don't need
-  one; a table that wants it can turn on *Announce fishing to win*. Players
-  who announce now show a fish.
+- *"I should have got Mah Jong for Grand Sequence."* You were right. The two
+  extra tiles of Grand Sequence pair with tiles of the run, as the book's
+  picture shows, not a separate pair of any suit. That hand now wins, the
+  hints count it correctly, and the Fishing button says when a tile only
+  wins on your own draw.
 
 ## What works differently now
 
-- In a **Goulash**, a hand worth half the limit no longer wins, unless you
-  turn the rule off in Options. If the tiles also make another hand, they
-  score as that one.
-- **Hard** is noticeably tougher. Medium is still where you start.
-- **New game and Help** have moved from the menu into Options.
+- **Ordinary-hand scores:** a pung completed by a discard counts as exposed;
+  no double counts twice; East's first discard, the only-possible chow and
+  robbing a kong now earn their bonus; if your tiles can be read more than
+  one way, the best reading is paid.
+- **Grand Sequence** is easier to complete than before.
+- Options › *Dice and dealing* is now **Table animations**; Skip also skips
+  the counter sticks.
 
 ## What to try, and tell us
 
-- Play a few hands with **Discards: Pile**. Does the pile feel like a real
-  table? Can you still follow the game?
-- If a hand is drawn, try the **Goulash** passes: arranging, the teal tiles,
-  and whether the half-limit rule feels right.
-- Try **Hard**. Too hard now, or just right?
-- On a phone: is the single **large discard** easier to follow than the
-  whole round was?
-- Do you recognise every **flower and season** tile at a glance?
-- Tap a player's side of the table: is the **claims sheet** useful?
+- Win a few hands and watch the **counter sticks**. Fun, or too long?
+  Can you follow who paid whom?
+- When you are offered **Fishing**, does the button make clear which hand
+  and which tiles?
+- Check a few **scores** on the result card. Anything that looks wrong
+  against your own reckoning, please report it.
+- Claim three or four sets: do your **melds** stay easy to read?
 - Anything that broke, looked wrong or surprised you.
 
 ## How to report
@@ -114,14 +99,14 @@ as a message instead.
 
 <!-- whatsapp:start -->
 
-🀄 **Mah Jong test version alpha.7 is out!**
+🀄 **Mah Jong test version alpha.8 is out!**
 
 Play: https://int.mah-jong.workers.dev (reload once to update)
 
-New: discards in one shared pile like a real table (Options › Discards ›
-Pile), a sheet with everyone's claims (tap a player's side), a fish shows
-who is fishing, Goulash arranging with your received tiles marked, two new
-house rules, tougher Hard bots and real-set flower and season tiles. Thank you for your reports, most of this came from them!
+New: counter sticks fly across the table when a hand is paid, the Fishing
+button names your hand, clearer hints, bigger melds, and scoring checked
+line by line against the book. Grand Sequence now wins as it should, thanks
+to your report!
 
 What's new, what we fixed and what to try is in the attached guide. Found
 something odd? Options › Report a problem.
