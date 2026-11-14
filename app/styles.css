@@ -328,7 +328,7 @@ html.phone-frame .actions {
   }
 }
 
-/* The Goulash banner: over the middle of the table while tiles are exchanged. */
+/* The Goulash banner: a quiet note over the middle of the table while tiles are exchanged. */
 .goulash {
   position: fixed;
   z-index: 4;
@@ -336,55 +336,49 @@ html.phone-frame .actions {
   top: calc((100% - var(--hand-top, var(--strip))) / 2);
   transform: translate(-50%, -50%);
   box-sizing: border-box;
-  width: min(380px, calc(100% - 340px));
-  min-width: 290px;
+  width: min(300px, calc(100% - 340px));
+  min-width: 260px;
   padding: 10px 18px 12px;
   border-radius: 14px;
-  border: 2px solid var(--gold-2);
-  background: rgba(17, 25, 28, 0.93);
-  box-shadow: 0 0 0 5px rgba(229, 161, 47, 0.16), 0 14px 40px rgba(0, 0, 0, 0.6);
+  /* Near opaque, so the console under it never shows through; a gold edge and a dark ring set it apart from the felt. */
+  border: 1.5px solid var(--gold-2);
+  background: #151f25;
+  box-shadow: 0 0 0 5px rgba(8, 13, 15, 0.92), 0 14px 36px rgba(0, 0, 0, 0.6);
   text-align: center;
   pointer-events: none;
   animation: call-in 320ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
 }
+/* A wide screen (a laptop) has a larger table: the banner grows to cover the console beneath it. */
+@media (min-width: 1100px) {
+  .goulash {
+    width: clamp(340px, 26vw, 400px);
+    padding: clamp(20px, 2vw, 30px) 20px clamp(21px, 2.1vw, 31px);
+  }
+}
 .goulash p {
   margin: 0;
 }
-.goulash-kicker {
-  font-size: 12px;
-  color: var(--muted);
-}
 .goulash h2 {
-  margin: 0 0 2px;
+  margin: 0;
   font-style: italic;
   font-weight: 900;
-  font-size: 42px;
-  line-height: 1.05;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: clamp(20px, 2vw, 26px);
+  line-height: 1.15;
+  letter-spacing: 0.02em;
   color: var(--gold-1);
-  text-shadow: 0 2px 0 #9a5a07, 0 8px 24px rgba(0, 0, 0, 0.6);
-}
-.goulash-rule {
-  font-size: 12px;
-  line-height: 1.35;
-  color: var(--muted);
 }
 .goulash-steps {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  margin: 9px 0 3px;
+  gap: 5px;
+  margin: 3px 0 6px;
   font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--gold-1);
+  color: var(--muted);
 }
 .goulash-steps span {
-  width: 9px;
-  height: 9px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   border: 1.5px solid var(--gold-2);
 }
@@ -393,19 +387,18 @@ html.phone-frame .actions {
 }
 .goulash-steps span.now {
   background: var(--gold-1);
-  box-shadow: 0 0 6px var(--gold-1);
 }
 .goulash-steps span:last-of-type {
   margin-right: 4px;
 }
 .goulash-task {
-  font-size: 17px;
-  font-weight: 800;
+  font-size: clamp(15px, 1.3vw, 18px);
+  font-weight: 700;
   color: #fff;
 }
 .goulash-count {
   margin-top: 2px;
-  font-size: 13px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
