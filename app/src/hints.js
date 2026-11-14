@@ -63,10 +63,20 @@ export async function refreshHints(force = false) {
     hintsFor = null;
     return;
   }
+  // The panel is worked out when you have a decision to make (`force`), and
+  // then stays as it is while the bots play: it changes once per decision,
+  // not at every tile that passes. Only the first board of a game builds it
+  // unasked.
+  if (!force && hintsFor !== null && !panel.hidden) return;
   const player = state.payload.view.player;
   const melds = player.melds.map((meld) => meld.tiles.join()).join("/");
   const key = `${state.payload.game}|${player.hand.join()}|${melds}|${mine.join()}|${hintsOn}`;
   if (!force && key === hintsFor) return;
+  // A new position: what the panel showed so far is what the arrows compare with.
+  if (key !== hintsFor) {
+    previousChance = shownChance;
+    shownChance = new Map();
+  }
   hintsFor = key;
   try {
     // The places the pins leave are the suggestions'.
@@ -114,6 +124,120 @@ export function playWord(concealedOnly) {
   return concealedOnly ? "Concealed" : "Exposed";
 }
 
+/* ------------------------------------------------------------ the chance */
+
+/**
+ * The chance of completing a hand is shown as a band, never as a number: a
+ * player gets the gist of what can still be built (and what to give up)
+ * without fixing on percentages the estimate is not that precise about.
+ */
+
+/**
+ * Five bands of likelihood, each with its name and a shade of one warm
+ * colour (`--chance-<id>` in styles.css), dim for a long shot and bright for
+ * a hand that is very likely. The words describe the tiles, not the choice:
+ * a long shot at a limit hand is a fair play, and the panel never says
+ * otherwise. Lower bounds, likeliest first.
+ */
+const BANDS = [
+  { id: "very-likely", name: "Very likely", from: 0.8 },
+  { id: "likely", name: "Likely", from: 0.6 },
+  { id: "possible", name: "Possible", from: 0.4 },
+  { id: "unlikely", name: "Unlikely", from: 0.2 },
+  { id: "long-shot", name: "Long shot", from: 0 },
+];
+
+/** The band a chance falls in. */
+export function chanceBand(chance) {
+  return BANDS.find((band) => chance >= band.from) ?? BANDS[BANDS.length - 1];
+}
+
+/** A band's rank, 0 for a long shot up to 4 for very likely: the arrows compare ranks. */
+function bandRank(chance) {
+  return BANDS.length - 1 - BANDS.indexOf(chanceBand(chance));
+}
+
+/** The chance for a screen reader: "likely to complete", "a long shot to complete". */
+export function chanceWords(chance) {
+  const band = chanceBand(chance);
+  return band.id === "long-shot" ? "a long shot to complete" : `${band.name.toLowerCase()} to complete`;
+}
+
+/**
+ * The chance as a ring that fills clockwise from the top, in its band's
+ * colour. The band's name is always written beside it, so colour is never
+ * the only sign.
+ */
+export function chanceRing(chance) {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "0 0 16 16");
+  svg.setAttribute("class", "chance-ring");
+  svg.setAttribute("aria-hidden", "true");
+  const radius = 6;
+  const around = 2 * Math.PI * radius;
+  const track = document.createElementNS(ns, "circle");
+  track.setAttribute("class", "chance-track");
+  const fill = document.createElementNS(ns, "circle");
+  fill.setAttribute("class", "chance-fill");
+  for (const circle of [track, fill]) {
+    circle.setAttribute("cx", "8");
+    circle.setAttribute("cy", "8");
+    circle.setAttribute("r", String(radius));
+  }
+  const share = Math.max(0, Math.min(1, chance));
+  // Anything above nothing shows at least a sliver, so "under 1%" is not an empty ring.
+  const shown = share === 0 ? 0 : Math.max(share, 0.04);
+  fill.setAttribute("stroke-dasharray", `${(shown * around).toFixed(2)} ${around.toFixed(2)}`);
+  svg.classList.add(`chance-${chanceBand(share).id}`);
+  svg.append(track, fill);
+  return svg;
+}
+
+/**
+ * The ring and the band's name together (the hand's sheet, the index), with an arrow when the hand moved
+ * up or down a band since your previous decision (`trend`: bands moved).
+ */
+export function chanceBadge(chance, trend = 0) {
+  const badge = chanceMark(chance, trend);
+  const band = document.createElement("span");
+  band.className = "chance-band";
+  band.textContent = chanceBand(chance).name;
+  badge.insertBefore(band, badge.querySelector(".chance-trend"));
+  return badge;
+}
+
+/** The ring alone, with its arrow when the hand moved a band: the panel's row. */
+function chanceMark(chance, trend = 0) {
+  const mark = document.createElement("span");
+  mark.className = "chance";
+  mark.append(chanceRing(chance));
+  if (trend !== 0) {
+    const arrow = document.createElement("span");
+    arrow.className = trend > 0 ? "chance-trend chance-up" : "chance-trend chance-down";
+    arrow.setAttribute("aria-hidden", "true");
+    arrow.textContent = trend > 0 ? "\u25b2" : "\u25bc";
+    mark.append(arrow);
+  }
+  return mark;
+}
+
+/**
+ * Each hand's chance as the panel shows it now, and as it showed it at your
+ * previous decision: the arrows compare the two, so drawing the same
+ * position again (a pin, Hints on) keeps its arrows.
+ */
+let shownChance = new Map();
+let previousChance = new Map();
+
+/** How many bands `hand` moved since your previous decision. */
+function trendOf(hand) {
+  const key = `${state.payload?.game}|${hand.pattern}`;
+  shownChance.set(key, hand.chance);
+  const before = previousChance.get(key);
+  return before === undefined ? 0 : bandRank(hand.chance) - bandRank(before);
+}
+
 /** A drawing pin: the mark of a pinned hand. */
 export function pinIcon() {
   const ns = "http://www.w3.org/2000/svg";
@@ -136,17 +260,24 @@ function hintRow(hand, { name: label, pinned }) {
   row.type = "button";
   row.className = "closest-item";
   const away = hand === null;
+  const trend = away ? 0 : trendOf(hand);
+  const moved = trend === 0 ? "" : `, ${trend > 0 ? "up" : "down"} since your last move`;
   row.setAttribute(
     "aria-label",
     `${pinned ? "Pinned: " : ""}${label}${
-      away ? ", out of reach: more than six tiles away, or no longer possible with the tiles in sight or your exposed melds" : `, ${hand.concealedOnly ? "concealed, no exposed melds" : "exposed melds allowed"}`
+      away
+        ? ", out of reach: more than six tiles away, or no longer possible with the tiles in sight or your exposed melds"
+        : `, ${hand.away === 0 ? "complete" : chanceWords(hand.chance)}${moved}, ${hand.concealedOnly ? "concealed, no exposed melds" : "exposed melds allowed"}`
     }. Tap for details.`,
   );
+  // The chance leads the row as a ring alone, in its band's colour and filled
+  // as far as the chance goes: the panel is too narrow for the band's name,
+  // which the hand's sheet and a screen reader give.
   const name = document.createElement("span");
   name.className = "closest-name";
+  if (!away && hand.away > 0) name.append(chanceMark(hand.chance, trend));
   if (pinned) name.append(pinIcon());
   name.append(label);
-  // The same order as the hand's sheet: how it is played, how far it is, what it pays.
   const meta = document.createElement("span");
   meta.className = "closest-meta";
   const piece = (words, className) => {
@@ -158,10 +289,10 @@ function hintRow(hand, { name: label, pinned }) {
   if (away) {
     meta.append(piece("Out of reach"));
   } else {
+    // How it is played and what it pays; a complete hand says so first.
+    if (hand.away === 0) meta.append(piece("Complete", "closest-done"), piece("\u00b7"));
     meta.append(
       piece(playWord(hand.concealedOnly)),
-      piece("\u00b7"),
-      hand.away === 0 ? piece("Complete", "closest-done") : piece(`${hand.away} to go`),
       piece("\u00b7"),
       piece(hand.points === null ? "calculated" : hand.points.toLocaleString("en")),
     );
@@ -336,16 +467,36 @@ export function tileWords(key) {
 }
 
 /**
+ * A needed tile's chip with, under it, how many copies are still out of
+ * sight (in the wall or another player's hand): the evidence behind the
+ * chance. A tile whose count is not known shows the chip alone.
+ */
+function withLeft(key, left) {
+  const chip = faceChip(key);
+  if (left === undefined) return chip;
+  const stack = document.createElement("span");
+  stack.className = "need-tile";
+  const count = document.createElement("span");
+  count.className = "need-left";
+  count.textContent = String(left);
+  stack.append(chip, count);
+  stack.setAttribute("aria-label", `${tileWords(key)}, ${left} left`);
+  stack.setAttribute("role", "img");
+  return stack;
+}
+
+/**
  * The tiles still needed, one chip each. Where another tile would do as well
  * (a 4 where the 1 completes a pair) it follows the chip after "or".
  */
 function needChips(into, progress) {
   const standIns = new Map((progress.instead ?? []).map((entry) => [entry.need, entry.or]));
   const shown = new Set();
+  const unseen = progress.unseen ?? {};
   for (const key of progress.need) {
     const group = document.createElement("span");
     group.className = "need-pick";
-    group.append(faceChip(key));
+    group.append(withLeft(key, unseen[key]));
     const or = standIns.get(key);
     if (or !== undefined && !shown.has(key)) {
       shown.add(key);
@@ -353,7 +504,7 @@ function needChips(into, progress) {
       word.className = "need-or";
       word.textContent = "or";
       group.append(word);
-      for (const other of or) group.append(faceChip(other));
+      for (const other of or) group.append(withLeft(other, unseen[other]));
       group.setAttribute("role", "group");
       group.setAttribute("aria-label", `${tileWords(key)} or ${or.map(tileWords).join(" or ")}`);
     }
@@ -445,8 +596,9 @@ export async function openHandDetail(pattern, progress = null) {
   // How it is played, how far you are, and last what it pays: the panel's order.
   if (detail.requiresSelfDrawn) facts.append(factChip(null, "Self-drawn only"));
   if (progress !== null) {
-    const far = factChip(null, progress.away === 0 ? "Complete" : `${progress.away} to go`);
+    const far = factChip(null, progress.away === 0 ? "Complete" : chanceBadge(progress.chance));
     if (progress.away === 0) far.classList.add("detail-done");
+    else far.setAttribute("aria-label", chanceWords(progress.chance));
     facts.append(far);
   }
   const concealedWorth = worth(detail.concealedTier, detail.concealedPoints);
@@ -491,6 +643,12 @@ export async function openHandDetail(pattern, progress = null) {
     heading.textContent = progress.away === 0 ? "Your hand" : "Tiles you still need";
     yours.append(heading, need);
     if (progress.away > 0) {
+      const left = document.createElement("p");
+      left.className = "detail-muted need-note";
+      left.textContent =
+        "The number under each tile: copies you have not seen yet, in the wall or another player's hand. " +
+        "The chance reads them, and every claim this hand may make.";
+      yours.append(left);
       const note = anotherNote(progress);
       if (note !== null) yours.append(note);
     }

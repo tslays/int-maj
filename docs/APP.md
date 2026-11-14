@@ -251,9 +251,22 @@ Mah Jong, reshuffle and the Goulash exchange appear as buttons when the engine
 offers them. The table is landscape only.
 
 The panel at the top right lists the closest hands: up to three catalogue
-hands your tiles are nearest to. A row and the hand's sheet give the same facts
-in the same order: the hand's name, how it is played (Concealed or Exposed),
-how many tiles you are from it ("3 to go", "Complete"), and last what it pays. It is asked for when your own tiles change and at
+hands you are likeliest to complete, likeliest first. A row gives the hand's
+name, led by your chance of completing it, then how it is played (Concealed
+or Exposed), and last what it pays. The chance is never a number: a small
+ring that fills clockwise and brightens in one warm colour, dim to bright -
+in the panel the ring alone, before the name (the band's name does not fit a
+phone's panel; the sheet, the index and a screen reader say it) - in five
+bands: Very likely (80 % and up), Likely (60), Possible (40), Unlikely (20)
+and Long shot; or "Complete". The words describe the tiles, never the
+choice: no red or green, no grade, since a long shot at a limit hand is a
+fair play and what is likely changes from one turn to the next. A small
+arrow in the same quiet tone marks a hand that moved a band since your
+previous decision. The panel is worked out once per
+decision (your turn to discard, a claim offered to you) and stays put while
+the bots play. The chance is worked out from what you can see only
+(`src/core/game/odds.ts`, `docs/HINT-ODDS.md`): it is the chance of finishing
+the hand before the wall runs out if you play only for it from now on. It is asked for at
 each of your decisions, and hides on the result card. The menu's Hints button
 turns it off (remembered on the device).
 
@@ -262,8 +275,8 @@ button, an icon at the top right beside the close cross (gold and filled while
 pinned; a fourth pin is refused with a one-line message). A pinned hand takes the panel's first place, the next pin the
 second, a third pin the third; what the planner suggests fills the places the
 pins leave (`GET /api/closest?pins=a,b,c`, `closestWithPins` in
-`src/core/game/closest.ts`). A pinned row carries a pin mark and says how many
-tiles you are from the hand, or "Out of reach" when it is more than six away
+`src/core/game/closest.ts`). A pinned row carries a pin mark and gives your
+chance of completing the hand, or "Out of reach" when it is more than six away
 or can no longer be made (the copies are in sight, or an exposed meld rules
 out a concealed-only hand). Unpinning gives the place back: the pins behind it
 move up and the suggestions return. At most three hands can be pinned (the
@@ -277,7 +290,8 @@ The panel is deliberately small and quiet (176px, muted colours, no tile
 chips) so it never competes with the table, even on a phone. Each row is the
 hand's name and one line in the books' own words and order: how it is played
 ("Concealed" when any exposed meld rules the hand out, as for most special
-hands; "Exposed" when exposed melds are allowed), "n to go", and last its value.
+hands; "Exposed" when exposed melds are allowed), the chance ring and its
+band, and last its value.
 No icons: the Illustrated prints "Concealed" or "Exposed" under each hand and
 the Companion prints "LIMIT (Concealed) HALF LIMIT (Exposed)", so players
 already know the words. Tapping a row opens the hand's sheet
@@ -285,7 +299,7 @@ already know the words. Tapping a row opens the hand's sheet
 wide, one column): the name with the pin and the close cross at the right; one
 row of chips - the play chip (the word "Concealed" or "Exposed"; tapping it opens the explanation of what it means for calling
 discards and self-drawn wins, which a player needs once), "Self-drawn only",
-how far your hand is ("3 to go" or "Complete") when you have the hand in play
+your chance of completing it (the ring and its band, or "Complete") when you have the hand in play
 and, last, what it pays (one value, or concealed and exposed when they
 differ); the book's sample hand first, in its own dashed panel headed "Sample hand from the
 book" (or "Sample hands from the books"), each picture followed below by a pill
@@ -324,9 +338,11 @@ applies. The rail on the left filters by:
 
 The search box matches every typed word against the name, composition,
 headings, value and book of a hand ("dragon pairs", "1-9 wind"). While a hand
-is being played, cards within reach of your tiles carry "n to go"
-(`/api/closest?limit=100`), the sheet lists the tiles still needed, and
-**Order** can sort the nearest hands first.
+is being played, cards within reach of your tiles carry your chance of
+completing them (`/api/closest?limit=100`; hands past the panel's few get a
+quicker, coarser estimate), the sheet lists the tiles still needed with, under
+each, how many copies you have not seen yet, and **Order** can sort the
+likeliest hands first.
 
 The **Fishing** button shows the tiles you wait on. A tile that wins only when
 you draw it yourself (a wait on a self-drawn-only hand such as Buried Treasure,
