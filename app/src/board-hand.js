@@ -7,7 +7,7 @@
 
 import * as THREE from "three";
 import { W, makeTile, markReceived, tileOrder } from "./tiles.js";
-import { HAND_LIFT, handTileStart } from "./layout.js";
+import { HAND_DRAWN_GAP, HAND_GAP, HAND_LIFT, handTileStart, handWidth } from "./layout.js";
 import { pace } from "./pace.js";
 import { sound } from "./sound.js";
 import { animate, easeOutCubic, handCamera, renderer, requestRender, setHandRowWidth, tween, viewport } from "./stage.js";
@@ -88,19 +88,16 @@ export const handMethods = {
 
   /** Positions of the hand tiles, with the drawn tile set apart. */
   handPlaces() {
-    const gap = 0.04;
-    const drawnGap = 0.45;
     const plain = this.hand.filter((entry) => !entry.drawn);
-    const handWidth = plain.length * (W + gap) - gap + drawnGap + W;
-    const total = handWidth;
+    const total = handWidth(plain.length);
     let x = -total / 2 + W / 2;
     const places = new Map();
     for (const entry of plain) {
       places.set(entry, x);
-      x += W + gap;
+      x += W + HAND_GAP;
     }
     const drawn = this.hand.find((entry) => entry.drawn);
-    if (drawn) places.set(drawn, x - gap + drawnGap);
+    if (drawn) places.set(drawn, x - HAND_GAP + HAND_DRAWN_GAP);
     return { places, total };
   },
 

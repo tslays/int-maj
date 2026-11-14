@@ -14,12 +14,12 @@
 
 import * as THREE from "three";
 import { D, H, W, makeTile, roundedRect, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, TABLE } from "./tiles.js";
-import { discardSlot, latestPlate, LATEST_MARGIN, meldLayout, pondPad } from "./layout.js";
+import { discardSlot, handTiles, latestPlate, LATEST_MARGIN, meldLayout, pondPad } from "./layout.js";
 import { createPile, PILE, pileReach } from "./pile.js";
 import { discardLayout } from "./discard-layout.js";
 import { pace } from "./pace.js";
 import { sound } from "./sound.js";
-import { animate, easeInOutCubic, easeOutBack, easeOutCubic, handScene, onViewChange, requestRender, setPondCounts, setPondReach, tableScene, tween } from "./stage.js";
+import { animate, easeInOutCubic, easeOutBack, easeOutCubic, handScene, handLeftOf, onViewChange, requestRender, setPondCounts, setPondReach, tableScene, tween } from "./stage.js";
 import { handMethods } from "./board-hand.js";
 import { wallMethods } from "./board-wall.js";
 import { roundMethods } from "./board-round.js";
@@ -135,7 +135,10 @@ export class Board {
     this.layerShownAt = null; // when the large face now up appeared (board-round.js)
     this.layerHolds = []; // how long the last two stayed up
     this.layerTimer = 0;
-    onViewChange(() => this.refreshRound());
+    onViewChange(() => {
+      this.refreshRound();
+      this.refreshOwnMelds();
+    });
     largeDiscards.onChange(() => this.refreshRound());
     // The centre pile (#122): where each discard lies, per seat, in the seat's own frame.
     this.pileSim = null;
@@ -599,7 +602,10 @@ export class Board {
     const groups = this.exposedGroups(entry);
     const rel = this.rel(entry.seat);
     const fishing = discardLayout.pile && rel !== 0 && payload.view.fishing.some((item) => item.seat === entry.seat);
-    const key = JSON.stringify([groups, fishing, this.wall?.extent[rel] ?? WALL_STACKS]);
+    // Your own lane may hang rows below its camera line, on the felt your hand leaves free: how far depends on the hand you hold
+    // after this many claims (not the tiles in it this moment, which would shift the melds with every draw) and on the screen.
+    const handLeft = rel === 0 ? Math.round(handLeftOf(handTiles(entry.melds.length)) * 10) / 10 : undefined;
+    const key = JSON.stringify([groups, fishing, this.wall?.extent[rel] ?? WALL_STACKS, handLeft]);
     if (key === state.meldsKey) return [];
     const fishNew = fishing && !state.fishShown;
     state.fishShown = fishing;
@@ -612,7 +618,7 @@ export class Board {
     const kongs = entry.melds.flatMap((meld, index) => (meld.kind === "kong" ? [index + offset] : []));
     const sizes = groups.map((group) => group.length);
     if (fishing) sizes.push(2); // the fish takes two tiles' room
-    const { scale, tiles } = meldLayout(sizes, this.wall?.extent[rel] ?? WALL_STACKS, entry.handCount, { bonusFirst, rel, kongs });
+    const { scale, tiles } = meldLayout(sizes, this.wall?.extent[rel] ?? WALL_STACKS, entry.handCount, { bonusFirst, rel, kongs, ...(handLeft === undefined ? {} : { handLeft }) });
     for (const place of tiles) {
       if (place.group === groups.length) {
         if (place.index === 1) continue;
@@ -642,6 +648,14 @@ export class Board {
     // The dropping tiles first meet the felt at about 0.45 of their 0.3 s.
     if (fresh && groups.length > 0) sound.cue("meld", { delay: pace.scale(0.135), count: groups.at(-1).length, ...this.ear(entry.seat) });
     return work;
+  }
+
+  /** The screen changed shape: your hand reaches over a different part of the felt, so your lane may need laying again. */
+  refreshOwnMelds() {
+    const payload = this.lastPayload;
+    if (payload === null || this.handId === null) return;
+    const entry = payload.table.find((item) => item.seat === this.me);
+    if (entry !== undefined && this.seats[entry.seat] !== undefined) this.reconcileMelds(entry, false, payload);
   }
 
   /** The centre of every laid-out meld and bonus tile, in table space, with its seat's `rel` (for the claims tap). */

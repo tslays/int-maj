@@ -185,15 +185,51 @@ const NEAR_CORNER_INSET = 2.8;
 const LANE_FAR = TABLE.TABLE_HALF - 0.2;
 const LANE_END = TABLE.TABLE_HALF - 1.6;
 
-// Your own lane may take a second row, lying nearer the pond than the first, in
-// the felt left of your wall. Its far edge stays clear of your own fourth
-// discard row (the lowest thing in the pond), its near edge is the camera's
-// line, the same as a full-size single row: so no table space is added.
+// Your own lane may take more rows. Their space comes from two places:
+//
+//  1. Above the camera line (the hand strip's top edge, which is where a
+//     full-size single row ends): rows stack up towards the pond. A second
+//     row's far edge stays clear of your own fourth discard row. A third
+//     reaches further, because that discard row runs to your right and never
+//     comes near the lane's left end: what limits it is the left-hand seat's
+//     wall (its far end is `wallSlotX(0) + W / 2`) and that seat's pond, whose
+//     fourth row begins at x = -OWN_LANE_FAR: so a row that high stops short
+//     of that line and clears the wall by a margin.
+//
+//  2. Below the camera line: the felt between the lane and the rail, which
+//     the hand strip covers only as far as the hand reaches. Every claim takes
+//     three tiles from the hand (`handTiles`), so after one, two, three and
+//     four claims the hand has 11, 8, 5 and 2 tiles on your turn, and its left
+//     end leaves more of that felt free on the left. The screen decides how far
+//     (a portrait phone's hand reaches about half as far as a landscape
+//     phone's), so the app measures it and passes it as `handLeft`: a row
+//     lying below the camera line must end before it.
 const OWN_LANE_NEAR = WALL_R + LANE_OUT + (H * 0.9) / 2;
+export { OWN_LANE_NEAR };
 const OWN_LANE_FAR = TABLE.DISCARD_Z + STEP_Z * (FULL_ROWS + 1) + 0.06;
+const THIRD_ROW_FAR = wallSlotX(0) + W / 2 + 0.3;
+const THIRD_ROW_TOP_END = -OWN_LANE_FAR;
+const LANE_LOW = TABLE.TABLE_HALF - 0.6; // the lowest a row's near edge may lie
+const HAND_MARGIN = 0.5; // a row below the camera line keeps this far from the hand's end
+const WALL_FRONT = WALL_R + H / 2 + 0.1; // rows below this are no longer beside the wall
 const ROW_GAP = 0.1;
-// How much larger the tiles must get before a second row is worth starting.
-const TWO_ROW_GAIN = 0.1;
+const MAX_LANE_ROWS = 3;
+// How much larger the tiles must get before another row is worth starting.
+const EXTRA_ROW_GAIN = 0.1;
+
+/** Tiles in your hand on your turn after `claims` melds: 14, and three fewer for each claim. */
+export function handTiles(claims) {
+  return 14 - 3 * claims;
+}
+
+/** The gap between hand tiles, and the wider one before the tile just drawn (board-hand.js lays the hand out with them). */
+export const HAND_GAP = 0.04;
+export const HAND_DRAWN_GAP = 0.45;
+
+/** The width of the hand row for `tiles` tiles, with the room the drawn tile takes. */
+export function handWidth(tiles) {
+  return tiles * (W + HAND_GAP) - HAND_GAP + HAND_DRAWN_GAP + W;
+}
 
 /**
  * Lay a seat's exposed groups along its wall's lane. With `bonusFirst` the
@@ -205,14 +241,18 @@ const TWO_ROW_GAIN = 0.1;
  * Everything lies in one row, flowers and melds together; when the lane is
  * short the tiles shrink to fit. Your own lane (rel 0) is the exception: while
  * the wall leaves it short, a group that no longer fits goes to a second row
- * beneath, whenever that keeps the tiles larger than one row would. A group
- * is never split across rows. Returns the scale and each tile's centre.
+ * beneath, and then a third, whenever each keeps the tiles at least
+ * `EXTRA_ROW_GAIN` larger than fewer rows would. Those rows may also hang
+ * below the camera line, onto the felt the hand leaves free: `handLeft` is the
+ * table x where the left end of your hand meets that line (none given means the
+ * hand is taken to cover all of it). A group is never split across rows.
+ * Returns the scale and each tile's centre.
  *
  * A kong (its group index listed in `kongs`) is a pung with the fourth tile
  * lying on top of the middle one: it takes the room of three tiles, and that
  * tile comes back with `level: 1`.
  */
-export function meldLayout(groupSizes, wallExtent, handCount, { bonusFirst = false, rel = 0, kongs = [] } = {}) {
+export function meldLayout(groupSizes, wallExtent, handCount, { bonusFirst = false, rel = 0, kongs = [], handLeft = -Infinity } = {}) {
   // The seat on your right starts in the corner beside your own hand, which
   // your hand strip covers, so its lane begins a little further along.
   const laneStart = rel === 1 ? MELD_LANE_X0 + NEAR_CORNER_INSET : MELD_LANE_X0;
@@ -220,13 +260,28 @@ export function meldLayout(groupSizes, wallExtent, handCount, { bonusFirst = fal
   // three lie against the rail, outside their walls, so they run the rail's
   // length, up to the corner where the next seat's lane begins.
   const rowZero = rel !== 0 ? LANE_END : wallExtent > 0 ? wallSlotX(wallExtent - 1) - W / 2 - 0.25 : wallSlotX(0) + W / 2;
-  const place = (scale, rows) => {
+  // `drop` is how many rows lie below the camera line: 0 stacks them up from it.
+  const place = (scale, rows, drop) => {
     const tileStep = (W + GAP) * scale;
     const groupGap = 0.3 * scale;
+    const pitch = H * scale + ROW_GAP;
     // Your own lane stays by the wall, above your hand strip; the others lie against the rail.
     const singleZ = rel === 0 ? WALL_R + LANE_OUT : LANE_FAR - (H * scale) / 2;
-    const lowerZ = OWN_LANE_NEAR - (H * scale) / 2;
-    const rowZs = rows === 1 ? [singleZ] : [lowerZ - H * scale - ROW_GAP, lowerZ];
+    // The first row lies furthest from the camera, the last `drop` rows below the line.
+    const lastZ = OWN_LANE_NEAR - (H * scale) / 2 + drop * pitch;
+    const rowZs = rows === 1 ? [singleZ] : Array.from({ length: rows }, (_, row) => lastZ - (rows - 1 - row) * pitch);
+    // Where each row must end: by the wall beside it, short of the left seat's
+    // pond when it reaches up that far, and short of the hand when it lies below the line.
+    const rowEnds = rowZs.map((z) => {
+      if (rows === 1) return rowZero;
+      const top = z - (H * scale) / 2;
+      const bottom = z + (H * scale) / 2;
+      let end = top < WALL_FRONT ? rowZero : Infinity;
+      // Only a third row reaches up past your own fourth discard row; two rows never do.
+      if (top < OWN_LANE_FAR - 1e-9) end = rows < 3 || top < THIRD_ROW_FAR - 1e-9 ? -Infinity : Math.min(end, THIRD_ROW_TOP_END);
+      if (bottom > OWN_LANE_NEAR + 1e-9) end = bottom > LANE_LOW + 1e-9 ? -Infinity : Math.min(end, handLeft - HAND_MARGIN);
+      return end;
+    });
     const tiles = [];
     let row = 0;
     let x = laneStart;
@@ -235,13 +290,13 @@ export function meldLayout(groupSizes, wallExtent, handCount, { bonusFirst = fal
       const stacked = kongs.includes(group) && size === 4;
       const footprint = stacked ? 3 : size;
       let end = x + footprint * tileStep - GAP * scale;
-      if (end > rowZero && x > laneStart && row + 1 < rows) {
+      if (end > rowEnds[row] && x > laneStart && row + 1 < rows) {
         // This group would not fit on the row: it starts the next one.
         row += 1;
         x = laneStart;
         end = x + footprint * tileStep - GAP * scale;
       }
-      if (end > rowZero) fits = false;
+      if (end > rowEnds[row]) fits = false;
       for (let index = 0; index < size; index++) {
         const level = stacked && index === 3 ? 1 : 0;
         const column = level === 1 ? 1 : index;
@@ -249,21 +304,27 @@ export function meldLayout(groupSizes, wallExtent, handCount, { bonusFirst = fal
       }
       x = end + (bonusFirst && group === 0 ? 3 * groupGap : groupGap);
     });
-    return fits ? { scale, tiles } : null;
+    // A layout uses every row it claims: one with an empty row is a layout with fewer rows.
+    return fits && row + 1 === rows ? { scale, tiles } : null;
   };
-  const largest = (rows) => {
+  const largest = (rows, drop) => {
     for (let scale = 0.9; scale >= 0.1; scale -= 0.02) {
-      if (rows === 2 && 2 * H * scale + ROW_GAP > OWN_LANE_NEAR - OWN_LANE_FAR) continue;
-      const laid = place(scale, rows);
+      const laid = place(scale, rows, drop);
       if (laid !== null) return laid;
     }
     return null;
   };
-  const single = largest(1);
-  // The second row only starts when it clearly helps: a row that merely
-  // squeezes a few per cent more would shift the whole lane for nothing.
-  const double = rel === 0 && (single === null || single.scale < 0.9 - TWO_ROW_GAIN) ? largest(2) : null;
-  const laid = double !== null && (single === null || double.scale >= single.scale + TWO_ROW_GAIN) ? double : single;
+  let laid = largest(1, 0);
+  // Another row, or a row lower down, only starts when it clearly helps: one
+  // that merely squeezes a few per cent more would shift the whole lane for nothing.
+  if (rel === 0) {
+    for (let rows = 2; rows <= MAX_LANE_ROWS; rows++) {
+      for (let drop = 0; drop <= rows; drop++) {
+        const more = largest(rows, drop);
+        if (more !== null && (laid === null || more.scale >= laid.scale + EXTRA_ROW_GAIN)) laid = more;
+      }
+    }
+  }
   if (laid === null) throw new Error(`meld lane cannot hold groups of ${groupSizes.join(", ")}`);
   return laid;
 }
