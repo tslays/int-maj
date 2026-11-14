@@ -142,12 +142,12 @@ entries + 3 missing primary hands).
 | Table entry | Name | Primary hand | Page |
 |---|---|---|---:|
 | `wriggly-snake` | Wriggly Snake | 10 | 38 |
-| `all-pair` | All Pair | 4 | 34 |
+| `all-pair` | All Pair | 4 | 35 |
 | `run-pung-pair` | Run, Pung & Pair | 6 | 36 |
 | `gates-of-heaven` | Gates of Heaven | 5 | 36 |
 | `hachi-ban` | Hachi Ban | 48 | 57 |
-| `five-odd-honours` | Five Odd Honours | 47 | 56 |
-| `dragons-tail` | Dragon's Tail (1 & 2) | 36 | 52 |
+| `five-odd-honours` | Five Odd Honours | 47 | 57 |
+| `dragons-tail` | Dragon's Tail | 36 | 52 |
 | `gretas-garden` | Greta's Garden | 21 | 43 |
 | `gretas-dragon` | Greta's Dragon | 22 | 43 |
 | `red-lantern` | Red Lantern | 31 | 48 |
@@ -157,8 +157,8 @@ entries + 3 missing primary hands).
 | `chow-mein` | Chow Mien | 50 | 58 |
 | `knitting` | Knitting | 8 | 37 |
 | `triple-knitting` | Triple Knitting | 9 | 37 |
-| `all-pair-honours` | All Pair Honours | 13 | 38 |
-| `dragons-breath` | Dragon's Breath | 37 | 53 |
+| `all-pair-honours` | All Pair Honours | 13 | 39 |
+| `dragons-breath` | Dragon's Breath | 37 | 52 |
 | `windfall` | Windfall | 38 | 53 |
 | `windy-ones` | Windy Ones | 19 | 42 |
 | `windy-nines` | Windy Nines | 20 | 42 |
@@ -166,17 +166,17 @@ entries + 3 missing primary hands).
 | `green-jade` | Green Jade | 44 | 56 |
 | `red-coral` | Red Coral | 45 | 56 |
 | `white-opal` | White Opal | 46 | 56 |
-| `imperial-jade` | Imperial Jade | 25 | 44 |
-| `lily-of-the-valley` | Lily of the Valley | 26 | 44 |
+| `imperial-jade` | Imperial Jade | 25 | 45 |
+| `lily-of-the-valley` | Lily of the Valley | 26 | 45 |
 | `ruby-jade` | Ruby Jade | 28 | 46 |
-| `red-lily` | Red Lily | 30 | 46 |
-| `royal-ruby` | Royal Ruby | 29 | 46 |
-| `unique-wonder` | Unique Wonder | 12 | 38 |
+| `red-lily` | Red Lily | 30 | 47 |
+| `royal-ruby` | Royal Ruby | 29 | 47 |
+| `unique-wonder` | Unique Wonder | 12 | 39 |
 | `windy-dragons` | Windy Dragons | 32 | 48 |
 | `all-winds-and-dragons` | All Winds and Dragons | 33 | 48 |
 | `heads-and-tails` | Heads and Tails | 15 | 40 |
-| `heavenly-twins` | Heavenly Twins | 3 | 34 |
-| `dragonfly` | Dragonfly | 17 | 40 |
+| `heavenly-twins` | Heavenly Twins | 3 | 35 |
+| `dragonfly` | Dragonfly | 17 | 41 |
 | `three-sisters` | Three Sisters | 43 | 55 |
 | `seven-brothers` | Seven Brothers | 42 | 55 |
 
@@ -191,7 +191,7 @@ citations (p. 9); the primary pages are 36 and 36.
 |---|---|---|---|---|
 | `ordinary-mahjong` | 1 / p. 34 | Score: "See score-sheet, pp. 24 and 25". Name ORDINARY HAND. | `tier: "calculate"`, `exposedTier: "calculate"`, null points; cites p. 42. | Keep the composition. Replace the flat `calculate` placeholder with the ground-score + doubles path (AUDIT A1); retitle/cite p. 34. |
 | `purity-hand` | 2 / p. 34 | Score: "THREE DOUBLES PLUS EXTRAS (see score-sheet)". | `calculate`/`calculate`. | Keep the composition (one suit, no honours, four pungs/kongs or three plus a chow). Score is a doubling hand, not a flat null. |
-| `all-honour-hand` | 14 / p. 38 | Score: "THREE DOUBLES PLUS EXTRAS (see score-sheet)". A Pair of Honours; this book classes terminals as honours (p. 6, p. 30). | `calculate`/`calculate`. | Score is a doubling hand, not a flat null. Composition matches (four pungs/kongs of terminals/honours, pair of terminals or honours). |
+| `all-honour-hand` | 14 / p. 39 | Score: "THREE DOUBLES PLUS EXTRAS (see score-sheet)". A Pair of Honours; this book classes terminals as honours (p. 6, p. 30). | `calculate`/`calculate`. | Score is a doubling hand, not a flat null. Composition matches (four pungs/kongs of terminals/honours, pair of terminals or honours). |
 | `three-great-scholars` | 34 / p. 49 | LIMIT. "A limit is scored for any hand containing the Three Great Scholars" (pungs of all three dragons). | `middle`/`middle` (1500). | Change both tiers to `limit`; the all-dragon-pungs rule is also a global limit condition on any other hand containing them. Composition matches. |
 | `four-blessings` | 35 / p. 49 | LIMIT. "A limit is scored for any hand containing Pungs of each Wind." | `middle`/`middle` (1500). | Change both tiers to `limit`; the all-wind-pungs rule is also a global limit condition. Composition matches. |
 | `civil-war` | 39 / p. 53 | DOUBLE LIMIT. | `middle`/`middle` (1500). | Change both tiers to `double`. Composition matches (NNN, SSS, 1-8-6-1 one suit, 1-8-6-5 another). |
@@ -230,7 +230,7 @@ table as the supplement; none is deleted.
 | `dragons-teeth` | Dragon's Teeth | Red/White dragon pungs + runs. |
 | `yin-yang` | Yin Yang | Fixed chow/pair shape. |
 | `big-robert` | Big Robert | Four-tile runs in each suit, same numbers. |
-| `big-robert-mixed` | Big Robert (mixed numbers) | Half-limit variant of Big Robert. |
+| `big-robert-mixed` | Big Robert | Half-limit variant of Big Robert. |
 | `moon-at-bottom-of-well` | Moon at Bottom of Well | Four Circle chows + pair. |
 | `three-philosophers` | Three Philosophers | Three suit chows + mixed chow + pair. |
 | `crazy-chows` | Crazy Chows | Four mixed chows + mixed pair. |

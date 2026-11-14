@@ -158,7 +158,8 @@ describe("table API", () => {
       "/api/hands",
     );
     assert.equal(index.status, 200);
-    assert.equal(index.body.hands.length, 89);
+    // 89 catalogue entries; Big Robert's two scorings share one card.
+    assert.equal(index.body.hands.length, 88);
     assert.ok(index.body.groups.some((group) => group.id === "pairs" && group.hands.includes("knitting")));
     assert.ok(index.body.hands.every((hand) => hand.example.every((key) => TILE_KEY.test(key))));
   });
