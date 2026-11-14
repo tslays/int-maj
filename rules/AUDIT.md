@@ -200,7 +200,7 @@ table as the supplement; none is deleted.
 | `dragons-teeth` | Dragon's Teeth | Red/White dragon pungs + runs. |
 | `yin-yang` | Yin Yang | Fixed chow/pair shape. |
 | `big-robert` | Big Robert | Four-tile runs in each suit, same numbers. |
-| `big-robert-mixed` | Mixed Big Robert | Half-limit variant of Big Robert. |
+| `big-robert-mixed` | Big Robert | Half-limit variant of Big Robert. |
 | `moon-at-bottom-of-well` | Moon at Bottom of Well | Four Circle chows + pair. |
 | `three-philosophers` | Three Philosophers | Three suit chows + mixed chow + pair. |
 | `crazy-chows` | Crazy Chows | Four mixed chows + mixed pair. |

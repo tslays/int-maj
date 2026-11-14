@@ -825,7 +825,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "big-robert-mixed",
-    name: "Mixed Big Robert",
+    name: "Big Robert",
     pages: { illustrated: [], companion: [14] },
     category: "run",
     tier: "half",
