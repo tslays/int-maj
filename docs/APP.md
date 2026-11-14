@@ -253,12 +253,16 @@ offers them. The table is landscape only.
 The panel at the top right lists the closest hands: up to three catalogue
 hands you are likeliest to complete, likeliest first. A row gives the hand's
 name, then your chance of completing it (a small ring that fills clockwise,
-grey to amber to gold, with the percentage beside it, or "Complete"), how it
-is played (Concealed or Exposed), and last what it pays. An arrow (up or
-down) marks a chance that moved ten points or more since the panel last
-showed it. The chance is worked out from what you can see only
+with the percentage beside it, or "Complete"), how it is played (Concealed or
+Exposed), and last what it pays. The ring's colour is the chance's band, in
+muted tones: excellent (80 % and up, green), very good (60), good (40),
+average (20) and bad (below 20, red); the hand's sheet also names the band.
+A small arrow, green up or red down, marks a chance that moved ten points or
+more since your previous decision. The panel is worked out once per
+decision (your turn to discard, a claim offered to you) and stays put while
+the bots play. The chance is worked out from what you can see only
 (`src/core/game/odds.ts`, `docs/HINT-ODDS.md`): it is the chance of finishing
-the hand before the wall runs out if you play only for it from now on. It is asked for when your own tiles change and at
+the hand before the wall runs out if you play only for it from now on. It is asked for at
 each of your decisions, and hides on the result card. The menu's Hints button
 turns it off (remembered on the device).
 

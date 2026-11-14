@@ -15,6 +15,12 @@
   --blue-2: #2d7fd2;
   --silver-1: #f3f6f8;
   --silver-2: #a6b2bb;
+  /* The five bands of a hand's chance, muted so they inform without shouting. */
+  --chance-excellent: #6fbf8a;
+  --chance-very-good: #a4c97a;
+  --chance-good: #d9c77a;
+  --chance-average: #d9a066;
+  --chance-bad: #c9776b;
   --font: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
   --safe-l: max(12px, env(safe-area-inset-left));
   --safe-r: max(12px, env(safe-area-inset-right));
@@ -923,15 +929,38 @@ html.pond-zoom .act-claim {
 .chance-fill {
   stroke-linecap: round;
 }
+.chance-excellent .chance-fill {
+  stroke: var(--chance-excellent);
+}
+.chance-very-good .chance-fill {
+  stroke: var(--chance-very-good);
+}
+.chance-good .chance-fill {
+  stroke: var(--chance-good);
+}
+.chance-average .chance-fill {
+  stroke: var(--chance-average);
+}
+.chance-bad .chance-fill {
+  stroke: var(--chance-bad);
+}
+/* The band's name, in the hand's sheet only: quiet beside the percentage. */
+.chance-band {
+  margin-left: 3px;
+  color: var(--muted);
+  font-weight: 600;
+}
+/* Small and soft: a hint of direction, not an alarm. */
 .chance-trend {
-  font-size: 8px;
+  font-size: 7px;
   line-height: 1;
+  opacity: 0.85;
 }
 .chance-up {
-  color: #8fd694;
+  color: var(--chance-excellent);
 }
 .chance-down {
-  color: #f08a7a;
+  color: var(--chance-bad);
 }
 .detail-fact .chance-ring,
 .index-away .chance-ring {
