@@ -257,13 +257,10 @@ function stickChips(points) {
   for (const value of sticksFor(points - (points % 100))) {
     const chip = document.createElement("span");
     chip.className = `stick-chip stick-${stickColor(value)}`;
-    chip.title = fmtValue(value);
     chips.append(chip);
   }
   return chips;
 }
-
-const fmtValue = (value) => `${value.toLocaleString("en")} counter`;
 
 /**
  * A quiet text link under the main button: play this hand again from its
