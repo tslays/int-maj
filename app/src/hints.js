@@ -94,6 +94,21 @@ export function worth(tier, points) {
   return points === null ? TIER_LABEL[tier] : `${TIER_LABEL[tier]} · ${points.toLocaleString("en")}`;
 }
 
+/** Each scoring of a hand, one line apiece: what it pays and when (`readings` from the hand index). */
+export function readingList(readings) {
+  const list = document.createElement("span");
+  list.className = "reading-list";
+  for (const reading of readings) {
+    const line = document.createElement("span");
+    line.className = "reading-line";
+    const value = document.createElement("strong");
+    value.textContent = worth(reading.concealedTier, reading.concealedPoints);
+    line.append(value, ` ${reading.scoringWhen}`);
+    list.append(line);
+  }
+  return list;
+}
+
 /** The book's words for how a hand may be played: Concealed, or Exposed (melds may be called). */
 export function playWord(concealedOnly) {
   return concealedOnly ? "Concealed" : "Exposed";
@@ -391,11 +406,15 @@ export async function openHandDetail(pattern, progress = null) {
   }
   const concealedWorth = worth(detail.concealedTier, detail.concealedPoints);
   const exposedWorth = detail.concealedOnly ? null : worth(detail.exposedTier, detail.exposedPoints);
-  if (exposedWorth === null || exposedWorth === concealedWorth) {
-    // One value when the hand pays the same either way, or cannot be exposed.
-    facts.append(factChip("Pays", concealedWorth));
-  } else {
-    facts.append(factChip("Concealed", concealedWorth), factChip("Exposed", exposedWorth));
+  // A hand with more than one scoring lists each one below, so it gets no single "Pays" chip.
+  const scorings = detail.readings.length > 1;
+  if (!scorings) {
+    if (exposedWorth === null || exposedWorth === concealedWorth) {
+      // One value when the hand pays the same either way, or cannot be exposed.
+      facts.append(factChip("Pays", concealedWorth));
+    } else {
+      facts.append(factChip("Concealed", concealedWorth), factChip("Exposed", exposedWorth));
+    }
   }
 
   const lede = document.createElement("p");
@@ -405,6 +424,7 @@ export async function openHandDetail(pattern, progress = null) {
   card.append(head);
   if (pin !== null) card.append(pin.note);
   card.append(facts, ruleNote);
+  if (scorings) card.append(readingList(detail.readings));
 
   // First the book's sample hand, then what the hand is, below it. A
   // Companion-only table sees the Companion's pictures and pages alone.

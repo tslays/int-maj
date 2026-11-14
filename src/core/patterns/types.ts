@@ -108,8 +108,17 @@ export interface HandPattern {
    * with pictures" hand set leaves these out.
    */
   readonly companionUnillustrated?: boolean;
-  /** For variant families such as Dragon's Tail. */
+  /**
+   * For a scoring variant: the id of the canonical hand it is another reading
+   * of. The variant shares that hand's card; see `scoringWhen`.
+   */
   readonly variantOf?: string;
+  /**
+   * The condition under which a hand's scoring applies, for a hand with more
+   * than one scoring (its canonical entry and each `variantOf` entry). Shown
+   * on the card beside the tier it pays.
+   */
+  readonly scoringWhen?: string;
   /**
    * True when the composition or its tier is a conservative reading of a
    * cropped page. The reading and its reasoning is in rules/archive/ASSUMPTIONS.md

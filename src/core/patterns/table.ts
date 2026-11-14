@@ -813,6 +813,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     tier: "limit",
     exposedTier: null,
     requiresSelfDrawn: false,
+    scoringWhen: "when the three runs use the same numbers",
     description:
       "A run of four tiles in each suit, using the same four numbers in all " +
       "three suits, plus a pair of winds or dragons.",
@@ -832,6 +833,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     exposedTier: null,
     requiresSelfDrawn: false,
     variantOf: "big-robert",
+    scoringWhen: "when the three runs do not all use the same numbers",
     description:
       "A run of four tiles in each suit, with the three runs not all using " +
       "the same numbers, plus a pair of winds or dragons.",

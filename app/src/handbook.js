@@ -9,7 +9,7 @@
  * (`GET /api/closest?limit=`), and the list can be sorted by that.
  */
 
-import { isPinned, onPinsChange, openHandDetail, pinIcon, playWord, TIER_LABEL } from "./hints.js";
+import { isPinned, onPinsChange, openHandDetail, pinIcon, playWord, readingList, TIER_LABEL } from "./hints.js";
 import { bookPages } from "./pages.js";
 import { $, companionRules, faceChip, handSetInForce, request, state } from "./shared.js";
 
@@ -101,7 +101,9 @@ function card(hand) {
   play.textContent = playWord(hand.concealedOnly);
   foot.append(play);
 
-  item.append(head, tiles, text, foot);
+  // A hand scored more than one way lists each scoring on its one card.
+  if (hand.readings.length > 1) item.append(head, tiles, text, readingList(hand.readings), foot);
+  else item.append(head, tiles, text, foot);
   // The closest-hands entry is read when the card is tapped, so it is never stale.
   item.addEventListener("click", () => void openHandDetail(hand.pattern, progress.get(hand.pattern) ?? null));
   cards.set(hand.pattern, item);
