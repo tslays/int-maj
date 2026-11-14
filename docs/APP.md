@@ -25,10 +25,31 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   bonus tiles hard left, a space, then the melds in the order made - and grow
   to the right as the wall in front of them is used up (the wall never
   slides). The other seats' lanes are one row; yours, while the wall keeps it
-  short, takes a second row beneath the first (in the felt left of your wall,
-  no further down than the full-size row reached) once that makes the tiles
-  clearly larger than shrinking one row would; a group is never split across
-  rows. `test/app/layout.test.ts` proves no meld
+  short, takes more rows, by what the table has room for:
+  - *Above the camera line* (the hand strip's top edge): a second row beneath
+    the first, in the felt left of your wall and no further than the full-size
+    row reached; and, when the flowers and four melds still leave the tiles
+    small, a third (0.52 -> 0.70 beside a full wall). The third reaches past
+    your own fourth discard row, which runs to your right and never nears the
+    lane's left end; its top row stops short of the left-hand seat's pond and
+    keeps clear of that seat's wall.
+  - *Below the camera line*: the felt between the lane and the rail, as far as
+    your hand leaves it free. Every claim takes three tiles from your hand, so
+    after one, two, three and four claims you hold 11, 8, 5 and 2 tiles on your
+    turn (`handTiles`), and the hand's left end moves right. Where it ends
+    along the lane's line depends on the screen, so the app measures it with
+    its own cameras (`handLeftAtLane` in `camera.js`, via `handLeftOf` in
+    `stage.js`) and passes it as `handLeft`: a row lying below the line must end
+    before it. A landscape phone's hand reaches furthest (the table x it
+    reaches is -20.3, -15.4, -10.4, -5.5 after one to four claims); a tablet's
+    or desktop's reaches less (-12.4 ... -3.4 and -15.9 ... -4.3). Rows below
+    the wall's front are no longer beside the wall, so only the hand stops them.
+    The layout follows the hand you hold after that many claims, not the
+    tiles in it this moment, so melds never shift with a draw or a discard;
+    a resize or rotation lays it again.
+  Each extra row (or lower row) only starts when it makes the tiles at least
+  0.1 larger than fewer would. A group is never split across rows.
+  `test/app/layout.test.ts` proves no meld
   touches a wall, a hand, a discard or another player's melds.
 - `app/src/pile.js` is the other discard layout, the **centre pile** (Options,
   Discards: Rows or Pile, a device preference `int-maj.discard-layout`,

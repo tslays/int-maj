@@ -10,7 +10,7 @@
 
 import * as THREE from "three";
 import { RoomEnvironment } from "../vendor/three/RoomEnvironment.js";
-import { HAND_FOV, fitHandCamera, fitPondCamera, fitTableCamera } from "./camera.js";
+import { HAND_FOV, fitHandCamera, fitPondCamera, fitTableCamera, handLeftAtLane } from "./camera.js";
 import { WALL_INNER, pondExtent } from "./layout.js";
 import { pace } from "./pace.js";
 import { D, H, TABLE } from "./tiles.js";
@@ -461,6 +461,21 @@ function fit() {
   views.pond.quaternion.copy(tableCamera.quaternion);
   poseTableCamera();
   viewChanged();
+}
+
+const reachCamera = new THREE.PerspectiveCamera();
+
+/**
+ * The table x where the left end of a hand of `tiles` tiles stands along your
+ * lane's camera line, at the table's playing pose (not mid-zoom): your melds
+ * may lie on the felt left of it, below that line.
+ */
+export function handLeftOf(tiles) {
+  reachCamera.copy(tableCamera);
+  reachCamera.position.copy(views.table.position);
+  reachCamera.quaternion.copy(views.table.quaternion);
+  reachCamera.updateMatrixWorld(true);
+  return handLeftAtLane(handCamera, reachCamera, tiles);
 }
 
 /* Who wants to know when the screen's size or the pond zoom changes (the round layers). */
