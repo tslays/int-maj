@@ -118,8 +118,8 @@ function closestPicture() {
   const box = el("div", "guide-panel");
   box.append(el("b", "guide-panel-head", "Closest hands"));
   for (const [name, chance, line] of [
-    ["Crazy Chows", 0.62, " · Concealed · 500"],
-    ["Robin", 0.24, " · Concealed · 500"],
+    ["Crazy Chows", 0.66, " · Concealed · 500"],
+    ["Robin", 0.27, " · Concealed · 500"],
   ]) {
     const item = el("div", "guide-panel-row");
     const meta = el("small", "");
@@ -245,7 +245,7 @@ const TABS = [
     cards: [
       {
         title: "Closest hands",
-        text: "Top right: the hands you are likeliest to complete. The ring fills with your chance of completing each before the wall runs out, worked out only from the tiles you can see; then how it is played and what it pays. Tap one for its sheet; the pin keeps it there. Out of reach means more than six tiles away, or no longer possible with the tiles in sight or your exposed melds. Hints in the menu shows or hides it.",
+        text: "Top right: the hands you are likeliest to complete. The ring fills, and its colour runs from red to green, with your chance of completing each before the wall runs out (bad, average, good, very good, excellent), worked out only from the tiles you can see; an arrow shows a hand that moved a band since your last move. Then how it is played and what it pays. Tap one for its sheet; the pin keeps it there. Out of reach means more than six tiles away, or no longer possible with the tiles in sight or your exposed melds. Hints in the menu shows or hides it.",
         picture: closestPicture,
       },
       {

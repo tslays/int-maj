@@ -904,7 +904,7 @@ html.pond-zoom .act-claim {
   color: var(--gold-1);
   font-weight: 700;
 }
-/* The chance of completing a hand: a ring that fills clockwise, the percentage beside it, and an arrow when it moved. */
+/* The chance of completing a hand: a ring that fills clockwise, its band's name beside it, and an arrow when it moved a band. */
 .chance {
   display: inline-flex;
   align-items: center;
@@ -944,10 +944,13 @@ html.pond-zoom .act-claim {
 .chance-bad .chance-fill {
   stroke: var(--chance-bad);
 }
-/* The band's name, in the hand's sheet only: quiet beside the percentage. */
+/* In the panel the ring leads the hand's name. */
+.closest-name .chance {
+  margin-right: 4px;
+  vertical-align: -2px;
+}
+/* The band's name beside the ring: what the colour says, in a word. */
 .chance-band {
-  margin-left: 3px;
-  color: var(--muted);
   font-weight: 600;
 }
 /* Small and soft: a hint of direction, not an alarm. */

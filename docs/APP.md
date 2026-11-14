@@ -252,13 +252,16 @@ offers them. The table is landscape only.
 
 The panel at the top right lists the closest hands: up to three catalogue
 hands you are likeliest to complete, likeliest first. A row gives the hand's
-name, then your chance of completing it (a small ring that fills clockwise,
-with the percentage beside it, or "Complete"), how it is played (Concealed or
-Exposed), and last what it pays. The ring's colour is the chance's band, in
-muted tones: excellent (80 % and up, green), very good (60), good (40),
-average (20) and bad (below 20, red); the hand's sheet also names the band.
-A small arrow, green up or red down, marks a chance that moved ten points or
-more since your previous decision. The panel is worked out once per
+name, led by your chance of completing it, then how it is played (Concealed
+or Exposed), and last what it pays. The chance is never a number: a small
+ring that fills clockwise, coloured by its band - in the panel the ring alone,
+before the name (the band's name does not fit a phone's panel; the sheet, the
+index and a screen reader say it) -
+Excellent (80 % and up, green), Very good (60), Good (40), Average (20) and
+Bad (below 20, red), in muted tones - or "Complete". Players get the gist of
+what can still be built without fixing on a figure the estimate is not that
+precise about. A small arrow, green up or red down, marks a hand that moved
+a band since your previous decision. The panel is worked out once per
 decision (your turn to discard, a claim offered to you) and stays put while
 the bots play. The chance is worked out from what you can see only
 (`src/core/game/odds.ts`, `docs/HINT-ODDS.md`): it is the chance of finishing
@@ -286,8 +289,8 @@ The panel is deliberately small and quiet (176px, muted colours, no tile
 chips) so it never competes with the table, even on a phone. Each row is the
 hand's name and one line in the books' own words and order: how it is played
 ("Concealed" when any exposed meld rules the hand out, as for most special
-hands; "Exposed" when exposed melds are allowed), the chance ring and
-percentage, and last its value.
+hands; "Exposed" when exposed melds are allowed), the chance ring and its
+band, and last its value.
 No icons: the Illustrated prints "Concealed" or "Exposed" under each hand and
 the Companion prints "LIMIT (Concealed) HALF LIMIT (Exposed)", so players
 already know the words. Tapping a row opens the hand's sheet
@@ -295,7 +298,7 @@ already know the words. Tapping a row opens the hand's sheet
 wide, one column): the name with the pin and the close cross at the right; one
 row of chips - the play chip (the word "Concealed" or "Exposed"; tapping it opens the explanation of what it means for calling
 discards and self-drawn wins, which a player needs once), "Self-drawn only",
-your chance of completing it (the ring and percentage, or "Complete") when you have the hand in play
+your chance of completing it (the ring and its band, or "Complete") when you have the hand in play
 and, last, what it pays (one value, or concealed and exposed when they
 differ); the book's sample hand first, in its own dashed panel headed "Sample hand from the
 book" (or "Sample hands from the books"), each picture followed below by a pill

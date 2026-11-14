@@ -127,29 +127,15 @@ export function playWord(concealedOnly) {
 /* ------------------------------------------------------------ the chance */
 
 /**
- * The chance of completing a hand as the panel writes it: whole percent, and
- * "under 1%" or "over 99%" at the ends rather than a certainty the estimate
- * does not have. `chance` is 0..1 (`ClosestHand.chance`).
+ * The chance of completing a hand is shown as a band, never as a number: a
+ * player gets the gist of what can still be built (and what to give up)
+ * without fixing on percentages the estimate is not that precise about.
  */
-export function chanceText(chance) {
-  if (chance >= 1) return "100%";
-  if (chance > 0.99) return ">99%";
-  if (chance > 0 && chance < 0.01) return "<1%";
-  return `${Math.round(chance * 100)}%`;
-}
-
-/** The same for a screen reader. */
-export function chanceWords(chance) {
-  if (chance >= 1) return "complete";
-  if (chance > 0.99) return "over 99 percent chance to complete";
-  if (chance > 0 && chance < 0.01) return "under 1 percent chance to complete";
-  return `${Math.round(chance * 100)} percent chance to complete`;
-}
 
 /**
  * Five bands of chance, each with its name and colour (`--chance-<id>` in
- * styles.css): a glance says how buildable a hand is, the percentage says
- * exactly. Lower bounds, best first.
+ * styles.css): a glance says how buildable a hand is. Lower bounds, best
+ * first.
  */
 const BANDS = [
   { id: "excellent", name: "Excellent", from: 0.8 },
@@ -164,9 +150,20 @@ export function chanceBand(chance) {
   return BANDS.find((band) => chance >= band.from) ?? BANDS[BANDS.length - 1];
 }
 
+/** A band's rank, 0 for bad up to 4 for excellent: the arrows compare ranks. */
+function bandRank(chance) {
+  return BANDS.length - 1 - BANDS.indexOf(chanceBand(chance));
+}
+
+/** The chance for a screen reader: "good chance to complete". */
+export function chanceWords(chance) {
+  return `${chanceBand(chance).name.toLowerCase()} chance to complete`;
+}
+
 /**
  * The chance as a ring that fills clockwise from the top, in its band's
- * colour. Decoration only: the percentage is always written beside it.
+ * colour. The band's name is always written beside it, so colour is never
+ * the only sign.
  */
 export function chanceRing(chance) {
   const ns = "http://www.w3.org/2000/svg";
@@ -195,34 +192,32 @@ export function chanceRing(chance) {
 }
 
 /**
- * The ring and the percentage together, with an arrow when the chance moved
- * by ten points or more since the player's last look (`trend`: the change).
+ * The ring and the band's name together (the hand's sheet, the index), with an arrow when the hand moved
+ * up or down a band since your previous decision (`trend`: bands moved).
  */
-export function chanceBadge(chance, trend = 0, { named = false } = {}) {
-  const badge = document.createElement("span");
-  badge.className = "chance";
-  const text = document.createElement("span");
-  text.className = "chance-text";
-  text.textContent = chanceText(chance);
-  badge.append(chanceRing(chance), text);
-  if (named) {
-    const band = document.createElement("span");
-    band.className = "chance-band";
-    band.textContent = chanceBand(chance).name;
-    badge.append(band);
-  }
-  if (Math.abs(trend) >= TREND_STEP) {
+export function chanceBadge(chance, trend = 0) {
+  const badge = chanceMark(chance, trend);
+  const band = document.createElement("span");
+  band.className = "chance-band";
+  band.textContent = chanceBand(chance).name;
+  badge.insertBefore(band, badge.querySelector(".chance-trend"));
+  return badge;
+}
+
+/** The ring alone, with its arrow when the hand moved a band: the panel's row. */
+function chanceMark(chance, trend = 0) {
+  const mark = document.createElement("span");
+  mark.className = "chance";
+  mark.append(chanceRing(chance));
+  if (trend !== 0) {
     const arrow = document.createElement("span");
     arrow.className = trend > 0 ? "chance-trend chance-up" : "chance-trend chance-down";
     arrow.setAttribute("aria-hidden", "true");
     arrow.textContent = trend > 0 ? "\u25b2" : "\u25bc";
-    badge.append(arrow);
+    mark.append(arrow);
   }
-  return badge;
+  return mark;
 }
-
-/** A change in chance worth an arrow. */
-const TREND_STEP = 0.1;
 
 /**
  * Each hand's chance as the panel shows it now, and as it showed it at your
@@ -232,12 +227,12 @@ const TREND_STEP = 0.1;
 let shownChance = new Map();
 let previousChance = new Map();
 
-/** How far `hand`'s chance moved since your previous decision. */
+/** How many bands `hand` moved since your previous decision. */
 function trendOf(hand) {
   const key = `${state.payload?.game}|${hand.pattern}`;
   shownChance.set(key, hand.chance);
   const before = previousChance.get(key);
-  return before === undefined ? 0 : hand.chance - before;
+  return before === undefined ? 0 : bandRank(hand.chance) - bandRank(before);
 }
 
 /** A drawing pin: the mark of a pinned hand. */
@@ -263,20 +258,23 @@ function hintRow(hand, { name: label, pinned }) {
   row.className = "closest-item";
   const away = hand === null;
   const trend = away ? 0 : trendOf(hand);
-  const moved = Math.abs(trend) >= TREND_STEP ? `, ${trend > 0 ? "up" : "down"} ${Math.round(Math.abs(trend) * 100)} points` : "";
+  const moved = trend === 0 ? "" : `, ${trend > 0 ? "up" : "down"} since your last move`;
   row.setAttribute(
     "aria-label",
     `${pinned ? "Pinned: " : ""}${label}${
       away
         ? ", out of reach: more than six tiles away, or no longer possible with the tiles in sight or your exposed melds"
-        : `, ${hand.away === 0 ? "complete" : `${chanceWords(hand.chance)}, ${chanceBand(hand.chance).name.toLowerCase()}`}${moved}, ${hand.concealedOnly ? "concealed, no exposed melds" : "exposed melds allowed"}`
+        : `, ${hand.away === 0 ? "complete" : chanceWords(hand.chance)}${moved}, ${hand.concealedOnly ? "concealed, no exposed melds" : "exposed melds allowed"}`
     }. Tap for details.`,
   );
+  // The chance leads the row as a ring alone, in its band's colour and filled
+  // as far as the chance goes: the panel is too narrow for the band's name,
+  // which the hand's sheet and a screen reader give.
   const name = document.createElement("span");
   name.className = "closest-name";
+  if (!away && hand.away > 0) name.append(chanceMark(hand.chance, trend));
   if (pinned) name.append(pinIcon());
   name.append(label);
-  // The same order as the hand's sheet: how it is played, how far it is, what it pays.
   const meta = document.createElement("span");
   meta.className = "closest-meta";
   const piece = (words, className) => {
@@ -288,10 +286,9 @@ function hintRow(hand, { name: label, pinned }) {
   if (away) {
     meta.append(piece("Out of reach"));
   } else {
-    // How likely first, as the panel is ordered; then how it is played and what it pays.
+    // How it is played and what it pays; a complete hand says so first.
+    if (hand.away === 0) meta.append(piece("Complete", "closest-done"), piece("\u00b7"));
     meta.append(
-      hand.away === 0 ? piece("Complete", "closest-done") : chanceBadge(hand.chance, trend),
-      piece("\u00b7"),
       piece(playWord(hand.concealedOnly)),
       piece("\u00b7"),
       piece(hand.points === null ? "calculated" : hand.points.toLocaleString("en")),
@@ -596,9 +593,9 @@ export async function openHandDetail(pattern, progress = null) {
   // How it is played, how far you are, and last what it pays: the panel's order.
   if (detail.requiresSelfDrawn) facts.append(factChip(null, "Self-drawn only"));
   if (progress !== null) {
-    const far = factChip(null, progress.away === 0 ? "Complete" : chanceBadge(progress.chance, 0, { named: true }));
+    const far = factChip(null, progress.away === 0 ? "Complete" : chanceBadge(progress.chance));
     if (progress.away === 0) far.classList.add("detail-done");
-    else far.setAttribute("aria-label", `${chanceWords(progress.chance)}, ${chanceBand(progress.chance).name.toLowerCase()}`);
+    else far.setAttribute("aria-label", chanceWords(progress.chance));
     facts.append(far);
   }
   const concealedWorth = worth(detail.concealedTier, detail.concealedPoints);
@@ -647,7 +644,7 @@ export async function openHandDetail(pattern, progress = null) {
       left.className = "detail-muted need-note";
       left.textContent =
         "The number under each tile: copies you have not seen yet, in the wall or another player's hand. " +
-        "The chance counts them, and every claim this hand may make.";
+        "The chance reads them, and every claim this hand may make.";
       yours.append(left);
       const note = anotherNote(progress);
       if (note !== null) yours.append(note);
