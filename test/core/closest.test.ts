@@ -43,6 +43,45 @@ describe("closest hands", () => {
     }
   });
 
+  describe("a hand with more than one way to finish", () => {
+    // Tester report #147: 1-9 in characters, a spare 1 and a spare 4, two White Dragons.
+    // Grand Sequence (C p. 40) is the run, a dragon pung and two more tiles each pairing
+    // with a run tile: this hand is one White Dragon away.
+    const grand = (hand: string): ReturnType<typeof closestHands>[number] => {
+      const state = fixture({ hands: { E: hand, ...OTHERS }, wall: LONG_WALL, phase: "draw", turn: "E" });
+      const found = closestHands(viewFor(state, "E"), 100).find((entry) => entry.pattern === "grand-sequence");
+      assert.ok(found, "Grand Sequence is in reach");
+      return found;
+    };
+
+    it("is one White Dragon away, and says it is one more of the two held", () => {
+      const hand = grand("c1 c1 c2 c3 c4 c4 c5 c6 c7 c8 c9 dW dW");
+      assert.equal(hand.away, 1);
+      assert.deepEqual(hand.need, ["dW"]);
+      assert.deepEqual(hand.another, ["dW"]);
+      assert.deepEqual(hand.instead, []);
+    });
+
+    it("names the tiles that would do instead when several complete it", () => {
+      // One spare 1: any run tile (the 1 too) as the second extra finishes the hand.
+      const hand = grand("c1 c2 c3 c4 c5 c6 c7 c8 c9 c1 dW dW dW");
+      assert.equal(hand.away, 1);
+      assert.equal(hand.need.length, 1);
+      const shown = hand.need[0]!;
+      const stand = hand.instead.find((entry) => entry.need === shown)?.or ?? [];
+      assert.equal(stand.length, 8, `${stand.length} stand-ins for ${shown}`);
+      assert.ok(!stand.includes(shown));
+      assert.ok(stand.every((key) => key.startsWith("c")), "only run tiles pair with the run");
+    });
+
+    it("names no stand-in when only one tile will do", () => {
+      const state = fixture({ hands: { E: SNAKE_LESS_NORTH, ...OTHERS }, wall: LONG_WALL, phase: "draw", turn: "E" });
+      const snake = closestHands(viewFor(state, "E")).find((hand) => hand.pattern === "wriggly-snake");
+      assert.deepEqual(snake?.instead, []);
+      assert.deepEqual(snake?.another, []);
+    });
+  });
+
   it("drops a hand whose missing tile is all in sight", () => {
     const state = fixture({
       hands: { E: SNAKE_LESS_NORTH, ...OTHERS },

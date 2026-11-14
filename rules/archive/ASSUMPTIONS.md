@@ -448,3 +448,34 @@ Not changed, for the owner to rule on (see `rules/AUDIT.md`, "Scoring review"):
 the Advanced settlement scores a losing hand by its ground score alone, and a
 fishing hand for an ordinary hand is scored as though the missing tile were
 drawn from the wall.
+
+## Grand Sequence: what "Any tile 1-9 paired" means
+
+**Source:** *Companion* p. 40 (two pictures), p. 11 (synopsis: "Run 1-9 in one
+suit + any two tiles paired + P/K of Winds or Dragon"), p. 12 and p. 34
+(Dragon's Gates and Dragon's Teeth).
+
+**Evidence:** both pictures show the run, the pung and two boxes, each reading
+"Any tile 1-9 paired". Dragon's Gates prints one such box (`Any tile 2-8
+paired`) beside run 2-8, and its composition is a run with one run tile paired.
+The earlier table read the two boxes as a free suited pair, which could be in
+any suit. **Owner ruling, 2026-11-14 (tester report #147):** the paired tiles
+refer to the rest of the hand, the run; they are not two arbitrary tiles. A
+hand of 1-9 in Characters, a pung of White Dragons and a second 1 and a second
+4 of Characters is Grand Sequence: 14 tiles, and a player with 13 of them went
+out on the discarded White Dragon.
+
+**Reading implemented:** run 1-9 in one suit; a pung or kong of any wind or
+dragon; two more tiles of the run's suit, each a copy of a tile in the run.
+The two may copy the same run tile (1, 1, 1 with 2-9): the box reads "Any tile
+1-9 paired", and the owner ruled the same day that "any" does not mean
+"different". An earlier draft of this note required two different run tiles.
+
+**Why two versions?** The owner suspects the two p. 40 versions stand for the
+two shapes this allows: both extras on one run tile (1 1 1 2-9) and on two
+(1 1 2-6 6 7-9). The pictures do not show it: both print the same two boxes,
+and what differs is a wind pung with Characters against a dragon pung with
+Bamboo. It is a guess about the book's intent, not evidence; the engine accepts
+both shapes either way, so nothing depends on it. The hand's card says both
+are fine.
+

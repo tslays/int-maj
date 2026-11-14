@@ -252,7 +252,11 @@ book" (or "Sample hands from the books"), each picture followed below by a pill
 for the book and page (and its version), so two books read title, 1st hand,
 1st source, 2nd hand, 2nd source; the hand's composition below it; then,
 set apart by a soft gold edge, "Tiles you still need" with the tiles to
-collect, so the book's tiles and yours are never confused. Close it with the cross, the backdrop or Escape.
+collect, so the book's tiles and yours are never confused. Where another tile
+completes the hand just as well, it follows the chip after "or" (a 4 beside the
+1 that would make the pair); where a needed tile is one you already hold, a
+line says the hand wants one more (a pair beside a run cannot use the run's own
+tile; tester report #147). Close it with the cross, the backdrop or Escape.
 
 Above the panel, **All hands** opens the index of every catalogue hand
 (`app/src/handbook.js`, `GET /api/hands`), so nobody has to reach for either
@@ -280,6 +284,13 @@ headings, value and book of a hand ("dragon pairs", "1-9 wind"). While a hand
 is being played, cards within reach of your tiles carry "n to go"
 (`/api/closest?limit=100`), the sheet lists the tiles still needed, and
 **Order** can sort the nearest hands first.
+
+The **Fishing** button shows the tiles you wait on. A tile that wins only when
+you draw it yourself (a wait on a self-drawn-only hand such as Buried Treasure,
+whose every tile must come from the wall) is faded, with "own draw only" after
+the tiles, because the same tile thrown by another player is no win
+(`GameView.fishingDrawOnly`, from `drawOnlyWaits` in `src/core/game/hands.ts`;
+tester report #147).
 
 ## Sound
 

@@ -225,7 +225,7 @@ table as the supplement; none is deleted.
 | `guardian-winds` | Guardian Winds | Run 1-9 + wind pung + wind pair. |
 | `wriggly-dragon` | Wriggly Dragon | Run 1-9 + one each dragon + dragon pair. |
 | `guardian-dragons` | Guardian Dragons | Run 1-9 + dragon pung + dragon pair. |
-| `grand-sequence` | Grand Sequence | Run 1-9 + honour pung + suited pair. |
+| `grand-sequence` | Grand Sequence | Run 1-9 + honour pung + two extra tiles of the run's suit, each pairing with a run tile (both may copy one). |
 | `dragons-gates` | Dragon's Gates | Run 2-8 + terminal pung + dragon pung + pair. |
 | `dragons-teeth` | Dragon's Teeth | Red/White dragon pungs + runs. |
 | `yin-yang` | Yin Yang | Fixed chow/pair shape. |
@@ -304,8 +304,12 @@ are the contradictions found while writing Part III of `rules/RULES.md`.
 - `white-elephant`, `driven-snow`, `dragons-scales` (C p. 60): the pair
   restriction and three pungs are printed; the table's compositions match and
   the `provisional` flags can be cleared.
-- `grand-sequence` (C pp. 11, 40): "any two tiles 1-9 paired" is a suited pair
-  (the two extra tiles form the hand's pair), which the table already requires.
+- `grand-sequence` (C pp. 11, 40): "Any tile 1-9 paired", printed twice, is
+  two extra tiles each pairing with a tile of the run, as Dragon's Gates and
+  Dragon's Teeth print it once. It is **not** a separate suited pair. An
+  earlier reading here (a suited pair of any suit beside the run) was wrong
+  and kept a tester from going out (report #147); owner ruling 2026-11-14.
+  See `rules/archive/ASSUMPTIONS.md`, "Grand Sequence".
 
 No Companion-only hand needs a tier change: all 35 table tiers match the
 printed winning/fishing figures. The only tier conflicts are the Illustrated

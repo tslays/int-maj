@@ -152,17 +152,31 @@ export function allowedPattern(state: GameState, patternId: string, tier: Tier):
   return true;
 }
 
-/** True when the seat's current hand plus `tile` matches a catalogue hand. */
-export function winsOnDiscard(state: GameState, seat: Seat, tile: string): boolean {
+/** True when the seat's current hand plus `tile`, taken from a discard, matches a catalogue hand. */
+function completesFromDiscard(state: GameState, seat: Seat, tile: string): boolean {
   const player = playerOf(state, seat);
   if (effectiveCount(player) !== 13) return false;
   if (countOf(player.hand, tile) >= 4) return false;
-  if (!mayGoOut(state, seat)) return false;
   const hand = buildHand(state, seat, { extra: tile, winningTile: tile, selfDrawn: false });
   return (
     hand !== null &&
     matchesAny(hand, (pattern, tier) => allowedPattern(state, pattern.id, tier))
   );
+}
+
+/** True when the seat's current hand plus `tile` matches a catalogue hand. */
+export function winsOnDiscard(state: GameState, seat: Seat, tile: string): boolean {
+  return mayGoOut(state, seat) && completesFromDiscard(state, seat, tile);
+}
+
+/**
+ * The tiles of a wait that win only when the seat draws them itself: they
+ * complete a self-drawn-only hand (Buried Treasure), so the same tile thrown
+ * by another player is no win. Said on the Fishing button so a player does not
+ * wait for a discard that cannot win.
+ */
+export function drawOnlyWaits(state: GameState, seat: Seat, wait: readonly string[]): string[] {
+  return wait.filter((tile) => !completesFromDiscard(state, seat, tile));
 }
 
 /** True when the seat's current 14-effective hand is already a win. */

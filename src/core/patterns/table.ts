@@ -70,6 +70,7 @@ import {
   pungSuit,
   runGroup,
   runWithPairGroup,
+  runWithPairsGroup,
   setSuitOf,
   shapeKeys,
   singleGroup,
@@ -564,23 +565,20 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     exposedTier: null,
     requiresSelfDrawn: false,
     description:
-      "Run 1-9 in one suit, a pung/kong of winds or dragons, and a suited " +
-      "pair (1-9).",
+      "Run 1-9 in one suit, two extra tiles of that suit that pair with it " +
+      "(the same tile twice, or two different ones), and a pung/kong of " +
+      "winds or dragons.",
     source: "Synopsis p. 56; illustrations p. 40.",
     notes:
-      "The two illustrated " +
-      "versions on p. 40 differ only in the suit of the run; they are one " +
-      "shape.",
-    ...standardPattern(() =>
-      SUITS.map((suit) => ({
-        pair: isSuitedKey,
-        sets: [
-          chowSuit(suit, [1]),
-          chowSuit(suit, [4]),
-          chowSuit(suit, [7]),
-          honourPung,
-        ],
-      })),
+      "The p. 40 pictures print 'Any tile 1-9 paired' twice: two extra " +
+      "tiles, each pairing with a tile of the run, as Dragon's Gates and " +
+      "Dragon's Teeth print it once. It is not a separate pair (owner " +
+      "ruling 2026-11-14, tester report #147). 'Any' does not say the two " +
+      "differ, so both may copy one run tile (a 1, 1, 1 with 2-9). The two " +
+      "illustrated versions differ only in the suit of the run; they are " +
+      "one shape.",
+    ...groupPattern(() =>
+      SUITS.map((suit) => [runWithPairsGroup(suit, 1, 9, 2), pungGroup(isHonourKey)]),
     ),
   },
   {

@@ -63,6 +63,17 @@ export interface ClosestHand {
   readonly away: number;
   /** The missing tiles, one key per copy, in canonical order. */
   readonly need: readonly string[];
+  /**
+   * The keys in `need` of which the seat already holds a copy: the hand wants
+   * one more, as in a pair or a pung beside a run that uses the held one.
+   */
+  readonly another: readonly string[];
+  /**
+   * Tiles that would do in place of a needed one, as far from the hand: a 4
+   * where the 1 is needed because either completes the pair. One entry per
+   * needed key that has a stand-in.
+   */
+  readonly instead: readonly { readonly need: string; readonly or: readonly string[] }[];
   /** Rough chance of completing it from here (0..1). */
   readonly chance: number;
 }
@@ -72,6 +83,52 @@ export const CLOSEST_SHOWN = 3;
 
 /** Versions of one hand kept when several are equally near: the likeliest is shown. */
 const VERSIONS_KEPT = 64;
+
+/** The needed keys that the seat already holds a copy of, in canonical order. */
+function anotherOf(need: readonly string[], held: ArrayLike<number>): string[] {
+  const index = new Map(KEYS.map((key, at) => [key, at]));
+  return [...new Set(need)].filter((key) => held[index.get(key)!]! > 0);
+}
+
+/**
+ * The tiles that stand in for one needed tile. Of the equally near versions
+ * of a hand, those that differ from the shown one by a single tile name a
+ * tile that completes it just as well (the 1 or the 4 of a pair).
+ */
+function insteadOf(
+  need: readonly string[],
+  wants: readonly Int8Array[],
+  held: ArrayLike<number>,
+): { need: string; or: string[] }[] {
+  const lacking = (want: Int8Array): Map<string, number> => {
+    const missing = new Map<string, number>();
+    want.forEach((count, at) => {
+      const short = count - held[at]!;
+      if (short > 0) missing.set(KEYS[at]!, short);
+    });
+    return missing;
+  };
+  const shown = new Map<string, number>();
+  for (const key of need) shown.set(key, (shown.get(key) ?? 0) + 1);
+  const swaps = new Map<string, Set<string>>();
+  for (const want of wants) {
+    const other = lacking(want);
+    const out: string[] = [];
+    const into: string[] = [];
+    for (const [key, count] of shown) if ((other.get(key) ?? 0) < count) out.push(key);
+    for (const [key, count] of other) if ((shown.get(key) ?? 0) < count) into.push(key);
+    if (out.length !== 1 || into.length !== 1) continue;
+    if ((shown.get(out[0]!) ?? 0) - (other.get(out[0]!) ?? 0) !== 1) continue;
+    if ((other.get(into[0]!) ?? 0) - (shown.get(into[0]!) ?? 0) !== 1) continue;
+    const set = swaps.get(out[0]!) ?? new Set<string>();
+    set.add(into[0]!);
+    swaps.set(out[0]!, set);
+  }
+  const order = new Map(KEYS.map((key, at) => [key, at]));
+  return [...swaps]
+    .sort((a, b) => order.get(a[0])! - order.get(b[0])!)
+    .map(([key, set]) => ({ need: key, or: [...set].sort((a, b) => order.get(a)! - order.get(b)!) }));
+}
 
 /**
  * The nearest version of a group-declared hand to the seat's tiles, within
@@ -122,6 +179,8 @@ function exactVersion(
       concealedOnly: pattern.exposedTier === null,
       away: reach.missing,
       need,
+      another: anotherOf(need, situation.hand),
+      instead: insteadOf(need, reach.wants, situation.hand),
       chance: Math.round(chance * 1000) / 1000,
     },
   };
@@ -194,6 +253,8 @@ function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { f
         concealedOnly: pattern.exposedTier === null,
         away: need.length,
         need,
+        another: anotherOf(need, situation.hand),
+        instead: [],
         chance: Math.round(chance * 1000) / 1000,
       },
     });
