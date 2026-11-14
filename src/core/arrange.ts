@@ -24,6 +24,12 @@ function inTileOrder(keys: readonly string[]): string[] {
   return [...keys].sort((a, b) => ORDER.get(a)! - ORDER.get(b)!);
 }
 
+/** A group as it reads: by number first, so a mixed chow runs 2-3-4 whatever the suits; honours by tile order. */
+function inReadingOrder(keys: readonly string[]): string[] {
+  const rank = (key: string): number => (/^[bco][1-9]$/.test(key) ? Number(key[1]) : 0);
+  return [...keys].sort((a, b) => rank(a) - rank(b) || ORDER.get(a)! - ORDER.get(b)!);
+}
+
 /** A meld's identity as a group: its first three tiles (a kong is a pung with a spare tile), in tile order. */
 function signature(keys: readonly string[]): string {
   return inTileOrder(keys.slice(0, 3)).join(",");
@@ -71,7 +77,7 @@ function setKeys(set: StandardSet): string[] {
 
 /**
  * The concealed part of a winning hand as groups of tile keys, each group in
- * tile order, in the pattern's own order (a pair last). The declared melds are
+ * reading order, in the pattern's own order (a pair last). The declared melds are
  * left out: they are shown as they were exposed. Null when no grouping is
  * known (a hand that is not a partition into groups, such as seven pairs), so
  * the caller falls back to a plain sorted row.
@@ -94,7 +100,7 @@ export function arrangeConcealed(hand: Hand, pattern: Pick<HandPattern, "groups"
     for (const group of groups) {
       const at = open.indexOf(signature(group));
       if (at >= 0 && group.length >= 3) open.splice(at, 1);
-      else rest.push(inTileOrder(group));
+      else rest.push(inReadingOrder(group));
     }
     return open.length === 0 ? rest : null;
   };

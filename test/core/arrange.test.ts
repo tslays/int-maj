@@ -19,6 +19,10 @@ describe("arrangeConcealed", () => {
     }
     assert.equal(groups[4]!.length, 2);
     assert.equal(groups.flat().length, 14);
+    for (const group of groups.slice(0, 4)) {
+      const ranks = group.map((key) => Number(key[1]));
+      assert.deepEqual(ranks, [ranks[0]!, ranks[0]! + 1, ranks[0]! + 2], `reads by number: ${group}`);
+    }
   });
 
   it("leaves a declared meld out and shows only the concealed groups", () => {
