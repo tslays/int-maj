@@ -59,7 +59,7 @@ npm run check -- "dR dR dR dG dG dG dW dW dW b1 b2 b3 b5"
 
 ```
 13 tiles: dR dR dR dG dG dG dW dW dW b1 b2 b3 b5
-b5  x3 left  1000 limit  Three Great Scholars (concealed) / calculate  Ordinary Mah Jong (concealed) / calculate  Buried Treasure (Concealed Mah Jong) (concealed)
+b5  x3 left  1000 limit  Three Great Scholars (concealed) / calculate  Ordinary Mah Jong (concealed) / calculate  Buried Treasure (concealed)
 ```
 
 A kong adds one physical tile but still counts as one set, so a hand with a

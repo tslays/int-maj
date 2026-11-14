@@ -31,6 +31,20 @@ import type { GameView } from "./view.ts";
 
 const PATTERN_BY_ID = new Map(PATTERNS.map((pattern) => [pattern.id, pattern]));
 
+/**
+ * The card a pattern belongs to. A scoring variant (`HandPattern.variantOf`)
+ * is another reading of its canonical hand, so it shares that hand's card.
+ */
+function cardOf(pattern: HandPattern): HandPattern {
+  return pattern.variantOf === undefined ? pattern : (PATTERN_BY_ID.get(pattern.variantOf) ?? pattern);
+}
+
+/** The id of the card a pattern id belongs to (the id itself when unknown). */
+function cardIdOf(id: string): string {
+  const pattern = PATTERN_BY_ID.get(id);
+  return pattern === undefined ? id : cardOf(pattern).id;
+}
+
 export interface ClosestHand {
   readonly pattern: string;
   readonly name: string;
@@ -208,9 +222,29 @@ function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { f
   return { found, excluded: situation.excluded ?? [] };
 }
 
+/**
+ * One entry per card, the nearest reading of it: a scoring variant and its
+ * canonical hand are one hand in the panel. `found` is already nearest first.
+ */
+function asCards(found: readonly Found[]): Found[] {
+  const seen = new Set<string>();
+  const cards: Found[] = [];
+  for (const entry of found) {
+    const pattern = PATTERN_BY_ID.get(entry.hand.pattern);
+    if (pattern === undefined) continue;
+    const card = cardOf(pattern);
+    if (seen.has(card.id)) continue;
+    seen.add(card.id);
+    cards.push(
+      card.id === entry.hand.pattern ? entry : { rank: entry.rank, hand: { ...entry.hand, pattern: card.id, name: card.name } },
+    );
+  }
+  return cards;
+}
+
 export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand[] {
-  return search(view, limit, new Set())
-    .found.slice(0, limit)
+  return asCards(search(view, limit, new Set()).found)
+    .slice(0, limit)
     .map((entry) => entry.hand);
 }
 
@@ -236,17 +270,19 @@ export function closestWithPins(
   pins: readonly string[],
   limit = CLOSEST_SHOWN,
 ): { hands: ClosestHand[]; pinned: PinnedHand[] } {
-  const ids = [...new Set(pins)].slice(0, MAX_PINS);
+  // A pin on a scoring variant pins its card.
+  const ids = [...new Set(pins.map((id) => cardIdOf(id)))].slice(0, MAX_PINS);
   const chosen = new Set(ids);
   const { found, excluded } = search(view, limit, chosen);
-  const byId = new Map(found.map((entry) => [entry.hand.pattern, entry.hand]));
+  const cards = asCards(found);
+  const byId = new Map(cards.map((entry) => [entry.hand.pattern, entry.hand]));
   const pinned: PinnedHand[] = [];
   for (const id of ids) {
     const pattern = PATTERN_BY_ID.get(id);
     if (pattern === undefined || excluded.includes(id)) continue;
     pinned.push({ pattern: id, name: pattern.name, hand: byId.get(id) ?? null });
   }
-  const hands = found
+  const hands = cards
     .filter((entry) => !chosen.has(entry.hand.pattern))
     .slice(0, limit)
     .map((entry) => entry.hand);
@@ -274,8 +310,26 @@ export interface HandDetail {
   /** Null when the hand does not exist with exposed melds. */
   readonly exposedTier: Tier | null;
   readonly exposedPoints: number | null;
+  /**
+   * The scoring readings this card covers, the hand's own first. A hand with
+   * one scoring has a single reading; Big Robert has two (limit when the runs
+   * use the same numbers, half limit otherwise).
+   */
+  readonly readings: readonly HandReading[];
   /** The sample hand each book pictures, primary book first; empty if neither does. */
   readonly samples: readonly HandSample[];
+}
+
+/** One scoring of a card: the tier it pays, and when (`HandPattern.scoringWhen`). */
+export interface HandReading {
+  /** The catalogue pattern that scores this reading. */
+  readonly pattern: string;
+  /** The condition under which this reading applies; null for a hand with one scoring. */
+  readonly scoringWhen: string | null;
+  readonly concealedTier: Tier;
+  readonly concealedPoints: number | null;
+  readonly exposedTier: Tier | null;
+  readonly exposedPoints: number | null;
 }
 
 /**
@@ -337,43 +391,77 @@ function buildGroups(): HandGroup[] {
 
 const GROUPS: readonly HandGroup[] = buildGroups();
 
-function detailOf(pattern: HandPattern): HandDetail {
+/**
+ * The card's detail. `excluded` drops the scoring readings a house rule
+ * leaves out; the card itself is the canonical hand's, always.
+ */
+function detailOf(card: HandPattern, excluded: ReadonlySet<string> = new Set()): HandDetail {
+  const readings = [card, ...PATTERNS.filter((pattern) => pattern.variantOf === card.id)]
+    .filter((pattern) => !excluded.has(pattern.id))
+    .map(
+      (pattern): HandReading => ({
+        pattern: pattern.id,
+        scoringWhen: pattern.scoringWhen ?? null,
+        concealedTier: pattern.tier,
+        concealedPoints: TIER_POINTS[pattern.tier],
+        exposedTier: pattern.exposedTier,
+        exposedPoints: pattern.exposedTier === null ? null : TIER_POINTS[pattern.exposedTier],
+      }),
+    );
   return {
-    pattern: pattern.id,
-    name: pattern.name,
-    pages: pattern.pages,
-    groups: GROUPS.filter((group) => group.hands.includes(pattern.id)).map((group) => group.id),
-    example: (EXAMPLES[pattern.id] ?? "").split(" ").filter((key) => key.length > 0),
-    description: pattern.description,
-    concealedOnly: pattern.exposedTier === null,
-    requiresSelfDrawn: pattern.requiresSelfDrawn,
-    concealedTier: pattern.tier,
-    concealedPoints: TIER_POINTS[pattern.tier],
-    exposedTier: pattern.exposedTier,
-    exposedPoints: pattern.exposedTier === null ? null : TIER_POINTS[pattern.exposedTier],
-    samples: mergedSamples(pattern.id),
+    pattern: card.id,
+    name: card.name,
+    pages: card.pages,
+    groups: GROUPS.filter((group) => group.hands.includes(card.id)).map((group) => group.id),
+    example: (EXAMPLES[card.id] ?? "").split(" ").filter((key) => key.length > 0),
+    description: card.description,
+    concealedOnly: card.exposedTier === null,
+    requiresSelfDrawn: card.requiresSelfDrawn,
+    concealedTier: card.tier,
+    concealedPoints: TIER_POINTS[card.tier],
+    exposedTier: card.exposedTier,
+    exposedPoints: card.exposedTier === null ? null : TIER_POINTS[card.exposedTier],
+    readings,
+    samples: mergedSamples(card.id),
   };
 }
 
-/** One hand by id, for the "explore this hand" view; null for an unknown id. */
+/**
+ * One hand by id, for the "explore this hand" view; null for an unknown id.
+ * A scoring variant's id gives its card, the hand it belongs to.
+ */
 export function handDetail(id: string): HandDetail | null {
   const pattern = PATTERN_BY_ID.get(id);
-  return pattern === undefined ? null : detailOf(pattern);
+  return pattern === undefined ? null : detailOf(cardOf(pattern));
 }
 
 /**
- * The catalogue for the hand index: every hand in play, and the book's
- * headings to filter by. `excluded` names the hands the table plays without
- * (a house rule); they and their place under a heading are left out.
+ * The catalogue for the hand index: every hand in play, one card each, and the
+ * book's headings to filter by. `excluded` names the hands the table plays
+ * without (a house rule); they and their place under a heading are left out.
  */
 export function handIndex(
   excluded: readonly string[] = [],
 ): { readonly groups: readonly HandGroup[]; readonly hands: readonly HandDetail[] } {
-  if (excluded.length === 0) return { groups: GROUPS, hands: PATTERNS.map(detailOf) };
+  const gone = new Set(excluded);
+  const cards = PATTERNS.filter((pattern) => pattern.variantOf === undefined);
+  const hands = cards
+    .filter((pattern) => !gone.has(pattern.id))
+    .map((pattern) => detailOf(pattern, gone));
+  if (excluded.length === 0) return { groups: GROUPS.map(cardGroup), hands };
   return {
-    groups: GROUPS.map((group) => ({ ...group, hands: group.hands.filter((id) => !excluded.includes(id)) })).filter(
+    groups: GROUPS.map((group) => cardGroup({ ...group, hands: group.hands.filter((id) => !gone.has(id)) })).filter(
       (group) => group.hands.length > 0,
     ),
-    hands: PATTERNS.filter((pattern) => !excluded.includes(pattern.id)).map(detailOf),
+    hands,
   };
+}
+
+/** A heading with each card once: a scoring variant is filed under its canonical hand. */
+function cardGroup(group: HandGroup): HandGroup {
+  const hands = group.hands.filter((id) => {
+    const pattern = PATTERN_BY_ID.get(id);
+    return pattern === undefined || pattern.variantOf === undefined;
+  });
+  return { ...group, hands };
 }

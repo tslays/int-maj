@@ -262,4 +262,38 @@ describe("closest hands", () => {
       assert.deepEqual(closestWithPins(view, ["wriggly-snake"]).pinned, []);
     });
   });
+
+  describe("scoring variants", () => {
+    // Big Robert, same numbers, one tile short (a second wind to pair the S): limit.
+    const SAME_NUMBERS_ONE_SHORT = "b1 b2 b3 b4 c1 c2 c3 c4 o1 o2 o3 o4 wS";
+    // Big Robert, mixed numbers, one tile short (a second wind to pair the S): half limit.
+    const MIXED_NUMBERS_ONE_SHORT = "b1 b2 b3 b4 c2 c3 c4 c5 o1 o2 o3 o4 wS";
+
+    it("lists Big Robert once, at the reading the seat is nearest to", () => {
+      const state = fixture({ hands: { E: SAME_NUMBERS_ONE_SHORT, ...OTHERS }, wall: LONG_WALL, phase: "draw", turn: "E" });
+      const robert = closestHands(viewFor(state, "E"), 100).filter((hand) => hand.pattern.startsWith("big-robert"));
+      assert.equal(robert.length, 1, "one card for both scorings");
+      assert.equal(robert[0]!.pattern, "big-robert");
+      assert.equal(robert[0]!.name, "Big Robert");
+      assert.equal(robert[0]!.tier, "limit");
+      assert.equal(robert[0]!.points, 1000);
+    });
+
+    it("scores the card at the mixed-numbers reading when that is the nearer one", () => {
+      const state = fixture({ hands: { E: MIXED_NUMBERS_ONE_SHORT, ...OTHERS }, wall: LONG_WALL, phase: "draw", turn: "E" });
+      const robert = closestHands(viewFor(state, "E"), 100).filter((hand) => hand.pattern.startsWith("big-robert"));
+      assert.equal(robert.length, 1);
+      assert.equal(robert[0]!.pattern, "big-robert");
+      assert.equal(robert[0]!.tier, "half");
+      assert.equal(robert[0]!.points, 500);
+    });
+
+    it("maps a pin on the mixed-numbers reading to its card", () => {
+      const state = fixture({ hands: { E: MIXED_NUMBERS_ONE_SHORT, ...OTHERS }, wall: LONG_WALL, phase: "draw", turn: "E" });
+      const { pinned, hands } = closestWithPins(viewFor(state, "E"), ["big-robert-mixed"]);
+      assert.deepEqual(pinned.map((entry) => entry.pattern), ["big-robert"]);
+      assert.equal(pinned[0]!.hand?.tier, "half");
+      assert.ok(!hands.some((hand) => hand.pattern.startsWith("big-robert")), "the pinned card is not listed twice");
+    });
+  });
 });

@@ -25,7 +25,8 @@ describe("hand index", () => {
 
   it("gives every hand a heading; only the two unfiled ordinary hands fall under Other", () => {
     const { groups, hands } = handIndex();
-    assert.equal(hands.length, PATTERNS.length);
+    const variants = PATTERNS.filter((pattern) => pattern.variantOf !== undefined).length;
+    assert.equal(hands.length, PATTERNS.length - variants, "a scoring variant shares its hand's card");
     for (const hand of hands) assert.ok(hand.groups.length > 0, `${hand.pattern} has no heading`);
     assert.deepEqual(groups.at(-1), { id: "other", name: "Other", hands: ["buried-treasure", "chinese-ordinary"] });
     assert.deepEqual(
@@ -36,10 +37,11 @@ describe("hand index", () => {
     assert.equal(bamboo.hands[0], "sparrows-sanctuary", "book order within a heading");
   });
 
-  it("splits the catalogue between the books as the framework counts it: 54 and 35", () => {
+  it("splits the catalogue between the books as the framework counts it: 54 and 34 cards", () => {
+    // The framework's 35 Companion-only entries are 34 printed hands: Big Robert's two scorings share a card.
     const { hands } = handIndex();
     assert.equal(hands.filter((hand) => hand.pages.illustrated.length > 0).length, 54);
-    assert.equal(hands.filter((hand) => hand.pages.illustrated.length === 0).length, 35);
+    assert.equal(hands.filter((hand) => hand.pages.illustrated.length === 0).length, 34);
     for (const hand of hands) {
       const printed = hand.pages.illustrated.length > 0 || hand.pages.companion.length > 0;
       assert.ok(printed, `${hand.pattern} has no page in either book`);
@@ -62,5 +64,33 @@ describe("hand index", () => {
       assert.equal(EXAMPLES[pattern.id], FIXTURES[pattern.id]!.positive.concealed, pattern.id);
       assert.ok(handDetail(pattern.id)!.example.length >= 14);
     }
+  });
+
+  it("gives Big Robert one card with both of its scorings, the hand's own first", () => {
+    const { hands } = handIndex();
+    assert.equal(hands.filter((hand) => hand.name === "Big Robert").length, 1);
+    assert.ok(!hands.some((hand) => hand.pattern === "big-robert-mixed"), "the variant has no card of its own");
+    const robert = handDetail("big-robert")!;
+    assert.deepEqual(
+      robert.readings.map((reading) => [reading.pattern, reading.concealedTier, reading.concealedPoints]),
+      [
+        ["big-robert", "limit", 1000],
+        ["big-robert-mixed", "half", 500],
+      ],
+    );
+    for (const reading of robert.readings) assert.ok(reading.scoringWhen, `${reading.pattern} says when it applies`);
+  });
+
+  it("files a scoring variant under its hand's card, whichever id is asked for", () => {
+    assert.equal(handDetail("big-robert-mixed")!.pattern, "big-robert");
+    assert.equal(handDetail("dragons-tail")!.readings.length, 1, "a hand with one scoring has one reading");
+  });
+
+  it("hides a scoring variant only when the house rule leaves out the hand itself", () => {
+    const withoutRobert = handIndex(["big-robert"]);
+    assert.ok(!withoutRobert.hands.some((hand) => hand.pattern === "big-robert"));
+    const withoutMixed = handIndex(["big-robert-mixed"]);
+    const card = withoutMixed.hands.find((hand) => hand.pattern === "big-robert")!;
+    assert.deepEqual(card.readings.map((reading) => reading.pattern), ["big-robert"]);
   });
 });
