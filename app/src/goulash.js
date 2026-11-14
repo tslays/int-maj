@@ -1,11 +1,13 @@
 /**
- * The Goulash banner: a panel over the middle of the table for as long as the
- * three exchanges last, so nobody mistakes the hand for an ordinary one.
+ * The Goulash banner: a small, quiet panel over the middle of the table for
+ * as long as the three exchanges last, so nobody mistakes the hand for an
+ * ordinary one.
  *
- * It says what the hand is and why (a drawn hand is followed by a Goulash,
- * Illustrated p. 21), which of the three exchanges is on, who your tiles go
- * to, and how many of the three you have picked. It never takes a touch: the
- * hand under it stays in reach.
+ * It says only what the player needs at the moment: which of the three
+ * exchanges is on, who your tiles go to, and how many you have picked. What a
+ * Goulash is and why (a drawn hand is followed by one, Illustrated p. 21) is
+ * the first-game tip's job (`tips.js`), shown once. The banner never takes a
+ * touch: the hand under it stays in reach.
  */
 
 import { $, board, seatName, state } from "./shared.js";
@@ -53,21 +55,7 @@ export function refreshGoulash(view = state.payload?.view) {
 
   const title = document.createElement("h2");
   title.textContent = "Goulash";
-  panel.replaceChildren(
-    line("goulash-kicker", "The last hand was drawn, so this is a"),
-    title,
-    // From the second exchange the swap is known; say instead where the new tiles are (#119).
-    line(
-      "goulash-rule",
-      goulash.stage === 0
-        ? "Before play, everyone swaps three tiles, three times."
-        : "The tiles you just received are marked in teal.",
-    ),
-    line("goulash-rule", "No chows this hand, except in a special hand."),
-    steps,
-    line("goulash-task", `Tap 3 tiles to pass to ${partner}`),
-    count,
-  );
+  panel.replaceChildren(title, steps, line("goulash-task", `Pass 3 tiles to ${partner}`), count);
   // Replay the entrance for each new exchange.
   panel.hidden = true;
   void panel.offsetWidth;

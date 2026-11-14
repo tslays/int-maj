@@ -167,9 +167,9 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   `shared.js` (the one mutable `state` - api, latest answer, busy, calls
   off - plus the board, storage, `request`, `toast`, `faceChip` and other
   small helpers), `input.js` (hand input: tap, lift, drag, swipe-to-throw,
-  the goulash picks), `goulash.js` (the Goulash banner over the middle of the
-  table during the three exchanges: what the hand is, which exchange, who your
-  tiles go to, how many are picked), `hints.js` (closest-hands panel, the hand
+  the goulash picks), `goulash.js` (the small Goulash banner over the middle of the
+  table during the three exchanges: which exchange, who your tiles go to, how
+  many are picked; what a Goulash is lives in the first-game tip), `hints.js` (closest-hands panel, the hand
   sheet with the book's own sample hand, and the Hints toggle), `handbook.js`
   (the index of all hands), `result.js` (the result card and the final
   standings), `menu.js`

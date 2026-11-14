@@ -129,7 +129,12 @@ export function tipForChoices(legal, { callsOff }) {
     ]);
   }
   if (has((a) => a.type === "GoulashExchange")) {
-    candidates.push(["goulash", "Tap three tiles to pass on, then Pass 3 tiles.", "Goulash"]);
+    candidates.push([
+      "goulash",
+      "The last hand was drawn, so before play everyone passes three tiles to a neighbour, three times. Tap three tiles, then Pass 3 tiles. The tiles you receive are marked in teal. No chows this hand, except in a special hand.",
+      "Goulash",
+      { guide: true },
+    ]);
   }
   if (has((a) => a.type === "RequestReshuffle")) {
     candidates.push(["reshuffle", "If the deal gives you nothing to build on, Reshuffle asks for a new one.", "A poor deal?"]);
