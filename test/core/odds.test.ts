@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { closestHands, viewFor } from "../../src/core/game/index.ts";
-import { handChance, tableOf, type ClaimRule, type Table } from "../../src/core/game/odds.ts";
+import { handChance, tableOf, unseenOf, type ClaimRule, type Table } from "../../src/core/game/odds.ts";
 import { PLAY_TILE_KEYS } from "../../src/core/tiles.ts";
 import { fixture } from "../helpers/game-fixture.ts";
 
@@ -155,3 +155,36 @@ describe("hand chance sees only the viewer's table", () => {
     assert.deepEqual(closestHands(one), closestHands(two));
   });
 });
+
+describe("a concealed kong on the table", () => {
+  // R-057: a declared concealed kong shows its two end tiles face up, so all
+  // four copies are known to be out of play, as surely as an exposed one.
+  it("takes all four copies out of the tiles that can still come", () => {
+    const hands = {
+      E: "b1 b2 b4 b5 b6 c1 c2 c3 c4 c5 c6 o9 o9",
+      S: "b7 b8 b9 c7 c8 c9 o1 o2 o3 dR",
+      W: "b1 b2 b3 b4 b5 b6 c1 c2 c3 c4 c5 c6 c7",
+      N: "c1 c2 c3 c4 c5 c6 o4 o5 o6 o7 o8 o9 dW",
+    };
+    const wall = Array.from({ length: 60 }, (_, index) => ["c6", "o9", "dW", "c3", "o5", "wN"][index % 6]!);
+    const open = viewFor(fixture({ hands, wall, phase: "draw", turn: "E" }), "E");
+    const kong = viewFor(
+      fixture({
+        hands,
+        melds: { S: [{ kind: "kong", tiles: ["b3", "b3", "b3", "b3"], exposed: false }] },
+        wall,
+        phase: "draw",
+        turn: "E",
+      }),
+      "E",
+    );
+    const b3 = PLAY_TILE_KEYS.indexOf("b3");
+    assert.ok(unseenOf(open)[b3]! > 0);
+    assert.equal(unseenOf(kong)[b3], 0, "no 3 bamboo can come any more");
+    const needsB3 = (view: typeof open) =>
+      closestHands(view, 100).filter((hand) => hand.need.includes("b3")).map((hand) => hand.pattern);
+    assert.ok(needsB3(open).length > 0, "without the kong, hands wanting a 3 bamboo are in reach");
+    assert.deepEqual(needsB3(kong), [], "with it, no hand waits on a 3 bamboo");
+  });
+});
+
