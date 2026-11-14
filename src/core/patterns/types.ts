@@ -108,7 +108,7 @@ export interface HandPattern {
    * with pictures" hand set leaves these out.
    */
   readonly companionUnillustrated?: boolean;
-  /** For variant families such as Dragon's Tail (1 & 2). */
+  /** For variant families such as Dragon's Tail. */
   readonly variantOf?: string;
   /**
    * True when the composition or its tier is a conservative reading of a

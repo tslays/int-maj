@@ -585,7 +585,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "dragons-tail",
-    name: "Dragon's Tail (1 & 2)",
+    name: "Dragon's Tail",
     pages: { illustrated: [52], companion: [12, 41] },
     category: "run",
     tier: "limit",
@@ -825,7 +825,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "big-robert-mixed",
-    name: "Big Robert (mixed numbers)",
+    name: "Mixed Big Robert",
     pages: { illustrated: [], companion: [14] },
     category: "run",
     tier: "half",
@@ -2463,7 +2463,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "buried-treasure",
-    name: "Buried Treasure (Concealed Mah Jong)",
+    name: "Buried Treasure",
     pages: { illustrated: [38], companion: [] },
     category: "plain",
     tier: "calculate",

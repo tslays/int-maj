@@ -117,7 +117,7 @@ entries + 3 missing primary hands).
 | `gates-of-heaven` | Gates of Heaven | 5 | 36 |
 | `hachi-ban` | Hachi Ban | 48 | 57 |
 | `five-odd-honours` | Five Odd Honours | 47 | 56 |
-| `dragons-tail` | Dragon's Tail (1 & 2) | 36 | 52 |
+| `dragons-tail` | Dragon's Tail | 36 | 52 |
 | `gretas-garden` | Greta's Garden | 21 | 43 |
 | `gretas-dragon` | Greta's Dragon | 22 | 43 |
 | `red-lantern` | Red Lantern | 31 | 48 |
@@ -200,7 +200,7 @@ table as the supplement; none is deleted.
 | `dragons-teeth` | Dragon's Teeth | Red/White dragon pungs + runs. |
 | `yin-yang` | Yin Yang | Fixed chow/pair shape. |
 | `big-robert` | Big Robert | Four-tile runs in each suit, same numbers. |
-| `big-robert-mixed` | Big Robert (mixed numbers) | Half-limit variant of Big Robert. |
+| `big-robert-mixed` | Mixed Big Robert | Half-limit variant of Big Robert. |
 | `moon-at-bottom-of-well` | Moon at Bottom of Well | Four Circle chows + pair. |
 | `three-philosophers` | Three Philosophers | Three suit chows + mixed chow + pair. |
 | `crazy-chows` | Crazy Chows | Four mixed chows + mixed pair. |
