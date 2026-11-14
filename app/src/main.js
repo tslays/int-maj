@@ -240,7 +240,7 @@ function hideChoices() {
   hideTip();
 }
 
-function button(label, kind, onClick, tiles = []) {
+function button(label, kind, onClick, tiles = [], drawOnly = []) {
   const element = document.createElement("button");
   element.type = "button";
   element.className = `act act-${kind}`;
@@ -252,8 +252,19 @@ function button(label, kind, onClick, tiles = []) {
   if (tiles.length > 0) {
     const row = document.createElement("span");
     row.className = "act-tiles";
-    for (const key of tiles) row.append(faceChip(key));
+    for (const key of tiles) {
+      const chip = faceChip(key);
+      if (drawOnly.includes(key)) chip.classList.add("chip-draw");
+      row.append(chip);
+    }
     element.append(row);
+    // A wait tile that wins only from your own draw says so: a discard of it is no win.
+    if (tiles.some((key) => drawOnly.includes(key))) {
+      const note = document.createElement("small");
+      note.className = "act-note";
+      note.textContent = tiles.every((key) => drawOnly.includes(key)) ? "own draw only" : "faded: own draw only";
+      element.append(note);
+    }
   }
   element.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -328,7 +339,7 @@ function showChoices({ chime = true } = {}) {
     bar.append(button(CALL_WORD[claim.kind], "claim", () => void act(claim), sortTiles(claim.tiles)));
   }
   for (const kong of kongs) bar.append(button("Kong", "claim", () => void act(kong), [kong.tile]));
-  if (fishing) bar.append(button("Fishing", "claim", () => void act(fishing), fishing.wait.slice(0, 4)));
+  if (fishing) bar.append(button("Fishing", "claim", () => void act(fishing), fishing.wait.slice(0, 4), state.payload.view.fishingDrawOnly ?? []));
   const win = wins[0] ?? mahjongClaim;
   if (win) bar.append(button("Mah Jong", "win", () => void act(win)));
   tipForChoices(legal, { callsOff: state.callsOff });

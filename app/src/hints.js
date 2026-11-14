@@ -331,6 +331,56 @@ function factChip(label, words) {
   return chip;
 }
 
+/** The words for a tile key ("c1" is "1 character"), for a sentence about the player's own tiles. */
+export function tileWords(key) {
+  const suit = { c: "character", o: "circle", b: "bamboo" }[key[0]];
+  if (suit !== undefined) return `${key.slice(1)} ${suit}`;
+  const wind = { E: "East wind", S: "South wind", W: "West wind", N: "North wind" }[key[1]];
+  if (key[0] === "w" && wind !== undefined) return wind;
+  const dragon = { R: "red dragon", G: "green dragon", W: "white dragon" }[key[1]];
+  return key[0] === "d" && dragon !== undefined ? dragon : key;
+}
+
+/**
+ * The tiles still needed, one chip each. Where another tile would do as well
+ * (a 4 where the 1 completes a pair) it follows the chip after "or".
+ */
+function needChips(into, progress) {
+  const standIns = new Map((progress.instead ?? []).map((entry) => [entry.need, entry.or]));
+  const shown = new Set();
+  for (const key of progress.need) {
+    const group = document.createElement("span");
+    group.className = "need-pick";
+    group.append(faceChip(key));
+    const or = standIns.get(key);
+    if (or !== undefined && !shown.has(key)) {
+      shown.add(key);
+      const word = document.createElement("span");
+      word.className = "need-or";
+      word.textContent = "or";
+      group.append(word);
+      for (const other of or) group.append(faceChip(other));
+      group.title = `${tileWords(key)} or ${or.map(tileWords).join(" or ")}`;
+    }
+    into.append(group);
+  }
+}
+
+/**
+ * When a needed tile is one the player already holds, say it is one more the
+ * hand wants (the pair beside a run cannot use the run's own tile).
+ */
+function anotherNote(progress) {
+  const held = progress.another ?? [];
+  if (held.length === 0) return null;
+  const note = document.createElement("p");
+  note.className = "detail-muted need-note";
+  const names = held.map(tileWords);
+  const list = names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  note.textContent = `You already hold the ${list}; this hand wants one more.`;
+  return note;
+}
+
 /**
  * The sheet for one hand. `progress` is the hand's closest-hands entry (how
  * many tiles away, which ones), or null when the hand is out of reach or no
@@ -440,11 +490,15 @@ export async function openHandDetail(pattern, progress = null) {
     if (progress.away === 0) {
       need.textContent = "Complete: you can declare it.";
     } else {
-      for (const key of progress.need) need.append(faceChip(key));
+      needChips(need, progress);
     }
     const heading = document.createElement("h3");
     heading.textContent = progress.away === 0 ? "Your hand" : "Tiles you still need";
     yours.append(heading, need);
+    if (progress.away > 0) {
+      const note = anotherNote(progress);
+      if (note !== null) yours.append(note);
+    }
     card.append(yours);
   }
 

@@ -124,7 +124,7 @@ export function tipForChoices(legal, { callsOff }) {
   if (has((a) => a.type === "DeclareFishing")) {
     candidates.push([
       "fishing",
-      "You are one tile from winning. Fishing announces it, and the tiles shown are the ones you wait on; Don't announce keeps it to yourself.",
+      "You are one tile from winning. Fishing announces it, and the tiles shown are the ones you wait on; Don't announce keeps it to yourself. A faded tile wins only when you draw it yourself, not from a discard.",
       "Fishing",
     ]);
   }

@@ -22,7 +22,7 @@ import type { Action } from "./actions.ts";
 import { seatIndex, wallRemaining } from "./state.ts";
 import { legalActions } from "./legal.ts";
 import { goulashPartner } from "./reduce.ts";
-import { exclusionsOf, hasRule, WIN_NEEDS_FISH } from "./hands.ts";
+import { drawOnlyWaits, exclusionsOf, fishingDeclarationFor, hasRule, WIN_NEEDS_FISH } from "./hands.ts";
 
 export interface PlayerView {
   readonly seat: Seat;
@@ -84,6 +84,12 @@ export interface GameView {
   readonly result: HandResult | null;
   readonly legalActions: readonly Action[];
   readonly fishingTier: Tier | null;
+  /**
+   * While you may announce fishing: the tiles of your wait that win only when
+   * you draw them yourself (a self-drawn-only hand such as Buried Treasure), so
+   * the same tile discarded by another player is no win. Empty otherwise.
+   */
+  readonly fishingDrawOnly: readonly string[];
   /** During a Goulash: which of the three exchanges, and your partner in it. */
   readonly goulash: { readonly stage: 0 | 1 | 2; readonly partner: Seat } | null;
   /**
@@ -94,6 +100,13 @@ export interface GameView {
   readonly excludedHands: readonly string[];
   /** House rule `WIN_NEEDS_FISH`: a player offered the fishing announcement goes out only after showing the fish. */
   readonly winNeedsFish: boolean;
+}
+
+/** The draw-only tiles of the wait this seat may announce now, else none. */
+function drawOnlyOffer(state: GameState, seat: Seat): string[] {
+  if (state.phase !== "announce" || state.turn !== seat) return [];
+  const declaration = fishingDeclarationFor(state, seat);
+  return declaration === null ? [] : drawOnlyWaits(state, seat, declaration.wait);
 }
 
 function copyMelds(melds: readonly MeldState[]): MeldState[] {
@@ -158,6 +171,7 @@ export function viewFor(state: GameState, seat: Seat): GameView {
     result: state.result === null ? null : { ...state.result },
     legalActions: legalActions(state, seat),
     fishingTier: state.fishing.find((entry) => entry.seat === seat)?.tier ?? null,
+    fishingDrawOnly: drawOnlyOffer(state, seat),
     goulash:
       state.phase === "exchange"
         ? { stage: state.goulashStage ?? 0, partner: goulashPartner(state.goulashStage ?? 0, seat) }
