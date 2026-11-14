@@ -4,8 +4,12 @@
 
 import { houseRules } from "./options.js";
 import { bookPages } from "./pages.js";
+import { playExchange } from "./exchange.js";
+import { openingPref } from "./opening.js";
+import { pace } from "./pace.js";
 import { explainSettlement } from "./settlement.js";
 import { sound } from "./sound.js";
+import { stickColor, sticksFor } from "./sticks.js";
 import { showTip } from "./tips.js";
 import { rankSeats, winnerLine } from "./standings.js";
 import { tileOrder } from "./tiles.js";
@@ -144,6 +148,7 @@ function renderOutcome(outcome) {
   const table = document.createElement("div");
   table.className = "result-scores";
   const totals = scores();
+  const rows = {};
   for (const entry of state.payload.table) {
     const seatBox = document.createElement("div");
     seatBox.className = "result-seat";
@@ -163,6 +168,7 @@ function renderOutcome(outcome) {
     total.className = "total";
     total.textContent = totals[entry.seat].toLocaleString("en");
     row.append(name, change, total);
+    rows[entry.seat] = { row, change, total };
     if (outcome.winner === entry.seat) row.classList.add("is-winner");
 
     const why = document.createElement("ul");
@@ -175,6 +181,7 @@ function renderOutcome(outcome) {
       text.className = "why-text";
       text.textContent = line.text;
       item.append(text);
+      if (line.points > 0) item.append(stickChips(line.points));
       if (line.why) {
         const reason = document.createElement("span");
         reason.className = "why-reason";
@@ -195,11 +202,14 @@ function renderOutcome(outcome) {
   }
   side.append(table);
 
+  let exchange = null;
+
   const next = document.createElement("button");
   next.type = "button";
   next.className = "act act-win result-next";
   next.textContent = outcome.gameOver ? "Final standings" : "Next hand";
   next.addEventListener("click", async () => {
+    exchange?.finish();
     if (outcome.gameOver) {
       standingsOpen(board.handId);
       renderStandings();
@@ -222,6 +232,38 @@ function renderOutcome(outcome) {
   card.append(main, side);
   panel.replaceChildren(card);
   panel.hidden = false;
+
+  // The counters are thrown across the table, over the card, from each payer
+  // to the receiver; a tap anywhere skips to the end, and Options › Table
+  // animations › Skip leaves them out.
+  const before = Object.fromEntries(
+    state.payload.table.map((entry) => [entry.seat, totals[entry.seat] - (outcome.totals[entry.seat] ?? 0)]),
+  );
+  exchange = playExchange({
+    host: panel,
+    rows,
+    ledger: outcome.ledger,
+    before,
+    deltas: outcome.totals,
+    side: (seat) => board.rel(seat),
+    animate: openingPref.enabled,
+    scale: (ms) => pace.scale(ms),
+    onLand: (value, pan) => sound.cue("stick", { value, pan }),
+    onKnock: () => sound.cue("stickKnock"),
+  });
+}
+
+/** A payment as the counters that make it: small dyed sticks, largest first. */
+function stickChips(points) {
+  const chips = document.createElement("span");
+  chips.className = "stick-chips";
+  chips.setAttribute("aria-hidden", "true");
+  for (const value of sticksFor(points - (points % 100))) {
+    const chip = document.createElement("span");
+    chip.className = `stick-chip stick-${stickColor(value)}`;
+    chips.append(chip);
+  }
+  return chips;
 }
 
 /**

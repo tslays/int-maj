@@ -266,7 +266,7 @@ const TABS = [
     cards: [
       {
         title: "The menu",
-        text: "Calls, Sort and Hints switch on and off; a green light is on. Options has the bots' level, pace, sound, dice and dealing, the house rules, and New game.",
+        text: "Calls, Sort and Hints switch on and off; a green light is on. Options has the bots' level, pace, sound, table animations, the house rules, and New game.",
         picture: () => row(ghost("Calls", true), ghost("Hints", true), ghost("Options")),
       },
       {

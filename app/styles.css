@@ -640,6 +640,91 @@ html.phone-frame .actions {
   font-size: 12px;
   color: var(--muted);
 }
+/*
+ * The counters: sticks dyed yellow (100), green (500), blue (1000) and red
+ * (4000), as the Companion makes them (p. 55). They are thrown across the
+ * screen, over the result card, from payer to receiver; a small row of them
+ * sits under each payment.
+ */
+.stick-throw {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+}
+.stick,
+.stick-chip {
+  --stick: #e8c547;
+  --stick-hi: #fff1a8;
+  --stick-lo: #a88316;
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--stick-hi) 0%, var(--stick) 42%, var(--stick-lo) 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.25) inset,
+    0 2px 5px rgba(0, 0, 0, 0.45);
+}
+.stick {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+/* What a seat won or lost, beside its sticks once they lie still. */
+.stick-tag {
+  position: absolute;
+  translate: -50% -50%;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(10, 16, 18, 0.82);
+  font-size: 20px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  animation: act-in 220ms ease-out both;
+}
+.stick-tag.gain {
+  color: #7ee2a8;
+}
+.stick-tag.loss {
+  color: #ff8b80;
+}
+.stick-green {
+  --stick: #3fa66b;
+  --stick-hi: #9de4b6;
+  --stick-lo: #1f6a40;
+}
+.stick-blue {
+  --stick: #3a73c9;
+  --stick-hi: #9cc3ff;
+  --stick-lo: #1e4485;
+}
+.stick-red {
+  --stick: #c9433a;
+  --stick-hi: #ff9f92;
+  --stick-lo: #82221c;
+}
+.stick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin: 2px 0 1px;
+}
+.stick-chip {
+  width: 22px;
+  height: 5px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+.stick-chip.stick-red {
+  width: 26px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .stick-throw {
+    display: none;
+  }
+}
 .result-side {
   display: grid;
   gap: 10px;

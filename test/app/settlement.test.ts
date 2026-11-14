@@ -35,7 +35,7 @@ function account(state: GameState, you = "E", cite = true) {
     name: (seat: string) => NAMES[seat],
     fishing: state.fishing.map((entry) => entry.seat),
     cite,
-  }) as Record<string, { dir: string; text: string; why: string }[]>;
+  }) as Record<string, { dir: string; text: string; why: string; points: number }[]>;
 }
 
 /** What opens when a seat is tapped: its payments... */
@@ -81,6 +81,11 @@ describe("the result card's account of the points", () => {
       "Fishing: East was one tile short of a half-limit hand. A fishing hand is paid by the other losing players, not by the winner (Illustrated pp. 21, 32). East receives double (Illustrated p. 21).",
     ]);
     assert.equal(reasons(seats, "W")[0], "Winning hand: every other player pays the winner.");
+    // Each line carries its points, for the counter sticks drawn under it.
+    assert.deepEqual(
+      seats.E!.map((line) => line.points),
+      [3000, 400, 400],
+    );
     // The winner never appears as a fishing payer or payee.
     assert.ok(!shown(seats, "S").some((line) => line.includes("400")));
 

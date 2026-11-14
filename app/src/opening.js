@@ -4,7 +4,9 @@
  *
  * Watching the dice, the break and the deal is a preference kept on the
  * device, never part of the game: the engine deals the same hand either way,
- * and a player who wants to get straight to the tiles turns it off.
+ * and a player who wants to get straight to the tiles turns it off. The same
+ * choice (Options › Table animations) also covers the counter sticks thrown
+ * over the result card (`exchange.js`): Skip shows the final numbers at once.
  */
 
 import { browserStorage, storedString } from "./prefs.js";

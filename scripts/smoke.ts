@@ -194,6 +194,27 @@ async function buttons(page: Page): Promise<string[]> {
 async function resultCard(page: Page): Promise<void> {
   await page.waitForSelector("#result:not([hidden])", { timeout: READY_MS });
   assert.ok(((await page.textContent("#result")) ?? "").trim().length > 0, "the result card has text");
+  // The counters are thrown over the card; a tap ends the exchange, and every
+  // row then shows the total the table sent, the sticks gone.
+  await page.click(".result-kicker");
+  assert.equal(await page.locator(".stick-throw").count(), 0, "a tap ends the exchange of counters");
+  const shown = await page.$$eval(".result-row .total", (list) => list.map((cell) => (cell.textContent ?? "").replace(/,/g, "")));
+  const expected = await page.evaluate(() => {
+    // The page's own payload, read loosely: the ledger and the scores carried in.
+    const payload = window.mahjong!.state() as unknown as {
+      table: { seat: string }[];
+      scoresBefore?: Record<string, number>;
+      view: { ledger: { from: string; to: string; points: number | null }[] };
+    };
+    return payload.table.map((entry) => {
+      const net = payload.view.ledger.reduce((sum, item) => {
+        if (item.points === null) return sum;
+        return sum + (item.to === entry.seat ? item.points : item.from === entry.seat ? -item.points : 0);
+      }, 0);
+      return String(16000 + (payload.scoresBefore?.[entry.seat] ?? 0) + net);
+    });
+  });
+  assert.deepEqual(shown, expected, "the result rows end on the table's totals");
 }
 
 /** Wait until the game has answered and nothing is animating; return the payload. */
@@ -659,7 +680,7 @@ async function opening(browser: Browser, origin: string, shots: string | null): 
     console.log("  ok  a tap skips the opening");
   }
 
-  // Dice and dealing set to Skip: no opening at all, and the choice is remembered.
+  // Table animations set to Skip: no opening at all, no counters thrown, and the choice is remembered.
   {
     const errors: string[] = [];
     const page = await openPage(browser, errors);
@@ -682,9 +703,26 @@ async function opening(browser: Browser, origin: string, shots: string | null): 
     assert.equal(payload.view.dealer, "E");
     assert.equal(payload.view.player.hand.length, 14);
     assert.equal(await fresh.evaluate(() => (window as unknown as { openingSeen: boolean }).openingSeen), false, "no opening when it is off");
-    assert.deepEqual(errors, [], "opening off: no errors");
     await fresh.context().close();
-    console.log("  ok  Dice and dealing set to Skip goes straight to play");
+
+    // The result card shows the final numbers at once, with no sticks thrown.
+    const result = await openPage(browser, errors);
+    await result.addInitScript(() => localStorage.setItem("int-maj.opening", "off"));
+    await result.addInitScript(() => {
+      (window as unknown as { sticksSeen: boolean }).sticksSeen = false;
+      new MutationObserver(() => {
+        if (document.querySelector(".stick-throw")) (window as unknown as { sticksSeen: boolean }).sticksSeen = true;
+      }).observe(document, { subtree: true, childList: true });
+    });
+    await result.goto(`${origin}/?state=result`);
+    await result.waitForSelector("#result:not([hidden])", { timeout: READY_MS });
+    await result.waitForTimeout(1500);
+    assert.equal(await result.evaluate(() => (window as unknown as { sticksSeen: boolean }).sticksSeen), false, "no counters thrown when off");
+    const changes = await result.$$eval(".result-row span:nth-child(2)", (list) => list.map((cell) => cell.textContent));
+    assert.ok(changes.some((text) => text !== "±0"), "the result shows the hand's changes at once");
+    assert.deepEqual(errors, [], "table animations off: no errors");
+    await result.context().close();
+    console.log("  ok  Table animations set to Skip goes straight to play and to the numbers");
   }
 }
 

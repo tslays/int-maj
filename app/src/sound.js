@@ -12,6 +12,8 @@
  *   dice       two dice thrown: a recording of real dice (the only sound not synthesised)
  *   meld       the tiles of a call set down together
  *   tick       the very quiet click of a hand tile under your pointer / finger
+ *   stick      a thrown counter stick landing on the felt: a wooden knock and a small bounce
+ *   stickKnock two counter sticks knocking together: a quick, bright wooden click
  *   alert      the bright two-note chime when the game asks you to decide
  *
  * Sounds are cued by name (`sound.cue("clack", { delay, pan, far })`) and
@@ -41,7 +43,7 @@ async function fetchSample(name) {
 }
 
 /** Cues that may not repeat faster than this many milliseconds. */
-const MIN_GAP = { tick: 22, swap: 45, draw: 30, press: 40 };
+const MIN_GAP = { tick: 22, swap: 45, draw: 30, press: 40, stick: 30, stickKnock: 60 };
 
 const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
 
@@ -246,6 +248,34 @@ export function createVoices(ctx, out, random = Math.random, samples = { dice: [
     tone(bus, t, { freq: 1100, to: 700, sweep: 0.02, gain: 0.18, decay: 0.04 });
   }
 
+  /**
+   * A thrown counter stick landing on the felt: a hollow wooden knock that
+   * falls in pitch, the felt's soft thud under it, and a smaller second knock
+   * as the stick bounces once. `value` (the stick's points) makes the heavier
+   * sticks a little lower; `pan` places it on the side it lands.
+   */
+  function stick(t, { pan = 0, value = 100 } = {}) {
+    const weight = clamp(Math.log10(Math.max(100, value) / 100) / Math.log10(40), 0, 1);
+    const k = (1 - weight * 0.22) * (1 + (random() - 0.5) * 0.1);
+    const bus = lane({ pan, top: 6000, gain: 1.0 });
+    const knock = (at, level) => {
+      burst(bus, at, { freq: 2600 * k, q: 1.6, gain: 0.32 * level, attack: 0.0005, decay: 0.016 });
+      tone(bus, at, { freq: 980 * k, to: 640 * k, sweep: 0.04, gain: 0.6 * level, decay: 0.07 });
+      tone(bus, at, { freq: 1870 * k, gain: 0.14 * level, decay: 0.03 });
+      burst(bus, at, { type: "lowpass", freq: 380, q: 0.7, gain: 0.32 * level, attack: 0.001, decay: 0.05 });
+    };
+    knock(t, 1);
+    knock(t + 0.07 + random() * 0.03, 0.42);
+  }
+
+  /** Two counter sticks knocking together on the felt: a quick, bright wooden click. */
+  function stickKnock(t, { pan = 0 } = {}) {
+    const k = 1 + (random() - 0.5) * 0.12;
+    const bus = lane({ pan, top: 8000, gain: 0.75 });
+    burst(bus, t, { freq: 3400 * k, q: 2, gain: 0.3, attack: 0.0004, decay: 0.01 });
+    tone(bus, t, { freq: 1500 * k, to: 1150 * k, sweep: 0.02, gain: 0.32, decay: 0.035 });
+  }
+
   /* ----------------------------------------------------- being asked, and results */
 
   /**
@@ -310,7 +340,7 @@ export function createVoices(ctx, out, random = Math.random, samples = { dice: [
     bell(bus, t + 0.16, 659, { gain: 0.2, decay: 0.8 });
   }
 
-  return { clack, dice, meld, deal, draw, tick, swap, lift, press, alert, alertWin, notice, fishing, win, lose, drawn };
+  return { clack, dice, meld, deal, draw, tick, swap, lift, press, stick, stickKnock, alert, alertWin, notice, fishing, win, lose, drawn };
 }
 
 /* --------------------------------------------------------- the engine */

@@ -31,8 +31,8 @@ const capital = (text) => text.charAt(0).toUpperCase() + text.slice(1);
  * @param {(seat: string) => string} input.name  a seat's wind name, "South"
  * @param {readonly string[]} input.fishing      the seats that announced they were fishing
  * @param {boolean} [input.cite]                 keep the Illustrated page citations (default true)
- * @returns {Record<string, { dir: "pay" | "get" | "none", text: string, why: string }[]>}
- *   each seat's payments ("Pays South 1,200") with the reason for each
+ * @returns {Record<string, { dir: "pay" | "get" | "none", text: string, why: string, points: number }[]>}
+ *   each seat's payments ("Pays South 1,200") with the reason and the points for each
  */
 export function explainSettlement({ outcome, you, dealer, name, fishing, cite = true }) {
   const plain = (text) => (cite ? text : text.replace(/ \(Illustrated pp?\. [0-9, ]+\)/g, ""));
@@ -84,8 +84,8 @@ export function explainSettlement({ outcome, you, dealer, name, fishing, cite = 
   const seats = { E: [], S: [], W: [], N: [] };
   for (const entry of ledger) {
     const why = plain([reasonOf(entry), doubleNote(entry)].filter(Boolean).join(" "));
-    seats[entry.from].push({ dir: "pay", text: `Pays ${who(entry.to)} ${fmt(entry.points)}`, why });
-    seats[entry.to].push({ dir: "get", text: `Receives ${fmt(entry.points)} from ${who(entry.from)}`, why });
+    seats[entry.from].push({ dir: "pay", text: `Pays ${who(entry.to)} ${fmt(entry.points)}`, why, points: entry.points });
+    seats[entry.to].push({ dir: "get", text: `Receives ${fmt(entry.points)} from ${who(entry.from)}`, why, points: entry.points });
   }
 
   const winner = outcome.kind === "win" ? outcome.winner : null;
@@ -104,7 +104,7 @@ export function explainSettlement({ outcome, you, dealer, name, fishing, cite = 
         why.push(`${capital(who(seat))} ${was(seat)} fishing, but fishing only pays when another player goes Mah Jong (Illustrated pp. 21, 32).`);
       }
     }
-    seats[seat].push({ dir: "none", text: "Nothing paid or received", why: plain(why.join(" ")) });
+    seats[seat].push({ dir: "none", text: "Nothing paid or received", why: plain(why.join(" ")), points: 0 });
   }
   return seats;
 }

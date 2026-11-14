@@ -183,7 +183,7 @@ export function installOptions({ newGame }) {
     showLargeDiscards();
   });
 
-  /* Dice and dealing: takes effect with the next deal. */
+  /* Table animations (dice, dealing, thrown counters): takes effect with the next deal or result. */
   $("#opening-pref").addEventListener("click", (event) => {
     const button = event.target.closest("[data-opening]");
     if (button === null) return;
