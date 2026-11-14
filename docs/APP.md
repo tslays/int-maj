@@ -300,10 +300,12 @@ tile; tester report #147). Close it with the cross, the backdrop or Escape.
 
 Above the panel, **All hands** opens the index of every catalogue hand
 (`app/src/handbook.js`, `GET /api/hands`), so nobody has to reach for either
-book. It stays there with Hints off. Each card shows the hand's name, value, an
-example in tiles, its composition and the concealed/exposed icon; tapping it
-opens the same hand sheet, which also lists the example and the page in each
-book. The rail on the left filters by:
+book. It stays there with Hints off. Every card has the same rows: the hand's
+name and value, an example in tiles, its composition and the concealed/exposed
+icon. A hand with two scorings shows both values in its corner (Big Robert:
+`500/1,000`, lowest first). Tapping a card opens the same hand sheet, which
+also lists the example, the page in each book, and each scoring with when it
+applies. The rail on the left filters by:
 
 - **Kind of hand**: the headings of the Companion's "Full synopsis of special
   hands" (C pp. 56-61) - Runs, Chows, Pairs, Pungs & Kongs, Winds, Dragons,
@@ -314,8 +316,9 @@ book. The rail on the left filters by:
   p. 30, not in the synopsis) are filed under Pungs & Kongs by composition;
   Buried Treasure and the Chinese ordinary hand have no heading and sit under
   "Other". A hand with two scorings (Big Robert: limit or half limit by its
-  numbers) is one card, with a line per scoring; the closest-hands panel
-  reports it once, at the scoring it is nearest to.
+  numbers) is one card, whose corner gives both values; its sheet has a line
+  per scoring. The closest-hands panel reports it once, at the scoring it is
+  nearest to.
 - **Value** (the concealed tier), **Play** (Concealed or Exposed)
   and **Book** (printed in the Illustrated book, or only in the Companion).
 

@@ -526,6 +526,16 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.waitForSelector("#hand-index:not([hidden]) .index-card", { timeout: READY_MS });
   // 89 catalogue entries; Big Robert's two scorings share one card.
   assert.equal(await page.locator(".index-card").count(), 88, "every catalogue hand is listed");
+  // Big Robert's card has the same rows as the others: its corner gives both scorings, its sheet says when each applies.
+  const robert = page.locator('.index-card[data-pattern="big-robert"]');
+  assert.equal(await robert.locator(".index-value").textContent(), "500/1,000", "the corner gives both scorings, lowest first");
+  assert.equal(await robert.locator(".reading-list").count(), 0, "the card has no reading lines");
+  assert.equal(await page.locator('.index-card[data-pattern="little-robert"] .index-value').textContent(), "500", "one scoring keeps one value");
+  await robert.click();
+  await page.waitForSelector("#hand-detail:not([hidden])", { timeout: 5000 });
+  assert.equal(await page.locator("#hand-detail .reading-line").count(), 2, "the sheet lists each scoring");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#hand-detail", { state: "hidden", timeout: 5000 });
   await page.click('.index-chip:has-text("Two Suits")');
   assert.equal(await page.locator(".index-card").count(), 3, "the book files three hands under Two Suits");
   await page.fill("#index-search", "knitting");
