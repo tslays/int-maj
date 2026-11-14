@@ -496,7 +496,8 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   // The index of all hands: opens, filters by a book heading, searches, opens a hand's sheet.
   await page.click("#index-open");
   await page.waitForSelector("#hand-index:not([hidden]) .index-card", { timeout: READY_MS });
-  assert.equal(await page.locator(".index-card").count(), 89, "every catalogue hand is listed");
+  // 89 catalogue entries; Big Robert's two scorings share one card.
+  assert.equal(await page.locator(".index-card").count(), 88, "every catalogue hand is listed");
   await page.click('.index-chip:has-text("Two Suits")');
   assert.equal(await page.locator(".index-card").count(), 3, "the book files three hands under Two Suits");
   await page.fill("#index-search", "knitting");

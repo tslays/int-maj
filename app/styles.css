@@ -1451,6 +1451,19 @@ button.detail-rule {
   color: var(--muted);
   font-size: 11px;
 }
+/* A hand with more than one scoring: one line per reading, what it pays and when. */
+.reading-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.reading-line strong {
+  color: var(--gold-1);
+  font-variant-numeric: tabular-nums;
+}
 .index-play {
   display: inline-flex;
   align-items: center;

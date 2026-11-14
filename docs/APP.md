@@ -269,7 +269,9 @@ book. The rail on the left filters by:
   is `src/core/patterns/reference.ts`. All Kong and Mixed Pung (Illustrated
   p. 30, not in the synopsis) are filed under Pungs & Kongs by composition;
   Buried Treasure and the Chinese ordinary hand have no heading and sit under
-  "Other".
+  "Other". A hand with two scorings (Big Robert: limit or half limit by its
+  numbers) is one card, with a line per scoring; the closest-hands panel
+  reports it once, at the scoring it is nearest to.
 - **Value** (the concealed tier), **Play** (Concealed or Exposed)
   and **Book** (printed in the Illustrated book, or only in the Companion).
 

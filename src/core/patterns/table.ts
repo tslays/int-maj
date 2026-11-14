@@ -585,7 +585,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "dragons-tail",
-    name: "Dragon's Tail (1 & 2)",
+    name: "Dragon's Tail",
     pages: { illustrated: [52], companion: [12, 41] },
     category: "run",
     tier: "limit",
@@ -813,6 +813,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     tier: "limit",
     exposedTier: null,
     requiresSelfDrawn: false,
+    scoringWhen: "when the three runs use the same numbers",
     description:
       "A run of four tiles in each suit, using the same four numbers in all " +
       "three suits, plus a pair of winds or dragons.",
@@ -825,13 +826,14 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "big-robert-mixed",
-    name: "Big Robert (mixed numbers)",
+    name: "Big Robert",
     pages: { illustrated: [], companion: [14] },
     category: "run",
     tier: "half",
     exposedTier: null,
     requiresSelfDrawn: false,
     variantOf: "big-robert",
+    scoringWhen: "when the three runs do not all use the same numbers",
     description:
       "A run of four tiles in each suit, with the three runs not all using " +
       "the same numbers, plus a pair of winds or dragons.",
@@ -2463,7 +2465,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "buried-treasure",
-    name: "Buried Treasure (Concealed Mah Jong)",
+    name: "Buried Treasure",
     pages: { illustrated: [38], companion: [] },
     category: "plain",
     tier: "calculate",
