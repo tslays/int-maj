@@ -42,7 +42,7 @@ import {
   type LedgerEntry,
   type Seat,
 } from "./state.ts";
-import { type ApplyError, type ApplyResult, type Draft, type Emit, addMeld, countOf, draftOf, draftPlayer, removeKeys, sameTiles, sortKeys, takeDiscard } from "./draft.ts";
+import { type ApplyError, type ApplyResult, type Draft, type Emit, addMeld, countOf, draftOf, draftPlayer, noteFirstDiscardClaim, removeKeys, sameTiles, sortKeys, takeDiscard } from "./draft.ts";
 import { claimOptions, completesAsChow, fishingDeclarationFor, handIsComplete, isFeaturelessHand, winsOnDiscard } from "./hands.ts";
 import { drawFrom, replaceBonus } from "./draws.ts";
 import { finishDrawn, finishWin, roundTo100 } from "./settle.ts";
@@ -118,7 +118,7 @@ function resolveClaims(draft: Draft, events: Event[], emit: Emit): ApplyError | 
     const winner = draftPlayer(draft, claims[0]!.seat);
     winner.hand.push(kong.tile);
     winner.hand.splice(0, winner.hand.length, ...sortKeys(winner.hand));
-    return finishWin(draft, claims[0]!.seat, kong.seat, false, kong.tile, emit);
+    return finishWin(draft, claims[0]!.seat, kong.seat, false, kong.tile, emit, true);
   }
 
   if (claims.length === 0) {
@@ -139,6 +139,7 @@ function resolveClaims(draft: Draft, events: Event[], emit: Emit): ApplyError | 
     (seatIndex(seat) - seatIndex(discarder) + SEATS.length) % SEATS.length;
   claims.sort((a, b) => priority(b) - priority(a) || distance(a.seat) - distance(b.seat));
   const claim = claims[0]!;
+  noteFirstDiscardClaim(draft, discarder, claim.seat);
 
   if (claim.kind === "mahjong") {
     takeDiscard(draft, discarder, tile);

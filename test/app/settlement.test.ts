@@ -171,7 +171,11 @@ describe("the result card's account of the points", () => {
     assert.ok(shown(seats, "E").every((line) => line.startsWith("Pays ")));
     const careless = seats.E!.filter((line) => line.why.startsWith("Careless discard"));
     assert.equal(careless.length, 2);
-    assert.deepEqual(careless.map((line) => line.text).sort(), ["Pays South 1,000", "Pays South 1,000"]);
+    // South: pungs 7, 8 exposed 2 + 2, pung of 9s exposed 4, pung of 2s 4,
+    // pair finished by the winning tile 2, Mah Jong 20: ground 34. One suit,
+    // no honours, no chows: three doubles and one, so 34 × 16 = 544, which
+    // West and North each pay as 500 and East covers for both.
+    assert.deepEqual(careless.map((line) => line.text).sort(), ["Pays South 500", "Pays South 500"]);
     assert.ok(careless.some((line) => line.why.includes("you also pay West's share (Illustrated p. 22)")));
     assert.ok(careless.some((line) => line.why.includes("you also pay North's share (Illustrated p. 22)")));
     assert.ok(careless.every((line) => line.why.includes("South's exposed sets showed was needed")));

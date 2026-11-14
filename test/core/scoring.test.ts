@@ -96,13 +96,28 @@ describe("ground score and doubles", () => {
   });
 
   it("scores a non-scoring Buried Treasure at the printed 10 points", () => {
+    // Four chows and a worthless pair, every tile from the wall. Played
+    // without the Companion's Chow Chow (which also makes this hand) the
+    // Illustrated book's 10 points is what it pays.
+    const hand = createHand({
+      concealed: "b2 b3 b4 b3 b4 b5 b6 b7 b8 b6 b7 b8 b9 b9",
+      selfDrawn: true,
+    });
+    const result = scoreHand(hand, { excluded: ["chow-chow"] });
+    assert.equal(result.winning?.pattern.id, "buried-treasure");
+    assert.equal(result.points, 10);
+  });
+
+  it("pays the same hand Chow Chow's half limit when the Companion's hand is in play", () => {
+    // 10 points is the printed score for a hand that scores nothing; a
+    // player claims the better of the hands the tiles make.
     const hand = createHand({
       concealed: "b2 b3 b4 b3 b4 b5 b6 b7 b8 b6 b7 b8 b9 b9",
       selfDrawn: true,
     });
     const result = scoreHand(hand);
-    assert.equal(result.winning?.pattern.id, "buried-treasure");
-    assert.equal(result.points, 10);
+    assert.equal(result.winning?.pattern.id, "chow-chow");
+    assert.equal(result.points, 500);
   });
 
   it("scores a bouquet as three doubles", () => {

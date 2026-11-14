@@ -238,6 +238,7 @@ export function fishingValueFor(
     if (hand === null) continue;
     const score = scoreHand(hand, {
       withoutMahJongBonus: true,
+      firstDiscardByEast: state.firstDiscardClaimedBy === seat,
       excluded: exclusionsOf(state),
     });
     const winning = score.winning;
