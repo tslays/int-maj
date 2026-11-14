@@ -44,6 +44,8 @@ export type Action =
       readonly type: "DeclareFishing";
       readonly seat: Seat;
       readonly wait: readonly string[];
+      /** The hand fished for, named by the offer so a table can show it; ignored by `apply`. */
+      readonly hand?: string;
     }
   | { readonly type: "ConcealedKong"; readonly seat: Seat; readonly tile: string }
   | { readonly type: "AddedKong"; readonly seat: Seat; readonly tile: string }
@@ -58,3 +60,13 @@ export type Action =
   | { readonly type: "FalseMahJong"; readonly seat: Seat };
 
 export type ActionType = Action["type"];
+
+/**
+ * The action as a replay or report stores it: decisions only, without the
+ * display-only `hand` a fishing offer carries (apply ignores it, and a
+ * report must hold nothing but the decision).
+ */
+export function decisionOf(action: Action): Action {
+  if (action.type !== "DeclareFishing" || action.hand === undefined) return action;
+  return { type: action.type, seat: action.seat, wait: action.wait };
+}

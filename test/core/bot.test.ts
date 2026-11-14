@@ -21,6 +21,7 @@ import {
 import { BOT_LEVELS, chooseAction, isBotLevel, situationFor, type BotLevel } from "../../src/core/game/bot.ts";
 import { completion, countsOf, indexOf, type Goal, type Odds } from "../../src/core/game/bot/plan.ts";
 import { fixture, play } from "../helpers/game-fixture.ts";
+import { decisionOf } from "../../src/core/game/actions.ts";
 
 /** A wall long enough that the bot still expects to draw for a while. */
 const LONG_WALL: readonly string[] = Array.from(
@@ -113,6 +114,25 @@ describe("bot policy", () => {
     assert.notEqual(fishing, undefined);
     const action = chooseAction(view, "E");
     assert.equal(action?.type, "DeclareFishing");
+  });
+
+  it("names the hand being fished for on the offered announcement", () => {
+    const state = fixture({
+      hands: {
+        E: "b1 b1 b1 b2 b2 b2 b3 b3 b3 b4 b4 b4 b5",
+        S: "b7 b8 b9 c7 c8 c9 o1 o2 o3 wE wS wW wN",
+        W: "b1 b2 b3 b4 b5 b6 c1 c2 c3 c4 c5 c6 c7",
+        N: "b7 b8 b9 c7 c8 c9 o1 o2 o3 wE wS wW wN",
+      },
+      wall: ["o1", "o2", "o3"],
+      phase: "announce",
+      turn: "E",
+    });
+    const fishing = viewFor(state, "E").legalActions.find((action) => action.type === "DeclareFishing");
+    assert.equal(fishing?.type === "DeclareFishing" ? typeof fishing.hand : null, "string");
+    assert.ok(fishing?.type === "DeclareFishing" && fishing.hand !== "");
+    // The recorded decision carries the wait only, never the display name.
+    assert.ok(fishing !== undefined && !("hand" in decisionOf(fishing)));
   });
 
   it("lets a discard go rather than break a concealed special hand", () => {
