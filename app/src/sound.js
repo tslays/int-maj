@@ -12,6 +12,7 @@
  *   dice       two dice thrown: a recording of real dice (the only sound not synthesised)
  *   meld       the tiles of a call set down together
  *   tick       the very quiet click of a hand tile under your pointer / finger
+ *   stick      a dyed counter stick landing on the result card: a light, dry wooden tock
  *   alert      the bright two-note chime when the game asks you to decide
  *
  * Sounds are cued by name (`sound.cue("clack", { delay, pan, far })`) and
@@ -41,7 +42,7 @@ async function fetchSample(name) {
 }
 
 /** Cues that may not repeat faster than this many milliseconds. */
-const MIN_GAP = { tick: 22, swap: 45, draw: 30, press: 40 };
+const MIN_GAP = { tick: 22, swap: 45, draw: 30, press: 40, stick: 35 };
 
 const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
 
@@ -246,6 +247,19 @@ export function createVoices(ctx, out, random = Math.random, samples = { dice: [
     tone(bus, t, { freq: 1100, to: 700, sweep: 0.02, gain: 0.18, decay: 0.04 });
   }
 
+  /**
+   * A counter stick landing in a player's pile on the result card: a light,
+   * dry wooden tock, higher and shorter than a tile's clack. `value` (the
+   * stick's points) lowers it a little for the heavier sticks.
+   */
+  function stick(t, { pan = 0, value = 100 } = {}) {
+    const weight = clamp(Math.log10(Math.max(100, value) / 100) / Math.log10(40), 0, 1);
+    const bus = lane({ pan, gain: 0.8 });
+    burst(bus, t, { freq: 3200 - weight * 900, q: 2.4, gain: 0.3, attack: 0.0004, decay: 0.009 });
+    tone(bus, t, { freq: 1250 - weight * 380, to: 900 - weight * 300, sweep: 0.018, gain: 0.16, decay: 0.03 });
+    burst(bus, t + 0.018, { freq: 3800 - weight * 900, q: 2.4, gain: 0.12, attack: 0.0004, decay: 0.006 });
+  }
+
   /* ----------------------------------------------------- being asked, and results */
 
   /**
@@ -310,7 +324,7 @@ export function createVoices(ctx, out, random = Math.random, samples = { dice: [
     bell(bus, t + 0.16, 659, { gain: 0.2, decay: 0.8 });
   }
 
-  return { clack, dice, meld, deal, draw, tick, swap, lift, press, alert, alertWin, notice, fishing, win, lose, drawn };
+  return { clack, dice, meld, deal, draw, tick, swap, lift, press, stick, alert, alertWin, notice, fishing, win, lose, drawn };
 }
 
 /* --------------------------------------------------------- the engine */

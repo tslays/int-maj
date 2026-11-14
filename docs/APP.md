@@ -194,6 +194,16 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   tie for first names every tied seat a winner: the book says only that the
   highest score wins the game (Illustrated p. 16) and gives no tie-break. The
   open standings are kept in storage, so a reload resumes them.
+- `app/src/sticks.js` and `app/src/exchange.js` show the hand's payments as
+  counter sticks on the result card: the Illustrated's Western counters
+  (p. 23: 10 × 100, 8 × 500, 7 × 1000, 1 × 4000) in the colours the Companion
+  dyes them (p. 55: yellow, green, blue, red). `sticks.js` (pure, tested) shows
+  a payment in the fewest sticks and plans the exchange from the ledger, one
+  phase per kind of payment; `exchange.js` flies the sticks from each payer's
+  row to the receiver's while the numbers count, with a light wooden `stick`
+  sound as each lands. The rows always end on the table's totals; a tap on the
+  card, or a reduced-motion setting, skips straight there. Each payment line
+  under a seat also carries its sticks.
 - `app/src/settlement.js` words the result card's account of the points from
   the ledger (every entry is tagged with its kind in `src/core/game/state.ts`).
   The card shows only the result: each seat's change in green or red and its

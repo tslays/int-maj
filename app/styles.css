@@ -640,6 +640,79 @@ html.phone-frame .actions {
   font-size: 12px;
   color: var(--muted);
 }
+/*
+ * The counters: sticks dyed yellow (100), green (500), blue (1000) and red
+ * (4000), as the Companion makes them (p. 55). They fly over the score table
+ * while the points change hands; a small row of them sits under each payment.
+ */
+.result-scores {
+  position: relative;
+}
+.stick-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.stick,
+.stick-chip {
+  --stick: #e8c547;
+  --stick-hi: #fff1a8;
+  --stick-lo: #a88316;
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--stick-hi) 0%, var(--stick) 42%, var(--stick-lo) 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.25) inset,
+    0 2px 5px rgba(0, 0, 0, 0.45);
+}
+.stick {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 36px;
+  height: 7px;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.stick.stick-red {
+  width: 42px;
+  height: 8px;
+}
+.stick-green {
+  --stick: #3fa66b;
+  --stick-hi: #9de4b6;
+  --stick-lo: #1f6a40;
+}
+.stick-blue {
+  --stick: #3a73c9;
+  --stick-hi: #9cc3ff;
+  --stick-lo: #1e4485;
+}
+.stick-red {
+  --stick: #c9433a;
+  --stick-hi: #ff9f92;
+  --stick-lo: #82221c;
+}
+.stick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin: 2px 0 1px;
+}
+.stick-chip {
+  width: 22px;
+  height: 5px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+.stick-chip.stick-red {
+  width: 26px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .stick-layer {
+    display: none;
+  }
+}
 .result-side {
   display: grid;
   gap: 10px;

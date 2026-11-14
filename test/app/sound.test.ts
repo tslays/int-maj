@@ -127,6 +127,7 @@ const CUES = [
   "win",
   "lose",
   "drawn",
+  "stick",
 ];
 
 describe("sound voices", () => {

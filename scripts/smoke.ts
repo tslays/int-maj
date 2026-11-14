@@ -194,6 +194,27 @@ async function buttons(page: Page): Promise<string[]> {
 async function resultCard(page: Page): Promise<void> {
   await page.waitForSelector("#result:not([hidden])", { timeout: READY_MS });
   assert.ok(((await page.textContent("#result")) ?? "").trim().length > 0, "the result card has text");
+  // The counters fly over the score table; a tap ends the exchange, and every
+  // row then shows the total the table sent, the sticks gone.
+  await page.click(".result-kicker");
+  assert.equal(await page.locator(".stick-layer").count(), 0, "a tap ends the exchange of counters");
+  const shown = await page.$$eval(".result-row .total", (list) => list.map((cell) => (cell.textContent ?? "").replace(/,/g, "")));
+  const expected = await page.evaluate(() => {
+    // The page's own payload, read loosely: the ledger and the scores carried in.
+    const payload = window.mahjong!.state() as unknown as {
+      table: { seat: string }[];
+      scoresBefore?: Record<string, number>;
+      view: { ledger: { from: string; to: string; points: number | null }[] };
+    };
+    return payload.table.map((entry) => {
+      const net = payload.view.ledger.reduce((sum, item) => {
+        if (item.points === null) return sum;
+        return sum + (item.to === entry.seat ? item.points : item.from === entry.seat ? -item.points : 0);
+      }, 0);
+      return String(16000 + (payload.scoresBefore?.[entry.seat] ?? 0) + net);
+    });
+  });
+  assert.deepEqual(shown, expected, "the result rows end on the table's totals");
 }
 
 /** Wait until the game has answered and nothing is animating; return the payload. */
