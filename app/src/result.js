@@ -91,10 +91,15 @@ function renderOutcome(outcome) {
     const tiles = document.createElement("div");
     tiles.className = "result-tiles";
     if (outcome.hand !== null) {
-      const concealed = document.createElement("span");
-      concealed.className = "result-group";
-      for (const key of [...outcome.hand].sort((a, b) => tileOrder(a) - tileOrder(b))) concealed.append(faceChip(key));
-      tiles.append(concealed);
+      // The winning combination's own groups when it has them, so a mixed chow
+      // stays together; otherwise one sorted row.
+      const groups = outcome.arrangement ?? [[...outcome.hand].sort((a, b) => tileOrder(a) - tileOrder(b))];
+      for (const keys of groups) {
+        const concealed = document.createElement("span");
+        concealed.className = "result-group";
+        for (const key of keys) concealed.append(faceChip(key));
+        tiles.append(concealed);
+      }
     }
     for (const meld of outcome.melds ?? []) {
       const group = document.createElement("span");
