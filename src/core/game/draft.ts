@@ -85,6 +85,19 @@ export function takeDiscard(draft: Draft, discarder: Seat, tile: string): void {
   if (index >= 0) player.discards.splice(index, 1);
 }
 
+/**
+ * Ground bonus (d), I p. 24: "Claiming first discard made by East Wind". The
+ * first discard of a hand is East's, and nothing else has been discarded or
+ * claimed before the window on it resolves.
+ */
+export function noteFirstDiscardClaim(draft: Draft, discarder: Seat, claimant: Seat): void {
+  const discards = draft.players.reduce((sum, player) => sum + player.discards.length, 0);
+  const melds = draft.players.reduce((sum, player) => sum + player.melds.length, 0);
+  if (discarder === draft.dealer && discards === 1 && melds === 0) {
+    draft.firstDiscardClaimedBy = claimant;
+  }
+}
+
 export function addMeld(draft: Draft, seat: Seat, meld: MeldState): void {
   draftPlayer(draft, seat).melds.push({ ...meld, tiles: [...meld.tiles] });
 }

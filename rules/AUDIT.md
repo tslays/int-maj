@@ -45,6 +45,36 @@ eight D2 rows (A7, A13, A15, A16, A17, A24, A25, A27) are closed in
 | A27 | 21 | R76: "When the winner has been paid, all the other players expose their hands, total their scores and settle the differences by exchanging counters." | Losers never exchanged. | `src/core/game/reduce.ts` (`ledgerFor`) | Advanced settlement pays pairwise differences between losers; winner pays nobody. | D2 closed (test: advanced settles the differences between the losers' hands) |
 | A28 | 23 | R-032: "A round is finished when each player has completed a turn as East Wind"; "A game ends ... when East, South, West and North have all been the Wind of the Round." | The C6 closure advanced the Wind of the Round on every change of dealer, so the whole game ended after the fourth pass of the deal (about four hands instead of at least sixteen). | `src/core/game/reduce.ts` (`nextHand`, `endsRound`, `endsGame`), `state.ts` (`roundDealer`) | Corrected 2026-11-07: the wind advances only when the deal returns to the seat that opened the round; the hand that finishes the North round finishes the game. | Closed (tests: keeps the round wind until every seat has dealt; ends the game when the North round is finished) |
 
+## Scoring review (2026-11-14)
+
+The score sheet (I pp. 24-26) was re-checked line by line against hands worked
+out by hand, an independent oracle and mutation runs. Corrected, with the
+readings recorded in `rules/archive/ASSUMPTIONS.md` ("The score sheet: how it
+is read") and tested in `test/core/scoring-sheet.test.ts`,
+`scoring-oracle.test.ts` and `scoring-game.test.ts`:
+
+| # | Page | Was | Now |
+|---|---|---|---|
+| S1 | 24 | A pung finished off a discard scored as concealed. | Scored exposed (2/4, not 4/8). |
+| S2 | 25 | Purity/honours hands paid own Season, own Flower, no chows, a-e and the cleared suit twice; an honours hand paid no-chows on top of the three doubles. | Each double counts once. |
+| S3 | 24-25 | Only the first reading of the tiles was scored. | The reading that pays most counts, at most one chow. |
+| S4 | 24 | (d) first discard and (e) only-possible chow were never awarded. | (d) is recorded when claimed; (e) is read from the p. 25 diagram. |
+| S5 | 25 | Robbing the kong paid no (h)(iii) double. | One double. |
+| S6 | 38 | A hand readable as pungs and as chows paid the 10-point hand. | The 10 points only when no reading scores. |
+| S7 | 32 | A half-limit hand always beat an ordinary hand, even one that scored more. | The best-paying hand counts. |
+| S8 | 34 | Four honour sets and a suited pair could not go out. | An ordinary hand. |
+
+Open for the owner (not changed):
+
+- **Advanced settlement scores a losing hand by ground alone.** The sheet lists
+  (a)-(e), (j), (k) and the Bouquets as doubles for "All players", which reads
+  as a losing hand being doubled too. The engine records the ground-only reading
+  (`rules/RULES.md`, "Readings chosen where a sub-case is silent").
+- **A fishing ordinary hand is scored as if the missing tile were drawn from the
+  wall**, so it carries (f) 2 and the concealed Mah Jong doubles. p. 32 says
+  "score in the same way, without the bonus of 20 points"; those lines are
+  printed "Winning hand only".
+
 ## Unsupported by these pages, not contradicted
 
 These prior statements are not conflicts on pages 4-33/62-63, but they have no

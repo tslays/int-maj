@@ -687,6 +687,16 @@ wall.
 **R-092** `[I p. 26]` — The total is the ground score doubled once per double, then
 capped by the limit. Worked: 84 × 2^5 = 2688, limit 1000, East pays 2000.
 
+**R-092a** `[A]` — How the sheet is read where a line can be read two ways
+(ASSUMPTIONS.md, "The score sheet: how it is read"): each double counts once,
+so (j) and (k) restate the general doubles rather than pay them again and (k)
+carries no separate no-chows double; a pung finished by a discard scores as
+exposed; the reading that pays most counts, at most one chow in an ordinary
+hand; (e) is the far end of a chow's pair or the middle, as drawn on p. 25;
+the first discard of East claimed by any claim earns (d); the best of the
+printed hands the tiles make pays, a calculated hand competing by its capped
+score.
+
 **R-093** `[I p. 24]` — A limit is agreed before play. Printed examples:
 > "Chinese, not using Seasons 300 points
 > Chinese, using Seasons 500

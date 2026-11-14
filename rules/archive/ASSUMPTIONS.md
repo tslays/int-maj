@@ -386,3 +386,65 @@ Uncertainty: the tester's sentence does not say what happens to a player who
 kept quiet and later changes the wait; the reading here bars the win until the
 fish is shown at a later offer.
 
+
+## The score sheet: how it is read (2026-11-14)
+
+*Illustrated* pp. 24-26 (printed; scan `rules/pages/illustrated/p13.jpg` and
+`p14.jpg`). The sheet is read as printed; where a line can be read two ways
+the narrowest reading is recorded here, and each is a test in
+`test/core/scoring-sheet.test.ts`, `scoring-oracle.test.ts` or
+`scoring-game.test.ts`.
+
+1. **Doubles are counted once.** Lines (j) and (k) say "add one double for
+   each" own Season, own Flower and no Chows, and "add one double for each a,
+   b, c, d, e (as above) and cleared suit". Line (k) also says it "includes
+   one double for all Pungs", and the Bouquets say they include the own tile's
+   double. Read together, these restate which doubles an all-one-suit or
+   honours-only hand keeps; they do not pay a second double for a feature the
+   general lines (a)-(g) already pay. So a Purity hand with no chows is three
+   doubles plus one, not plus two; an honours-only hand is three doubles plus
+   (a)-(e) once, plus the cleared suit once, and no separate no-chows double.
+   The engine used to count them twice. Uncertainty: the page never says
+   "not again"; the other reading (a double for own Season in both (d) and
+   (j)) would pay a Purity hand twice for a feature an ordinary hand is paid
+   once for, which no line suggests.
+2. **A pung finished by a discard is exposed.** p. 24: "Exposed tiles are those
+   which have been taken from discards"; "Concealed tiles are those concealed
+   when all the tiles on the rack have been drawn from the wall." A pung
+   completed by the winning tile when that tile came off a discard scores as an
+   exposed pung (2/4), not a concealed one (4/8). A kong cannot be finished by
+   a win; a chow scores nothing either way.
+3. **The best reading counts.** A tile can complete a pung, the pair or a chow
+   (4 4 4 + 4 5 6), and a set of tiles can be read more than one way
+   (222 333 444 as pungs or chows). The player scores the reading that pays
+   most; for an ordinary hand a reading holds at most one chow (p. 14). The
+   page says nothing about choosing; taking the player's best is the only
+   reading that does not pay a hand less than it is.
+4. **(e), "the only possible places".** The engine reads it from the p. 25
+   diagram: the far end of a chow's pair (the 3 of 1-2-3, the 7 of 7-8-9) and
+   the middle (the 5 of 4_6). A two-sided wait (4 5 waiting on 3 or 6) is not
+   in the diagram and scores nothing. (g), completing the pair, is paid for any
+   pair finished by the winning tile, as the line reads.
+5. **(d), claiming East's first discard.** The engine records the seat that
+   claimed the first discard of the hand (any claim: pung, kong, chow or Mah
+   Jong) and adds the 2 to that seat's ground score. Before this it never
+   awarded (d).
+6. **Robbing the kong** is the (h)(iii) double, once, with a loose tile or the
+   last tile counting as the same single double. The engine now passes it; it
+   never did.
+7. **The 10-point hand.** "10 points for non-scoring hand" is paid only when
+   every reading of the tiles is four chows and a worthless pair. A hand that
+   can also be read with a pung scores by that reading.
+8. **Which hand pays.** Of the printed hands the tiles make, the one with the
+   highest score pays; a calculated hand competes by its calculated score
+   (capped at the limit), so a half-limit hand no longer hides an ordinary
+   hand that scores more.
+9. **A suited pair is "one suit".** p. 34: "Any one suit ... May include
+   Winds, Dragons or both." Four sets of Winds and Dragons and a pair of
+   2 Bamboos is that hand; the matcher used to require a suited *set*, so the
+   hand could not go out at all.
+
+Not changed, for the owner to rule on (see `rules/AUDIT.md`, "Scoring review"):
+the Advanced settlement scores a losing hand by its ground score alone, and a
+fishing hand for an ordinary hand is scored as though the missing tile were
+drawn from the wall.

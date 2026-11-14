@@ -68,7 +68,7 @@ const TABLE = {
 
   wait: {
     title: "Thirteen tiles with a live wait",
-    seed: "wait-v10-7",
+    seed: "wait-v13-549",
     at: (view) => {
       if (view.phase !== "discard" || view.turn === view.seat) return false;
       // Your own plain wait: you have not shown the fish. Another seat's fish
@@ -103,7 +103,7 @@ const TABLE = {
 
   announce: {
     title: "Your turn to declare fishing",
-    seed: "offer-announce-v11-2",
+    seed: "offer-announce-v13-5",
     at: (view) =>
       view.phase === "announce" &&
       view.turn === view.seat &&
@@ -121,7 +121,7 @@ const TABLE = {
 
   win: {
     title: "A winning hand and its pattern",
-    seed: "win-v12-1",
+    seed: "win-v13-9",
     at: (view) =>
       view.result !== null &&
       view.result.kind === "win" &&
@@ -147,7 +147,7 @@ const TABLE = {
 
   claims: {
     title: "Melds, a kong and bonus tiles on the table",
-    seed: "claims-76",
+    seed: "claims-v13-150",
     at: (view) => {
       if (view.phase !== "discard" || view.turn !== view.seat) return false;
       if (!view.legalActions.some((action) => action.type === "Discard")) return false;
