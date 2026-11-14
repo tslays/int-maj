@@ -1,6 +1,10 @@
 # Plan: closest hands by chance, not by distance
 
-Status: **proposal, awaiting the owner's go-ahead.** Nothing here is built yet.
+Status: **built (phases 1-3).** The owner accepted every proposal in §9 on
+2026-11-14: the chance means "can I still build it before the wall runs out",
+the panel shows the likeliest hands first, as a ring with a percentage, and
+pinned hands keep their ring with Hints off. What was built, and where it
+departs from the plan, is in §10; phase 4 is still open.
 
 The closest-hands panel now ranks and labels each hand by how many tiles are
 missing ("3 to go"). This plan replaces that with an honest estimate of the
@@ -284,3 +288,77 @@ Each phase is one pull request.
    coarse heat label (cold / warm / hot) without numbers?
 4. **Hints off.** Pinned hands still show their ring when Hints is off
    (proposed, as the pins show their distance today)?
+
+## 10. What was built, and what calibration showed
+
+Phases 1 to 3 went into one pull request: as soon as the chance is computed,
+the panel's order changes, which is a visible change anyway.
+
+- `src/core/game/odds.ts`: the simulation of §3. The seat's discard rule is
+  "throw the tile the nearest open versions need least", which re-plans as
+  tiles arrive (not "follow one leading version"). Opponents use the keeper
+  rule of §3.4. An estimate stops once its standard error is under 2.5 points
+  (200 to 2,000 trials).
+- `GameView` gained `looseRemaining` and `drawsLeft`. Opponents' concealed
+  kongs needed nothing: their end tiles are shown face up (R-057).
+- `src/core/patterns/reach.ts` gained `slack`: besides the nearest versions it
+  can return those a tile further. `closest.ts` simulates up to 200 of each.
+- `ClosestHand.chance` is the simulated figure and `ClosestHand.unseen` the
+  copies out of sight per needed tile; the panel orders by chance. Hands past
+  the panel's eight (the hand index asks for up to 100) get 300 trials.
+- The display of §6: ring, percentage, arrow, and the count of unseen copies
+  under each needed tile in the hand's sheet; the index shows the ring and
+  sorts "Likeliest for my tiles".
+- Not done: the Web Worker. A panel refresh takes about 60-200 ms on a
+  desktop (it was about 30 ms), on the main thread. If it is felt on a phone,
+  moving `closestWithPins` into a worker is the next step.
+- Not done: the quick estimate in `bot/plan.ts` is unchanged; it still
+  shortlists the hands and still drives the bots.
+
+### Calibration
+
+`node scripts/calibrate-odds.ts 200 cal` (East commits to the panel's top
+hand and plays only for it; the other seats are hard bots that may not go
+out) and the same with `race` (they may). Share of hands completed, by
+predicted bucket:
+
+| Predicted | New, no race | New, race | Old quick figure, no race |
+| --- | --- | --- | --- |
+| 10-20 % | 33 % | 21 % | 74 % |
+| 20-30 % | 44 % | 32 % | 84 % |
+| 30-40 % | 49 % | 38 % | 82 % |
+| 40-50 % | 63 % | 47 % | 91 % |
+| 50-60 % | 77 % | 57 % | 85 % |
+| 60-70 % | 86 % | 60 % | 85 % |
+| 70-80 % | 92 % | 65 % | 90 % |
+| 80-90 % | 86 % | 63 % | 94 % |
+| 90-98 % | 95 % | 79 % | 97 % |
+| Brier score | 0.147 | 0.223 | 0.359 |
+
+What it says:
+
+1. The new figure is far better than the old one, whose 10-20 % hands were
+   completed three times in four.
+2. Against its own definition (nobody else goes out) the new figure is
+   **cautious** in the middle: hands shown at 30-70 % were completed 15-20
+   points more often. The cause is re-planning: the calibration player
+   re-searches the whole catalogue every turn, while the simulation re-plans
+   only among the versions it was given (up to 400). Most panel hands are
+   very flexible (Crazy Chows was East's choice in about two hands of three).
+   Keeping 64 versions instead of 200 made it worse; versions two tiles
+   further did not help.
+3. With the race on, which is what a player meets, the figure is close up
+   to about 60 % and too high above it, since other players then go out
+   first.
+
+So the raw figure sits between the two: a little cautious for "can I build
+it", a little hopeful for "will I win with it" at the top. It is left raw
+rather than corrected with a fitted curve, pending the owner's choice in §11.
+
+## 11. Questions after calibration
+
+1. Keep the raw figure (proposed), raise the middle of the scale to match
+   "nobody else goes out" with a curve fitted from the calibration run, or
+   change the figure's meaning to include the race (phase 4)?
+2. Is the panel quick enough on a phone? If not, the hint moves into a Web
+   Worker.

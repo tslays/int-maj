@@ -5,11 +5,11 @@
  * Filters are the headings the Companion's synopsis files the hands under
  * (`GET /api/hands`), the hand's value, and concealed or exposed play; the
  * search box matches words in a hand's name, composition and headings. While
- * a hand is being played each card also says how many tiles you are away
+ * a hand is being played each card also shows your chance of completing it
  * (`GET /api/closest?limit=`), and the list can be sorted by that.
  */
 
-import { isPinned, onPinsChange, openHandDetail, pinIcon, playWord, TIER_LABEL } from "./hints.js";
+import { chanceBadge, chanceWords, isPinned, onPinsChange, openHandDetail, pinIcon, playWord, TIER_LABEL } from "./hints.js";
 import { bookPages } from "./pages.js";
 import { $, companionRules, faceChip, handSetInForce, request, state } from "./shared.js";
 
@@ -63,8 +63,8 @@ function ordered(hands) {
   const group = catalogue.groups.find((entry) => entry.id === filter.group);
   if (group !== undefined) list.sort((a, b) => group.hands.indexOf(a.pattern) - group.hands.indexOf(b.pattern));
   if (filter.sort === "near") {
-    const away = (hand) => progress.get(hand.pattern)?.away ?? 99;
-    list.sort((a, b) => away(a) - away(b)); // stable: ties keep the book's order
+    const chance = (hand) => progress.get(hand.pattern)?.chance ?? -1;
+    list.sort((a, b) => chance(b) - chance(a)); // stable: ties keep the book's order
   }
   return list;
 }
@@ -143,7 +143,7 @@ function applyPins() {
   }
 }
 
-/** Put (or take away) the "n to go" badge on every card; the cards themselves are not rebuilt. */
+/** Put (or take away) the chance badge on every card; the cards themselves are not rebuilt. */
 function applyProgress() {
   for (const [pattern, item] of cards) {
     const mine = progress.get(pattern);
@@ -157,7 +157,13 @@ function applyProgress() {
       badge.className = "index-away";
       item.querySelector(".index-foot").append(badge);
     }
-    badge.textContent = mine.away === 0 ? "Complete" : `${mine.away} to go`;
+    if (mine.away === 0) {
+      badge.replaceChildren("Complete");
+      badge.removeAttribute("aria-label");
+    } else {
+      badge.replaceChildren(chanceBadge(mine.chance));
+      badge.setAttribute("aria-label", chanceWords(mine.chance));
+    }
   }
 }
 
@@ -222,7 +228,7 @@ function renderFilters() {
     sections.push(
       choices("Order", "sort", [
         ["book", "As in the book"],
-        ["near", "Nearest to my tiles"],
+        ["near", "Likeliest for my tiles"],
       ]),
     );
   }

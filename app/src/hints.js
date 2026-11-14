@@ -114,6 +114,112 @@ export function playWord(concealedOnly) {
   return concealedOnly ? "Concealed" : "Exposed";
 }
 
+/* ------------------------------------------------------------ the chance */
+
+/**
+ * The chance of completing a hand as the panel writes it: whole percent, and
+ * "under 1%" or "over 99%" at the ends rather than a certainty the estimate
+ * does not have. `chance` is 0..1 (`ClosestHand.chance`).
+ */
+export function chanceText(chance) {
+  if (chance >= 1) return "100%";
+  if (chance > 0.99) return ">99%";
+  if (chance > 0 && chance < 0.01) return "<1%";
+  return `${Math.round(chance * 100)}%`;
+}
+
+/** The same for a screen reader. */
+export function chanceWords(chance) {
+  if (chance >= 1) return "complete";
+  if (chance > 0.99) return "over 99 percent chance to complete";
+  if (chance > 0 && chance < 0.01) return "under 1 percent chance to complete";
+  return `${Math.round(chance * 100)} percent chance to complete`;
+}
+
+/** The ring's colour scale, cold to hot: grey, then amber, then the table's gold. */
+const HEAT = [
+  [0, [128, 140, 137]],
+  [0.5, [229, 161, 47]],
+  [1, [255, 224, 138]],
+];
+
+function heat(chance) {
+  for (let at = 1; at < HEAT.length; at++) {
+    const [to, high] = HEAT[at];
+    const [from, low] = HEAT[at - 1];
+    if (chance <= to) {
+      const t = (chance - from) / (to - from);
+      return `rgb(${low.map((value, index) => Math.round(value + (high[index] - value) * t)).join(", ")})`;
+    }
+  }
+  return "rgb(255, 224, 138)";
+}
+
+/**
+ * The chance as a ring that fills clockwise from the top, coloured on one
+ * warm scale. Decoration only: the percentage is always written beside it.
+ */
+export function chanceRing(chance) {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "0 0 16 16");
+  svg.setAttribute("class", "chance-ring");
+  svg.setAttribute("aria-hidden", "true");
+  const radius = 6;
+  const around = 2 * Math.PI * radius;
+  const track = document.createElementNS(ns, "circle");
+  track.setAttribute("class", "chance-track");
+  const fill = document.createElementNS(ns, "circle");
+  fill.setAttribute("class", "chance-fill");
+  for (const circle of [track, fill]) {
+    circle.setAttribute("cx", "8");
+    circle.setAttribute("cy", "8");
+    circle.setAttribute("r", String(radius));
+  }
+  const share = Math.max(0, Math.min(1, chance));
+  // Anything above nothing shows at least a sliver, so "under 1%" is not an empty ring.
+  const shown = share === 0 ? 0 : Math.max(share, 0.04);
+  fill.setAttribute("stroke-dasharray", `${(shown * around).toFixed(2)} ${around.toFixed(2)}`);
+  fill.style.stroke = heat(share);
+  svg.append(track, fill);
+  return svg;
+}
+
+/**
+ * The ring and the percentage together, with an arrow when the chance moved
+ * by ten points or more since the player's last look (`trend`: the change).
+ */
+export function chanceBadge(chance, trend = 0) {
+  const badge = document.createElement("span");
+  badge.className = "chance";
+  const text = document.createElement("span");
+  text.className = "chance-text";
+  text.textContent = chanceText(chance);
+  badge.append(chanceRing(chance), text);
+  if (Math.abs(trend) >= TREND_STEP) {
+    const arrow = document.createElement("span");
+    arrow.className = trend > 0 ? "chance-trend chance-up" : "chance-trend chance-down";
+    arrow.setAttribute("aria-hidden", "true");
+    arrow.textContent = trend > 0 ? "\u25b2" : "\u25bc";
+    badge.append(arrow);
+  }
+  return badge;
+}
+
+/** A change in chance worth an arrow. */
+const TREND_STEP = 0.1;
+
+/** The chance each hand had when the panel was last drawn, per game: the arrows compare against it. */
+const seenChance = new Map();
+
+/** How far `hand`'s chance moved since the panel last showed it, and remember it now. */
+function trendOf(hand) {
+  const key = `${state.payload?.game}|${hand.pattern}`;
+  const before = seenChance.get(key);
+  seenChance.set(key, hand.chance);
+  return before === undefined ? 0 : hand.chance - before;
+}
+
 /** A drawing pin: the mark of a pinned hand. */
 export function pinIcon() {
   const ns = "http://www.w3.org/2000/svg";
@@ -136,10 +242,14 @@ function hintRow(hand, { name: label, pinned }) {
   row.type = "button";
   row.className = "closest-item";
   const away = hand === null;
+  const trend = away ? 0 : trendOf(hand);
+  const moved = Math.abs(trend) >= TREND_STEP ? `, ${trend > 0 ? "up" : "down"} ${Math.round(Math.abs(trend) * 100)} points` : "";
   row.setAttribute(
     "aria-label",
     `${pinned ? "Pinned: " : ""}${label}${
-      away ? ", out of reach: more than six tiles away, or no longer possible with the tiles in sight or your exposed melds" : `, ${hand.concealedOnly ? "concealed, no exposed melds" : "exposed melds allowed"}`
+      away
+        ? ", out of reach: more than six tiles away, or no longer possible with the tiles in sight or your exposed melds"
+        : `, ${hand.away === 0 ? "complete" : chanceWords(hand.chance)}${moved}, ${hand.concealedOnly ? "concealed, no exposed melds" : "exposed melds allowed"}`
     }. Tap for details.`,
   );
   const name = document.createElement("span");
@@ -158,10 +268,11 @@ function hintRow(hand, { name: label, pinned }) {
   if (away) {
     meta.append(piece("Out of reach"));
   } else {
+    // How likely first, as the panel is ordered; then how it is played and what it pays.
     meta.append(
-      piece(playWord(hand.concealedOnly)),
+      hand.away === 0 ? piece("Complete", "closest-done") : chanceBadge(hand.chance, trend),
       piece("\u00b7"),
-      hand.away === 0 ? piece("Complete", "closest-done") : piece(`${hand.away} to go`),
+      piece(playWord(hand.concealedOnly)),
       piece("\u00b7"),
       piece(hand.points === null ? "calculated" : hand.points.toLocaleString("en")),
     );
@@ -336,16 +447,36 @@ export function tileWords(key) {
 }
 
 /**
+ * A needed tile's chip with, under it, how many copies are still out of
+ * sight (in the wall or another player's hand): the evidence behind the
+ * chance. A tile whose count is not known shows the chip alone.
+ */
+function withLeft(key, left) {
+  const chip = faceChip(key);
+  if (left === undefined) return chip;
+  const stack = document.createElement("span");
+  stack.className = "need-tile";
+  const count = document.createElement("span");
+  count.className = "need-left";
+  count.textContent = String(left);
+  stack.append(chip, count);
+  stack.setAttribute("aria-label", `${tileWords(key)}, ${left} left`);
+  stack.setAttribute("role", "img");
+  return stack;
+}
+
+/**
  * The tiles still needed, one chip each. Where another tile would do as well
  * (a 4 where the 1 completes a pair) it follows the chip after "or".
  */
 function needChips(into, progress) {
   const standIns = new Map((progress.instead ?? []).map((entry) => [entry.need, entry.or]));
   const shown = new Set();
+  const unseen = progress.unseen ?? {};
   for (const key of progress.need) {
     const group = document.createElement("span");
     group.className = "need-pick";
-    group.append(faceChip(key));
+    group.append(withLeft(key, unseen[key]));
     const or = standIns.get(key);
     if (or !== undefined && !shown.has(key)) {
       shown.add(key);
@@ -353,7 +484,7 @@ function needChips(into, progress) {
       word.className = "need-or";
       word.textContent = "or";
       group.append(word);
-      for (const other of or) group.append(faceChip(other));
+      for (const other of or) group.append(withLeft(other, unseen[other]));
       group.setAttribute("role", "group");
       group.setAttribute("aria-label", `${tileWords(key)} or ${or.map(tileWords).join(" or ")}`);
     }
@@ -445,8 +576,9 @@ export async function openHandDetail(pattern, progress = null) {
   // How it is played, how far you are, and last what it pays: the panel's order.
   if (detail.requiresSelfDrawn) facts.append(factChip(null, "Self-drawn only"));
   if (progress !== null) {
-    const far = factChip(null, progress.away === 0 ? "Complete" : `${progress.away} to go`);
+    const far = factChip(null, progress.away === 0 ? "Complete" : chanceBadge(progress.chance));
     if (progress.away === 0) far.classList.add("detail-done");
+    else far.setAttribute("aria-label", chanceWords(progress.chance));
     facts.append(far);
   }
   const concealedWorth = worth(detail.concealedTier, detail.concealedPoints);
@@ -491,6 +623,12 @@ export async function openHandDetail(pattern, progress = null) {
     heading.textContent = progress.away === 0 ? "Your hand" : "Tiles you still need";
     yours.append(heading, need);
     if (progress.away > 0) {
+      const left = document.createElement("p");
+      left.className = "detail-muted need-note";
+      left.textContent =
+        "The number under each tile: copies you have not seen yet, in the wall or another player's hand. " +
+        "The chance counts them, and every claim this hand may make.";
+      yours.append(left);
       const note = anotherNote(progress);
       if (note !== null) yours.append(note);
     }
