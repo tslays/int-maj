@@ -232,21 +232,22 @@ function renderOutcome(outcome) {
   panel.replaceChildren(card);
   panel.hidden = false;
 
-  // The counters change hands over the score table once the card is up; a tap
-  // anywhere on it skips to the end.
+  // The counters are thrown across the table, over the card, from each payer
+  // to the receiver; a tap anywhere skips to the end.
   const before = Object.fromEntries(
     state.payload.table.map((entry) => [entry.seat, totals[entry.seat] - (outcome.totals[entry.seat] ?? 0)]),
   );
   exchange = playExchange({
-    table,
+    host: panel,
     rows,
     ledger: outcome.ledger,
     before,
     deltas: outcome.totals,
+    side: (seat) => board.rel(seat),
     scale: (ms) => pace.scale(ms),
     onLand: (value) => sound.cue("stick", { value }),
+    onKnock: () => sound.cue("stick", { value: 100 }),
   });
-  card.addEventListener("pointerdown", () => exchange.finish(), { capture: true });
 }
 
 /** A payment as the counters that make it: small dyed sticks, largest first. */

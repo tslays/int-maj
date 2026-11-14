@@ -194,10 +194,10 @@ async function buttons(page: Page): Promise<string[]> {
 async function resultCard(page: Page): Promise<void> {
   await page.waitForSelector("#result:not([hidden])", { timeout: READY_MS });
   assert.ok(((await page.textContent("#result")) ?? "").trim().length > 0, "the result card has text");
-  // The counters fly over the score table; a tap ends the exchange, and every
+  // The counters are thrown over the card; a tap ends the exchange, and every
   // row then shows the total the table sent, the sticks gone.
   await page.click(".result-kicker");
-  assert.equal(await page.locator(".stick-layer").count(), 0, "a tap ends the exchange of counters");
+  assert.equal(await page.locator(".stick-throw").count(), 0, "a tap ends the exchange of counters");
   const shown = await page.$$eval(".result-row .total", (list) => list.map((cell) => (cell.textContent ?? "").replace(/,/g, "")));
   const expected = await page.evaluate(() => {
     // The page's own payload, read loosely: the ledger and the scores carried in.

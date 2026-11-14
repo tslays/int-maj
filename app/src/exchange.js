@@ -1,23 +1,26 @@
 /**
- * The exchange of counters on the result card: the payments of the hand, as
- * dyed counter sticks (`sticks.js`) flying from each payer's row to the
- * receiver's row over the score table, while the numbers count with them.
+ * The exchange of counters over the result card: the hand's payments, as
+ * dyed counter sticks (`sticks.js`) thrown from each payer's side of the
+ * screen to the receiver's, the way they are tossed across a real table. They
+ * land, skid, knock together and come to rest (`throw.js`); the numbers on the
+ * card count as each stick lands; a tag shows what each seat won or lost, and
+ * after a few seconds the sticks fade.
  *
  * The sticks are only a picture: the rows start at the totals before the hand
  * and always end on the totals the table sent, whatever is skipped. A tap
- * anywhere on the card, or a reduced-motion setting, ends it at once.
+ * anywhere, a key, or a reduced-motion setting ends it at once.
  */
 
 import { exchangePlan, stickColor } from "./sticks.js";
+import { createThrow, STICK_THICKNESS } from "./throw.js";
 
 const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)") ?? { matches: false };
 
-const FLIGHT_MS = 640; // one stick's flight
-const STAGGER_MS = 95; // between the sticks of one payment
-const PHASE_GAP_MS = 320; // between the winner's payments, the fishing payments, the differences
-const START_MS = 380; // let the card arrive first
-const SETTLE_MS = 700; // the piles stay a moment, then fade
-const PILE = 8; // sticks in one column of a pile
+const START_MS = 420; // let the card arrive first
+const STAGGER_MS = 70; // between the sticks of one payment
+const PHASE_GAP_MS = 1100; // between the winner's payments, the fishing payments, the differences
+const HOLD_MS = 2500; // the sticks lie on the table this long once still
+const FADE_MS = 500;
 
 const fmt = (points) => points.toLocaleString("en");
 
@@ -37,149 +40,166 @@ function bump(element) {
   element.animate?.([{ transform: "scale(1.22)" }, { transform: "scale(1)" }], { duration: 220, easing: "ease-out" });
 }
 
-/** A point on the quadratic curve from `a` through control `c` to `b`. */
-function curve(a, c, b, t) {
-  const u = 1 - t;
-  return { x: u * u * a.x + 2 * u * t * c.x + t * t * b.x, y: u * u * a.y + 2 * u * t * c.y + t * t * b.y };
-}
-
 /**
  * Play the exchange.
  *
  * @param {object} input
- * @param {HTMLElement} input.table   the score table (`.result-scores`) the sticks fly over
+ * @param {HTMLElement} input.host   the result panel: the sticks fly over it, and a tap on it skips
  * @param {Record<string, { row: HTMLElement, change: HTMLElement, total: HTMLElement }>} input.rows  each seat's row
  * @param {readonly object[]} input.ledger    the hand's ledger
  * @param {Record<string, number>} input.before  each seat's total before the hand
  * @param {Record<string, number>} input.deltas  each seat's change this hand
+ * @param {(seat: string) => number} input.side  where a seat sits on screen: 0 you, 1 right, 2 across, 3 left
  * @param {(ms: number) => number} [input.scale] the table's pace
  * @param {(value: number) => void} [input.onLand] a stick has landed (sound)
+ * @param {() => void} [input.onKnock] sticks knocked together (sound)
  * @returns {{ done: Promise<void>, finish: () => void }}
  */
-export function playExchange({ table, rows, ledger, before, deltas, scale = (ms) => ms, onLand = () => {} }) {
+export function playExchange({
+  host,
+  rows,
+  ledger,
+  before,
+  deltas,
+  side,
+  scale = (ms) => ms,
+  onLand = () => {},
+  onKnock = () => {},
+}) {
   const seats = Object.keys(rows);
   const now = Object.fromEntries(seats.map((seat) => [seat, { delta: 0, total: before[seat] }]));
-  const animations = new Set();
   let layer = null;
+  let frame = 0;
   let over = false;
   let resolve;
   const done = new Promise((r) => (resolve = r));
 
-  const finish = () => {
+  const onKey = (event) => {
+    if (event.key === "Escape" || event.key === "Enter" || event.key === " ") finish();
+  };
+  function finish() {
     if (over) return;
     over = true;
-    for (const animation of animations) animation.cancel();
+    cancelAnimationFrame(frame);
     layer?.remove();
+    host.removeEventListener("pointerdown", finish, true);
+    window.removeEventListener("keydown", onKey, true);
     for (const seat of seats) show(rows[seat], deltas[seat] ?? 0, before[seat] + (deltas[seat] ?? 0));
-    table.classList.remove("is-exchanging");
     resolve();
-  };
+  }
 
   for (const seat of seats) show(rows[seat], 0, before[seat]);
   const phases = exchangePlan(ledger);
-  const any = phases.some((phase) => phase.transfers.some((transfer) => transfer.sticks.length > 0));
-  if (!any || reducedMotion.matches || typeof Element.prototype.animate !== "function") {
-    finish();
-    return { done, finish };
-  }
-
-  table.classList.add("is-exchanging");
-  layer = document.createElement("div");
-  layer.className = "stick-layer";
-  layer.setAttribute("aria-hidden", "true");
-  table.append(layer);
-
-  // Where each seat's pile sits: just left of its change, centred on the row.
-  const spot = (seat) => {
-    const box = table.getBoundingClientRect();
-    const row = rows[seat].row.getBoundingClientRect();
-    const change = rows[seat].change.getBoundingClientRect();
-    return { x: change.left - box.left - 34, y: row.top - box.top + row.height / 2 };
-  };
-  const piles = Object.fromEntries(seats.map((seat) => [seat, 0]));
-
-  // Every flight is scheduled at once on the animation clock (a delay each),
-  // so a busy main thread cannot bunch the sticks together; the numbers move
-  // as each stick lands, and the last landing settles the card.
-  const fly = (transfer, value, order, delay) => {
-    const from = spot(transfer.from);
-    const to = spot(transfer.to);
-    const index = piles[transfer.to]++;
-    const end = { x: to.x - Math.floor(index / PILE) * 9, y: to.y + 6 - (index % PILE) * 3.2 };
-    const start = { x: from.x + ((order % 3) - 1) * 4, y: from.y };
-    // Arc out to the left of the rows, further for a longer flight.
-    const reach = Math.min(110, 40 + Math.abs(end.y - start.y) * 0.5);
-    const control = { x: Math.max(14, Math.min(start.x, end.x) - reach), y: (start.y + end.y) / 2 - 18 };
-    const tilt = ((order * 37) % 21) - 10;
-    const rest = ((index * 23) % 11) - 5;
-    const place = (at, turn, size) =>
-      `translate(${at.x}px, ${at.y}px) translate(-50%, -50%) rotate(${turn}deg) scale(${size})`;
-
-    const stick = document.createElement("span");
-    stick.className = `stick stick-${stickColor(value)}`;
-    layer.append(stick);
-    const frames = [];
-    const steps = 12;
-    for (let step = 0; step <= steps; step++) {
-      const t = step / steps;
-      const at = curve(start, control, end, t);
-      frames.push({
-        transform: place(at, tilt + (180 + rest - tilt) * t, 1 + Math.sin(Math.PI * t) * 0.18),
-        opacity: t === 0 ? 0 : 1,
-        offset: t * 0.85,
-      });
-    }
-    // A small bounce as it lands in the pile.
-    frames.push({ transform: place({ x: end.x, y: end.y - 3 }, 180 + rest, 1.06), opacity: 1, offset: 0.93 });
-    frames.push({ transform: place(end, 180 + rest, 1), opacity: 1, offset: 1 });
-    const flight = stick.animate(frames, {
-      duration: scale(FLIGHT_MS),
-      delay,
-      easing: "cubic-bezier(.35,.05,.25,1)",
-      fill: "both",
-    });
-    animations.add(flight);
-    return flight.finished.then(
-      () => {
-        if (over) return;
-        for (const [seat, sign] of [
-          [transfer.from, -1],
-          [transfer.to, 1],
-        ]) {
-          now[seat].delta += sign * value;
-          now[seat].total += sign * value;
-          show(rows[seat], now[seat].delta, now[seat].total);
-          bump(rows[seat].change);
-        }
-        onLand(value);
-      },
-      () => {},
-    );
-  };
-
+  const throws = [];
   let at = scale(START_MS);
-  const landings = [];
   for (const phase of phases) {
     let longest = 0;
     for (const transfer of phase.transfers) {
       transfer.sticks.forEach((value, order) => {
-        const delay = order * scale(STAGGER_MS);
-        landings.push(fly(transfer, value, order, at + delay));
-        longest = Math.max(longest, delay);
+        const delay = at + order * scale(STAGGER_MS);
+        throws.push({ from: side(transfer.from), to: side(transfer.to), value, delay: delay / 1000, transfer });
+        longest = Math.max(longest, order * scale(STAGGER_MS));
       });
     }
-    at += longest + scale(FLIGHT_MS) + scale(PHASE_GAP_MS);
+    if (phase.transfers.some((transfer) => transfer.sticks.length > 0)) at += longest + scale(PHASE_GAP_MS);
   }
-  void Promise.all(landings).then(() => {
-    if (over) return;
-    const fade = layer.animate([{ opacity: 1 }, { opacity: 0 }], {
-      duration: 360,
-      delay: scale(SETTLE_MS),
-      easing: "ease-in",
-      fill: "forwards",
-    });
-    animations.add(fade);
-    fade.finished.then(finish, () => {});
+  if (throws.length === 0 || reducedMotion.matches) {
+    finish();
+    return { done, finish };
+  }
+
+  host.addEventListener("pointerdown", finish, true);
+  window.addEventListener("keydown", onKey, true);
+  layer = document.createElement("div");
+  layer.className = "stick-throw";
+  layer.setAttribute("aria-hidden", "true");
+  host.append(layer);
+
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const physics = createThrow({ width, height, throws });
+  const elements = physics.sticks.map((stick) => {
+    const element = document.createElement("span");
+    element.className = `stick stick-${stickColor(stick.value)}`;
+    element.style.width = `${stick.length}px`;
+    element.style.height = `${STICK_THICKNESS}px`;
+    layer.append(element);
+    return element;
   });
+
+  const draw = () => {
+    physics.sticks.forEach((stick, index) => {
+      const element = elements[index];
+      if (stick.state === "waiting") {
+        element.style.opacity = "0";
+        return;
+      }
+      const lift = stick.z / 110;
+      element.style.opacity = "1";
+      element.style.transform = `translate(${stick.x}px, ${stick.y}px) translate(-50%, -50%) rotate(${stick.angle}rad) scale(${1 + lift * 0.45})`;
+      element.style.boxShadow = `0 1px 0 rgba(255,255,255,0.3) inset, ${4 + lift * 16}px ${6 + lift * 26}px ${4 + lift * 14}px rgba(0,0,0,${0.5 - lift * 0.25})`;
+    });
+  };
+
+  // What each seat won or lost, shown once the sticks lie still.
+  const tags = () => {
+    for (const seat of seats) {
+      const delta = deltas[seat] ?? 0;
+      if (delta === 0) continue;
+      const mine = physics.sticks.filter((stick) => throws[stick.index].transfer.to === seat);
+      let x;
+      let y;
+      if (delta > 0 && mine.length > 0) {
+        x = mine.reduce((sum, stick) => sum + stick.x, 0) / mine.length;
+        y = mine.reduce((sum, stick) => sum + stick.y, 0) / mine.length;
+      } else {
+        const s = side(seat);
+        x = s === 1 ? width - 44 : s === 3 ? 44 : width / 2;
+        y = s === 0 ? height - 26 : s === 2 ? 26 : height / 2;
+      }
+      const tag = document.createElement("span");
+      tag.className = `stick-tag ${delta > 0 ? "gain" : "loss"}`;
+      tag.textContent = formatChange(delta);
+      tag.style.left = `${Math.min(width - 44, Math.max(44, x))}px`;
+      tag.style.top = `${Math.min(height - 26, Math.max(26, y))}px`;
+      layer.append(tag);
+    }
+  };
+
+  let last = performance.now();
+  let stillSince = null;
+  const tick = (time) => {
+    if (over) return;
+    const result = physics.step((time - last) / 1000);
+    last = time;
+    for (const stick of result.landed) {
+      const { transfer } = throws[stick.index];
+      for (const [seat, sign] of [
+        [transfer.from, -1],
+        [transfer.to, 1],
+      ]) {
+        now[seat].delta += sign * stick.value;
+        now[seat].total += sign * stick.value;
+        show(rows[seat], now[seat].delta, now[seat].total);
+        bump(rows[seat].change);
+      }
+      onLand(stick.value);
+    }
+    if (result.knocks > 0) onKnock();
+    draw();
+    if (physics.resting()) {
+      if (stillSince === null) {
+        stillSince = time;
+        tags();
+      } else if (time - stillSince > scale(HOLD_MS)) {
+        const fade = layer.animate([{ opacity: 1 }, { opacity: 0 }], { duration: FADE_MS, easing: "ease-in", fill: "forwards" });
+        fade.finished.then(finish, finish);
+        return;
+      }
+    }
+    frame = requestAnimationFrame(tick);
+  };
+  draw();
+  frame = requestAnimationFrame(tick);
   return { done, finish };
 }
