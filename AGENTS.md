@@ -133,6 +133,11 @@ The full workflow is `docs/WORKFLOW.md`. The rules every session follows:
   `Tests and build`.
 - The look is the game's own: Riichi City is the quality bar, but never copy
   another app's art, tiles, characters, sounds or distinctive look.
+- **No browser tooltips.** Never set a `title` on an element, as an attribute
+  or a property: the browser would pop its box up on hover. That includes an
+  image's or an SVG's, and an SVG `<title>` element. `test/app/no-tooltips.test.ts`
+  and the smoke run enforce it. Only a design that explicitly calls for a
+  native tooltip may add one, and that exception is recorded here.
 
 ## Engineering invariants
 

@@ -256,6 +256,12 @@ async function assertDrawn(page: Page, name: string, shots: string | null): Prom
   assert.ok(image.byteLength > 40_000, `${name}: the table is drawn (${image.byteLength} bytes of PNG)`);
 }
 
+/** No element on the page carries a `title`: the browser would pop its tooltip up on hover (see test/app/no-tooltips.test.ts). */
+async function assertNoTooltips(page: Page, name: string): Promise<void> {
+  const titled = await page.evaluate(() => Array.from(document.querySelectorAll("[title]"), (element) => element.outerHTML.slice(0, 160)));
+  assert.deepEqual(titled, [], `${name}: no element has a title tooltip`);
+}
+
 const myDiscards = (payload: Payload) => payload.table.find((entry) => entry.seat === payload.seat)!.discards.length;
 
 async function reviewBoards(browser: Browser, origin: string, shots: string | null): Promise<void> {
@@ -268,6 +274,7 @@ async function reviewBoards(browser: Browser, origin: string, shots: string | nu
     assert.equal(await page.locator("canvas").count(), 1, `${name}: one canvas`);
     await page.waitForTimeout(400);
     await assertDrawn(page, name, shots);
+    await assertNoTooltips(page, name);
     assert.deepEqual(errors, [], `${name}: no errors`);
     await page.context().close();
     console.log(`  ok  review board ${name}`);
@@ -546,6 +553,7 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await closeSheet();
   await page.waitForFunction(() => document.querySelectorAll("#closest .pin-icon").length === 0);
   assert.equal((await panelNames()).length, 3, "the suggestions fill all three places again");
+  await assertNoTooltips(page, "the hints and the hand sheet");
   console.log("  ok  index of all hands, pinning to the hints");
 
   // Play on against the bots through the same door the buttons use.
