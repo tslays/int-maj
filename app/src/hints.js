@@ -133,16 +133,18 @@ export function playWord(concealedOnly) {
  */
 
 /**
- * Five bands of chance, each with its name and colour (`--chance-<id>` in
- * styles.css): a glance says how buildable a hand is. Lower bounds, best
- * first.
+ * Five bands of likelihood, each with its name and a shade of one warm
+ * colour (`--chance-<id>` in styles.css), dim for a long shot and bright for
+ * a hand that is very likely. The words describe the tiles, not the choice:
+ * a long shot at a limit hand is a fair play, and the panel never says
+ * otherwise. Lower bounds, likeliest first.
  */
 const BANDS = [
-  { id: "excellent", name: "Excellent", from: 0.8 },
-  { id: "very-good", name: "Very good", from: 0.6 },
-  { id: "good", name: "Good", from: 0.4 },
-  { id: "average", name: "Average", from: 0.2 },
-  { id: "bad", name: "Bad", from: 0 },
+  { id: "very-likely", name: "Very likely", from: 0.8 },
+  { id: "likely", name: "Likely", from: 0.6 },
+  { id: "possible", name: "Possible", from: 0.4 },
+  { id: "unlikely", name: "Unlikely", from: 0.2 },
+  { id: "long-shot", name: "Long shot", from: 0 },
 ];
 
 /** The band a chance falls in. */
@@ -150,14 +152,15 @@ export function chanceBand(chance) {
   return BANDS.find((band) => chance >= band.from) ?? BANDS[BANDS.length - 1];
 }
 
-/** A band's rank, 0 for bad up to 4 for excellent: the arrows compare ranks. */
+/** A band's rank, 0 for a long shot up to 4 for very likely: the arrows compare ranks. */
 function bandRank(chance) {
   return BANDS.length - 1 - BANDS.indexOf(chanceBand(chance));
 }
 
-/** The chance for a screen reader: "good chance to complete". */
+/** The chance for a screen reader: "likely to complete", "a long shot to complete". */
 export function chanceWords(chance) {
-  return `${chanceBand(chance).name.toLowerCase()} chance to complete`;
+  const band = chanceBand(chance);
+  return band.id === "long-shot" ? "a long shot to complete" : `${band.name.toLowerCase()} to complete`;
 }
 
 /**

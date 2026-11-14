@@ -254,14 +254,15 @@ The panel at the top right lists the closest hands: up to three catalogue
 hands you are likeliest to complete, likeliest first. A row gives the hand's
 name, led by your chance of completing it, then how it is played (Concealed
 or Exposed), and last what it pays. The chance is never a number: a small
-ring that fills clockwise, coloured by its band - in the panel the ring alone,
-before the name (the band's name does not fit a phone's panel; the sheet, the
-index and a screen reader say it) -
-Excellent (80 % and up, green), Very good (60), Good (40), Average (20) and
-Bad (below 20, red), in muted tones - or "Complete". Players get the gist of
-what can still be built without fixing on a figure the estimate is not that
-precise about. A small arrow, green up or red down, marks a hand that moved
-a band since your previous decision. The panel is worked out once per
+ring that fills clockwise and brightens in one warm colour, dim to bright -
+in the panel the ring alone, before the name (the band's name does not fit a
+phone's panel; the sheet, the index and a screen reader say it) - in five
+bands: Very likely (80 % and up), Likely (60), Possible (40), Unlikely (20)
+and Long shot; or "Complete". The words describe the tiles, never the
+choice: no red or green, no grade, since a long shot at a limit hand is a
+fair play and what is likely changes from one turn to the next. A small
+arrow in the same quiet tone marks a hand that moved a band since your
+previous decision. The panel is worked out once per
 decision (your turn to discard, a claim offered to you) and stays put while
 the bots play. The chance is worked out from what you can see only
 (`src/core/game/odds.ts`, `docs/HINT-ODDS.md`): it is the chance of finishing

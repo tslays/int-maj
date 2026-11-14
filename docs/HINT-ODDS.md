@@ -307,10 +307,13 @@ the panel's order changes, which is a visible change anyway.
   copies out of sight per needed tile; the panel orders by chance. Hands past
   the panel's eight (the hand index asks for up to 100) get 300 trials.
 - The display of §6, changed on the owner's review (2026-11-14): no
-  percentage anywhere. The ring fills with the chance and takes the colour of
-  one of five bands, named beside it: Excellent (80 % and up), Very good
-  (60), Good (40), Average (20), Bad. The arrow marks a hand that moved a band
-  since the previous decision, and the panel is worked out once per decision.
+  percentage anywhere, and no judgement: the figure is a guide for an
+  educated choice, not advice. The ring fills and brightens in one warm
+  colour across five bands named for likelihood: Very likely (80 % and up),
+  Likely (60), Possible (40), Unlikely (20), Long shot. The panel shows the
+  ring alone; the sheet and the index name the band. A neutral arrow marks a
+  hand that moved a band since the previous decision, and the panel is
+  worked out once per decision.
   The hand's sheet keeps the count of unseen copies under each needed tile;
   the index shows the ring and band and sorts "Likeliest for my tiles".
 - Not done: the Web Worker. A panel refresh takes about 60-200 ms on a

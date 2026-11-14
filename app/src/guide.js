@@ -245,7 +245,7 @@ const TABS = [
     cards: [
       {
         title: "Closest hands",
-        text: "Top right: the hands you are likeliest to complete. The ring fills, and its colour runs from red to green, with your chance of completing each before the wall runs out (bad, average, good, very good, excellent), worked out only from the tiles you can see; an arrow shows a hand that moved a band since your last move. Then how it is played and what it pays. Tap one for its sheet; the pin keeps it there. Out of reach means more than six tiles away, or no longer possible with the tiles in sight or your exposed melds. Hints in the menu shows or hides it.",
+        text: "Top right: the hands you are likeliest to complete. The ring fills and brightens with how likely you are to complete each before the wall runs out, from a long shot to very likely, worked out only from the tiles you can see; an arrow shows a hand that moved since your last move. A guide, not advice: a long shot may pay far more. Then how it is played and what it pays. Tap one for its sheet; the pin keeps it there. Out of reach means more than six tiles away, or no longer possible with the tiles in sight or your exposed melds. Hints in the menu shows or hides it.",
         picture: closestPicture,
       },
       {

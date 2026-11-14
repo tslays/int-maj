@@ -15,12 +15,13 @@
   --blue-2: #2d7fd2;
   --silver-1: #f3f6f8;
   --silver-2: #a6b2bb;
-  /* The five bands of a hand's chance, muted so they inform without shouting. */
-  --chance-excellent: #6fbf8a;
-  --chance-very-good: #a4c97a;
-  --chance-good: #d9c77a;
-  --chance-average: #d9a066;
-  --chance-bad: #c9776b;
+  /* The five bands of a hand's likelihood: one warm colour, dim to bright, never right or wrong. */
+  --chance-very-likely: #ffe08a;
+  --chance-likely: #ecc56f;
+  --chance-possible: #cfa863;
+  --chance-unlikely: #a8916a;
+  --chance-long-shot: #847a6c;
+  --chance-trend: rgba(233, 228, 214, 0.6);
   --font: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
   --safe-l: max(12px, env(safe-area-inset-left));
   --safe-r: max(12px, env(safe-area-inset-right));
@@ -929,27 +930,27 @@ html.pond-zoom .act-claim {
 .chance-fill {
   stroke-linecap: round;
 }
-.chance-excellent .chance-fill {
-  stroke: var(--chance-excellent);
+.chance-very-likely .chance-fill {
+  stroke: var(--chance-very-likely);
 }
-.chance-very-good .chance-fill {
-  stroke: var(--chance-very-good);
+.chance-likely .chance-fill {
+  stroke: var(--chance-likely);
 }
-.chance-good .chance-fill {
-  stroke: var(--chance-good);
+.chance-possible .chance-fill {
+  stroke: var(--chance-possible);
 }
-.chance-average .chance-fill {
-  stroke: var(--chance-average);
+.chance-unlikely .chance-fill {
+  stroke: var(--chance-unlikely);
 }
-.chance-bad .chance-fill {
-  stroke: var(--chance-bad);
+.chance-long-shot .chance-fill {
+  stroke: var(--chance-long-shot);
 }
 /* In the panel the ring leads the hand's name. */
 .closest-name .chance {
   margin-right: 4px;
   vertical-align: -2px;
 }
-/* The band's name beside the ring: what the colour says, in a word. */
+/* The band's name beside the ring: what the ring says, in a word. */
 .chance-band {
   font-weight: 600;
 }
@@ -959,11 +960,10 @@ html.pond-zoom .act-claim {
   line-height: 1;
   opacity: 0.85;
 }
-.chance-up {
-  color: var(--chance-excellent);
-}
+/* Up and down in the same quiet tone: the arrow says the hand moved, not whether that is good news. */
+.chance-up,
 .chance-down {
-  color: var(--chance-bad);
+  color: var(--chance-trend);
 }
 .detail-fact .chance-ring,
 .index-away .chance-ring {
