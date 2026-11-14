@@ -24,7 +24,11 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   lie in their own wall's lane, starting in the table corner on their left -
   bonus tiles hard left, a space, then the melds in the order made - and grow
   to the right as the wall in front of them is used up (the wall never
-  slides). `test/app/layout.test.ts` proves no meld
+  slides). The other seats' lanes are one row; yours, while the wall keeps it
+  short, takes a second row beneath the first (in the felt left of your wall,
+  no further down than the full-size row reached) once that makes the tiles
+  clearly larger than shrinking one row would; a group is never split across
+  rows. `test/app/layout.test.ts` proves no meld
   touches a wall, a hand, a discard or another player's melds.
 - `app/src/pile.js` is the other discard layout, the **centre pile** (Options,
   Discards: Rows or Pile, a device preference `int-maj.discard-layout`,

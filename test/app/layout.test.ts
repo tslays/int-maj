@@ -171,14 +171,46 @@ describe("3D table discard layout", () => {
     assert.ok(one[0]!.x < -12, "the first meld lies in the corner on the player's left");
     assert.deepEqual(two.slice(0, 3), one, "an earlier meld never moves when another is made");
     assert.ok(two[3]!.x > two[2]!.x, "the next meld goes to its right");
-    const crowded = meldLayout([3, 3, 3], 18, 7).tiles;
-    assert.ok(crowded.every((t: Spot) => t.z === crowded[0]!.z), "flowers and melds always lie in one single row");
-    const all = meldLayout([8, 4, 4, 4, 4], 8, 1, { bonusFirst: true });
-    assert.equal(new Set(all.tiles.map((t: Spot) => t.z)).size, 1, "even a crowded lane never wraps; the tiles shrink instead");
+    const zs = (laid: { tiles: Spot[] }) => new Set(laid.tiles.map((t: Spot) => t.z)).size;
+    assert.equal(zs(meldLayout([3, 3], 18, 7)), 1, "two melds beside a full wall are still one row");
+    for (const rel of [1, 2, 3]) {
+      assert.equal(zs(meldLayout([8, 4, 4, 4, 4], 0, 1, { bonusFirst: true, rel })), 1, "the other seats' lanes never wrap");
+    }
     const withBonus = meldLayout([2, 3], 6, 10, { bonusFirst: true });
     const plain = meldLayout([2, 3], 6, 10);
     assert.ok(withBonus.tiles[2]!.x - withBonus.tiles[1]!.x > plain.tiles[2]!.x - plain.tiles[1]!.x, "a wider space after the bonus tiles");
     assert.ok(meldLayout([3, 3, 3, 3], 6, 1).scale >= 0.85, "four pungs stay large");
+  });
+
+  it("starts a second row for your own melds when the wall keeps the lane short, and never otherwise", () => {
+    const rows = (sizes: number[], extent: number, options = {}) => {
+      const laid = meldLayout(sizes, extent, 5, options);
+      return { scale: laid.scale as number, tiles: laid.tiles as Spot[], zs: ([...new Set(laid.tiles.map((t: Spot) => t.z as number))] as number[]).sort((a: number, b: number) => a - b) };
+    };
+    // Beside a full wall the third claim used to shrink the row to a half; now it starts a second row.
+    const three = rows([3, 3, 3], 18);
+    assert.equal(three.zs.length, 2, "a third meld beside a full wall goes on a second row");
+    assert.ok(three.scale >= 0.7, `the tiles stay large (${three.scale})`);
+    assert.ok(rows([3, 3, 3, 3], 18).scale >= 0.7, "four pungs beside a full wall stay large");
+    assert.ok(rows([3, 3, 3, 3], 18).scale > 0.52 + 0.2, "much larger than the one row they shared before");
+    assert.equal(rows([3, 3, 3], 8).zs.length, 1, "a lane with room keeps a single row");
+    assert.equal(rows([3, 3, 3, 3], 14).zs.length, 1, "a second row only starts when it clearly helps");
+    // The groups run in order: the first row first, left to right, and a group is never split.
+    const order = three.tiles;
+    assert.deepEqual(order.map((t) => t.group), [0, 0, 0, 1, 1, 1, 2, 2, 2]);
+    const upper = order.filter((t) => t.z === three.zs[0]);
+    const lower = order.filter((t) => t.z === three.zs[1]);
+    assert.ok(upper.length > 0 && lower.length > 0 && Math.max(...upper.map((t) => t.group)) < Math.min(...lower.map((t) => t.group)), "earlier groups fill the first row");
+    // A kong keeps its raised fourth tile in either row.
+    const kongs = rows([4, 4, 4], 18, { kongs: [0, 1, 2] });
+    assert.equal(kongs.tiles.filter((t) => t.level === 1).length, 3);
+    // Only your own lane: it takes no more room than before, by the camera's line and clear of the pond.
+    for (const sizes of [[3, 3, 3], [4, 3, 3, 3], [2, 3, 3, 3], [8, 4, 4]]) {
+      const laid = meldLayout(sizes, 18, 1, { bonusFirst: sizes[0] === 2 || sizes[0] === 8, kongs: [1, 2, 3] });
+      const rects = meldRects(0, sizes, 18, 1, { bonusFirst: sizes[0] === 2 || sizes[0] === 8, kongs: [1, 2, 3] }) as Rect[];
+      assert.ok(Math.max(...rects.map((r) => r.maxZ)) <= TABLE.WALL_R + 0.6 + (H * 0.9) / 2 + 1e-9, `${sizes}: the lanes stay above the hand strip (${laid.scale})`);
+      assert.ok(Math.min(...rects.map((r) => r.minZ)) >= discardRect(0, 18).maxZ, `${sizes}: the lane stays clear of the fourth discard row`);
+    }
   });
 
   it("gives a fishing bot's fish two more slots after its last meld, on the table", () => {
@@ -443,6 +475,16 @@ describe("claims taps", () => {
         const inside = Math.abs(x) < WALL_INNER && Math.abs(z) < WALL_INNER;
         const seat = claimsSeatAt(x, z);
         assert.equal(seat === null, inside, `(${x}, ${z})`);
+      }
+    }
+    // Your second meld row reaches a little inside the walls: a tap on its tiles asks for the
+    // claims, while a tap on any discard beside them stays the pond zoom's.
+    const second = (meldRects(0, [3, 3, 3, 3], 11, 1) as Rect[]).map((r) => ({ rel: 0, x: (r.minX + r.maxX) / 2, z: (r.minZ + r.maxZ) / 2 }));
+    for (const tile of second) assert.equal(claimsSeatAt(tile.x, tile.z, second), 0, "a tap on a second-row tile");
+    for (let rel = 0; rel < 4; rel++) {
+      for (let index = 0; index < 30; index++) {
+        const rect = discardRect(rel, index);
+        assert.equal(claimsSeatAt((rect.minX + rect.maxX) / 2, (rect.minZ + rect.maxZ) / 2, second), null, `discard ${index + 1} of seat ${rel} beside the second row`);
       }
     }
     // Off the melds, the side of the table decides.

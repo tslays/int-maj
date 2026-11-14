@@ -185,6 +185,16 @@ const NEAR_CORNER_INSET = 2.8;
 const LANE_FAR = TABLE.TABLE_HALF - 0.2;
 const LANE_END = TABLE.TABLE_HALF - 1.6;
 
+// Your own lane may take a second row, lying nearer the pond than the first, in
+// the felt left of your wall. Its far edge stays clear of your own fourth
+// discard row (the lowest thing in the pond), its near edge is the camera's
+// line, the same as a full-size single row: so no table space is added.
+const OWN_LANE_NEAR = WALL_R + LANE_OUT + (H * 0.9) / 2;
+const OWN_LANE_FAR = TABLE.DISCARD_Z + STEP_Z * (FULL_ROWS + 1) + 0.06;
+const ROW_GAP = 0.1;
+// How much larger the tiles must get before a second row is worth starting.
+const TWO_ROW_GAIN = 0.1;
+
 /**
  * Lay a seat's exposed groups along its wall's lane. With `bonusFirst` the
  * first group is its flowers and seasons: hard left in the table corner, with
@@ -192,9 +202,11 @@ const LANE_END = TABLE.TABLE_HALF - 1.6;
  * new one to the right of the last. The wall never slides: stacks only vanish
  * where they stand, so `wallExtent` is one more than the highest slot still
  * standing, and the lane grows as the wall's left end is used up.
- * Everything lies in one single row; when the lane is short the tiles shrink
- * to fit, never wrapping into a second row. Returns the scale and each
- * tile's centre.
+ * Everything lies in one row, flowers and melds together; when the lane is
+ * short the tiles shrink to fit. Your own lane (rel 0) is the exception: while
+ * the wall leaves it short, a group that no longer fits goes to a second row
+ * beneath, whenever that keeps the tiles larger than one row would. A group
+ * is never split across rows. Returns the scale and each tile's centre.
  *
  * A kong (its group index listed in `kongs`) is a pung with the fourth tile
  * lying on top of the middle one: it takes the room of three tiles, and that
@@ -208,30 +220,52 @@ export function meldLayout(groupSizes, wallExtent, handCount, { bonusFirst = fal
   // three lie against the rail, outside their walls, so they run the rail's
   // length, up to the corner where the next seat's lane begins.
   const rowZero = rel !== 0 ? LANE_END : wallExtent > 0 ? wallSlotX(wallExtent - 1) - W / 2 - 0.25 : wallSlotX(0) + W / 2;
-  // Always one single row, flowers and melds together: when the lane is short
-  // the tiles shrink to fit rather than start a second row.
-  for (let scale = 0.9; scale >= 0.1; scale -= 0.02) {
+  const place = (scale, rows) => {
     const tileStep = (W + GAP) * scale;
     const groupGap = 0.3 * scale;
     // Your own lane stays by the wall, above your hand strip; the others lie against the rail.
-    const z = rel === 0 ? WALL_R + LANE_OUT : LANE_FAR - (H * scale) / 2;
+    const singleZ = rel === 0 ? WALL_R + LANE_OUT : LANE_FAR - (H * scale) / 2;
+    const lowerZ = OWN_LANE_NEAR - (H * scale) / 2;
+    const rowZs = rows === 1 ? [singleZ] : [lowerZ - H * scale - ROW_GAP, lowerZ];
     const tiles = [];
+    let row = 0;
     let x = laneStart;
-    let end = laneStart;
+    let fits = true;
     groupSizes.forEach((size, group) => {
       const stacked = kongs.includes(group) && size === 4;
       const footprint = stacked ? 3 : size;
+      let end = x + footprint * tileStep - GAP * scale;
+      if (end > rowZero && x > laneStart && row + 1 < rows) {
+        // This group would not fit on the row: it starts the next one.
+        row += 1;
+        x = laneStart;
+        end = x + footprint * tileStep - GAP * scale;
+      }
+      if (end > rowZero) fits = false;
       for (let index = 0; index < size; index++) {
         const level = stacked && index === 3 ? 1 : 0;
         const column = level === 1 ? 1 : index;
-        tiles.push({ group, index, level, x: x + column * tileStep + (W * scale) / 2, z });
+        tiles.push({ group, index, level, x: x + column * tileStep + (W * scale) / 2, z: rowZs[row] });
       }
-      end = x + footprint * tileStep - GAP * scale;
       x = end + (bonusFirst && group === 0 ? 3 * groupGap : groupGap);
     });
-    if (end <= rowZero) return { scale, tiles };
-  }
-  throw new Error(`meld lane cannot hold groups of ${groupSizes.join(", ")}`);
+    return fits ? { scale, tiles } : null;
+  };
+  const largest = (rows) => {
+    for (let scale = 0.9; scale >= 0.1; scale -= 0.02) {
+      if (rows === 2 && 2 * H * scale + ROW_GAP > OWN_LANE_NEAR - OWN_LANE_FAR) continue;
+      const laid = place(scale, rows);
+      if (laid !== null) return laid;
+    }
+    return null;
+  };
+  const single = largest(1);
+  // The second row only starts when it clearly helps: a row that merely
+  // squeezes a few per cent more would shift the whole lane for nothing.
+  const double = rel === 0 && (single === null || single.scale < 0.9 - TWO_ROW_GAIN) ? largest(2) : null;
+  const laid = double !== null && (single === null || double.scale >= single.scale + TWO_ROW_GAIN) ? double : single;
+  if (laid === null) throw new Error(`meld lane cannot hold groups of ${groupSizes.join(", ")}`);
+  return laid;
 }
 
 /** Table-space rectangles of a seat's meld tiles. */
@@ -244,6 +278,12 @@ export function meldRects(rel, groupSizes, wallExtent, handCount, options = {}) 
 const CLAIMS_REACH = TABLE.TABLE_HALF + 1.5;
 /** A tap this near a laid-out tile's centre asks for that tile's seat. */
 export const CLAIMS_NEAR = 1.6;
+/**
+ * Your own second meld row reaches a little inside the walls' square, where
+ * taps belong to the pond zoom: a tap this near one of its tiles' centres
+ * still asks for the claims.
+ */
+const CLAIMS_INSIDE = 0.6;
 
 /**
  * Whose claims a tap on the felt at table point (x, z) asks for, as a `rel`,
@@ -255,9 +295,10 @@ export const CLAIMS_NEAR = 1.6;
  */
 export function claimsSeatAt(x, z, tiles = [], { nearOnly = false } = {}) {
   if (Math.max(Math.abs(x), Math.abs(z)) > CLAIMS_REACH) return null;
-  if (Math.abs(x) < WALL_INNER && Math.abs(z) < WALL_INNER) return null;
+  const inside = Math.abs(x) < WALL_INNER && Math.abs(z) < WALL_INNER;
+  if (inside && !tiles.some((tile) => Math.hypot(tile.x - x, tile.z - z) < CLAIMS_INSIDE)) return null;
   let nearest = null;
-  let best = CLAIMS_NEAR;
+  let best = inside ? CLAIMS_INSIDE : CLAIMS_NEAR;
   for (const tile of tiles) {
     const distance = Math.hypot(tile.x - x, tile.z - z);
     if (distance < best) {
@@ -265,7 +306,7 @@ export function claimsSeatAt(x, z, tiles = [], { nearOnly = false } = {}) {
       nearest = tile.rel;
     }
   }
-  if (nearest !== null || nearOnly) return nearest;
+  if (nearest !== null || nearOnly || inside) return nearest;
   if (Math.abs(z) >= Math.abs(x)) return z > 0 ? 0 : 2;
   return x > 0 ? 1 : 3;
 }
