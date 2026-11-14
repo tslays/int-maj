@@ -4,7 +4,7 @@
 
 import * as THREE from "three";
 
-import { D, H, HAND_LIFT, LANE_OUT, TABLE } from "./layout.js";
+import { D, H, HAND_LIFT, LANE_OUT, OWN_LANE_NEAR, TABLE, handWidth } from "./layout.js";
 
 const { TABLE_HALF, WALL_R, HAND_Z } = TABLE;
 
@@ -49,6 +49,22 @@ export function fitHandCamera(handCamera, width, height, rowWidth) {
   handCamera.updateMatrixWorld();
   const top = new THREE.Vector3(0, H / 2, 0).project(handCamera);
   return { strip, tileTop: Math.min(strip, Math.round(((top.y + 1) / 2) * strip)) };
+}
+
+/**
+ * Where the left end of a hand of `tiles` tiles stands on the table, as the
+ * camera sees it: the table x, along your lane's camera line, that the hand
+ * strip's left end covers. `tableCamera` must be at its playing pose. The
+ * felt beyond it (further left) is free of the hand, and your melds may lie
+ * on it below that line; the nearer a point lies, the more of it shows
+ * past the hand, so the value along the line itself is the safe one.
+ */
+export function handLeftAtLane(handCamera, tableCamera, tiles) {
+  const left = new THREE.Vector3(-handWidth(tiles) / 2, 0, 0).project(handCamera);
+  const line = new THREE.Vector3(0, 0, OWN_LANE_NEAR).project(tableCamera);
+  const through = new THREE.Vector3(left.x, line.y, 0.5).unproject(tableCamera).sub(tableCamera.position);
+  // Where that ray meets the felt.
+  return tableCamera.position.x + through.x * (-tableCamera.position.y / through.y);
 }
 
 /**

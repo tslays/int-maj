@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 // @ts-expect-error - a plain browser module without type declarations
-import { breakFor, DRAWN_SLIDE, handTileStart, wallLook, wallPlan, discardRect, discardSlot, frameRect, handRects, latestPlate, pondExtent, pondPad, meldLayout, ROUND_LAYER, roundLayersWanted, roundLayerZ, meldRects, claimsSeatAt, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
+import { breakFor, DRAWN_SLIDE, handTileStart, wallLook, wallPlan, discardRect, discardSlot, frameRect, handRects, latestPlate, pondExtent, pondPad, meldLayout, ROUND_LAYER, roundLayersWanted, roundLayerZ, handTiles, meldRects, claimsSeatAt, OWN_LANE_NEAR, TABLE, wallRects, WALL_INNER, W, H } from "../../app/src/layout.js";
 
 interface Rect {
   readonly minX: number;
@@ -101,6 +101,9 @@ describe("3D table discard layout", () => {
       { groups: [2, 3], bonusFirst: true, hand: 10 },
       { groups: [3, 3], bonusFirst: false, hand: 7 },
       { groups: [4, 3, 3, 3], bonusFirst: true, hand: 4 },
+      // Flowers and four melds are five groups, the case that needs a third row beside a full wall.
+      { groups: [2, 3, 3, 3, 3], bonusFirst: true, hand: 1 },
+      { groups: [4, 3, 3, 3, 3], bonusFirst: true, hand: 1 },
       { groups: [8, 4, 4, 4, 4], bonusFirst: true, hand: 1 },
       // With the pile a fishing bot's fish takes two more slots after its melds (never yours).
       { groups: [3, 3, 3, 2], bonusFirst: false, hand: 4, fish: true },
@@ -113,6 +116,8 @@ describe("3D table discard layout", () => {
     const range = (from: number, to: number) => Array.from({ length: Math.max(0, to - from) }, (_, i) => from + i);
     const standing: { name: string; slots: number[] }[] = [
       { name: "all 18", slots: range(0, 18) },
+      { name: "right 16", slots: range(0, 16) },
+      { name: "right 14", slots: range(0, 14) },
       { name: "right 12", slots: range(0, 12) },
       { name: "right 6", slots: range(0, 6) },
       { name: "middle 3-9", slots: range(3, 9) },
@@ -120,16 +125,25 @@ describe("3D table discard layout", () => {
       { name: "gapped 0-2 and 8-10", slots: [0, 1, 2, 8, 9, 10] },
       { name: "none", slots: [] },
     ];
+    // Where the left end of the hand meets your lane's camera line after 1-4 claims, measured with the app's own cameras
+    // (`handLeftAtLane`): a portrait phone or an iPad, and a landscape phone, whose hand reaches furthest.
+    const reaches: { screen: string; at: (claims: number) => number | undefined }[] = [
+      { screen: "no hand reach", at: () => undefined },
+      { screen: "portrait", at: (claims) => [-12.4, -9.4, -6.4, -3.4][claims - 1] },
+      { screen: "landscape", at: (claims) => [-20.3, -15.4, -10.4, -5.5][claims - 1] },
+    ];
     for (const { name, slots } of standing) {
-      const walls = slots.length === 0 ? 0 : Math.max(...slots) + 1;
+     const walls = slots.length === 0 ? 0 : Math.max(...slots) + 1;
+     for (const reach of reaches) {
       for (const { groups, bonusFirst, hand, fish } of hands) {
-        if (walls === 18 && groups.length > 4) continue; // twelve tiles are never laid before any wall is drawn
-        const label = `wall ${name}, groups ${groups.join("+")}`;
+        const claims = groups.length - (bonusFirst ? 1 : 0) - (fish ? 1 : 0);
+        const handLeft = claims >= 1 ? reach.at(Math.min(claims, 4)) : undefined;
+        const label = `wall ${name}, ${reach.screen}, groups ${groups.join("+")}`;
         const melds: { rel: number; rect: Rect }[] = [];
         const solid: { what: string; rect: Rect }[] = [];
         for (let rel = 0; rel < 4; rel++) {
           const laid = fish && rel === 0 ? groups.slice(0, -1) : groups;
-          for (const rect of meldRects(rel, laid, walls, hand, { bonusFirst })) melds.push({ rel, rect });
+          for (const rect of meldRects(rel, laid, walls, hand, { bonusFirst, ...(handLeft === undefined ? {} : { handLeft }) })) melds.push({ rel, rect });
           for (const rect of wallRects(rel, slots)) solid.push({ what: `seat ${rel} wall`, rect });
           for (const rect of handRects(rel, hand)) solid.push({ what: `seat ${rel} hand`, rect });
         }
@@ -160,7 +174,13 @@ describe("3D table discard layout", () => {
             }
           }
         }
+        // Below the camera line lies only what the hand leaves free: left of its end, and never without knowing it.
+        for (const meld of melds) {
+          if (meld.rel !== 0 || meld.rect.maxZ <= OWN_LANE_NEAR + 1e-6) continue;
+          assert.ok(handLeft !== undefined && meld.rect.maxX <= handLeft - 0.5 + 1e-6, `${label}: a meld below the camera line reaches the hand (${meld.rect.maxX} against ${handLeft})`);
+        }
       }
+     }
     }
   });
 
@@ -211,6 +231,91 @@ describe("3D table discard layout", () => {
       assert.ok(Math.max(...rects.map((r) => r.maxZ)) <= TABLE.WALL_R + 0.6 + (H * 0.9) / 2 + 1e-9, `${sizes}: the lanes stay above the hand strip (${laid.scale})`);
       assert.ok(Math.min(...rects.map((r) => r.minZ)) >= discardRect(0, 18).maxZ, `${sizes}: the lane stays clear of the fourth discard row`);
     }
+  });
+
+  it("starts a third row when flowers and four melds still leave the tiles small beside a full wall", () => {
+    const laidOut = (sizes: number[], extent: number, options = {}) => {
+      const laid = meldLayout(sizes, extent, 1, options);
+      const tiles = laid.tiles as Spot[];
+      return { scale: laid.scale as number, tiles, zs: ([...new Set(tiles.map((t) => t.z))] as number[]).sort((a, b) => a - b) };
+    };
+    // The flowers' group and its wider gap used to leave two rows at about half size (0.54, 0.52, 0.42).
+    for (const [sizes, was] of [[[2, 3, 3, 3, 3], 0.54], [[4, 3, 3, 3, 3], 0.52], [[8, 3, 3, 3, 3], 0.42]] as const) {
+      const laid = laidOut([...sizes], 18, { bonusFirst: true });
+      assert.equal(laid.zs.length, 3, `${sizes}: flowers and four melds go on three rows`);
+      assert.ok(laid.scale >= was + 0.1, `${sizes}: ${laid.scale} is clearly larger than the two rows' ${was}`);
+    }
+    assert.ok(laidOut([2, 3, 3, 3, 3], 18, { bonusFirst: true }).scale >= 0.69, "flowers and four melds stay near the second row's size");
+    assert.ok(laidOut([4, 4, 4, 4, 4], 18, { bonusFirst: true, kongs: [1, 2, 3, 4] }).scale >= 0.69, "four kongs too");
+    // Only when it clearly helps: what two rows already lay at their best size stays on two rows.
+    for (const [sizes, options] of [[[3, 3, 3], {}], [[3, 3, 3, 3], {}], [[2, 3, 3, 3], { bonusFirst: true }]] as const) {
+      assert.equal(laidOut([...sizes], 18, options).zs.length, 2, `${sizes} stay on two rows`);
+    }
+    // Groups run in order and are never split: the top row first, left to right.
+    const order = laidOut([4, 3, 3, 3, 3], 18, { bonusFirst: true });
+    assert.deepEqual(order.tiles.map((t) => t.group), [0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4]);
+    const rowOf = (group: number) => order.zs.indexOf(order.tiles.find((t) => t.group === group)!.z);
+    for (let group = 0; group < 5; group++) {
+      assert.equal(new Set(order.tiles.filter((t) => t.group === group).map((t) => t.z)).size, 1, `group ${group} stays on one row`);
+      if (group > 0) assert.ok(rowOf(group) >= rowOf(group - 1), `group ${group} is not above the one before`);
+    }
+    // The top row stops short of the left-hand seat's pond (its fourth row starts at x = -10), and every row keeps its distance from that seat's wall.
+    for (const extent of [14, 15, 16, 17, 18]) {
+      for (const [sizes, options] of [[[2, 3, 3, 3, 3], {}], [[4, 3, 3, 3, 3], {}], [[8, 3, 3, 3, 3], {}], [[8, 4, 4, 4, 4], { kongs: [1, 2, 3, 4] }]] as const) {
+        const laid = laidOut([...sizes], extent, { bonusFirst: true, ...options });
+        if (laid.zs.length < 3) continue;
+        const top = laid.tiles.filter((t) => t.z === laid.zs[0]);
+        const topEnd = Math.max(...top.map((t) => t.x + (W * laid.scale) / 2));
+        assert.ok(topEnd < discardRect(3, 18).minX, `${sizes} at ${extent}: the top row ends before the left seat's fourth discard row`);
+        const farEdge = (laid.zs[0] as number) - (H * laid.scale) / 2;
+        const wallEnd = Math.max(...(wallRects(3, Array.from({ length: 18 }, (_, slot) => slot)) as Rect[]).map((r) => r.maxZ));
+        assert.ok(farEdge > wallEnd + 0.2, `${sizes} at ${extent}: the top row keeps its distance from the left seat's wall (${farEdge} against ${wallEnd})`);
+      }
+    }
+  });
+
+  it("uses the felt the hand leaves free as claims shrink it: after one, two, three and four claims", () => {
+    // Every claim takes three tiles from the hand: 14 on your turn, then 11, 8, 5 and 2.
+    assert.deepEqual([0, 1, 2, 3, 4].map(handTiles), [14, 11, 8, 5, 2]);
+    // Where that hand's left end meets the lane's camera line, per screen (see the proof above): the further right, the more felt is free.
+    const screens = {
+      portrait: [-12.4, -9.4, -6.4, -3.4],
+      landscape: [-20.3, -15.4, -10.4, -5.5],
+    };
+    const lane = (claims: number, flowers: number, handLeft: number | undefined, extent = 18) => {
+      const groups = [...(flowers > 0 ? [flowers] : []), ...Array(claims).fill(3)];
+      const laid = meldLayout(groups, extent, handTiles(claims), { bonusFirst: flowers > 0, ...(handLeft === undefined ? {} : { handLeft }) });
+      const tiles = laid.tiles as Spot[];
+      const below = tiles.filter((t) => t.z + (H * laid.scale) / 2 > OWN_LANE_NEAR + 1e-6);
+      return { scale: laid.scale as number, rows: new Set(tiles.map((t) => t.z)).size, below, tiles };
+    };
+    for (const flowers of [0, 2, 4]) {
+      for (let claims = 1; claims <= 4; claims++) {
+        const blind = lane(claims, flowers, undefined);
+        assert.equal(blind.below.length, 0, "without the hand's reach nothing lies below the camera line");
+        for (const [screen, ends] of Object.entries(screens)) {
+          const aware = lane(claims, flowers, ends[claims - 1]);
+          const label = `${flowers} flowers, ${claims} claims, ${screen}`;
+          assert.ok(aware.scale >= blind.scale - 1e-9, `${label}: free felt never makes the tiles smaller`);
+          for (const tile of aware.below) assert.ok(tile.x + (W * aware.scale) / 2 <= ends[claims - 1]! - 0.5 + 1e-6, `${label}: a tile below the line reaches the hand`);
+        }
+      }
+    }
+    // A portrait screen's hand has left the lane after two claims: flowers and two melds, or three melds, go back to nearly full size.
+    assert.ok(lane(2, 2, screens.portrait[1]).scale >= 0.85 && lane(2, 2, screens.portrait[1]).below.length > 0, "flowers and two melds, portrait");
+    assert.ok(lane(3, 0, screens.portrait[2]).scale >= 0.85, "three melds, portrait");
+    assert.ok(lane(4, 4, screens.portrait[3]).scale >= 0.85, "flowers and four melds, portrait");
+    // A landscape screen's hand still covers the lane after two claims, and frees it from the third on.
+    assert.equal(lane(2, 2, screens.landscape[1]).below.length, 0, "two claims on a landscape screen: still hidden");
+    assert.deepEqual(lane(2, 2, screens.landscape[1]).tiles.map((t) => [t.x, t.z]), lane(2, 2, undefined).tiles.map((t) => [t.x, t.z]));
+    assert.ok(lane(4, 2, screens.landscape[3]).scale >= 0.85, "four claims, landscape");
+    assert.ok(lane(3, 4, screens.landscape[2]).scale >= lane(3, 4, undefined).scale + 0.1, "three claims with flowers, landscape: clearly larger");
+    // The first row keeps its place beside the wall; the rows below hang from it.
+    const hung = lane(3, 0, screens.portrait[2]);
+    assert.equal(Math.min(...hung.tiles.map((t) => t.z)), TABLE.WALL_R + 0.6, "the first row lies where a single row does");
+    // Rows below the wall's front may run past the wall's end: only the hand stops them.
+    const wide = lane(4, 4, screens.portrait[3]);
+    assert.ok(wide.below.length > 0 && Math.max(...wide.below.map((t) => t.x)) > -9.43, "flowers and four melds: a lower row runs on past the wall's left end");
   });
 
   it("gives a fishing bot's fish two more slots after its last meld, on the table", () => {
