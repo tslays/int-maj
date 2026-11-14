@@ -251,6 +251,11 @@ html.phone-frame .actions {
   color: #fff;
   text-shadow: 0 1px 1px rgba(0, 40, 80, 0.5);
 }
+/* The top-down view of the ponds needs the whole table: the claim buttons (Chow, Pong, Kong,
+   Fishing) step aside until the view is back to the table. Pass and Mah Jong stay. */
+html.pond-zoom .act-claim {
+  display: none;
+}
 .act-pass {
   background: linear-gradient(180deg, var(--silver-1), var(--silver-2));
   color: #26323a;
