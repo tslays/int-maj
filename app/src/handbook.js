@@ -9,7 +9,7 @@
  * (`GET /api/closest?limit=`), and the list can be sorted by that.
  */
 
-import { isPinned, onPinsChange, openHandDetail, pinIcon, playWord, readingList, TIER_LABEL } from "./hints.js";
+import { isPinned, onPinsChange, openHandDetail, pinIcon, playWord, TIER_LABEL } from "./hints.js";
 import { bookPages } from "./pages.js";
 import { $, companionRules, faceChip, handSetInForce, request, state } from "./shared.js";
 
@@ -69,6 +69,20 @@ function ordered(hands) {
   return list;
 }
 
+/**
+ * The value in a card's corner: the points of its one scoring, or both of a
+ * hand with two, lowest first ("500/1,000"). The sheet says when each applies.
+ */
+function cornerValue(hand) {
+  if (hand.readings.length < 2) return hand.concealedPoints === null ? "Calculated" : hand.concealedPoints.toLocaleString("en");
+  const points = hand.readings.map((reading) => reading.concealedPoints);
+  if (points.includes(null)) return "Calculated";
+  return points
+    .sort((a, b) => a - b)
+    .map((value) => value.toLocaleString("en"))
+    .join("/");
+}
+
 function card(hand) {
   const cached = cards.get(hand.pattern);
   if (cached !== undefined) return cached;
@@ -83,7 +97,7 @@ function card(hand) {
   name.textContent = hand.name;
   const value = document.createElement("span");
   value.className = "index-value";
-  value.textContent = hand.concealedPoints === null ? "Calculated" : hand.concealedPoints.toLocaleString("en");
+  value.textContent = cornerValue(hand);
   head.append(name, value);
 
   const tiles = document.createElement("span");
@@ -101,9 +115,8 @@ function card(hand) {
   play.textContent = playWord(hand.concealedOnly);
   foot.append(play);
 
-  // A hand scored more than one way lists each scoring on its one card.
-  if (hand.readings.length > 1) item.append(head, tiles, text, readingList(hand.readings), foot);
-  else item.append(head, tiles, text, foot);
+  // Every card has the same rows; a hand with two scorings shows both in its corner, and its sheet lists each.
+  item.append(head, tiles, text, foot);
   // The closest-hands entry is read when the card is tapped, so it is never stale.
   item.addEventListener("click", () => void openHandDetail(hand.pattern, progress.get(hand.pattern) ?? null));
   cards.set(hand.pattern, item);
