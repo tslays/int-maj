@@ -123,7 +123,9 @@ export function scoreHand(hand: Hand, options: ScoreOptions = {}): ScoreResult {
   if (buried !== undefined && nonScoring) {
     candidates.push({ winning: buried, ...miss, points: 10 });
   } else {
-    const route = calculated.find((match) => match.pattern.id !== "buried-treasure");
+    // Buried Treasure with a pung is scored on the ground and doubles like any
+    // calculated hand (I p. 32); only its all-chow form is the 10-point hand.
+    const route = calculated.find((match) => match.pattern.id !== "buried-treasure") ?? buried;
     if (route !== undefined && route.pattern.id === "chinese-ordinary" && nonScoring) {
       candidates.push({ winning: route, ...miss, points: 10 });
     } else if (route !== undefined) {

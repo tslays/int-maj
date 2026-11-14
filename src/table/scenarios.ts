@@ -68,7 +68,7 @@ const TABLE = {
 
   wait: {
     title: "Thirteen tiles with a live wait",
-    seed: "wait-v13-549",
+    seed: "wait-v14-840",
     at: (view) => {
       if (view.phase !== "discard" || view.turn === view.seat) return false;
       // Your own plain wait: you have not shown the fish. Another seat's fish

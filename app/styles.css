@@ -264,6 +264,18 @@ html.phone-frame .actions {
   height: 1.58em;
   border-radius: 0.21em;
 }
+/* A wait tile that wins only from your own draw: faded, with a small note after the tiles. */
+.act .chip.chip-draw {
+  opacity: 0.5;
+}
+.act-note {
+  font-size: 0.55em;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.1;
+  max-width: 5.5em;
+  opacity: 0.9;
+}
 @keyframes act-in {
   from {
     opacity: 0;
@@ -1053,10 +1065,25 @@ button.detail-rule {
 }
 .detail-yours .detail-need {
   margin-top: 3px;
+  gap: 8px;
 }
 .detail-yours .detail-need .chip {
   width: 20px;
   height: 27px;
+}
+/* A needed tile and the tiles that would do as well, kept together after "or". */
+.need-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.need-or {
+  color: var(--muted);
+  font-size: 12px;
+  padding: 0 1px;
+}
+.need-note {
+  margin-top: 4px;
 }
 .help-card {
   width: min(520px, 100%);
