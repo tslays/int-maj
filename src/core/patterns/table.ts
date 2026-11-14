@@ -565,8 +565,9 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     exposedTier: null,
     requiresSelfDrawn: false,
     description:
-      "Run 1-9 in one suit, two more tiles of that suit each pairing with a " +
-      "run tile, and a pung/kong of winds or dragons.",
+      "Run 1-9 in one suit, two extra tiles of that suit that pair with it " +
+      "(the same tile twice, or two different ones), and a pung/kong of " +
+      "winds or dragons.",
     source: "Synopsis p. 56; illustrations p. 40.",
     notes:
       "The p. 40 pictures print 'Any tile 1-9 paired' twice: two extra " +

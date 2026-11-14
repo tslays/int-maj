@@ -470,3 +470,12 @@ dragon; two more tiles of the run's suit, each a copy of a tile in the run.
 The two may copy the same run tile (1, 1, 1 with 2-9): the box reads "Any tile
 1-9 paired", and the owner ruled the same day that "any" does not mean
 "different". An earlier draft of this note required two different run tiles.
+
+**Why two versions?** The owner suspects the two p. 40 versions stand for the
+two shapes this allows: both extras on one run tile (1 1 1 2-9) and on two
+(1 1 2-6 6 7-9). The pictures do not show it: both print the same two boxes,
+and what differs is a wind pung with Characters against a dragon pung with
+Bamboo. It is a guess about the book's intent, not evidence; the engine accepts
+both shapes either way, so nothing depends on it. The hand's card says both
+are fine.
+
