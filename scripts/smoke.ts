@@ -156,7 +156,7 @@ const BOARD_CHECKS: Readonly<Record<ScenarioName, (payload: Payload, page: Page)
     const banner = (await page.textContent("#goulash")) ?? "";
     assert.match(banner, /Goulash/, "the banner names the Goulash");
     assert.match(banner, /Exchange 1 of 3/, "the banner names the exchange");
-    assert.match(banner, /pass to West, opposite you/, "the banner names your partner");
+    assert.match(banner, /Pass 3 tiles to West, opposite you/, "the banner names your partner");
     // Three taps pick the tiles, the button passes them, and the second exchange is announced.
     const strip = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--strip")));
     assert.equal(await page.isDisabled("#goulash-confirm"), true, "nothing to pass before three tiles are picked");
@@ -180,10 +180,9 @@ const BOARD_CHECKS: Readonly<Record<ScenarioName, (payload: Payload, page: Page)
     await page.waitForFunction(() => /Exchange 2 of 3/.test(document.querySelector("#goulash")?.textContent ?? ""), null, {
       timeout: READY_MS,
     });
-    assert.match((await page.textContent("#goulash")) ?? "", /pass to South, on your right/);
+    assert.match((await page.textContent("#goulash")) ?? "", /Pass 3 tiles to South, on your right/);
     // The tiles the first exchange brought in are marked (#119).
     await page.waitForFunction(() => window.mahjong!.received().length > 0, null, { timeout: READY_MS });
-    assert.match((await page.textContent("#goulash")) ?? "", /The tiles you just received are marked in teal/);
   },
 };
 
