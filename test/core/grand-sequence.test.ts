@@ -40,8 +40,9 @@ describe("Grand Sequence", () => {
     assert.ok(!makes("c1 c2 c3 c4 c5 c6 c7 c8 c9 dW dW dR dR c1"), "no honour pung");
   });
 
-  it("does not let both tiles copy one run tile (the narrowest reading, ASSUMPTIONS.md)", () => {
-    assert.ok(!makes("c1 c2 c3 c4 c5 c6 c7 c8 c9 dW dW dW c1 c1"));
+  it("lets both tiles copy one run tile: 'any' is not 'different' (owner, 2026-11-14)", () => {
+    assert.ok(makes("c1 c2 c3 c4 c5 c6 c7 c8 c9 dW dW dW c1 c1"), "1, 1, 1 with 2-9");
+    assert.ok(makes("o1 o2 o3 o4 o5 o6 o7 o8 o9 wS wS wS o9 o9"));
   });
 
   it("is Mah Jong on a discarded White Dragon for the tester's hand", () => {

@@ -225,7 +225,7 @@ table as the supplement; none is deleted.
 | `guardian-winds` | Guardian Winds | Run 1-9 + wind pung + wind pair. |
 | `wriggly-dragon` | Wriggly Dragon | Run 1-9 + one each dragon + dragon pair. |
 | `guardian-dragons` | Guardian Dragons | Run 1-9 + dragon pung + dragon pair. |
-| `grand-sequence` | Grand Sequence | Run 1-9 + honour pung + two extra tiles of the run's suit, each pairing with a different run tile. |
+| `grand-sequence` | Grand Sequence | Run 1-9 + honour pung + two extra tiles of the run's suit, each pairing with a run tile (both may copy one). |
 | `dragons-gates` | Dragon's Gates | Run 2-8 + terminal pung + dragon pung + pair. |
 | `dragons-teeth` | Dragon's Teeth | Red/White dragon pungs + runs. |
 | `yin-yang` | Yin Yang | Fixed chow/pair shape. |

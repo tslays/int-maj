@@ -467,8 +467,6 @@ out on the discarded White Dragon.
 
 **Reading implemented:** run 1-9 in one suit; a pung or kong of any wind or
 dragon; two more tiles of the run's suit, each a copy of a tile in the run.
-
-**Left open, narrowest taken:** whether both extra tiles may copy the *same*
-run tile (a 1, 1, 1 with 2-9). The engine requires two different run tiles
-(two pairs with the run). Not printed either way; the owner can widen it.
-
+The two may copy the same run tile (1, 1, 1 with 2-9): the box reads "Any tile
+1-9 paired", and the owner ruled the same day that "any" does not mean
+"different". An earlier draft of this note required two different run tiles.

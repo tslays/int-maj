@@ -230,9 +230,10 @@ export function runGroup(
 }
 
 /**
- * A run of `length` tiles plus `extras` more tiles, each pairing with a
- * different tile of the run: the Companion's "Any tile 1-9 paired" printed
- * once per extra tile. The run suit carries `length + extras` tiles.
+ * A run of `length` tiles plus `extras` more tiles, each pairing with a tile
+ * of the run: the Companion's "Any tile 1-9 paired" printed once per extra
+ * tile. Nothing says the paired tiles differ, so two extras may copy the same
+ * run tile. The run suit carries `length + extras` tiles.
  */
 export function runWithPairsGroup(
   suit: Suit | "any",
@@ -248,13 +249,19 @@ export function runWithPairsGroup(
           { length },
           (_, offset) => suitTileKey(currentSuit, start + offset),
         );
-        const pairable = run.filter((key) => (pool[key] ?? 0) >= 2);
+        // Copies of each run tile held beyond the one the run itself takes.
+        const spare = run.map((key) => (pool[key] ?? 0) - 1);
         const choose = (from: number, chosen: string[]): void => {
           if (chosen.length === extras) {
             options.push([...run, ...chosen]);
             return;
           }
-          for (let at = from; at < pairable.length; at++) choose(at + 1, [...chosen, pairable[at]!]);
+          for (let at = from; at < run.length; at++) {
+            if (spare[at]! <= 0) continue;
+            spare[at]! -= 1;
+            choose(at, [...chosen, run[at]!]);
+            spare[at]! += 1;
+          }
         };
         choose(0, []);
       }

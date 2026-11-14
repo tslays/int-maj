@@ -63,14 +63,13 @@ describe("closest hands", () => {
     });
 
     it("names the tiles that would do instead when several complete it", () => {
-      // One spare 1: any other run tile paired with it finishes the hand.
+      // One spare 1: any run tile (the 1 too) as the second extra finishes the hand.
       const hand = grand("c1 c2 c3 c4 c5 c6 c7 c8 c9 c1 dW dW dW");
       assert.equal(hand.away, 1);
       assert.equal(hand.need.length, 1);
       const shown = hand.need[0]!;
       const stand = hand.instead.find((entry) => entry.need === shown)?.or ?? [];
-      assert.ok(stand.length >= 6, `${stand.length} stand-ins for ${shown}`);
-      assert.ok(!stand.includes("c1"), "the 1 is already paired");
+      assert.equal(stand.length, 8, `${stand.length} stand-ins for ${shown}`);
       assert.ok(!stand.includes(shown));
       assert.ok(stand.every((key) => key.startsWith("c")), "only run tiles pair with the run");
     });

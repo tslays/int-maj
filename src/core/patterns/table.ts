@@ -572,8 +572,8 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       "The p. 40 pictures print 'Any tile 1-9 paired' twice: two extra " +
       "tiles, each pairing with a tile of the run, as Dragon's Gates and " +
       "Dragon's Teeth print it once. It is not a separate pair (owner " +
-      "ruling 2026-11-14, tester report #147). The two extras pair with " +
-      "different run tiles (ASSUMPTIONS.md, 'Grand Sequence'). The two " +
+      "ruling 2026-11-14, tester report #147). 'Any' does not say the two " +
+      "differ, so both may copy one run tile (a 1, 1, 1 with 2-9). The two " +
       "illustrated versions differ only in the suit of the run; they are " +
       "one shape.",
     ...groupPattern(() =>
