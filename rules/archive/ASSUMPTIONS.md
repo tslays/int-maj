@@ -479,3 +479,17 @@ Bamboo. It is a guess about the book's intent, not evidence; the engine accepts
 both shapes either way, so nothing depends on it. The hand's card says both
 are fine.
 
+## Counter sticks on the result card: how a payment is shown (2026-11-14)
+
+**Source:** *Illustrated* p. 23 (Western counters: 10 × 100, 8 × 500,
+7 × 1000, 1 × 4000, 16 000 per player; no colours), *Companion* p. 55 (the
+same set as sticks "dipped in the appropriate coloured dye": ten yellow, eight
+green, seven blue, one red), *Illustrated* p. 22 (payments to the nearest 100).
+
+**Silent point:** neither book says how change is made between players, so
+which sticks a payment is made with is not a rule.
+
+**Assumption (presentation only):** the result card shows each payment in the
+fewest sticks, largest first (1200 is one blue and two yellow). The scores
+always come from the ledger, never from the sticks; nothing in the engine
+depends on this.
