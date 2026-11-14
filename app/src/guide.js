@@ -256,7 +256,7 @@ const TABS = [
       },
       {
         title: "After a hand",
-        text: "The result shows the winning hand and every seat's change; tap a seat to see who paid what, and why. Play this hand again deals the same tiles for another try.",
+        text: "The result shows the winning hand and every seat's change; tap a seat to see who paid what, and why. Play this hand again deals the same tiles for another try, and keeps the scores from before it.",
         picture: () => row(act("Next hand", "win")),
       },
     ],

@@ -136,11 +136,6 @@ function hintRow(hand, { name: label, pinned }) {
   row.type = "button";
   row.className = "closest-item";
   const away = hand === null;
-  row.title = away
-    ? "More than six tiles away, or no longer possible with the tiles in sight or your exposed melds"
-    : hand.concealedOnly
-      ? "Concealed: no exposed melds"
-      : "Exposed: exposed melds allowed";
   row.setAttribute(
     "aria-label",
     `${pinned ? "Pinned: " : ""}${label}${
@@ -296,8 +291,7 @@ function pinControl(pattern) {
     const blocked = !pinned && pins.full(game);
     const words = pinned ? "Unpin from hints" : "Pin to hints";
     button.replaceChildren(pinIcon());
-    button.setAttribute("aria-label", words);
-    button.title = blocked ? `All ${MAX_PINS} pins are in use` : words;
+    button.setAttribute("aria-label", blocked ? `${words}: all ${MAX_PINS} pins are in use` : words);
     button.setAttribute("aria-pressed", String(pinned));
     button.classList.toggle("is-blocked", blocked);
     return blocked;
@@ -360,7 +354,9 @@ function needChips(into, progress) {
       word.textContent = "or";
       group.append(word);
       for (const other of or) group.append(faceChip(other));
-      group.title = `${tileWords(key)} or ${or.map(tileWords).join(" or ")}`;
+      // The visible "or" says it; the words name the pair for a screen reader.
+      group.setAttribute("role", "group");
+      group.setAttribute("aria-label", `${tileWords(key)} or ${or.map(tileWords).join(" or ")}`);
     }
     into.append(group);
   }
