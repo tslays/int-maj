@@ -239,8 +239,9 @@ export function fishingValueFor(
   state: GameState,
   seat: Seat,
   wait: readonly string[],
-): { readonly tier: Tier; readonly value: number | null } | null {
+): { readonly tier: Tier; readonly value: number | null; readonly hand: string } | null {
   let bestTier: Tier | null = null;
+  let bestHand: string | null = null;
   let bestValue: number | null = null;
   let bestRank = -1;
   for (const tile of wait) {
@@ -265,24 +266,33 @@ export function fishingValueFor(
     const rank = tierRank(winning.tier);
     if (bestTier === null || rank > bestRank) {
       bestTier = winning.tier;
+      bestHand = winning.pattern.name;
       bestValue = value;
       bestRank = rank;
     }
   }
-  return bestTier === null ? null : { tier: bestTier, value: bestValue };
+  return bestTier === null || bestHand === null
+    ? null
+    : { tier: bestTier, value: bestValue, hand: bestHand };
 }
 
 /** The announcement available to a player who is one tile from mah jong. */
 export function fishingDeclarationFor(
   state: GameState,
   seat: Seat,
-): { readonly wait: string[]; readonly tier: Tier; readonly value: number | null } | null {
+): {
+  readonly wait: string[];
+  readonly tier: Tier;
+  readonly value: number | null;
+  /** Name of the hand being fished for. */
+  readonly hand: string;
+} | null {
   if (state.fishing.some((declaration) => declaration.seat === seat)) return null;
   const wait = waitsOf(state, seat);
   if (wait.length === 0) return null;
   const scored = fishingValueFor(state, seat, wait);
   if (scored === null) return null;
-  return { wait, tier: scored.tier, value: scored.value };
+  return { wait, tier: scored.tier, value: scored.value, hand: scored.hand };
 }
 
 function chowKeys(suit: PlayTile, start: number): string[] {

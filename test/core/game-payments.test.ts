@@ -533,7 +533,7 @@ describe("fishing restrictions", () => {
       turn: "E",
     });
     const value = fishingValueFor(state, "E", ["wE"]);
-    assert.deepEqual(value, { tier: "calculate", value: 224 });
+    assert.deepEqual(value, { tier: "calculate", value: 224, hand: "Ordinary Mah Jong" });
   });
 
   it("allows fishing when every copy of the wait is already dead", () => {
