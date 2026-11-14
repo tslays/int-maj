@@ -51,7 +51,7 @@ function bump(element) {
  * @param {Record<string, number>} input.deltas  each seat's change this hand
  * @param {(seat: string) => number} input.side  where a seat sits on screen: 0 you, 1 right, 2 across, 3 left
  * @param {(ms: number) => number} [input.scale] the table's pace
- * @param {(value: number) => void} [input.onLand] a stick has landed (sound)
+ * @param {(value: number, pan: number) => void} [input.onLand] a stick has landed (sound), panned -1..1 by where
  * @param {() => void} [input.onKnock] sticks knocked together (sound)
  * @returns {{ done: Promise<void>, finish: () => void }}
  */
@@ -183,7 +183,7 @@ export function playExchange({
         show(rows[seat], now[seat].delta, now[seat].total);
         bump(rows[seat].change);
       }
-      onLand(stick.value);
+      onLand(stick.value, ((stick.x / width) * 2 - 1) * 0.7);
     }
     if (result.knocks > 0) onKnock();
     draw();

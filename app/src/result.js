@@ -245,8 +245,8 @@ function renderOutcome(outcome) {
     deltas: outcome.totals,
     side: (seat) => board.rel(seat),
     scale: (ms) => pace.scale(ms),
-    onLand: (value) => sound.cue("stick", { value }),
-    onKnock: () => sound.cue("stick", { value: 100 }),
+    onLand: (value, pan) => sound.cue("stick", { value, pan }),
+    onKnock: () => sound.cue("stickKnock"),
   });
 }
 
