@@ -198,6 +198,21 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   tie for first names every tied seat a winner: the book says only that the
   highest score wins the game (Illustrated p. 16) and gives no tie-break. The
   open standings are kept in storage, so a reload resumes them.
+- `app/src/sticks.js`, `app/src/throw.js` and `app/src/exchange.js` show the
+  hand's payments as counter sticks thrown across the table over the result
+  card: the Illustrated's Western counters (p. 23: 10 × 100, 8 × 500,
+  7 × 1000, 1 × 4000) in the colours the Companion dyes them (p. 55: yellow,
+  green, blue, red). `sticks.js` (pure, tested) shows a payment in the fewest
+  sticks and plans the exchange from the ledger, one phase per kind of
+  payment. `throw.js` (pure, tested) is a small top-down physics model: each
+  stick is thrown from the payer's side of the screen (you at the bottom,
+  across at the top, left and right) towards the receiver's, arcs, lands,
+  hops, skids, knocks into the others and bounces off the screen's edges until
+  it rests. `exchange.js` draws it, counts the card's numbers as each stick
+  lands (a light wooden `stick` sound), tags what each seat won or lost once
+  the sticks lie still, and fades them after a few seconds. The rows always
+  end on the table's totals; a tap, a key or a reduced-motion setting skips
+  straight there, and Options › Table animations › Skip leaves the throw out. Each payment line under a seat also carries its sticks.
 - `app/src/settlement.js` words the result card's account of the points from
   the ledger (every entry is tagged with its kind in `src/core/game/state.ts`).
   The card shows only the result: each seat's change in green or red and its
@@ -366,8 +381,9 @@ throw in `seatSelection`); then East throws two dice for the wall to break
 the two dice), the break stack lifts, and the tiles are dealt in rounds of four.
 Every later hand repeats the last two steps. It follows the Pace setting (the dice's tumbling and their sound too): about two seconds a hand at Faster, three at Normal and four at Slower (`OPENING_SPEED` in `opening.js`),
 and a tap, Escape or Enter skips what is left; the hand it ends on is always the
-engine's. **Options, Dice and dealing: Show / Skip** turns all of it off for
-players who want to go straight to play (kept on the device); a resumed game and
+engine's. **Options, Table animations: Show / Skip** turns all of it off for
+players who want to go straight to play (kept on the device), and the counter
+sticks thrown over the result card with it; a resumed game and
 the review boards never show it. `?seed=<text>` pins the first game's seed, for
 tests and bug reports. Presentation only: the engine's draws do not depend on it.
 
