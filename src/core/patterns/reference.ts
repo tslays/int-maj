@@ -331,7 +331,7 @@ export const EXAMPLES: Readonly<Record<string, string>> = {
   "wriggly-dragon": "b1 b2 b3 b4 b5 b6 b7 b8 b9 dG dG dG dR dW",
   "five-odd-honours": "b1 b2 b3 b4 b5 b6 b7 b8 b9 wE wS wW wN dR",
   "guardian-dragons": "b1 b2 b3 b4 b5 b6 b7 b8 b9 dG dG dG dR dR",
-  "grand-sequence": "b1 b2 b3 b4 b5 b6 b7 b8 b9 wE wE wE c5 c5",
+  "grand-sequence": "b1 b2 b3 b4 b5 b6 b7 b8 b9 wE wE wE b2 b5",
   "dragons-tail": "b1 b2 b3 b4 b5 b6 b7 b8 b9 wE wE wE dR dR",
   "dragons-gates": "b1 b1 b1 b2 b3 b4 b5 b5 b6 b7 b8 dG dG dG",
   "dragons-teeth": "c1 c2 c3 c4 c4 c5 c6 c7 dR dR dR dW dW dW",

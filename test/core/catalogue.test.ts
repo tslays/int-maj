@@ -75,7 +75,7 @@ export const FIXTURES: Readonly<Record<string, Fixture>> = {
     negative: { concealed: "b1 b2 b3 b4 b5 b6 b7 b8 b9 wE wE wE dR dR" },
   },
   "grand-sequence": {
-    positive: { concealed: "b1 b2 b3 b4 b5 b6 b7 b8 b9 wE wE wE c5 c5" },
+    positive: { concealed: "b1 b2 b3 b4 b5 b6 b7 b8 b9 wE wE wE b2 b5" },
     negative: { concealed: "b1 b2 b3 b4 b5 b6 b7 b8 b9 b2 b2 b2 wE wE" },
   },
   "dragons-tail": {

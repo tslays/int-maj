@@ -1074,6 +1074,7 @@ button.detail-rule {
 /* A needed tile and the tiles that would do as well, kept together after "or". */
 .need-pick {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 3px;
 }

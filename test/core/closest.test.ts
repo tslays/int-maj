@@ -43,40 +43,36 @@ describe("closest hands", () => {
     }
   });
 
-  describe("a hand with two ways to finish", () => {
+  describe("a hand with more than one way to finish", () => {
     // Tester report #147: 1-9 in characters, a spare 1 and a spare 4, two White Dragons.
-    // Grand Sequence (C p. 40) wants a run, a dragon pung and a pair beside it, so
-    // the spare 1 is only half a pair: another 1 or another 4 completes it.
-    const grand = (): ReturnType<typeof closestHands>[number] => {
-      const state = fixture({
-        hands: { E: "c1 c1 c2 c3 c4 c4 c5 c6 c7 c8 c9 dW dW", ...OTHERS },
-        wall: LONG_WALL,
-        phase: "draw",
-        turn: "E",
-      });
-      const hand = closestHands(viewFor(state, "E"), 100).find((entry) => entry.pattern === "grand-sequence");
-      assert.ok(hand, "Grand Sequence is in reach");
-      return hand;
+    // Grand Sequence (C p. 40) is the run, a dragon pung and two more tiles each pairing
+    // with a run tile: this hand is one White Dragon away.
+    const grand = (hand: string): ReturnType<typeof closestHands>[number] => {
+      const state = fixture({ hands: { E: hand, ...OTHERS }, wall: LONG_WALL, phase: "draw", turn: "E" });
+      const found = closestHands(viewFor(state, "E"), 100).find((entry) => entry.pattern === "grand-sequence");
+      assert.ok(found, "Grand Sequence is in reach");
+      return found;
     };
 
-    it("counts the pair as a second tile beside the run", () => {
-      const hand = grand();
-      assert.equal(hand.away, 2);
-      assert.ok(hand.need.includes("dW"));
-      assert.ok(hand.need.includes("c1") || hand.need.includes("c4"));
+    it("is one White Dragon away, and says it is one more of the two held", () => {
+      const hand = grand("c1 c1 c2 c3 c4 c4 c5 c6 c7 c8 c9 dW dW");
+      assert.equal(hand.away, 1);
+      assert.deepEqual(hand.need, ["dW"]);
+      assert.deepEqual(hand.another, ["dW"]);
+      assert.deepEqual(hand.instead, []);
     });
 
-    it("says a 4 does as well as a 1, and that each is one more of a tile already held", () => {
-      const hand = grand();
-      const pairTile = hand.need.find((key) => key === "c1" || key === "c4")!;
-      const stand = pairTile === "c1" ? "c4" : "c1";
-      assert.deepEqual(
-        hand.instead.find((entry) => entry.need === pairTile)?.or,
-        [stand],
-        `a ${stand} stands in for the ${pairTile}`,
-      );
-      assert.ok(hand.another.includes(pairTile), "the pair tile is one more than the one held");
-      assert.ok(hand.another.includes("dW"), "the dragon pung wants one more of the two held");
+    it("names the tiles that would do instead when several complete it", () => {
+      // One spare 1: any other run tile paired with it finishes the hand.
+      const hand = grand("c1 c2 c3 c4 c5 c6 c7 c8 c9 c1 dW dW dW");
+      assert.equal(hand.away, 1);
+      assert.equal(hand.need.length, 1);
+      const shown = hand.need[0]!;
+      const stand = hand.instead.find((entry) => entry.need === shown)?.or ?? [];
+      assert.ok(stand.length >= 6, `${stand.length} stand-ins for ${shown}`);
+      assert.ok(!stand.includes("c1"), "the 1 is already paired");
+      assert.ok(!stand.includes(shown));
+      assert.ok(stand.every((key) => key.startsWith("c")), "only run tiles pair with the run");
     });
 
     it("names no stand-in when only one tile will do", () => {

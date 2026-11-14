@@ -230,13 +230,15 @@ export function runGroup(
 }
 
 /**
- * A run of `length` tiles plus one extra tile that pairs with a run tile:
- * so the run suit carries `length + 1` tiles.
+ * A run of `length` tiles plus `extras` more tiles, each pairing with a
+ * different tile of the run: the Companion's "Any tile 1-9 paired" printed
+ * once per extra tile. The run suit carries `length + extras` tiles.
  */
-export function runWithPairGroup(
+export function runWithPairsGroup(
   suit: Suit | "any",
   start: number,
   length: number,
+  extras: number,
 ): Group {
   return {
     options: (pool) => {
@@ -246,13 +248,31 @@ export function runWithPairGroup(
           { length },
           (_, offset) => suitTileKey(currentSuit, start + offset),
         );
-        for (const key of run) {
-          if ((pool[key] ?? 0) >= 2) options.push([...run, key]);
-        }
+        const pairable = run.filter((key) => (pool[key] ?? 0) >= 2);
+        const choose = (from: number, chosen: string[]): void => {
+          if (chosen.length === extras) {
+            options.push([...run, ...chosen]);
+            return;
+          }
+          for (let at = from; at < pairable.length; at++) choose(at + 1, [...chosen, pairable[at]!]);
+        };
+        choose(0, []);
       }
       return options;
     },
   };
+}
+
+/**
+ * A run of `length` tiles plus one extra tile that pairs with a run tile:
+ * so the run suit carries `length + 1` tiles.
+ */
+export function runWithPairGroup(
+  suit: Suit | "any",
+  start: number,
+  length: number,
+): Group {
+  return runWithPairsGroup(suit, start, length, 1);
 }
 
 function permutations<T>(items: readonly T[]): T[][] {

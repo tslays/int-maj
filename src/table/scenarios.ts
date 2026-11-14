@@ -103,7 +103,7 @@ const TABLE = {
 
   announce: {
     title: "Your turn to declare fishing",
-    seed: "offer-announce-v13-5",
+    seed: "offer-announce-v14-4",
     at: (view) =>
       view.phase === "announce" &&
       view.turn === view.seat &&

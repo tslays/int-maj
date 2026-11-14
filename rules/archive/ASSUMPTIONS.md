@@ -448,3 +448,27 @@ Not changed, for the owner to rule on (see `rules/AUDIT.md`, "Scoring review"):
 the Advanced settlement scores a losing hand by its ground score alone, and a
 fishing hand for an ordinary hand is scored as though the missing tile were
 drawn from the wall.
+
+## Grand Sequence: what "Any tile 1-9 paired" means
+
+**Source:** *Companion* p. 40 (two pictures), p. 11 (synopsis: "Run 1-9 in one
+suit + any two tiles paired + P/K of Winds or Dragon"), p. 12 and p. 34
+(Dragon's Gates and Dragon's Teeth).
+
+**Evidence:** both pictures show the run, the pung and two boxes, each reading
+"Any tile 1-9 paired". Dragon's Gates prints one such box (`Any tile 2-8
+paired`) beside run 2-8, and its composition is a run with one run tile paired.
+The earlier table read the two boxes as a free suited pair, which could be in
+any suit. **Owner ruling, 2026-11-14 (tester report #147):** the paired tiles
+refer to the rest of the hand, the run; they are not two arbitrary tiles. A
+hand of 1-9 in Characters, a pung of White Dragons and a second 1 and a second
+4 of Characters is Grand Sequence: 14 tiles, and a player with 13 of them went
+out on the discarded White Dragon.
+
+**Reading implemented:** run 1-9 in one suit; a pung or kong of any wind or
+dragon; two more tiles of the run's suit, each a copy of a tile in the run.
+
+**Left open, narrowest taken:** whether both extra tiles may copy the *same*
+run tile (a 1, 1, 1 with 2-9). The engine requires two different run tiles
+(two pairs with the run). Not printed either way; the owner can widen it.
+
