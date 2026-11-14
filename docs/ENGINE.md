@@ -239,10 +239,18 @@ wins special hands, 1.1 calls and 1.2 fishing declarations per hand, about
 9 ms per decision.
 
 The player's "closest hands" helper (`src/core/game/closest.ts`):
-`closestHands(view)` names the catalogue hands a seat's own tiles are nearest
-to - for each pattern its closest version, fewest tiles missing first, then
-the best chance times the value - with the missing tiles, and drops a version
-whose missing copies are all in sight. It reads only that seat's `GameView`.
+`closestHands(view)` names the catalogue hands a seat is likeliest to
+complete, with the missing tiles, and drops a version whose missing copies
+are all in sight. It reads only that seat's `GameView`. Candidates are found
+by distance (below); the nearest eight and every pinned hand then get their
+chance from `src/core/game/odds.ts`, which deals the tiles the seat cannot see
+(the wall and the opponents' hands) at random many times and plays each deal
+out: the seat plays only for the hand, re-planning among its versions, and
+claims what the rules let the hand claim; opponents keep pairs and neighbours
+and throw lone tiles; a dead discard never returns. The share of deals in
+which the seat completes the hand is the chance, seeded from the view so one
+view always gives one answer. `scripts/calibrate-odds.ts` measures it against
+real games; `docs/HINT-ODDS.md` has the design and the results.
 
 The distance it shows must be exact, so it does not come from the bots' sample
 of hands. A hand declared as groups (`HandPattern.groups`: a partition into

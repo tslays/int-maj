@@ -15,6 +15,13 @@
   --blue-2: #2d7fd2;
   --silver-1: #f3f6f8;
   --silver-2: #a6b2bb;
+  /* The five bands of a hand's likelihood: one warm colour, dim to bright, never right or wrong. */
+  --chance-very-likely: #ffe08a;
+  --chance-likely: #ecc56f;
+  --chance-possible: #cfa863;
+  --chance-unlikely: #a8916a;
+  --chance-long-shot: #847a6c;
+  --chance-trend: rgba(233, 228, 214, 0.6);
   --font: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
   --safe-l: max(12px, env(safe-area-inset-left));
   --safe-r: max(12px, env(safe-area-inset-right));
@@ -898,6 +905,71 @@ html.pond-zoom .act-claim {
   color: var(--gold-1);
   font-weight: 700;
 }
+/* The chance of completing a hand: a ring that fills clockwise, its band's name beside it, and an arrow when it moved a band. */
+.chance {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.chance-ring {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  transform: rotate(-90deg);
+}
+.chance-ring circle {
+  fill: none;
+  stroke-width: 2.6;
+}
+.chance-track {
+  stroke: rgba(255, 255, 255, 0.16);
+}
+.chance-fill {
+  stroke-linecap: round;
+}
+.chance-very-likely .chance-fill {
+  stroke: var(--chance-very-likely);
+}
+.chance-likely .chance-fill {
+  stroke: var(--chance-likely);
+}
+.chance-possible .chance-fill {
+  stroke: var(--chance-possible);
+}
+.chance-unlikely .chance-fill {
+  stroke: var(--chance-unlikely);
+}
+.chance-long-shot .chance-fill {
+  stroke: var(--chance-long-shot);
+}
+/* In the panel the ring leads the hand's name. */
+.closest-name .chance {
+  margin-right: 4px;
+  vertical-align: -2px;
+}
+/* The band's name beside the ring: what the ring says, in a word. */
+.chance-band {
+  font-weight: 600;
+}
+/* Small and soft: a hint of direction, not an alarm. */
+.chance-trend {
+  font-size: 7px;
+  line-height: 1;
+  opacity: 0.85;
+}
+/* Up and down in the same quiet tone: the arrow says the hand moved, not whether that is good news. */
+.chance-up,
+.chance-down {
+  color: var(--chance-trend);
+}
+.detail-fact .chance-ring,
+.index-away .chance-ring {
+  width: 14px;
+  height: 14px;
+}
 .closest-need {
   display: flex;
   flex-wrap: wrap;
@@ -1194,6 +1266,19 @@ button.detail-rule {
 }
 .need-note {
   margin-top: 4px;
+}
+/* A needed tile with how many copies of it are still out of sight, under it. */
+.need-tile {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.need-left {
+  color: var(--muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .help-card {
   width: min(520px, 100%);
@@ -1623,6 +1708,8 @@ button.detail-rule {
   border-color: rgba(255, 224, 138, 0.45);
 }
 .index-away {
+  display: inline-flex;
+  align-items: center;
   padding: 1px 7px;
   border-radius: 999px;
   background: rgba(255, 224, 138, 0.16);

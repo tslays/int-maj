@@ -28,6 +28,7 @@ import { isExcluded } from "../match.ts";
 import { situationFor } from "./bot.ts";
 import { completion, KEYS, MAX_MISSING, oddsFor, planGoals, type Goal, type Situation } from "./bot/plan.ts";
 import type { GameView } from "./view.ts";
+import { handChance, tableOf, type ClaimRule, type OddsTarget, type Table } from "./odds.ts";
 
 const PATTERN_BY_ID = new Map(PATTERNS.map((pattern) => [pattern.id, pattern]));
 
@@ -74,8 +75,14 @@ export interface ClosestHand {
    * needed key that has a stand-in.
    */
   readonly instead: readonly { readonly need: string; readonly or: readonly string[] }[];
-  /** Rough chance of completing it from here (0..1). */
+  /**
+   * The chance (0..1) of completing the hand before the wall runs out,
+   * playing only for it from here, judged from what this seat can see
+   * (`odds.ts`). 1 for a complete hand.
+   */
   readonly chance: number;
+  /** Copies of each needed key, and of each stand-in, the seat has not seen (in the wall or an opponent's hand). */
+  readonly unseen: Readonly<Record<string, number>>;
 }
 
 /** Hands shown by default: enough to compare, few enough for a phone. */
@@ -83,6 +90,42 @@ export const CLOSEST_SHOWN = 3;
 
 /** Versions of one hand kept when several are equally near: the likeliest is shown. */
 const VERSIONS_KEPT = 64;
+
+/**
+ * Hands whose chance is simulated, besides the pinned ones: the nearest by the
+ * quick estimate. A hand further down that list is not shown: it is further
+ * than all of them and seldom likelier.
+ */
+const SHORTLIST = 8;
+
+/**
+ * Trials for a hand past the shortlist, wanted only by the hand index
+ * (`limit` above the panel's few): a standard error of about three points,
+ * quick enough for a list of a hundred hands on a phone.
+ */
+const QUICK_TRIALS = 300;
+
+/**
+ * Versions of a hand the simulation plays, at the nearest distance and again
+ * one tile further. A flexible hand (Crazy Chows has thousands of versions)
+ * is finished by re-planning as tiles arrive; with only the 64 nearest
+ * versions the calibration run (`scripts/calibrate-odds.ts`) showed the
+ * chance some 15 points too low, with 200 it was within a few points, and
+ * 600 did no better.
+ */
+const SIMULATED_VERSIONS = 200;
+
+/** Which discards a hand may be built from (`OddsTarget.claims`). */
+function claimRule(pattern: HandPattern): ClaimRule {
+  if (pattern.requiresSelfDrawn) return "none";
+  return pattern.exposedTier === null ? "win" : "any";
+}
+
+/** Unseen copies of each needed key. */
+function unseenOf(need: readonly string[], unseen: ArrayLike<number>): Record<string, number> {
+  const index = new Map(KEYS.map((key, at) => [key, at]));
+  return Object.fromEntries([...new Set(need)].map((key) => [key, unseen[index.get(key)!]!]));
+}
 
 /** The needed keys that the seat already holds a copy of, in canonical order. */
 function anotherOf(need: readonly string[], held: ArrayLike<number>): string[] {
@@ -141,7 +184,7 @@ function exactVersion(
   odds: ReturnType<typeof oddsFor>,
   budget: number,
   cache: ReachCache,
-): { hand: ClosestHand; rank: number } | null {
+): Found | null {
   const reach = nearest({
     alternatives: pattern.groups!(`w${situation.seatWind}`),
     held: situation.hand,
@@ -168,8 +211,25 @@ function exactVersion(
   for (const key of goal.keys) {
     for (let copy = goal.need[key]! - situation.hand[key]!; copy > 0; copy--) need.push(KEYS[key]!);
   }
+  const instead = insteadOf(need, reach.wants, situation.hand);
+  const widen = (): readonly ArrayLike<number>[] => {
+    const wider = nearest({
+      alternatives: pattern.groups!(`w${situation.seatWind}`),
+      held: situation.hand,
+      spare: situation.unseen,
+      melds: situation.melds.map((meld) => meld.tiles),
+      budget: reach.missing,
+      keep: SIMULATED_VERSIONS,
+      slack: 1,
+      cache,
+    });
+    return wider === null ? reach.wants : [...wider.wants, ...wider.further];
+  };
   return {
     rank: chance * value,
+    versions: reach.wants,
+    widen,
+    claims: claimRule(pattern),
     hand: {
       pattern: pattern.id,
       name: pattern.name,
@@ -180,8 +240,9 @@ function exactVersion(
       away: reach.missing,
       need,
       another: anotherOf(need, situation.hand),
-      instead: insteadOf(need, reach.wants, situation.hand),
+      instead,
       chance: Math.round(chance * 1000) / 1000,
+      unseen: unseenOf([...need, ...instead.flatMap((entry) => entry.or)], situation.unseen),
     },
   };
 }
@@ -192,7 +253,17 @@ export const MAX_PINS = CLOSEST_SHOWN;
 /** One entry of the search: the hand and how likely, times how much, it is to be completed. */
 interface Found {
   readonly hand: ClosestHand;
+  /** The quick estimate of chance times value, which shortlists hands for the simulation. */
   readonly rank: number;
+  /** The versions of the hand the seat can still play for, as concealed tile counts. */
+  readonly versions: readonly ArrayLike<number>[];
+  /**
+   * The versions to simulate, when wider than `versions`: a player who draws
+   * well switches to a version that was a tile further, so the simulation
+   * plays those too. Worked out only for the hands that are simulated.
+   */
+  readonly widen?: () => readonly ArrayLike<number>[];
+  readonly claims: ClaimRule;
 }
 
 /**
@@ -202,7 +273,8 @@ interface Found {
  */
 function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { found: Found[]; excluded: readonly string[] } {
   // The player's own planner, without any bot's taste for special hands.
-  const situation = { ...situationFor(view, view.seat), ambition: 1 };
+  // No bot's race discount either: the player's own figure ignores the bots' temperaments.
+  const situation = { ...situationFor(view, view.seat), ambition: 1, haste: 1 };
   const odds = oddsFor(situation);
   const concealed = situation.melds.every((meld) => !meld.exposed);
 
@@ -216,6 +288,8 @@ function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { f
   const exactIds = new Set(exact.map((entry) => entry.pattern.id));
 
   const best = new Map<string, Found>();
+  /** Every version of a hand the planner offers, with how far it is: a hand's versions are those near its best. */
+  const offered = new Map<string, { need: ArrayLike<number>; away: number }[]>();
   for (const goal of planGoals(situation)) {
     if (exactIds.has(goal.pattern)) continue;
     const pattern = PATTERN_BY_ID.get(goal.pattern);
@@ -232,6 +306,9 @@ function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { f
       for (let copy = 0; copy < want; copy++) need.push(KEYS[key]!);
     }
     if (!live) continue;
+    const list = offered.get(goal.pattern) ?? [];
+    list.push({ need: goal.need, away: need.length });
+    offered.set(goal.pattern, list);
 
     const chance = completion(goal, situation.hand, odds);
     const rank = chance * goal.value;
@@ -244,6 +321,8 @@ function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { f
     }
     best.set(goal.pattern, {
       rank,
+      versions: [],
+      claims: claimRule(pattern),
       hand: {
         pattern: pattern.id,
         name: pattern.name,
@@ -256,8 +335,18 @@ function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { f
         another: anotherOf(need, situation.hand),
         instead: [],
         chance: Math.round(chance * 1000) / 1000,
+        unseen: unseenOf(need, situation.unseen),
       },
     });
+  }
+  // A planner hand's versions: those as near as its best, and those one tile further.
+  for (const [id, entry] of best) {
+    const versions = (offered.get(id) ?? [])
+      .filter((version) => version.away <= entry.hand.away + 1)
+      .sort((a, b) => a.away - b.away)
+      .slice(0, VERSIONS_KEPT)
+      .map((version) => version.need);
+    best.set(id, { ...entry, versions });
   }
 
   // Nearest first, widening the search a tile at a time, and stopping once
@@ -284,6 +373,34 @@ function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { f
 }
 
 /**
+ * The hands worth showing, with their simulated chance, likeliest first:
+ * the `SHORTLIST` nearest cards and every pinned one in full, and further
+ * cards up to `limit` with fewer trials. Ties go to the hand that pays more,
+ * then the nearer, then by id.
+ */
+function rated(view: GameView, cards: readonly Found[], pinned: ReadonlySet<string>, limit: number): Found[] {
+  const table: Table = tableOf(view);
+  let others = 0;
+  const out = cards.flatMap((entry): Found[] => {
+    const isPinned = pinned.has(entry.hand.pattern);
+    if (!isPinned) others += 1;
+    const full = isPinned || others <= SHORTLIST;
+    if (!full && others > limit) return [];
+    const target = { versions: entry.widen?.() ?? entry.versions, claims: entry.claims };
+    const options = full ? { salt: entry.hand.pattern } : { salt: entry.hand.pattern, trials: QUICK_TRIALS };
+    const chance = entry.hand.away === 0 ? 1 : handChance(table, target, options);
+    return [chance === null ? entry : { ...entry, hand: { ...entry.hand, chance: Math.round(chance * 1000) / 1000 } }];
+  });
+  return out.sort(
+    (a, b) =>
+      b.hand.chance - a.hand.chance ||
+      (b.hand.points ?? 0) - (a.hand.points ?? 0) ||
+      a.hand.away - b.hand.away ||
+      a.hand.pattern.localeCompare(b.hand.pattern),
+  );
+}
+
+/**
  * One entry per card, the nearest reading of it: a scoring variant and its
  * canonical hand are one hand in the panel. `found` is already nearest first.
  */
@@ -296,17 +413,32 @@ function asCards(found: readonly Found[]): Found[] {
     const card = cardOf(pattern);
     if (seen.has(card.id)) continue;
     seen.add(card.id);
-    cards.push(
-      card.id === entry.hand.pattern ? entry : { rank: entry.rank, hand: { ...entry.hand, pattern: card.id, name: card.name } },
-    );
+    cards.push(card.id === entry.hand.pattern ? entry : { ...entry, hand: { ...entry.hand, pattern: card.id, name: card.name } });
   }
   return cards;
 }
 
 export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand[] {
-  return asCards(search(view, limit, new Set()).found)
+  const none = new Set<string>();
+  return rated(view, asCards(search(view, Math.max(limit, SHORTLIST), none).found), none, limit)
     .slice(0, limit)
     .map((entry) => entry.hand);
+}
+
+/**
+ * What one catalogue hand asks of the seat now: its open versions and the
+ * claims it allows (the simulation's target), with the quick estimate the
+ * search ranks by. Null when the hand is out of reach. For the calibration
+ * run (`scripts/calibrate-odds.ts`), which plays a seat for one hand.
+ */
+export function handTarget(
+  view: GameView,
+  id: string,
+): { readonly target: OddsTarget; readonly quick: number; readonly away: number } | null {
+  const card = cardIdOf(id);
+  const entry = asCards(search(view, 0, new Set([card])).found).find((found) => found.hand.pattern === card);
+  if (entry === undefined) return null;
+  return { target: { versions: entry.widen?.() ?? entry.versions, claims: entry.claims }, quick: entry.hand.chance, away: entry.hand.away };
 }
 
 /** A hand the player pinned, with how near their tiles are to it; `hand` is null when it is out of reach. */
@@ -334,8 +466,8 @@ export function closestWithPins(
   // A pin on a scoring variant pins its card.
   const ids = [...new Set(pins.map((id) => cardIdOf(id)))].slice(0, MAX_PINS);
   const chosen = new Set(ids);
-  const { found, excluded } = search(view, limit, chosen);
-  const cards = asCards(found);
+  const { found, excluded } = search(view, Math.max(limit, SHORTLIST), chosen);
+  const cards = rated(view, asCards(found), chosen, limit);
   const byId = new Map(cards.map((entry) => [entry.hand.pattern, entry.hand]));
   const pinned: PinnedHand[] = [];
   for (const id of ids) {

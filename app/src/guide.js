@@ -9,6 +9,7 @@
 
 import { tipsReset } from "./tips.js";
 import { $, faceChip } from "./shared.js";
+import { chanceBadge } from "./hints.js";
 
 /* --------------------------------------------------------- pictures */
 
@@ -116,12 +117,14 @@ function throwPicture() {
 function closestPicture() {
   const box = el("div", "guide-panel");
   box.append(el("b", "guide-panel-head", "Closest hands"));
-  for (const [name, line] of [
-    ["Crazy Chows", "Concealed · 3 to go · 500"],
-    ["Robin", "Concealed · 4 to go · 500"],
+  for (const [name, chance, line] of [
+    ["Crazy Chows", 0.66, " · Concealed · 500"],
+    ["Robin", 0.27, " · Concealed · 500"],
   ]) {
     const item = el("div", "guide-panel-row");
-    item.append(el("span", "", name), el("small", "", line));
+    const meta = el("small", "");
+    meta.append(chanceBadge(chance), line);
+    item.append(el("span", "", name), meta);
     box.append(item);
   }
   return box;
@@ -242,7 +245,7 @@ const TABS = [
     cards: [
       {
         title: "Closest hands",
-        text: "Top right: the hands your tiles are nearest to, how many tiles you still need and what they pay. Tap one for its sheet; the pin keeps it there. Out of reach means more than six tiles away, or no longer possible with the tiles in sight or your exposed melds. Hints in the menu shows or hides it.",
+        text: "Top right: the hands you are likeliest to complete. The ring fills and brightens with how likely you are to complete each before the wall runs out, from a long shot to very likely, worked out only from the tiles you can see; an arrow shows a hand that moved since your last move. A guide, not advice: a long shot may pay far more. Then how it is played and what it pays. Tap one for its sheet; the pin keeps it there. Out of reach means more than six tiles away, or no longer possible with the tiles in sight or your exposed melds. Hints in the menu shows or hides it.",
         picture: closestPicture,
       },
       {

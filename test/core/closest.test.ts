@@ -37,9 +37,9 @@ describe("closest hands", () => {
     assert.equal(snake.concealedOnly, true, "Wriggly Snake exists only concealed");
     assert.equal(snake.points, 1000);
     assert.ok(snake.chance > 0 && snake.chance <= 1);
-    assert.equal(hands[0]!.away, 1, "nothing is nearer than one tile");
+    assert.deepEqual(snake.unseen, { wN: 4 }, "every North Wind is still out of sight");
     for (let index = 1; index < hands.length; index++) {
-      assert.ok(hands[index - 1]!.away <= hands[index]!.away, "sorted nearest first");
+      assert.ok(hands[index - 1]!.chance >= hands[index]!.chance, "likeliest first");
     }
   });
 
@@ -251,21 +251,20 @@ describe("closest hands", () => {
         [far.pattern, "wriggly-snake"],
         "in the order pinned",
       );
-      assert.deepEqual(pinned[0]!.hand, far);
+      const pin = pinned[0]!.hand!;
+      assert.equal(pin.pattern, far.pattern);
+      assert.equal(pin.away, far.away);
+      assert.deepEqual(pin.need, far.need);
       assert.equal(pinned[1]!.hand?.away, 1);
       assert.ok(!hands.some((hand) => hand.pattern === far.pattern || hand.pattern === "wriggly-snake"));
-      assert.deepEqual(
-        hands,
-        near.filter((hand) => hand.pattern !== "wriggly-snake").concat(
-          closestHands(view, 100).filter(
-            (hand) =>
-              hand.pattern !== far.pattern &&
-              hand.pattern !== "wriggly-snake" &&
-              !near.some((n) => n.pattern === hand.pattern),
-          ),
-        ).slice(0, 3),
-        "the nearest unpinned hands fill the rest",
-      );
+      assert.ok(hands.length === 3, "the unpinned hands fill the panel");
+      for (let index = 1; index < hands.length; index++) {
+        assert.ok(hands[index - 1]!.chance >= hands[index]!.chance, "likeliest first");
+      }
+      const unpinned = near.filter((hand) => hand.pattern !== "wriggly-snake");
+      for (const hand of unpinned) {
+        assert.ok(hands.some((shown) => shown.pattern === hand.pattern), `${hand.pattern} stays among the suggestions`);
+      }
     });
 
     it("says null for a pinned hand that cannot be finished, and names it", () => {

@@ -96,6 +96,11 @@ export interface ReachInput {
   readonly budget: number;
   /** Keep at most this many partitions at the nearest distance. */
   readonly keep: number;
+  /**
+   * Also keep up to `keep` partitions at most this many tiles further than
+   * the nearest (`Reach.further`). 0, the default, keeps the nearest only.
+   */
+  readonly slack?: number;
   /** Shared between searches over the same `held` tiles; omit to search on its own. */
   readonly cache?: ReachCache;
 }
@@ -105,6 +110,8 @@ export interface Reach {
   readonly missing: number;
   /** The concealed tiles each nearest partition wants, by index (the meld tiles excluded). */
   readonly wants: readonly Int8Array[];
+  /** Partitions within `slack` tiles further than the nearest, nearest first; empty without slack. */
+  readonly further: readonly Int8Array[];
 }
 
 /**
@@ -115,6 +122,7 @@ export interface Reach {
  */
 export function nearest(input: ReachInput): Reach | null {
   const { held, spare, budget, keep } = input;
+  const slack = input.slack ?? 0;
   const meldSignatures = input.melds.map((keys) =>
     keys
       .slice(0, 3)
@@ -127,6 +135,8 @@ export function nearest(input: ReachInput): Reach | null {
   let hit = false;
   let found: Int8Array[] = [];
   const seen = new Set<string>();
+  /** Partitions further than the nearest, within the slack: each with its distance. */
+  let further: { cost: number; key: string; want: Int8Array }[] = [];
   const used = new Int8Array(KINDS);
 
   /** The tiles an option lacks on its own. Beside other groups it can only lack more. */
@@ -155,6 +165,12 @@ export function nearest(input: ReachInput): Reach | null {
     return ranked;
   };
 
+  /** The most a partition may lack and still be worth finishing. */
+  const limit = (): number => {
+    if (slack > 0) return best + slack;
+    return found.length >= keep ? best - 1 : best;
+  };
+
   /**
    * Fills the remaining slots from `slot` on; `cost` tiles are missing so far.
    * `rest[slot]` is the least that slots from `slot` on can still add (each
@@ -171,14 +187,25 @@ export function nearest(input: ReachInput): Reach | null {
   ): void => {
     while (slot < slots.length && skip.has(slot)) slot += 1;
     // Past `keep` equally near partitions only a nearer one is worth finding.
-    if (cost + rest[slot]! > (found.length >= keep ? best - 1 : best)) return;
+    if (cost + rest[slot]! > limit()) return;
     if (slot === slots.length) {
-      if (cost > best) return;
+      if (cost > best) {
+        // Only reached with slack: a partition a little further than the nearest.
+        const key = used.join(",");
+        if (cost <= best + slack && further.length < keep && !further.some((entry) => entry.key === key)) {
+          further.push({ cost, key, want: new Int8Array(used) });
+        }
+        return;
+      }
       if (cost < best || !hit) {
+        if (slack > 0 && hit) {
+          for (const want of found) further.push({ cost: best, key: want.join(","), want });
+        }
         best = cost;
         hit = true;
         found = [];
         seen.clear();
+        further = further.filter((entry) => entry.cost <= best + slack);
       }
       const key = used.join(",");
       if (found.length < keep && !seen.has(key)) {
@@ -195,7 +222,7 @@ export function nearest(input: ReachInput): Reach | null {
     while (previous >= 0 && skip.has(previous)) previous -= 1;
     const start = previous >= 0 && slots[previous]!.twin === current.twin ? floor : 0;
     for (let at = start; at < options.length; at++) {
-      if (cost + lacking[at]! + after > (found.length >= keep ? best - 1 : best)) break;
+      if (cost + lacking[at]! + after > limit()) break;
       const option = options[at]!;
       let added = 0;
       let feasible = true;
@@ -209,7 +236,7 @@ export function nearest(input: ReachInput): Reach | null {
           break;
         }
       }
-      if (feasible && cost + added <= best) fill(slots, skip, rest, slot + 1, at, cost + added);
+      if (feasible && cost + added <= limit()) fill(slots, skip, rest, slot + 1, at, cost + added);
       for (let index = 0; index < taken; index++) used[option.tiles[index]!]! -= 1;
     }
   };
@@ -240,5 +267,7 @@ export function nearest(input: ReachInput): Reach | null {
     if (input.melds.length > groups.length) continue;
     seat(slotsOf(groups), new Set(), 0);
   }
-  return hit ? { missing: best, wants: found } : null;
+  if (!hit) return null;
+  further.sort((a, b) => a.cost - b.cost);
+  return { missing: best, wants: found, further: further.map((entry) => entry.want) };
 }

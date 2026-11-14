@@ -19,7 +19,7 @@ import type {
   GameState,
 } from "./state.ts";
 import type { Action } from "./actions.ts";
-import { seatIndex, wallRemaining } from "./state.ts";
+import { seatIndex, tilesLeft, wallRemaining } from "./state.ts";
 import { legalActions } from "./legal.ts";
 import { goulashPartner } from "./reduce.ts";
 import { drawOnlyWaits, exclusionsOf, fishingDeclarationFor, hasRule, WIN_NEEDS_FISH } from "./hands.ts";
@@ -71,6 +71,14 @@ export interface GameView {
   readonly player: PlayerView;
   readonly opponents: readonly OpponentView[];
   readonly wallRemaining: number;
+  /**
+   * Loose tiles waiting at the end of the wall (they sit on top of it, in
+   * sight of everyone). They replace kongs and bonus tiles; in the Western
+   * game they are also drawn last (`drawsLeft`).
+   */
+  readonly looseRemaining: number;
+  /** Tiles still to be drawn by anyone in turn: the wall, and the loose tiles in the Western game. */
+  readonly drawsLeft: number;
   readonly lastDiscard: { readonly seat: Seat; readonly tile: string } | null;
   /** The viewer's own last drawn tile, for the just-drawn marker. */
   readonly lastDraw: {
@@ -150,6 +158,8 @@ export function viewFor(state: GameState, seat: Seat): GameView {
     },
     opponents,
     wallRemaining: wallRemaining(state),
+    looseRemaining: state.wall.loose.length,
+    drawsLeft: tilesLeft(state),
     lastDiscard: state.lastDiscard === null ? null : { ...state.lastDiscard },
     // Only your own draw: another seat's drawn tile is concealed.
     lastDraw:
