@@ -450,6 +450,7 @@ html.pond-zoom .act-claim {
 }
 .result-card {
   display: grid;
+  /* minmax(0, …) so a wide tile row cannot push the columns past the card. */
   grid-template-columns: minmax(0, 1.25fr) minmax(220px, 1fr);
   gap: 6px 22px;
   align-items: start;
@@ -528,10 +529,15 @@ html.pond-zoom .act-claim {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  min-width: 0;
+  max-width: 100%;
   margin-bottom: 10px;
 }
+/* A group wraps inside the column when a hand of many tiles (no melds) is too wide for it. */
 .result-group {
   display: inline-flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   gap: 2px;
 }
 .result-tiles .chip {
@@ -730,6 +736,10 @@ html.pond-zoom .act-claim {
     display: none;
   }
 }
+.result-main,
+.result-side {
+  min-width: 0;
+}
 .result-side {
   display: grid;
   gap: 10px;
@@ -764,7 +774,7 @@ html.pond-zoom .act-claim {
 /* Narrow screens stack the two columns. */
 @media (max-width: 640px) {
   .result-card {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .result-side {
     padding-top: 0;
