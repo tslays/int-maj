@@ -48,6 +48,7 @@ function losingHandPoints(draft: Draft, seat: Seat): number {
     const score = scoreHand(hand, {
       limit,
       withoutMahJongBonus: true,
+      firstDiscardByEast: draft.firstDiscardClaimedBy === seat,
       goulash: draft.goulash === true,
       excluded: exclusionsOf(draft as GameState),
     });
@@ -67,6 +68,7 @@ function heldDoubles(draft: Draft, seat: Seat): number {
     if (hand === null) continue;
     const score = scoreHand(hand, {
       limit: draft.limit ?? DEFAULT_LIMIT,
+      firstDiscardByEast: draft.firstDiscardClaimedBy === seat,
       goulash: draft.goulash === true,
       excluded: exclusionsOf(draft as GameState),
     });
@@ -283,6 +285,7 @@ export function finishWin(
   selfDrawn: boolean,
   winningTile: string,
   emit: Emit,
+  robbedKong = false,
 ): ApplyError | null {
   const hand = buildHand(draft as GameState, seat, {
     winningTile,
@@ -293,6 +296,8 @@ export function finishWin(
     limit: draft.limit ?? DEFAULT_LIMIT,
     goulash: draft.goulash === true,
     excluded: exclusionsOf(draft as GameState),
+    firstDiscardByEast: draft.firstDiscardClaimedBy === seat,
+    robbedKong,
     wonOnLooseTile: selfDrawn && draft.lastDraw?.end === "loose",
     wonOnLastWallTile:
       selfDrawn &&

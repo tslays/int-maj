@@ -181,6 +181,8 @@ export interface GameState {
   readonly goulashPicks?: Partial<Record<Seat, readonly string[]>>;
   /** A drawn Western hand repeats the dealer only once. */
   readonly drawRepeatUsed?: boolean;
+  /** Ground bonus (d), I p. 24: the seat that claimed East's first discard. */
+  readonly firstDiscardClaimedBy?: Seat;
   /** Western by default; the Chinese drawn hand keeps East and adds a kitty. */
   readonly variant?: "western" | "chinese";
   /** Stakes accumulated in the Chinese kitty. */

@@ -200,13 +200,13 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     match: ({ shape }) => {
       if (usedSuits(shape).length !== 1) return false;
       if (shape.suitedTotal === 0) return false;
-      return decomposeStandard(shape).some((decomposition) => {
-        const chows = decomposition.sets.filter((set) => set.kind === "chow").length;
-        if (chows > 1) return false;
-        return decomposition.sets.some(
-          (set) => set.kind === "chow" || isSuitedKey(set.tile),
-        );
-      });
+      // One suit, with Winds and Dragons if wished (I p. 34): the suit may be
+      // held in a set or only in the pair, so four honour sets and a pair of
+      // 2 Bamboos is a hand.
+      return decomposeStandard(shape).some(
+        (decomposition) =>
+          decomposition.sets.filter((set) => set.kind === "chow").length <= 1,
+      );
     },
   },
   {
