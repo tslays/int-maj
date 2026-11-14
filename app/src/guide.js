@@ -242,7 +242,7 @@ const TABS = [
     cards: [
       {
         title: "Closest hands",
-        text: "Top right: the hands your tiles are nearest to, how many tiles you still need and what they pay. Tap one for its sheet; the pin keeps it there. Hints in the menu shows or hides it.",
+        text: "Top right: the hands your tiles are nearest to, how many tiles you still need and what they pay. Tap one for its sheet; the pin keeps it there. Out of reach means more than six tiles away, or no longer possible with the tiles in sight or your exposed melds. Hints in the menu shows or hides it.",
         picture: closestPicture,
       },
       {
@@ -256,7 +256,7 @@ const TABS = [
       },
       {
         title: "After a hand",
-        text: "The result shows the winning hand and every seat's change; tap a seat to see who paid what, and why. Play this hand again deals the same tiles for another try.",
+        text: "The result shows the winning hand and every seat's change; tap a seat to see who paid what, and why. Play this hand again deals the same tiles for another try and keeps the scores from before it.",
         picture: () => row(act("Next hand", "win")),
       },
     ],

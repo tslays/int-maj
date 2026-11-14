@@ -234,7 +234,6 @@ function againLink(panel) {
   link.type = "button";
   link.className = "result-again";
   link.textContent = "Play this hand again";
-  link.title = "Same deal, same tiles. Your scores from before this hand are kept.";
   link.addEventListener("click", async () => {
     panel.hidden = true;
     panel.replaceChildren();
