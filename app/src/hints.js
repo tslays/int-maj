@@ -291,7 +291,7 @@ function pinControl(pattern) {
     const blocked = !pinned && pins.full(game);
     const words = pinned ? "Unpin from hints" : "Pin to hints";
     button.replaceChildren(pinIcon());
-    button.setAttribute("aria-label", blocked ? `${words}: all ${MAX_PINS} pins are in use` : words);
+    button.setAttribute("aria-label", words);
     button.setAttribute("aria-pressed", String(pinned));
     button.classList.toggle("is-blocked", blocked);
     return blocked;
@@ -354,9 +354,6 @@ function needChips(into, progress) {
       word.textContent = "or";
       group.append(word);
       for (const other of or) group.append(faceChip(other));
-      // The visible "or" says it; the words name the pair for a screen reader.
-      group.setAttribute("role", "group");
-      group.setAttribute("aria-label", `${tileWords(key)} or ${or.map(tileWords).join(" or ")}`);
     }
     into.append(group);
   }

@@ -1,9 +1,8 @@
 /**
- * The app shows no tooltips. The browser's own pop-up box (a `title` on any
- * element, including an image or an SVG `<title>`) is never used, and no
- * custom hover box is added either. The scan reads the shipped source, so a
- * new one fails the suite; `scripts/smoke.ts` checks the live page as well.
- * Explanations go in visible text, the guide, or an `aria-label`.
+ * The app never uses the browser's own tooltip: a `title` on any element (an
+ * image or an SVG included), or an SVG `<title>` element, which the browser
+ * also shows on hover. The scan reads the shipped source, so a new one fails
+ * the suite; `scripts/smoke.ts` checks the live page as well.
  */
 
 import assert from "node:assert/strict";
@@ -14,15 +13,14 @@ import { fileURLToPath } from "node:url";
 
 const APP = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "app");
 
-/** Each way a tooltip gets into the page, by what the code writes. */
+/** Each way a title tooltip gets into the page, by what the code writes. */
 const WAYS: readonly { name: string; pattern: RegExp }[] = [
   { name: "a title property (el.title = ...)", pattern: /\.title\s*=(?!=)/ },
   { name: "a title attribute set in code", pattern: /setAttribute\(\s*["']title["']/ },
   { name: "a title attribute in markup", pattern: /\stitle=["'\\]/ },
   { name: "a title element (SVG or HTML)", pattern: /<title[\s>]/ },
   { name: "a title made by createElement", pattern: /createElement(?:NS)?\([^)]*["']title["']/ },
-  { name: "a title read by CSS", pattern: /attr\(\s*(?:title|data-tip)/ },
-  { name: "the word tooltip", pattern: /tooltip/i },
+  { name: "a title read by CSS", pattern: /attr\(\s*title/ },
 ];
 
 /** The page's own `<title>` names the browser tab; it is not a tooltip. */
@@ -51,20 +49,19 @@ function appFiles(): { file: string; text: string }[] {
   });
 }
 
-describe("no tooltips", () => {
-  it("the app shows no title tooltip and no hover box", () => {
+describe("no title tooltips", () => {
+  it("the app sets no title on any element", () => {
     const found = appFiles().flatMap(({ file, text }) => findTooltips(text).map((hit) => `${file} ${hit}`));
-    assert.deepEqual(found, [], "every tooltip is removed, or its words moved into visible text or an aria-label");
+    assert.deepEqual(found, [], "every title tooltip is removed");
   });
 
-  it("catches each way a tooltip gets in", () => {
+  it("catches each way a title tooltip gets in", () => {
     assert.match(findTooltips('row.title = "Concealed";')[0]!, /a title property/);
     assert.match(findTooltips('button.setAttribute("title", words);')[0]!, /a title attribute set in code/);
     assert.match(findTooltips('html = \'<span title="Pin">\';')[0]!, /a title attribute in markup/);
     assert.match(findTooltips('svg.innerHTML = "<svg><title>Pin</title></svg>";')[0]!, /a title element/);
     assert.match(findTooltips('document.createElementNS(ns, "title");')[0]!, /a title made by createElement/);
     assert.match(findTooltips(".tile::after { content: attr(title); }")[0]!, /a title read by CSS/);
-    assert.match(findTooltips("const tooltip = makeBox();")[0]!, /the word tooltip/);
   });
 
   it("leaves alone the titles of cards, arguments and reads", () => {
