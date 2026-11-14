@@ -1500,7 +1500,7 @@ button.detail-rule {
 }
 .index-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(212px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(212px, 100%), 1fr));
   align-content: start;
   gap: 8px;
   padding: 10px;
@@ -1538,6 +1538,7 @@ button.detail-rule {
 }
 .index-value {
   flex: none;
+  white-space: nowrap;
   color: var(--gold-1);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
