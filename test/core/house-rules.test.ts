@@ -1,5 +1,5 @@
 /**
- * The hand sets (all, Companion, Companion with pictures): the hands a set leaves
+ * The hand sets (all, Companion, Companion with pictures, Rare): the hands a set leaves
  * out are no hand for the scorer, the waits, the bots' plans or the closest-hands
  * helper alike.
  *
@@ -30,7 +30,9 @@ import { planGoals } from "../../src/core/game/bot/plan.ts";
 import { createHand } from "../../src/core/hand.ts";
 import {
   COMPANION_UNILLUSTRATED_HANDS,
+  EASY_MIXED_HANDS,
   HAND_SET_EXCLUDED,
+  HAND_SETS,
   ILLUSTRATED_ONLY_HANDS,
   PATTERNS,
 } from "../../src/core/patterns/table.ts";
@@ -189,6 +191,57 @@ function drawnResult() {
     reason: "wall exhausted",
   } as unknown as NonNullable<ReturnType<typeof fixture>["result"]>;
 }
+
+describe("the Rare hand set (docs/BALANCE.md)", () => {
+  // The printed examples: Crazy Chows (C p. 16), Three Philosophers (C p. 15).
+  const CRAZY_CHOWS = "o4 b5 c6 o2 b3 c4 o6 b7 c8 o1 b2 c3 b6 o6";
+  const THREE_PHILOSOPHERS = "c2 c3 c4 o6 o7 o8 b5 b6 b7 b4 o5 c6 b2 b2";
+  const RARE = HAND_SET_EXCLUDED.rare;
+
+  it("leaves out the pictured set's hands and the five easy mixed-suit hands", () => {
+    assert.deepEqual([...EASY_MIXED_HANDS].sort(), [
+      "big-robert-mixed", "crazy-chows", "little-robert", "robin", "three-philosophers",
+    ]);
+    assert.deepEqual(
+      [...RARE].sort(),
+      [...new Set([...HAND_SET_EXCLUDED["companion-pictured"], ...EASY_MIXED_HANDS])].sort(),
+    );
+    assert.equal(RARE.length, 16, "Robin is already out of the pictured set");
+    for (let index = 1; index < HAND_SETS.length; index++) {
+      const wider = HAND_SET_EXCLUDED[HAND_SETS[index - 1]!];
+      assert.ok(wider.every((id) => HAND_SET_EXCLUDED[HAND_SETS[index]!].includes(id)), "each set narrows the one before");
+    }
+  });
+
+  it("does not score the printed Crazy Chows or Three Philosophers", () => {
+    for (const [tiles, id, points] of [[CRAZY_CHOWS, "crazy-chows", 500], [THREE_PHILOSOPHERS, "three-philosophers", 1000]] as const) {
+      const hand = createHand({ concealed: tiles, selfDrawn: true });
+      const printed = scoreHand(hand);
+      assert.equal(printed.winning?.pattern.id, id);
+      assert.equal(printed.points, points);
+      const rare = scoreHand(hand, { excluded: RARE });
+      assert.equal(rare.winning, null, `${id}: no other hand in these tiles`);
+      assert.deepEqual(rare.matches, []);
+    }
+  });
+
+  it("is no wait, no hint and no bot plan", () => {
+    const base = {
+      hands: { E: "o4 b5 c6 o2 b3 c4 o6 b7 c8 o1 b2 c3 b6", ...OTHERS },
+      wall: LONG_WALL,
+      phase: "draw",
+      turn: "E",
+    } as const;
+    assert.ok(waitsOf(fixture(base), "E").includes("o6"), "fishing for the mixed pair");
+    assert.deepEqual(waitsOf(fixture({ ...base, excludedHands: RARE }), "E"), []);
+    assert.ok(closestHands(viewFor(fixture(base), "E"), 50).some((hand) => hand.pattern === "crazy-chows"));
+    for (const seat of ["E", "S", "W", "N"] as const) {
+      const view = viewFor(fixture({ ...base, excludedHands: RARE }), seat);
+      assert.ok(closestHands(view, 50).every((hand) => !EASY_MIXED_HANDS.includes(hand.pattern)));
+      assert.ok(planGoals(situationFor(view, seat)).every((goal) => !EASY_MIXED_HANDS.includes(goal.pattern)));
+    }
+  });
+});
 
 describe("the Companion's values govern", () => {
   const score = (tiles: string) => scoreHand(createHand({ concealed: tiles, selfDrawn: false }));

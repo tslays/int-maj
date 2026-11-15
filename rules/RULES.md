@@ -1236,7 +1236,7 @@ Neither book prints these. They are options a table may switch on; with every
 one off, the game is exactly Parts I-III. A hand keeps the rules it was dealt
 under: a change takes effect with the next deal.
 
-- **Which hands are in play** `[A]`. One of three sets, each the one before
+- **Which hands are in play** `[A]`. One of four sets, each the one before
   it with more left out. A left-out hand is no winning hand, no wait and no
   fishing hand for any player, and it is not hinted. Tiles that also make
   another hand in play score as that hand; tiles that make only a left-out
@@ -1255,14 +1255,24 @@ under: a change takes effect with the next deal.
      picture: Up You Go, Down You Go `[C p. 57]`, Dragon's Run `[C p. 59]`,
      Odds & Evens, Robin, Blue Mountains, White Elephant, Driven Snow and
      Dragon's Scales `[C p. 60]` (Part III §2). Twelve hands in all are left out.
+  4. **Rare**: set 3 less the special hands built only from chows, pungs or
+     runs with free numbers spread over mixed suits, with no wind, dragon or
+     number required, which nearly any deal is already halfway to: Crazy
+     Chows `[C p. 16]`, Three Philosophers `[C p. 15]`, Little Robert
+     `[C p. 16]` and Big Robert at half limit, the mixed-numbers reading
+     `[C p. 14]` (the limit reading with the same numbers stays in). Robin,
+     the fifth such hand, is already out of set 3. Sixteen hands in all are
+     left out. Neither book prints this set: it is a balancing choice, so a
+     player can chase the rarer hands without the table going out early on
+     the easy ones (`docs/BALANCE.md`).
 
   Whichever set is chosen, the values are the Companion's (§1). In the
-  Companion sets the app also shows no Illustrated page reference and no
+  Companion sets (2-4) the app also shows no Illustrated page reference and no
   Illustrated page citation in a payment's explanation: a table that chose the
   Companion has no use for the other book. The ground score, doubles and
   payments themselves are still computed by the Illustrated book's rules.
 
-  In the table: `illustratedOnly` and `companionUnillustrated` on the pattern,
+  In the table: `illustratedOnly`, `companionUnillustrated` and `easyMixed` on the pattern,
   `HAND_SET_EXCLUDED` for the sets, `excludedHands` on the game,
   `pages` (by book) for the page references.
 

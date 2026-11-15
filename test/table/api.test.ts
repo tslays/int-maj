@@ -614,6 +614,12 @@ describe("the hand index under a hand set", () => {
     assert.equal(ids(pictured).length, ids(all.body).length - 12);
     assert.ok(!ids(pictured).includes("robin"));
 
+    // Rare also drops the easy mixed-suit hands; the Big Robert card stays for its limit reading.
+    const rare = call<typeof all.body>("GET", "/api/hands?set=rare").body;
+    assert.ok(!ids(rare).includes("crazy-chows") && !ids(rare).includes("three-philosophers"));
+    assert.ok(!ids(rare).includes("little-robert") && ids(rare).includes("big-robert"));
+    assert.ok(ids(rare).length < ids(pictured).length);
+
     assert.equal(call<ApiError>("GET", "/api/hands?set=most").status, 400);
   });
 });
