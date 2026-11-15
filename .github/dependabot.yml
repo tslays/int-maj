@@ -1,0 +1,16 @@
+# Keeps the GitHub Actions in .github/ on their current major versions, so
+# they never drift onto a deprecated runtime again (as v4 of the artifact
+# actions did onto Node 20). One grouped pull request a month at most; npm
+# packages are left out on purpose: Playwright must match the browser the
+# cloud sessions have installed, and the other two are pinned by hand.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directories: ["/", "/.github/actions/*"]
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "CI"

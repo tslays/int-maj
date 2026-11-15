@@ -126,6 +126,9 @@ deleting branches or history, changing the Cloudflare token or secrets).
 - `Smoke (browser)` runs `npm run smoke` beside it on pull requests and on
   `main`. It is not a required check; look at it after changing `app/`.
 - A failing test means nothing is published.
+- Dependabot (`.github/dependabot.yml`) opens at most one pull request a
+  month that moves the workflow's actions to their current versions; the
+  owner merges it once its checks are green. npm packages are not included.
 - A tag is the only way testers get a new build.
 - Installed copies on phones update the next time they open.
 - Sessions run autonomously and may merge their own finished, tested work into
