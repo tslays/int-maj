@@ -4,7 +4,48 @@ Newest first. Written for players: what you will see, what was fixed, and
 what now works differently. Each version is a `v0.1.0-alpha.N` tag on `main`;
 testers get it at https://int.mah-jong.workers.dev.
 
-## alpha.8
+## alpha.9
+
+**New**
+
+- **Closest hands show how likely each hand is**, not how many tiles are
+  missing. Each hand in the panel leads with a ring: how far it is filled
+  and how bright it is says how likely you are to complete that hand before
+  the wall runs out, from *Long shot* through *Unlikely*, *Possible* and
+  *Likely* to *Very likely*. It is worked out only from the tiles you can
+  see. A small arrow marks a hand that moved a band since your last move.
+  It is a guide, not advice: a long shot at a big hand can be a fair play.
+  The hand's sheet names the band and shows how many copies of each tile you
+  need are still unseen, and in the index of all hands *Order › Likeliest
+  for my tiles* sorts by it. (#156)
+
+**Changed**
+
+- **Claim buttons step aside in the top-down view** of the discards, so the
+  whole table shows. Pass and Mah Jong stay; the others return when you go
+  back to the table. (#157)
+- **Big Robert's card shows both values in its corner** ("500/1,000", lowest
+  first) instead of a line per scoring; its sheet still lists each scoring
+  and when it applies. (#155)
+
+**Fixed**
+
+- **The result card shows a winning hand's real groups** (from your report):
+  a mixed chow, as in Crazy Chows or Three Philosophers, stays together and
+  reads 2-3-4 instead of falling apart by suit. (#159 → #160)
+- **A long row of tiles stays inside the result card** on a phone: a hand
+  with no melds, such as Seven Twins, no longer ran over the score column.
+  (#158)
+- Cards in the index of all hands are no longer clipped on a narrow phone.
+  (#155)
+
+**What works differently now**
+
+- The closest-hands panel no longer counts tiles to go; it shows how likely
+  each hand is.
+- The index of all hands can be sorted by that likelihood.
+
+## alpha.8 (14 November 2026)
 
 **New**
 
