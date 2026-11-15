@@ -231,12 +231,13 @@ new Hard against three at the old one won 157 of 800 hands to 134 and netted
 target table from the catalogue fixtures; every target is re-checked against
 its pattern in `test/core/bot-targets.test.ts`.
 
-`node scripts/bot-soak.ts [hands] [workers]` (`npm run bot-soak`) plays
-bot-only hands, seeded `bots-0`, `bots-1`, ..., and prints the drawn rate, the
+`node scripts/bot-soak.ts [hands] [workers] [--exclude=id,...]` (`npm run bot-soak`) plays
+bot-only hands, optionally with hands left out, seeded `bots-0`, `bots-1`, ..., and prints the drawn rate, the
 hands won, calls and fishing per hand and the time per decision. On
 2026-11-08, 400 hands: 35 % drawn (about 80 % before the planner), 98 % of
 wins special hands, 1.1 calls and 1.2 fishing declarations per hand, about
-9 ms per decision.
+9 ms per decision. Which hands the bots win with, and what leaving the easy
+ones out does: `docs/BALANCE.md`.
 
 The player's "closest hands" helper (`src/core/game/closest.ts`):
 `closestHands(view)` names the catalogue hands a seat is likeliest to

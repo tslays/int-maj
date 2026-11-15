@@ -1,14 +1,16 @@
 /**
  * Bot-only self-play: how the real table bots play against each other.
  *
- *   node scripts/bot-soak.ts [hands] [workers]
+ *   node scripts/bot-soak.ts [hands] [workers] [--exclude=id,id,...]
  *
  * Every seat is played by `chooseAction` over its own `viewFor` projection,
  * exactly as on the web table. Each hand is the first hand of a fresh game
  * seeded "bots-<n>", so a run is reproducible and two runs with the same
  * count compare like for like. It prints the drawn rate, the special-hand
  * share of the wins, the hands won, how many calls and fishing declarations
- * the bots made, and the time per decision.
+ * the bots made, and the time per decision. `--exclude` deals every hand
+ * with those hand ids left out, as the hand-set house rules do
+ * (docs/BALANCE.md uses it).
  *
  * This is a measurement, not a test: `npm test` keeps to the fast coverage
  * soak (test/core/soak.test.ts). Defaults: 200 hands on every core.
@@ -39,8 +41,8 @@ interface Tally {
 
 const TIER_OF = new Map(PATTERNS.map((pattern) => [pattern.id, pattern.tier]));
 
-function playHand(seed: string, tally: Tally): void {
-  let { state } = newGame(seed);
+function playHand(seed: string, tally: Tally, excludedHands: readonly string[]): void {
+  let { state } = newGame(seed, excludedHands.length > 0 ? { excludedHands } : {});
   for (let step = 0; step < 3000 && state.phase !== "finished"; step++) {
     const actor = state.turn;
     const started = performance.now();
@@ -83,20 +85,25 @@ function emptyTally(): Tally {
 }
 
 if (!isMainThread) {
-  const { from, count } = workerData as { from: number; count: number };
+  const { from, count, excluded } = workerData as { from: number; count: number; excluded: string[] };
   const tally = emptyTally();
-  for (let index = from; index < from + count; index++) playHand(`bots-${index}`, tally);
+  for (let index = from; index < from + count; index++) playHand(`bots-${index}`, tally, excluded);
   parentPort!.postMessage(tally);
 } else {
-  const hands = Number(process.argv[2] ?? 200);
-  const workers = Math.min(hands, Number(process.argv[3] ?? availableParallelism()));
+  const flag = process.argv.find((arg) => arg.startsWith("--exclude="));
+  const excluded = (flag?.slice("--exclude=".length) ?? "").split(",").filter((id) => id !== "");
+  const unknown = excluded.filter((id) => !TIER_OF.has(id));
+  if (unknown.length > 0) throw new Error(`unknown hand id: ${unknown.join(", ")}`);
+  const positional = process.argv.slice(2).filter((arg) => !arg.startsWith("--"));
+  const hands = Number(positional[0] ?? 200);
+  const workers = Math.min(hands, Number(positional[1] ?? availableParallelism()));
   const started = performance.now();
   const parts = await Promise.all(
     Array.from({ length: workers }, (_, index) => {
       const from = Math.floor((hands * index) / workers);
       const to = Math.floor((hands * (index + 1)) / workers);
       return new Promise<Tally>((resolve, reject) => {
-        const worker = new Worker(new URL(import.meta.url), { workerData: { from, count: to - from } });
+        const worker = new Worker(new URL(import.meta.url), { workerData: { from, count: to - from, excluded } });
         worker.once("message", resolve);
         worker.once("error", reject);
       });
@@ -114,6 +121,7 @@ if (!isMainThread) {
   }
   const wins = total.hands - total.drawn;
   const percent = (n: number, of: number) => (of === 0 ? "-" : `${((100 * n) / of).toFixed(0)} %`);
+  if (excluded.length > 0) console.log(`left out: ${excluded.join(", ")}`);
   console.log(`${total.hands} bot-only hands in ${((performance.now() - started) / 1000).toFixed(0)} s`);
   console.log(`  drawn         ${total.drawn} (${percent(total.drawn, total.hands)})`);
   console.log(`  wins          ${wins}: ${total.selfDrawn} self-drawn, ${total.specialWins} special (${percent(total.specialWins, wins)} of wins)`);
