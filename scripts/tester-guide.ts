@@ -11,14 +11,21 @@
  * directory, named after the guide's version; it is not committed.
  *
  * It also prints the WhatsApp message (between `<!-- whatsapp:start -->` and
- * `<!-- whatsapp:end -->`), ready to paste. A dev tool: nothing the game runs
- * imports it, and it holds no book pages or book text, only our own words.
+ * `<!-- whatsapp:end -->`), ready to paste and also saved as
+ * `int-maj-<stage>-whatsapp.txt`, and writes the GitHub release notes,
+ * `int-maj-<stage>-release.md`, from the newest CHANGELOG section: its
+ * `**New**` labels become `### New` headings and wrapped lines are joined.
+ * The pull request numbers, `(#156)` at the end of each item, come along.
+ *
+ * Last, it checks its own output and prints one line, so nobody needs to open
+ * the PDF: the version agrees across the guide, the CHANGELOG and the message,
+ * no Markdown is left unrendered, and the page count. It exits non-zero on a
+ * problem. A dev tool: nothing the game runs imports it, and it holds no book
+ * pages or book text, only our own words.
  */
 
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-
-import { chromium } from "playwright";
 
 const ROOT = resolve(import.meta.dirname, "..");
 
@@ -27,6 +34,11 @@ function between(text: string, name: string): string {
   const end = text.indexOf(`<!-- ${name}:end -->`);
   if (start < 0 || end < start) throw new Error(`docs/TESTING.md has no ${name} section`);
   return text.slice(start + `<!-- ${name}:start -->`.length, end).trim();
+}
+
+/** HTML comments in the Markdown are notes for us, never for the PDF. */
+function stripComments(text: string): string {
+  return text.replace(/\s*<!--.*?-->/g, "");
 }
 
 function escape(text: string): string {
@@ -60,7 +72,7 @@ export function markdown(source: string): string {
     items = null;
     last = null;
   };
-  for (const raw of source.split("\n")) {
+  for (const raw of stripComments(source).split("\n")) {
     const line = raw.trimEnd();
     const heading = /^(#{1,4}) (.*)$/.exec(line);
     const item = /^( *)- (.*)$/.exec(line);
@@ -88,6 +100,57 @@ export function markdown(source: string): string {
   flushParagraph();
   flushList();
   return out.join("\n");
+}
+
+/** The newest version section of the CHANGELOG: its version and its lines. */
+export function newestSection(changelog: string): { version: string; body: string } {
+  const lines = changelog.split("\n");
+  const start = lines.findIndex((line) => /^## alpha\.\d+/.test(line));
+  if (start < 0) throw new Error("docs/CHANGELOG.md has no ## alpha.N section");
+  const next = lines.findIndex((line, i) => i > start && /^## /.test(line));
+  const version = /alpha\.\d+/.exec(lines[start]!)![0];
+  return { version, body: lines.slice(start + 1, next < 0 ? undefined : next).join("\n").trim() };
+}
+
+/**
+ * The GitHub release notes from the newest CHANGELOG section: `**New**` becomes
+ * `### New`, and each paragraph and list item is one line (GitHub keeps line
+ * breaks).
+ */
+export function releaseNotes(changelog: string): string {
+  const { body } = newestSection(changelog);
+  const out: string[] = [];
+  for (const raw of body.split("\n")) {
+    const line = raw.trimEnd();
+    const label = /^\*\*([^*]+)\*\*$/.exec(line);
+    if (label) out.push(`### ${label[1]}`);
+    else if (line === "" || /^ *- /.test(line) || out.length === 0 || out[out.length - 1] === "") out.push(line);
+    else out[out.length - 1] += ` ${line.trim()}`;
+  }
+  return `${out
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()}\n`;
+}
+
+/** What is wrong with a release's texts and rendered guide; empty when all is well. */
+export function releaseProblems(parts: { guide: string; changelog: string; whatsapp: string; html: string }): string[] {
+  const problems: string[] = [];
+  const guide = /alpha\.\d+/.exec(parts.guide)?.[0];
+  const { version } = newestSection(parts.changelog);
+  if (guide !== version) problems.push(`guide is ${guide ?? "unversioned"} but the newest CHANGELOG section is ${version}`);
+  const label = /should read \*\*(alpha\.\d+)\*\*/.exec(parts.guide)?.[1];
+  if (label !== undefined && label !== version) problems.push(`guide says the label reads ${label}, not ${version}`);
+  if (!parts.whatsapp.includes(version)) problems.push(`WhatsApp message does not name ${version}`);
+  const text = parts.html.replace(/<[^>]*>/g, " ");
+  for (const [mark, what] of [
+    ["**", "bold"],
+    ["<!--", "comment"],
+    ["](", "link"],
+  ] as const) {
+    if (text.includes(mark) || (mark === "<!--" && parts.html.includes("&lt;!--"))) problems.push(`unrendered ${what} markup in the guide`);
+  }
+  return problems;
 }
 
 const STYLE = `
@@ -119,23 +182,37 @@ async function main(): Promise<void> {
     <section class="changelog">${markdown(changelog.replace(/^# .*$/m, "# Every version so far"))}</section>
     <footer>Made for the Mah Jong test group. Please don't share this guide outside it.</footer>
   </body></html>`;
+  // Imported here, so tests can load this file without a browser.
+  const { chromium } = await import("playwright");
   const browser = await chromium.launch();
+  let pdf: Buffer;
   try {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "load" });
-    await page.pdf({ path: out, format: "A4", printBackground: true });
+    pdf = await page.pdf({ path: out, format: "A4", printBackground: true });
   } finally {
     await browser.close();
   }
-  console.log(`wrote ${out}`);
+  const pages = pdf.toString("latin1").match(/\/Type\s*\/Page(?!s)/g)?.length ?? 0;
+  const notes = resolve(`int-maj-${stage}-release.md`);
+  await writeFile(notes, releaseNotes(changelog));
+  const whatsapp = between(testing, "whatsapp");
+  const problems = releaseProblems({ guide, changelog, whatsapp, html });
+  if (pages < 2) problems.push(`the PDF has ${pages} page(s); the guide and the CHANGELOG need at least 2`);
+  console.log(`wrote ${out} (${pages} pages) and ${notes}`);
+  console.log(problems.length === 0 ? `check: ${stage} OK` : `check: ${problems.length} problem(s)\n- ${problems.join("\n- ")}`);
+  if (problems.length > 0) process.exitCode = 1;
   console.log("\n--- WhatsApp message ---\n");
   // WhatsApp keeps every line break: one line per paragraph, and its own *bold*.
-  const message = between(testing, "whatsapp")
+  const message = whatsapp
     .split(/\n\s*\n/)
     .map((paragraph) => paragraph.split("\n").map((line) => line.trim()).join(" "))
     .join("\n\n")
     .replace(/\*\*([^*]+)\*\*/g, "*$1*");
+  const text = resolve(`int-maj-${stage}-whatsapp.txt`);
+  await writeFile(text, `${message}\n`);
   console.log(message);
+  console.log(`\n(also in ${text})`);
 }
 
 if (import.meta.main) await main();

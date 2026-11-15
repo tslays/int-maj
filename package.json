@@ -16,6 +16,7 @@
     "bot-soak": "node scripts/bot-soak.ts",
     "bot-duel": "node scripts/bot-duel.ts",
     "tester-guide": "node scripts/tester-guide.ts",
+    "release-prep": "node scripts/release-prep.ts",
     "test:watch": "node --test --watch \"test/**/*.test.ts\"",
     "check": "node bin/check.ts",
     "replay": "node bin/replay.ts",

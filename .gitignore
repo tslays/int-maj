@@ -23,3 +23,7 @@ dist/
 
 # The tester guide PDF (npm run tester-guide): handed to the owner, never committed.
 int-maj-*-testers.pdf
+
+# The GitHub release notes (npm run tester-guide): pasted into the release, never committed.
+int-maj-*-release.md
+int-maj-*-whatsapp.txt

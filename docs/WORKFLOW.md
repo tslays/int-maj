@@ -178,12 +178,16 @@ Testers send reports in batches. The way that worked for alpha.7 (#118-#122):
    the pull request with `Closes #N`; a visual one waits for the owner's phone
    check and "merge". Draft the reply to the tester; post it only when the
    owner agrees.
-5. **Release.** `docs/CHANGELOG.md` gets the version's New, Changed, Fixed and
-   "What works differently now"; `docs/TESTING.md` gets the guide and the
-   WhatsApp message; `npm run tester-guide` makes the PDF. A final check on
-   `main` (tests, type check, smoke, the review boards on the dev site), then
-   tell the owner the tag and the commit to tag, and hand over the PDF and the
-   message.
+5. **Release.** The owner types `/release` (`.claude/skills/release/SKILL.md`).
+   `npm run release-prep` lists what changed since the last tag;
+   `docs/CHANGELOG.md` gets the version's New, Changed, Fixed and "What works
+   differently now", each item with its PR number; `docs/TESTING.md` gets the
+   guide and the WhatsApp message. `npm run tester-guide` builds the PDF, the
+   GitHub release notes and the message from those two files alone, and
+   checks its own output, so no session reads a previous PDF or opens the new
+   one. After CI is green on `main`, the session hands the owner the tag,
+   the commit, the release notes and the message, each ready to copy, and
+   the owner creates the release.
 
 The Worker needs a GitHub token, set up once by the owner:
 
