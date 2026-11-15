@@ -72,8 +72,9 @@ src/table/    the table service: sessions, bots, saving, `routeApi`
 src/worker/   the Cloudflare Worker: files a problem report as a GitHub issue
 src/cli/      the console table
 bin/          command-line entry points: check, play, replay
-scripts/      build, preview, smoke test, and art generators (scripts/art/)
-test/         core/, table/, cli/, app/, helpers/ - mirroring the source
+scripts/      build, preview, smoke test, release tools (release-prep,
+              tester-guide) and art generators (scripts/art/)
+test/         core/, table/, cli/, app/, scripts/, helpers/ - mirroring the source
 rules/        the rule framework, its evidence and the book pages
 docs/         PLAN, APP and ENGINE references
 ```
@@ -125,12 +126,17 @@ The full workflow is `docs/WORKFLOW.md`. The rules every session follows:
     Tell the owner the next `v0.1.0-alpha.N` and the `main` commit to tag;
     the owner pushes the tag. It is the only way testers get a new build.
     The build takes its version from the tag, so there is nothing to bump:
-    `package.json` stays at `0.1.0-dev`.
+    `package.json` stays at `0.1.0-dev`. The owner starts a release with
+    `/release` (`.claude/skills/release/SKILL.md`).
   Sites: green pushes to `main` deploy to https://int-dev.mah-jong.workers.dev
   (`Deploy dev (int-dev)`); testers are on https://int.mah-jong.workers.dev,
   which changes only on a `v*` tag (`Deploy testers (int)`). This relies on
   owner settings "Allow auto-merge" and a `main` ruleset requiring
   `Tests and build`.
+- **Keep tool output small:** `git log --oneline` with a range or `| head`;
+  GitHub list calls with a small `perPage` and only the `fields` needed (or
+  `minimal_output`); a squash-merge message is the PR title plus two or three
+  lines, never a list of every intermediate step.
 - The look is the game's own: Riichi City is the quality bar, but never copy
   another app's art, tiles, characters, sounds or distinctive look.
 - **No browser tooltips.** Never set a `title` on an element, as an attribute
