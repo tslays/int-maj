@@ -110,6 +110,17 @@ const TABLE = {
       view.legalActions.some((action) => action.type === "DeclareFishing"),
   },
 
+  selfdraw: {
+    title: "A fishing offer that wins only self-drawn",
+    // Four waits, every one of them Buried Treasure from the wall: the widest self-draw offer.
+    seed: "draw-probe-291",
+    at: (view) =>
+      view.phase === "announce" &&
+      view.turn === view.seat &&
+      view.legalActions.some((action) => action.type === "DeclareFishing") &&
+      view.fishingDrawOnly.length > 0,
+  },
+
   ron: {
     title: "A winning tile in the claim window",
     seed: "ron-v12-20",
