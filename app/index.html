@@ -123,36 +123,91 @@
     <div class="hand-detail" id="hand-detail" hidden></div>
     <div class="hand-detail" id="options-sheet" hidden>
       <div class="detail-card options-card" role="dialog" aria-modal="true" aria-label="Options">
-        <button class="detail-close" id="options-close" type="button" aria-label="Close">&times;</button>
-        <h2>Options</h2>
-        <div class="options-grid">
-          <div class="options-col">
-          <section class="option-group" aria-labelledby="group-play">
-            <h3 id="group-play">Play</h3>
-            <div class="setting">
-              <div class="setting-text"><b id="level-label">Bot level</b><small>How well they play</small></div>
-              <div class="seg" id="level" role="radiogroup" aria-labelledby="level-label">
-                <button type="button" role="radio" aria-checked="false" data-level="easy">Easy</button>
-                <button type="button" role="radio" aria-checked="true" data-level="medium">Medium</button>
-                <button type="button" role="radio" aria-checked="false" data-level="hard">Hard</button>
+        <header class="options-head">
+          <h2>Options</h2>
+          <nav class="options-tabs" id="options-tabs" role="tablist" aria-label="Option groups">
+            <button class="options-tab" id="tab-game" type="button" role="tab" aria-controls="panel-game" aria-selected="true" data-tab="game">Game</button>
+            <button class="options-tab" id="tab-table" type="button" role="tab" aria-controls="panel-table" aria-selected="false" tabindex="-1" data-tab="table">Table</button>
+            <button class="options-tab" id="tab-rules" type="button" role="tab" aria-controls="panel-rules" aria-selected="false" tabindex="-1" data-tab="rules">Rules<span class="tab-dot" id="rules-dot" hidden></span></button>
+          </nav>
+          <p class="head-pending" id="hand-set-pending" hidden>Changes start next hand</p>
+          <button class="detail-close" id="options-close" type="button" aria-label="Close">&times;</button>
+        </header>
+        <div class="options-body">
+          <section class="options-panel" id="panel-game" role="tabpanel" aria-labelledby="tab-game">
+            <div class="option-group">
+              <div class="setting">
+                <div class="setting-text"><b id="level-label">Bot level</b><small>How well they play</small></div>
+                <div class="seg" id="level" role="radiogroup" aria-labelledby="level-label">
+                  <button type="button" role="radio" aria-checked="false" data-level="easy">Easy</button>
+                  <button type="button" role="radio" aria-checked="true" data-level="medium">Medium</button>
+                  <button type="button" role="radio" aria-checked="false" data-level="hard">Hard</button>
+                </div>
               </div>
-            </div>
-            <div class="setting">
-              <div class="setting-text"><b id="pace-label">Pace</b><small>Speed of play</small></div>
-              <div class="seg" id="pace" role="radiogroup" aria-labelledby="pace-label">
-                <button type="button" role="radio" aria-checked="false" data-pace="slower">Slower</button>
-                <button type="button" role="radio" aria-checked="true" data-pace="normal">Normal</button>
-                <button type="button" role="radio" aria-checked="false" data-pace="faster">Faster</button>
+              <div class="setting">
+                <div class="setting-text"><b id="pace-label">Pace</b><small>Speed of play</small></div>
+                <div class="seg" id="pace" role="radiogroup" aria-labelledby="pace-label">
+                  <button type="button" role="radio" aria-checked="false" data-pace="slower">Slower</button>
+                  <button type="button" role="radio" aria-checked="true" data-pace="normal">Normal</button>
+                  <button type="button" role="radio" aria-checked="false" data-pace="faster">Faster</button>
+                </div>
               </div>
-            </div>
-            <div class="setting">
-              <div class="setting-text"><b id="opening-label">Table animations</b><small>Dice, dealing, thrown counters</small></div>
-              <div class="seg" id="opening-pref" role="radiogroup" aria-labelledby="opening-label">
-                <button type="button" role="radio" aria-checked="true" data-opening="on">Show</button>
-                <button type="button" role="radio" aria-checked="false" data-opening="off">Skip</button>
+              <div class="setting">
+                <div class="setting-text"><b id="opening-label">Table animations</b><small>Dice, dealing, thrown counters</small></div>
+                <div class="seg" id="opening-pref" role="radiogroup" aria-labelledby="opening-label">
+                  <button type="button" role="radio" aria-checked="true" data-opening="on">Show</button>
+                  <button type="button" role="radio" aria-checked="false" data-opening="off">Skip</button>
+                </div>
               </div>
             </div>
           </section>
+          <section class="options-panel" id="panel-table" role="tabpanel" aria-labelledby="tab-table" hidden>
+            <div class="option-group">
+              <div class="setting">
+                <div class="setting-text"><b id="sound-label">Sound</b><small>On iPhone the silent switch mutes it too</small></div>
+                <button class="switch" id="sound" type="button" role="switch" aria-checked="true" aria-labelledby="sound-label"></button>
+              </div>
+              <div class="setting" id="large-discards-row" hidden>
+                <div class="setting-text"><b id="large-discards-label">Large discards</b><small>The latest discard at twice the size</small></div>
+                <button class="switch" id="large-discards" type="button" role="switch" aria-checked="true" aria-labelledby="large-discards-label"></button>
+              </div>
+              <div class="setting">
+                <div class="setting-text"><b id="discard-layout-label">Discards</b><small>Rows show who threw what; a pile, like a real table, does not</small></div>
+                <div class="seg" id="discard-layout" role="radiogroup" aria-labelledby="discard-layout-label">
+                  <button type="button" role="radio" aria-checked="true" data-layout="rows">Rows</button>
+                  <button type="button" role="radio" aria-checked="false" data-layout="pile">Pile</button>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section class="options-panel" id="panel-rules" role="tabpanel" aria-labelledby="tab-rules" hidden>
+            <div class="option-group">
+              <div class="group-head">
+                <h3 id="hand-set-label">Hands in play</h3>
+                <span class="option-count" id="hand-count"></span>
+              </div>
+              <div class="seg seg-steps" id="hand-set" role="radiogroup" aria-labelledby="hand-set-label">
+                <button type="button" role="radio" aria-checked="true" data-set="all">All</button>
+                <button type="button" role="radio" aria-checked="false" data-set="companion">Companion</button>
+                <button type="button" role="radio" aria-checked="false" data-set="companion-pictured">Pictured</button>
+                <button type="button" role="radio" aria-checked="false" data-set="rare">Rare</button>
+              </div>
+              <p class="option-note" id="hand-set-note"></p>
+            </div>
+            <div class="option-group">
+              <h3>Rules of play</h3>
+              <div class="setting">
+                <div class="setting-text"><b id="goulash-rule-label">No half-limit hands in a Goulash</b><small>From the Companion</small></div>
+                <button class="switch" id="goulash-rule" type="button" role="switch" aria-checked="true" aria-labelledby="goulash-rule-label"></button>
+              </div>
+              <div class="setting">
+                <div class="setting-text"><b id="fish-rule-label">Announce fishing to win</b><small>Our own house rule: you go out only after announcing you need one tile, so no win comes without warning</small></div>
+                <button class="switch" id="fish-rule" type="button" role="switch" aria-checked="false" aria-labelledby="fish-rule-label"></button>
+              </div>
+            </div>
+          </section>
+        </div>
+        <footer class="options-foot">
           <nav class="option-links" id="option-links" aria-label="More">
             <button class="option-link" id="new-game" type="button">New game</button>
             <button class="option-link" id="install-open" type="button" hidden>Install app</button>
@@ -166,49 +221,7 @@
               <button class="option-link option-danger" id="new-game-go" type="button">Start over</button>
             </div>
           </div>
-          </div>
-          <div class="options-col">
-          <section class="option-group" aria-labelledby="group-table">
-            <h3 id="group-table">Table</h3>
-            <div class="setting">
-              <div class="setting-text"><b id="sound-label">Sound</b><small>On iPhone the silent switch mutes it too</small></div>
-              <button class="switch" id="sound" type="button" role="switch" aria-checked="true" aria-labelledby="sound-label"></button>
-            </div>
-            <div class="setting" id="large-discards-row" hidden>
-              <div class="setting-text"><b id="large-discards-label">Large discards</b><small>The latest discard at twice the size</small></div>
-              <button class="switch" id="large-discards" type="button" role="switch" aria-checked="true" aria-labelledby="large-discards-label"></button>
-            </div>
-            <div class="setting">
-              <div class="setting-text"><b id="discard-layout-label">Discards</b><small>Rows show who threw what; a pile, like a real table, does not</small></div>
-              <div class="seg" id="discard-layout" role="radiogroup" aria-labelledby="discard-layout-label">
-                <button type="button" role="radio" aria-checked="true" data-layout="rows">Rows</button>
-                <button type="button" role="radio" aria-checked="false" data-layout="pile">Pile</button>
-              </div>
-            </div>
-          </section>
-          <section class="option-group option-rules" aria-labelledby="group-rules">
-            <h3 id="group-rules">House rules</h3>
-            <div class="setting setting-wide">
-              <div class="setting-text"><b id="hand-set-label">Hands in play</b></div>
-              <div class="seg" id="hand-set" role="radiogroup" aria-labelledby="hand-set-label">
-                <button type="button" role="radio" aria-checked="true" data-set="all">All</button>
-                <button type="button" role="radio" aria-checked="false" data-set="companion">Companion</button>
-                <button type="button" role="radio" aria-checked="false" data-set="companion-pictured">Pictured</button>
-              </div>
-              <p class="option-note" id="hand-set-note"></p>
-              <p class="option-note option-pending" id="hand-set-pending" hidden>Takes effect with the next hand.</p>
-            </div>
-            <div class="setting">
-              <div class="setting-text"><b id="goulash-rule-label">No half-limit hands in a Goulash</b><small>From the Companion; changes from the next hand</small></div>
-              <button class="switch" id="goulash-rule" type="button" role="switch" aria-checked="true" aria-labelledby="goulash-rule-label"></button>
-            </div>
-            <div class="setting">
-              <div class="setting-text"><b id="fish-rule-label">Announce fishing to win</b><small>Not in either book; changes from the next hand</small></div>
-              <button class="switch" id="fish-rule" type="button" role="switch" aria-checked="false" aria-labelledby="fish-rule-label"></button>
-            </div>
-          </section>
-          </div>
-        </div>
+        </footer>
       </div>
     </div>
     <div class="hand-detail" id="help-sheet" hidden>

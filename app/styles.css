@@ -1283,46 +1283,117 @@ button.detail-rule {
 .help-card {
   width: min(520px, 100%);
 }
-/* Options: settings in groups, one per row - what it is on the left, its
-   control on the right - two columns on a phone held sideways, so the whole
-   sheet fits its height. */
+/* Options: three tabs (Game, Table, Rules), one setting per row - what it is
+   on the left, its control on the right - with the doors out (New game, Help,
+   Report) in a row under every tab. The card keeps one height, so switching
+   tabs never makes it jump; a tab taller than the screen scrolls inside. */
 .options-card {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  width: min(760px, 100%);
-  padding: 12px 14px 8px;
+  width: min(560px, 100%);
+  height: min(400px, 100%);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
-.options-card h2 {
-  margin-bottom: 6px;
+.options-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 10px 48px 0 16px;
+  border-bottom: 1px solid rgba(233, 228, 214, 0.1);
 }
-.options-grid,
-.options-col {
+.options-head h2 {
+  margin: 0 0 8px;
+}
+.options-tabs {
+  display: flex;
+  gap: 2px;
+}
+.options-tab {
+  position: relative;
+  flex: none;
+  padding: 8px 12px 10px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.options-tab[aria-selected="true"] {
+  border-bottom-color: var(--gold-2);
+  color: var(--ink);
+}
+/* A rule chosen for the next hand: a small amber light on the Rules tab. */
+.tab-dot {
+  position: absolute;
+  top: 7px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f0c36a;
+}
+.tab-dot[hidden] {
+  display: none;
+}
+.options-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 14px;
+  touch-action: pan-y;
+}
+.options-panel {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-/* One column: the links go last, under the house rules. */
-.options-grid > .options-col {
-  display: contents;
+.options-panel[hidden] {
+  display: none;
 }
-.options-grid .option-links,
-.options-grid .option-confirm {
-  order: 1;
+.options-foot {
+  padding: 0 14px 3px;
+  border-top: 1px solid rgba(233, 228, 214, 0.1);
 }
-@media (min-width: 540px) {
-  .options-grid {
-    flex-direction: row;
-    align-items: flex-start;
-  }
-  .options-grid > .options-col {
-    display: flex;
-    flex: 1 1 0;
-    min-width: 0;
-  }
-  .options-grid .option-links,
-  .options-grid .option-confirm {
-    order: 0;
-  }
+.group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.option-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+/* Hands in play: four steps across the whole row, each narrower than the last. */
+.seg-steps {
+  margin: 6px 0 4px;
+}
+.seg-steps button {
+  flex: 1 1 0;
+}
+/* A rule chosen mid-hand: said once, in the header, beside the amber light. */
+.head-pending {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0 0 12px !important;
+  overflow: hidden;
+  color: #f0c36a;
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+  text-align: right;
+}
+.head-pending[hidden] {
+  display: none;
 }
 .option-group {
   padding: 2px 12px;
@@ -1331,6 +1402,9 @@ button.detail-rule {
 }
 .option-group h3 {
   margin: 7px 0 0;
+}
+.option-group > .option-note {
+  margin: 0 0 8px !important;
 }
 .setting {
   display: flex;

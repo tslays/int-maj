@@ -121,8 +121,13 @@ describe("house rules at the table", () => {
 
     await assert.rejects(api.request("/api/new", { seed: "x", houseRules: { handSet: "most" } }));
     const offered = (await api.request("/api/house-rules")) as {
-      handSets: { id: string; leftOut: string[] }[];
+      total: number;
+      handSets: { id: string; leftOut: string[]; inPlay: number }[];
     };
+    const index = async (set: string) => ((await api.request(`/api/hands?set=${set}`)) as { hands: unknown[] }).hands.length;
+    assert.equal(offered.total, await index("all"));
+    for (const set of offered.handSets) assert.equal(set.inPlay, await index(set.id), `${set.id}: as the hand index counts`);
+    assert.deepEqual(offered.handSets.map((set) => set.inPlay), [88, 85, 76, 73]);
     assert.deepEqual(offered.handSets.map((set) => set.id), ["all", "companion", "companion-pictured", "rare"]);
     assert.deepEqual(offered.handSets.map((set) => set.leftOut.length), [0, 3, 12, 16]);
     assert.ok(offered.handSets[1]!.leftOut.includes("Mixed Pung"));

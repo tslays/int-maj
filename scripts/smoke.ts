@@ -477,6 +477,9 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   }
   await page.click('#pace [data-pace="normal"]');
   // A house rule set mid-hand waits for the next deal; the hand on the table keeps its rules.
+  await page.click("#tab-rules");
+  await page.waitForSelector("#panel-rules:not([hidden])", { timeout: 5000 });
+  await page.waitForSelector("#panel-game", { state: "hidden", timeout: 5000 });
   await page.click('#hand-set [data-set="companion"]');
   await page.waitForSelector('#hand-set [data-set="companion"][aria-checked=true]', { timeout: 5000 });
   await page.waitForSelector("#hand-set-pending:not([hidden])", { timeout: 5000 });
@@ -487,6 +490,13 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   if ((await page.textContent("#hand-set-note"))!.includes("Robin") === false) {
     throw new Error("the pictured hand set does not name the hands without a picture");
   }
+  // Rare: the narrowest step names the easy mixed-suit hands and counts what stays.
+  await page.click('#hand-set [data-set="rare"]');
+  await page.waitForFunction(() => document.querySelector("#hand-count")?.textContent?.startsWith("73 of"), null, { timeout: 5000 });
+  if ((await page.textContent("#hand-set-note"))!.includes("Crazy Chows") === false) {
+    throw new Error("the Rare hand set does not name the easy hands it leaves out");
+  }
+  await page.waitForSelector("#rules-dot:not([hidden])", { timeout: 5000 });
   await page.click('#hand-set [data-set="all"]');
   await page.waitForSelector("#hand-set-pending", { state: "hidden", timeout: 5000 });
   // The Goulash house rule is on by default; the switch turns it off for the next deal.
@@ -506,6 +516,7 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.click("#fish-rule");
   await page.waitForSelector("#fish-rule[aria-checked=false]", { timeout: 5000 });
   // Discards: the centre pile re-lays the table at once, and back to rows (#122).
+  await page.click("#tab-table");
   await page.click('#discard-layout [data-layout="pile"]');
   await page.waitForSelector('#discard-layout [data-layout="pile"][aria-checked=true]', { timeout: 5000 });
   assert.equal(await page.evaluate(() => window.mahjong!.pile()), true, "the table lays its discards in the pile");
@@ -518,7 +529,7 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.waitForSelector("#new-game-confirm", { state: "hidden", timeout: 5000 });
   await page.click("#options-close");
   await page.waitForSelector("#options-sheet", { state: "hidden", timeout: 5000 });
-  console.log("  ok  hints toggle, options sheet, help sheet, hand set choice, Goulash and fishing rule switches, discard layout, new game asks first");
+  console.log("  ok  hints toggle, options sheet and its tabs, help sheet, hand set choice with Rare, Goulash and fishing rule switches, discard layout, new game asks first");
 
 
   // The index of all hands: opens, filters by a book heading, searches, opens a hand's sheet.
