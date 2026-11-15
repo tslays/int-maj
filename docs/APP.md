@@ -437,7 +437,7 @@ tests and bug reports. Presentation only: the engine's draws do not depend on it
 | `POST /api/new` | `{ "seed": "..." }` | a new game and its first state |
 | `POST /api/move` | `{ "game": "...", "action": {...} }` | the new state plus `events` as text lines |
 | `POST /api/step` | `{ "game": "...", "level"?: "easy" \| "medium" \| "hard" }` | the next single bot decision at that level (hard when absent; the app always sends one), or `{ "done": true }` |
-| `POST /api/undo` | `{ "game": "..." }` | the state before your previous decision in this hand |
+| `POST /api/undo` | `{ "game": "..." }` | the state before your last decision, while no bot has acted since it; otherwise `nothing to undo` |
 | `POST /api/retry` | `{ "game": "..." }` | the current hand dealt again: same wall and tiles, scores from before it kept |
 | `POST /api/next` | `{ "game": "..." }` | the next hand after a finished one |
 

@@ -180,8 +180,8 @@ npm run play -- --bot --events --seed table-7   # watch four bots
 all four seats to the bot, and `--events` prints the reducer's event log as it
 happens. At your decision: `d <n>` discards tile `n` from the numbered hand;
 `p`/`c`/`k`/`m` claim pung/chow/kong/mahjong; `f` announces the fishing wait;
-`space` passes; `u` undoes the previous decision by replaying
-from the seed; `h` prints help; `q` quits. Anything else reprints the legal
+`space` passes; `u` undoes your last decision by replaying
+from the seed, but only while no bot has acted since it; `h` prints help; `q` quits. Anything else reprints the legal
 options and changes nothing.
 
 The console prints the numbered hand, the public table, the legal options and

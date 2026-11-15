@@ -223,7 +223,7 @@ describe("console rendering", () => {
 });
 
 describe("undo", () => {
-  it("replays to the exact state before the previous human decision", () => {
+  it("replays to the exact state before your last decision, right after it", () => {
     let session = startSession("undo-test");
     const first = legalActions(session.state, session.state.dealer)[0]!;
     session = recordAction(session, first, false);
@@ -233,17 +233,6 @@ describe("undo", () => {
     session = recordAction(session, next, true);
     assert.deepEqual(session.humanActions, [1]);
 
-    let guard = 0;
-    while (
-      session.state.phase !== "finished" &&
-      session.state.turn !== "E" &&
-      guard++ < 100
-    ) {
-      const legal = legalActions(session.state, session.state.turn);
-      if (legal.length === 0) break;
-      session = recordAction(session, legal[0]!, false);
-    }
-
     const undone = undoLastDecision(session);
     assert.notEqual(undone, null);
     assert.equal(serialize(undone!.state), serialize(before));
@@ -252,6 +241,38 @@ describe("undo", () => {
     assert.equal(undoLastDecision(undone!), null);
   });
 
+  it("refuses undo once a bot has acted after your decision", () => {
+    let session = startSession("undo-bot");
+    // Play until East holds a discard: East is the human, the others are bots.
+    let guard = 0;
+    while (
+      guard++ < 100 &&
+      !legalActions(session.state, "E").some((a) => a.type === "Discard")
+    ) {
+      const seat = ["N", "S", "W"].find((candidate) =>
+        legalActions(session.state, candidate as "N").length > 0,
+      ) as "N" | "S" | "W" | undefined;
+      const action = seat !== undefined
+        ? legalActions(session.state, seat)[0]!
+        : legalActions(session.state, "E")[0]!;
+      session = recordAction(session, action, false);
+    }
+    const discard = legalActions(session.state, "E").find((a) => a.type === "Discard")!;
+    session = recordAction(session, discard, true);
+    const humanIndex = session.humanActions.at(-1)!;
+
+    // The bots answer your discard before you act again.
+    guard = 0;
+    while (guard++ < 100) {
+      const seat = ["S", "W", "N"].find((candidate) =>
+        legalActions(session.state, candidate as "S").length > 0,
+      ) as "S" | "W" | "N" | undefined;
+      if (seat === undefined) break;
+      session = recordAction(session, legalActions(session.state, seat)[0]!, false);
+    }
+    assert.ok(session.actions.length > humanIndex + 1, "a bot acted after your decision");
+    assert.equal(undoLastDecision(session), null);
+  });
   it("throws for an illegal action without replacing the session", () => {
     const session = startSession("undo-illegal");
     const before = serialize(session.state);

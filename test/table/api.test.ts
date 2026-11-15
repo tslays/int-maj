@@ -355,7 +355,7 @@ describe("table API", () => {
     assert.ok(steps > 30, `the table took ${steps} steps`);
   });
 
-  it("undoes to the state before the decision it drops, bots included", () => {
+  it("undoes your last decision straight after it, before any bot acts", () => {
     const store = new GameStore({ defaultSeed: "api-undo" });
     let { session } = store.create("api-undo");
     const id = session.id;
@@ -377,16 +377,45 @@ describe("table API", () => {
     };
 
     waitForHuman();
-    play();
-    waitForHuman();
     const before = serialize(session.state);
     play();
-    waitForHuman();
     assert.notEqual(serialize(session.state), before);
 
     const undone = store.undo(id);
     assert.ok("session" in undone);
     assert.equal(serialize(undone.session.state), before);
+    assert.equal(undone.session.humanSteps.length, 0);
+  });
+
+  it("refuses undo once a bot has acted after your decision", () => {
+    const store = new GameStore({ defaultSeed: "api-undo-bot" });
+    let { session } = store.create("api-undo-bot");
+    const id = session.id;
+    const human = () => viewFor(session.state, session.seat).legalActions;
+    const waitForHuman = () => {
+      for (let guard = 0; guard < 200 && human().length === 0; guard++) {
+        if (session.state.phase === "finished") return;
+        const stepped = store.step(id);
+        assert.ok("session" in stepped);
+        session = stepped.session;
+      }
+    };
+
+    waitForHuman();
+    const action = human()[0];
+    assert.ok(action !== undefined);
+    const applied = store.move(id, action);
+    assert.ok("session" in applied);
+    session = applied.session;
+
+    // The table answers with a bot's decision: the probe is closed.
+    const before = session.steps.length;
+    const stepped = store.step(id);
+    assert.ok("session" in stepped);
+    session = stepped.session;
+    assert.equal(session.steps.length, before + 1, "a bot moved after your decision");
+
+    assert.deepEqual(store.undo(id), { error: "nothing to undo" });
   });
 
   it("answers one table action per step, never a round", async () => {

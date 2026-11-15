@@ -9,11 +9,12 @@
  * from accidentally showing another seat's hand and keeps it identical to
  * the projection a bot receives.
  *
- * Undo is defined as "replay from the seed to just before the previous human
- * decision": the session records every action (including the bots' replies),
- * remembers which indices were typed by the human, and drops the last one
- * before replaying. That is the same contract as `replaySteps`, so an undo
- * cannot drift from the engine.
+ * Undo is defined as "replay from the seed to just before your last decision":
+ * the session records every action (including the bots' replies), remembers
+ * which indices were typed by the human, and drops the last one before
+ * replaying. It is allowed only while that decision is the last action, so a
+ * bot's reply to it blocks undo. That is the same contract as `replaySteps`,
+ * so an undo cannot drift from the engine.
  */
 
 import type { Action } from "../core/game/actions.ts";
@@ -50,7 +51,7 @@ Commands (at your decision):
   m        claim mahjong, or go out self-drawn
   f        announce the fishing wait
   space    pass
-  u        undo the previous decision
+  u        undo your last decision (only before a bot has moved)
   h        help
   q        quit`;
 
@@ -350,10 +351,13 @@ export function recordAction(
   };
 }
 
-/** Drop the previous human decision and everything the bots did after it. */
+/**
+ * Drop your last decision, but only while nothing has come after it: once a
+ * bot has acted, undo would let you probe the bot's answer, so it is refused.
+ */
 export function undoLastDecision(session: PlaySession): PlaySession | null {
   const last = session.humanActions.at(-1);
-  if (last === undefined) return null;
+  if (last === undefined || last !== session.actions.length - 1) return null;
   const actions = session.actions.slice(0, last);
   const humanActions = session.humanActions.slice(0, -1);
   const replayed = replaySteps(session.seed, actions);

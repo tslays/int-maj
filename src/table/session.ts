@@ -863,7 +863,14 @@ export class GameStore {
     if (session === undefined) return { error: `unknown game: ${id}` };
     const last = session.humanSteps.at(-1);
     // Undo stays inside the current hand: a finished hand has been paid.
-    if (last === undefined || last < session.handStart.step) {
+    // It also takes back only your own decision while nothing has come after
+    // it. Once a bot has acted, undoing would let you try another decision
+    // and watch the bot's answer, which reveals its concealed tiles.
+    if (
+      last === undefined ||
+      last < session.handStart.step ||
+      last !== session.steps.length - 1
+    ) {
       return { error: "nothing to undo" };
     }
     const steps = session.steps.slice(0, last);
