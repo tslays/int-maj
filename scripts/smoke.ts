@@ -65,6 +65,7 @@ interface Payload {
     readonly handNumber: number;
     readonly dealer: string;
     readonly player: { readonly hand: readonly string[] };
+    readonly fishingDrawOnly: readonly string[];
   };
 }
 
@@ -108,6 +109,13 @@ const BOARD_CHECKS: Readonly<Record<ScenarioName, (payload: Payload, page: Page)
   },
   announce: async (payload) => {
     assert.ok(payload.legalActions.some((action) => action.type === "DeclareFishing"), "you may declare fishing");
+  },
+  selfdraw: async (payload, page) => {
+    assert.equal(payload.view.phase, "announce");
+    assert.ok(payload.view.fishingDrawOnly.length > 0, "a wait only the wall completes");
+    // The Fishing button warns on its top edge before anyone taps it, and says so under the tiles.
+    assert.equal((await page.textContent("#actions .act-warn"))?.trim(), "Self-draw only", "the warning tab");
+    assert.equal((await page.textContent("#actions .act-note"))?.trim(), "self-draw only", "the note");
   },
   ron: async (payload, page) => {
     assert.equal(payload.view.phase, "claim");

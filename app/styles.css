@@ -11,6 +11,7 @@
   --panel: rgba(17, 25, 28, 0.86);
   --gold-1: #ffe08a;
   --gold-2: #e5a12f;
+  --warn: #ffc21a;
   --blue-1: #78d8ff;
   --blue-2: #2d7fd2;
   --silver-1: #f3f6f8;
@@ -296,6 +297,41 @@ html.pond-zoom .act-claim {
   line-height: 1.1;
   max-width: 5.5em;
   opacity: 0.9;
+}
+/* A Fishing offer that wins some tiles only from the wall: an amber ring, and a warning tab that
+   straddles the top edge (the button's own skew carries it, so it reads as part of the button). */
+.act-warned {
+  position: relative;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 0 0 0.14em var(--warn);
+}
+.act > .act-warn {
+  transform: none;
+  position: absolute;
+  left: 0.8em;
+  top: -0.62em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34em;
+  padding: 0.3em 0.62em 0.32em 0.5em;
+  border-radius: 0.26em;
+  background: var(--warn);
+  color: #2b1a00;
+  font-size: 0.6em;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+}
+.act-warn svg {
+  width: 1.15em;
+  height: 1.05em;
+  flex: none;
+}
+.act-warn .bang {
+  stroke: var(--warn);
 }
 @keyframes act-in {
   from {
