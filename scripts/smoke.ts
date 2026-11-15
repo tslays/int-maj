@@ -113,8 +113,8 @@ const BOARD_CHECKS: Readonly<Record<ScenarioName, (payload: Payload, page: Page)
   selfdraw: async (payload, page) => {
     assert.equal(payload.view.phase, "announce");
     assert.ok(payload.view.fishingDrawOnly.length > 0, "a wait only the wall completes");
-    // The Fishing button says so once, in the capsule after the tiles; no tab, no second copy of the words.
-    assert.equal(await page.locator("#actions .act-warn").count(), 0, "no separate warning tab");
+    // The Fishing button says so once, in the tab on its top edge; no second copy of the words.
+    assert.equal(await page.locator("#actions .act-warn").count(), 0, "no separate warning element");
     assert.equal((await page.textContent("#actions .act-note"))?.trim(), "self-draw only", "the note");
   },
   ron: async (payload, page) => {

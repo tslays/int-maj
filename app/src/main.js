@@ -227,8 +227,8 @@ function button(label, kind, onClick, tiles = [], drawOnly = [], hand = "") {
   const element = document.createElement("button");
   element.type = "button";
   element.className = `act act-${kind}`;
-  // A wait that wins only from your own draw (Buried Treasure and kin) says so in a capsule after the
-  // tiles, so nobody fishes for it by accident: a discard of that tile is no win.
+  // A wait that wins only from your own draw (Buried Treasure and kin) says so in a tab on the top edge,
+  // so nobody fishes for it by accident: a discard of that tile is no win.
   const selfDrawTiles = tiles.filter((key) => drawOnly.includes(key));
   const mixed = selfDrawTiles.length > 0 && selfDrawTiles.length < tiles.length;
   if (label !== "") {

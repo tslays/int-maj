@@ -349,10 +349,10 @@ you draw it yourself (a wait on a self-drawn-only hand such as Buried Treasure,
 whose every tile must come from the wall) is faded, with "self-draw only" after
 the tiles, because the same tile thrown by another player is no win
 (`GameView.fishingDrawOnly`, from `drawOnlyWaits` in `src/core/game/hands.ts`;
-tester report #147). An offer with such a wait also carries a small dark-glass capsule after the
-tiles, in the app's gold with a softly breathing dot, that reads "self-draw
-only" ("faded: self-draw only" when only some waits are, and only then are the
-tiles faded), so nobody fishes for it by accident.
+tester report #147). An offer with such a wait also carries a small deep-navy
+tab on the button's top edge, led by a gold exclamation mark, that reads
+"self-draw only" ("faded: self-draw only" when only some waits are, and only
+then are the tiles faded), so nobody fishes for it by accident.
 
 ## Sound
 

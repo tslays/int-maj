@@ -289,42 +289,47 @@ html.pond-zoom .act-claim {
 .act .chip.chip-draw {
   opacity: 0.5;
 }
-/* The self-draw words after the tiles: a dark-glass capsule in the app's own gold, set against the
-   blue button so it reads at a glance without shouting (small caps like the hand panel's headings,
-   and a breathing dot like the status dots in the menu). */
-.act-note {
+/* The self-draw words: a small deep-navy tab on the Fishing button's top edge, in white small caps
+   like the hand panel's headings, led by an exclamation mark in the gold of the Mah Jong button.
+   The tab leans with the button, so it reads as part of it; it sits clear of the wait tiles. */
+.act-claim:has(.act-note) {
+  position: relative;
+}
+.act > .act-note {
+  transform: none;
+  position: absolute;
+  right: 1.6em;
+  top: -1.05em;
   display: inline-flex;
   align-items: center;
-  gap: 0.55em;
-  padding: 0.62em 1em 0.62em 0.82em;
-  border-radius: 999px;
-  background: rgba(13, 20, 23, 0.88);
-  box-shadow: inset 0 0 0 1px rgba(255, 224, 138, 0.5), 0 2px 8px rgba(0, 0, 0, 0.35);
-  color: var(--gold-1);
-  font-size: 0.6em;
+  gap: 0.5em;
+  padding: 0.36em 0.75em 0.36em 0.4em;
+  border-radius: 0.4em;
+  background: #123a66;
+  box-shadow: inset 0 0 0 1px rgba(120, 216, 255, 0.5), 0 2px 6px rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 0.5em;
   font-style: normal;
   font-weight: 800;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.1em;
   line-height: 1;
   text-shadow: none;
   text-transform: uppercase;
   white-space: nowrap;
 }
 .act-note::before {
-  content: "";
+  content: "!";
   flex: none;
-  width: 0.6em;
-  height: 0.6em;
+  display: grid;
+  place-items: center;
+  width: 1.3em;
+  height: 1.3em;
   border-radius: 50%;
-  background: var(--gold-1);
-  box-shadow: 0 0 0.7em rgba(255, 224, 138, 0.85);
-  animation: note-breathe 2.4s ease-in-out infinite;
-}
-@keyframes note-breathe {
-  50% {
-    opacity: 0.45;
-    box-shadow: 0 0 0.25em rgba(255, 224, 138, 0.4);
-  }
+  background: linear-gradient(180deg, var(--gold-1), var(--gold-2));
+  color: #123a66;
+  font-size: 1.05em;
+  font-weight: 900;
+  letter-spacing: 0;
 }
 @keyframes act-in {
   from {
@@ -2104,7 +2109,6 @@ button.detail-rule {
 }
 @media (prefers-reduced-motion: reduce) {
   .act,
-  .act-note::before,
   .callout,
   .goulash,
   .result-card,
