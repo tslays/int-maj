@@ -350,8 +350,9 @@ whose every tile must come from the wall) is faded, with "self-draw only" after
 the tiles, because the same tile thrown by another player is no win
 (`GameView.fishingDrawOnly`, from `drawOnlyWaits` in `src/core/game/hands.ts`;
 tester report #147). An offer with such a wait also carries an amber warning
-tab on the button's top edge ("Self-draw only"; "Some tiles: self-draw only"
-when only some waits are), so nobody fishes for it by accident.
+tab (a triangle) on the button's top edge, and the note after the tiles is an
+amber label that reads "self-draw only" ("faded: self-draw only" when only some
+waits are), so nobody fishes for it by accident.
 
 ## Sound
 
