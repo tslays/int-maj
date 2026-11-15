@@ -123,8 +123,12 @@ function startOf(view: GameView): Start | null {
     case "draw":
       return { kind: "draw", seat: offset(view, view.turn) };
     case "discard":
-    case "announce":
       return { kind: "discard", seat: offset(view, view.turn) };
+    case "announce":
+      // The discarder has thrown and is offered its fishing announcement, and
+      // has not drawn again: the next draw is the seat after it, so the
+      // viewer's own draw comes after those three seats' turns.
+      return { kind: "draw", seat: (offset(view, view.turn) + 1) & 3 };
     case "claim": {
       const window = view.claimWindow;
       if (window === null) return null;
