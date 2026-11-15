@@ -824,6 +824,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "big-robert-mixed",
+    easyMixed: true,
     name: "Big Robert",
     pages: { illustrated: [], companion: [14] },
     category: "run",
@@ -876,6 +877,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "three-philosophers",
+    easyMixed: true,
     name: "Three Philosophers",
     pages: { illustrated: [], companion: [15] },
     category: "chow",
@@ -887,9 +889,10 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
       "in each suit), and a suited pair.",
     source: "Synopsis p. 56.",
     notes:
-      "'Mixed chow' is read from " +
-      "the Crazy Chows illustration (p. 16): three consecutive numbers, one " +
-      "tile from each suit. limit/half is assumed.",
+      "p. 15 prints LIMIT (Concealed), fishing 400, and a 'Mixed Chow' of " +
+      "4 Bamboo, 5 Circles, 6 Characters: three consecutive numbers, one tile " +
+      "from each suit. Crazy Chows (p. 16) puts the suits in another order, " +
+      "so the order is free.",
     ...groupPattern(() => [
       runGroup("bamboo", "any", 3),
       runGroup("characters", "any", 3),
@@ -900,6 +903,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "crazy-chows",
+    easyMixed: true,
     name: "Crazy Chows",
     pages: { illustrated: [], companion: [16] },
     category: "chow",
@@ -909,10 +913,10 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     description:
       "Four mixed chows plus a mixed pair (the same number in two suits).",
     source: "Synopsis p. 56; illustration p. 16.",
-    provisional: true,
     notes:
-      "The four mixed chows are clear on p. 16; the pair is cropped. Read as " +
-      "the book's 'mixed pair': same number, two different suits.",
+      "p. 16 prints HALF LIMIT (Concealed), fishing 200, four mixed chows " +
+      "(456, 234, 678, 123, each Circles-Bamboo-Characters) and a 'Mixed Pair' " +
+      "of 6 Bamboo and 6 Circles: the same number in two suits.",
     ...groupPattern(() => [
       mixedChowGroup(),
       mixedChowGroup(),
@@ -923,6 +927,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "little-robert",
+    easyMixed: true,
     name: "Little Robert",
     pages: { illustrated: [], companion: [16] },
     category: "chow",
@@ -1915,6 +1920,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "robin",
+    easyMixed: true,
     companionUnillustrated: true,
     name: "Robin",
     pages: { illustrated: [], companion: [60] },
@@ -2558,18 +2564,28 @@ export const COMPANION_UNILLUSTRATED_HANDS: readonly string[] = Object.freeze(
   PATTERNS.filter((pattern) => pattern.companionUnillustrated === true).map((pattern) => pattern.id),
 );
 
+/** The easy mixed-suit special hands (`easyMixed`) the Rare set leaves out. */
+export const EASY_MIXED_HANDS: readonly string[] = Object.freeze(
+  PATTERNS.filter((pattern) => pattern.easyMixed === true).map((pattern) => pattern.id),
+);
+
 /**
  * The hand sets a table can play, widest first, as the hands each one leaves
  * out. Each set is the one before it with more left out:
  *   all                 every hand either book prints
  *   companion           the Companion's catalogue: no Illustrated-only hand
  *   companion-pictured  the Companion's hands that have a sample picture
+ *   rare                those, less the easy mixed-suit hands (a house rule
+ *                       neither book prints: docs/BALANCE.md)
  */
-export const HAND_SETS = ["all", "companion", "companion-pictured"] as const;
+export const HAND_SETS = ["all", "companion", "companion-pictured", "rare"] as const;
 export type HandSet = (typeof HAND_SETS)[number];
 
 export const HAND_SET_EXCLUDED: Readonly<Record<HandSet, readonly string[]>> = Object.freeze({
   all: Object.freeze([] as string[]),
   companion: ILLUSTRATED_ONLY_HANDS,
   "companion-pictured": Object.freeze([...ILLUSTRATED_ONLY_HANDS, ...COMPANION_UNILLUSTRATED_HANDS]),
+  rare: Object.freeze([
+    ...new Set([...ILLUSTRATED_ONLY_HANDS, ...COMPANION_UNILLUSTRATED_HANDS, ...EASY_MIXED_HANDS]),
+  ]),
 });

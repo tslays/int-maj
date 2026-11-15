@@ -12,7 +12,7 @@
  *                             `&pins=a,b,c` also reports how near each pinned hand is)
  *   GET  /api/hand?pattern=   one catalogue hand's conditions (concealed or open)
  *   GET  /api/house-rules     the hand sets on offer and the hands each leaves out
- *   GET  /api/hands?set=      the hands in play (set: all, companion, companion-pictured) with the book's headings, for the index
+ *   GET  /api/hands?set=      the hands in play (set: all, companion, companion-pictured, rare) with the book's headings, for the index
  *   GET  /api/scenario?state= a fixed review board (turn, claim, win, ...)
  *   POST /api/new             deal a game from `{ seed, houseRules }`
  *   POST /api/move            apply `{ game, action }`, return events as text
@@ -24,7 +24,7 @@
  *   POST /api/next            deal the next hand after a finished one, under
  *                             `{ houseRules }` when they are given
  *
- * `houseRules` is `{ handSet: "all" | "companion" | "companion-pictured",
+ * `houseRules` is `{ handSet: "all" | "companion" | "companion-pictured" | "rare",
  * goulashNoHalfLimit: boolean, winNeedsFish: boolean }` (each optional,
  * defaulting to all, true and false); a hand keeps the rules
  * it was dealt with, so a change shows from the next deal.

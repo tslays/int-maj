@@ -1,10 +1,12 @@
-# Balance: the easy special hands, and an "Exotic hands" house rule
+# Balance: the easy special hands, and the "Rare" hand set
 
-Status: **findings recorded, house rule not built.** The owner wants a house
-rule that lets a player explore the special-hand catalogue without the bots
-going out early on a handful of easy hands (2026-11-15). This file holds the
-measurements, the proposed rule and the plan to build it. The decisions still
-open for the owner are listed in §8.
+Status: **the Rare hand set is built in the engine and the table service;
+the Options sheet redesign that offers it is next (§7).** The owner wanted a
+house rule that lets a player explore the special-hand catalogue without the
+bots going out early on a handful of easy hands (2026-11-15), and decided on
+2026-11-15: these five hands, the name "Rare" as the narrowest step of
+"Hands in play", a redesigned Options sheet, and the two book readings in §5
+settled first.
 
 ## 1. The question
 
@@ -49,12 +51,15 @@ games, all four seats played by the real bots, the same seeds `bots-0` ...
 | nothing | 35 % | 323 | Crazy Chows 34 %, Three Philosophers 10 %, Robin 10 %, Big Robert (mixed) 6.5 % | 30 tiles |
 | the four (A) | 50 % | 248 | Big Robert (mixed) 18 %, Five Odd Honours 10 %, Windy Chow 10 %, Triple Knitting 9 % | 23 |
 | **the five (A + B)** | **52 %** | **239** | Windy Chow 12 %, Five Odd Honours 11 %, Triple Knitting 11 %, Ordinary 9 %, All Pair 9 % | **21** |
+| **Rare set** (Pictured less the five; 16 hands) | **56 %** | 222 | Windy Chow 13 %, Five Odd Honours 13 %, Triple Knitting 12 %, Big Robert (limit) 9 %, Ordinary 9 % | 21 |
 | eight (A + B + C) | 64 % | 180 | All Pair 13 %, Ordinary 12 %, Wriggly Snake 9 %, Big Robert 9 % | 20 |
 
 - A = `crazy-chows`, `three-philosophers`, `robin`, `little-robert`
 - B = `big-robert-mixed` (displayed as "Big Robert", the half-limit version
   with different numbers in each suit; the limit hand `big-robert` stays in)
 - C = `five-odd-honours`, `windy-chow`, `triple-knitting`
+- The Rare row also leaves out the Pictured set's twelve (§6); measured
+  2026-11-15 on the branch that added the set.
 
 With nothing left out, 96 % of bot wins are special hands, and Crazy Chows
 alone is a third of them. Bots make about 0.3 calls a hand, so Little Robert,
@@ -93,84 +98,68 @@ Caveats:
   hand's share; the order of the top hands after the cut is not settled.
 - Points per win were not measured.
 
-## 5. Two book questions to settle first
+## 5. Two book readings, settled from the page
 
-These are reading questions, not house-rule questions, and correcting them
-from the page could fix part of the imbalance by the book itself
-(`AGENTS.md`: read the actual page).
+Both were open in the engine's notes, but `rules/RULES.md` Part III §2 had
+already settled them, and the page images agree (read 2026-11-15). Neither
+changes the balance picture.
 
-- **Three Philosophers' tier** is an assumption: its notes say "limit/half is
-  assumed" (`src/core/patterns/table.ts`, `[C p. 15]`). A limit hand this easy
-  is the largest single imbalance in value.
-- **Crazy Chows' pair** is read from a cropped picture and marked
-  `provisional` (`[C p. 16]`): a mixed pair, the same number in two suits.
+- **Three Philosophers** `[C p. 15]` prints "LIMIT (Concealed)  Fishing = 400",
+  with a chow in each suit, a "Mixed Chow" of 4 Bamboo, 5 Circles,
+  6 Characters, and "Pair any suit". The limit tier is the book's, not an
+  assumption.
+- **Crazy Chows** `[C p. 16]` prints "HALF LIMIT (Concealed)  Fishing = 200",
+  four mixed chows and a "Mixed Pair" of 6 Bamboo and 6 Circles, fully
+  visible. The engine's reading (the same number in two suits) is right.
+  The page's chows run Circles-Bamboo-Characters and the Three Philosophers
+  chow Bamboo-Circles-Characters, so a mixed chow's suit order is free.
 
-## 6. The house rule
+The stale notes and the `provisional` flag on Crazy Chows are corrected in
+`src/core/patterns/table.ts`.
 
-**Name.** "Exotic hands" (recommended), with the note "Leaves out five easy
-special hands; not in either book". Other names: "Rare hands", "No easy
-specials", "Explorer's table".
+## 6. The Rare hand set
 
-**Rule text** for `rules/RULES.md` Part III §5, as a new bullet:
+**Name and place.** "Rare", the fourth and narrowest step of "Hands in
+play": All, Companion, Pictured, Rare. Each step leaves out more than the one
+before, so Rare also leaves out what Pictured does (the Illustrated-only and
+the unpictured hands) and plays 73 of the 89 hands. A table that wants every
+Illustrated hand without the easy five has no set for that; it can be added
+as a separate switch later if wanted.
 
-> **Exotic hands** `[A]`. Off by default. Leaves out five special hands built
-> only from free chows, pungs or runs over mixed suits: Crazy Chows
-> `[C p. 16]`, Three Philosophers `[C p. 15]`, Robin `[C p. 60]`, Little
-> Robert `[C p. 16]` and Big Robert with mixed numbers `[C p. 14]`. A
-> left-out hand is out exactly as under "Which hands are in play", for every
-> player, and it combines with any of the three hand sets.
+**Rule text:** `rules/RULES.md` Part III §5, set 4.
 
 **Legitimacy.** It changes only which hands are available, for every seat
 alike, which is what §5 already allows. No rule of play, tier, payment or
 fishing figure changes. A bots-only version would make one seat's legal win
-illegal, which is a rule of play; it is not proposed.
+illegal, which is a rule of play; it is not offered.
 
-**Hands in play** with the rule on: All 84 of 89, Companion 81 of 86,
-Pictured 73 of 77 (Robin is already out there).
+**In the code:** `easyMixed` on the five patterns, `EASY_MIXED_HANDS` and
+`HAND_SET_EXCLUDED.rare` in `src/core/patterns/table.ts`; `houseRulesOf` reads
+it back (`src/table/session.ts`), and the left-out list names the variant
+"Big Robert (half limit)". Tests: `test/core/house-rules.test.ts` (the
+printed examples score nothing under Rare, and the hands are no wait, hint or
+bot plan), `test/table/report.test.ts`, `test/table/api.test.ts`.
 
-## 7. Plan
+## 7. The Options sheet redesign (next, visual)
 
-**Phase 1: engine and table service (not visual).**
+On a phone in landscape the sheet is already taller than the screen: the
+House rules group starts below the fold, and a fourth hand set and its
+left-out list make it longer. The redesign:
 
-- `src/core/game/hands.ts`: a rule token `EXOTIC_HANDS = "rule:exotic-hands"`
-  that `exclusionsOf` expands into the five ids, like
-  `GOULASH_NO_HALF_LIMIT`. The state then names the rule, not five ids, and
-  saved games and replays read back unchanged.
-- `src/core/patterns/table.ts`: `EXOTIC_LEFT_OUT`, the five ids, as data next
-  to `HAND_SET_EXCLUDED`.
-- `src/table/session.ts`: `exoticHands` in `HouseRules`, `excludedHandsFor`,
-  `houseRulesOf`; `src/table/api.ts`: the handbook (`handIndex`) and
-  `houseRulesPayload` take the rule into account; `src/table/report.ts`.
-- `rules/RULES.md` Part III §5 (the text in §6), `docs/ENGINE.md`.
-- Tests: `test/core/house-rules.test.ts` (each of the five is no win, no wait,
-  no fishing hand and not hinted with the rule on, and still wins with it
-  off; a hand that also makes another pattern scores as that), a bot test that
-  no bot plans for the five, `test/table/api.test.ts` (the rule round-trips
-  through `houseRulesOf` with each hand set, and the handbook marks the
-  five), `test/table/report.test.ts`.
+- Tabs across the top, like the Guide: **Game** (bot level, pace, table
+  animations), **Table** (sound, large discards, discard layout), **Rules**
+  (house rules). Each tab fits a landscape phone without scrolling.
+- **Rules**: "Hands in play" as a four-step control, All, Companion,
+  Pictured, Rare, with a count ("73 of 89 hands") and the left-out names
+  under it; then "Rules of play" with the Goulash and fishing switches, and
+  one "Takes effect with the next hand" note.
+- New game, Install app, Help and Report a problem stay one row at the
+  bottom, on every tab.
 
-**Phase 2: the Options sheet (visual, preview check on the phone).**
+`app/index.html`, `app/src/options.js`, `app/styles.css`; `npm run smoke`;
+checked by the owner on the preview before merging.
 
-The House rules group already holds a three-way choice and two switches, and
-"Hands in play" with "Exotic hands" both decide the same thing. Regroup
-rather than redesign:
+## 8. Still to measure
 
-- **Hands in play**: the hand-set choice and the "Exotic hands" switch
-  together, with one count ("73 of 89 hands") and one list of what is left
-  out, so the two never read as separate rules.
-- **Rules of play**: the Goulash and fishing switches.
-- One "Takes effect with the next hand" note for the whole group.
-
-`app/index.html`, `app/src/options.js`, `app/styles.css`; `npm run smoke`.
-A full redesign of the sheet (tabs, a separate Rules screen) is worth it only
-if more rules are coming.
-
-**Phase 3: confirm.** Rerun the soak with the rule on, and a measurement with
-one seat chasing rare hands, to see the draw rate a player meets.
-
-## 8. Open for the owner
-
-1. The five, or a different line.
-2. The name.
-3. Regroup the House rules (Phase 2) or redesign the whole Options sheet.
-4. Whether to settle the two book questions in §5 first.
+Rerun the soak with a seat that chases rare hands, to see the drawn rate a
+player meets, and record points per win.
