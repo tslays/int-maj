@@ -25,12 +25,12 @@ runs:
       if: inputs.token == ''
       shell: bash
       run: echo "::notice::No CLOUDFLARE_API_TOKEN secret yet, so nothing was deployed."
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       if: inputs.token != ''
       with:
         name: dist
         path: dist
-    - uses: actions/setup-node@v5
+    - uses: actions/setup-node@v7
       if: inputs.token != ''
       with:
         node-version-file: .nvmrc

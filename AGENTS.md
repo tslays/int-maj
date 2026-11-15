@@ -114,7 +114,8 @@ The full workflow is `docs/WORKFLOW.md`. The rules every session follows:
   `/?phone` show a screen without playing to it.
 - **Deliver autonomously** (owner-authorized, `docs/WORKFLOW.md` "Autonomous
   delivery loop"): on the session's `claude/...` branch, open a pull request
-  (it gets a preview link comment), then by kind of change:
+  (its preview link is in the `Preview (PR link)` run summary), then by kind
+  of change:
   - *Non-visual* (engine, rules, docs, tests, CI): enable auto-merge (GitHub
     MCP `enable_pr_auto_merge`, squash) and end the session; do not poll for
     CI or deploy. If auto-merge cannot be enabled, wait for green and
