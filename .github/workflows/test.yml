@@ -6,9 +6,10 @@ on:
     # A tag v* is a release to testers (see the deploy-testers job).
     tags: ["v*"]
   pull_request:
-  # The 300-hand soak takes minutes: it runs nightly, or on demand.
+  # The 300-hand soak takes minutes: it runs nightly, or on demand. Off the
+  # full hour, where GitHub's scheduler is less crowded.
   schedule:
-    - cron: "0 3 * * *"
+    - cron: "17 3 * * *"
   workflow_dispatch:
 
 permissions:
@@ -30,8 +31,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -43,7 +44,7 @@ jobs:
       # The app testers install is the static build. It is built once, here,
       # and the deploy jobs below publish exactly these files.
       - run: npm run build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist
@@ -64,7 +65,7 @@ jobs:
       group: deploy-dev
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/deploy
         with:
           token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -86,7 +87,7 @@ jobs:
       group: deploy-testers
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/deploy
         with:
           token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -104,13 +105,11 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    permissions:
-      contents: read
     concurrency:
       group: preview-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/deploy
         with:
           token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -137,8 +136,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -152,8 +151,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
       - run: npm run soak

@@ -15,7 +15,7 @@ pull request:
                                                                    |
                                    GitHub Actions: types, tests, build, preview
                                                   |                          |
-                                                  | green: squash-merge      v PR comment: preview link
+                                                  | green: squash-merge      v run summary: preview link
                                                   v                            (pr-N-int-dev, never `int`)
         main -> tests, build -> Deploy dev (int-dev) -> https://int-dev.mah-jong.workers.dev
         tag v* -> tests, build -> Deploy testers (int) -> https://int.mah-jong.workers.dev
@@ -63,7 +63,8 @@ it is given (`claude/...`), so delivery is a pull request:
    picked Node 24 and installed the type checker).
 2. Commit, push the branch, open a pull request into `main` (mirror
    `.github/pull_request_template.md` if one exists). The pull request gets
-   a comment with its preview link (`pr-<number>-int-dev...workers.dev`).
+   a preview link (`pr-<number>-int-dev...workers.dev`), shown in the run
+   summary of its `Preview (PR link)` job, not as a comment.
    Every reply to the owner names the pull request by number and full URL
    (`https://github.com/<owner>/<repo>/pull/<number>`), each time it comes up.
    For a visual change, also give the preview link
@@ -112,8 +113,8 @@ deleting branches or history, changing the Cloudflare token or secrets).
   usually a few minutes after the push.
 - **Pull-request previews:** every pull request from this repository gets
   `https://pr-<number>-int-dev.mah-jong.workers.dev` (the `Preview (PR link)`
-  job uploads a version of `int-dev` and posts or updates one comment). A
-  preview never touches `int`.
+  job uploads a version of `int-dev` and shows the link in its run summary,
+  not as a comment, so no notification mail). A preview never touches `int`.
 - **Tester site, https://int.mah-jong.workers.dev:** deployed by
   `Deploy testers (int)` only when a tag `v*` is pushed, or when the workflow
   is run by hand (`workflow_dispatch`) on a tag ref, which re-deploys or rolls
