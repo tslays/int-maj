@@ -1875,7 +1875,21 @@ button.detail-rule {
   opacity: 0;
   pointer-events: none;
 }
-.report-photo-preview {
+.report-photo-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.report-photo-list:empty {
+  display: none;
+}
+.report-photo-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.report-photo-item img {
   width: 48px;
   height: 48px;
   object-fit: cover;

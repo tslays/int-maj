@@ -6,6 +6,8 @@
  */
 
 export const LONGEST = 1024;
+/** How many photos one report may carry: the Worker's limit (`src/worker/photo.ts`). */
+export const MAX_PHOTOS = 3;
 /** The Worker's limit for a report's photo, in bytes once decoded (`src/worker/photo.ts`). */
 export const MAX_BYTES = 1_000_000;
 /** Tried in turn until the picture fits: the first is the quality kept whenever it can be. */

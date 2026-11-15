@@ -1,5 +1,5 @@
 /**
- * A report's photo (`app/src/photo.js`): a picture is drawn at most 1024
+ * A report's photos (`app/src/photo.js`): a picture is drawn at most 1024
  * pixels along its longer side, never enlarged, and the limit the app keeps
  * to is the Worker's own, so a prepared photo is always accepted.
  */
@@ -7,10 +7,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { MAX_PHOTO } from "../../src/worker/photo.ts";
+import { MAX_PHOTO, MAX_PHOTOS as WORKER_MAX_PHOTOS } from "../../src/worker/photo.ts";
 
 // @ts-expect-error - a plain browser module without type declarations
-const { LONGEST, MAX_BYTES, scaledSize } = await import("../../app/src/photo.js");
+const { LONGEST, MAX_BYTES, MAX_PHOTOS, scaledSize } = await import("../../app/src/photo.js");
 
 describe("report photo size", () => {
   it("draws a large landscape picture at 1024 pixels wide, keeping its shape", () => {
@@ -32,5 +32,10 @@ describe("report photo size", () => {
 
   it("uses the same byte limit as the Worker", () => {
     assert.equal(MAX_BYTES, MAX_PHOTO);
+  });
+
+  it("allows the same number of photos per report as the Worker, three", () => {
+    assert.equal(MAX_PHOTOS, WORKER_MAX_PHOTOS);
+    assert.equal(MAX_PHOTOS, 3);
   });
 });

@@ -6,14 +6,14 @@
  * The endpoint is public, so it only accepts what the app sends: a same-origin
  * JSON post holding one well-formed report of bounded size, a few per minute
  * per address. The issue shows the report inside a code block, so nothing in
- * a note can mention a user or draw markup. A report may carry one photo; it
- * is kept in a private store under a random key, and the issue names only
- * that key.
+ * a note can mention a user or draw markup. A report may carry up to three
+ * photos; each is kept in a private store under a random key, and the issue
+ * names only those keys.
  */
 
 import { parseReport } from "../table/report.ts";
 import { packReport } from "./pack.ts";
-import { MAX_PHOTO_BASE64, decodePhoto } from "./photo.ts";
+import { MAX_PHOTOS, MAX_PHOTO_BASE64, decodePhoto } from "./photo.ts";
 
 /** The private store of report photos: an R2 bucket, bound as `REPORT_PHOTOS`. */
 export interface PhotoStore {
@@ -28,7 +28,7 @@ export interface ReportEnv {
   readonly REPORT_REPO?: string;
   /** Cloudflare's rate limiter, where it is bound. */
   readonly REPORT_LIMIT?: { limit(options: { key: string }): Promise<{ success: boolean }> };
-  /** Where a report's photo is kept, where it is bound. Private: nothing reads it back over HTTP. */
+  /** Where a report's photos are kept, where it is bound. Private: nothing reads them back over HTTP. */
   readonly REPORT_PHOTOS?: PhotoStore;
 }
 
@@ -52,12 +52,12 @@ function header(text: string, name: string): string {
 
 /**
  * The issue for one report text; a report longer than `maxPlain` is packed.
- * A `photoKey` names the report's photo in the private store.
+ * Each of `photoKeys` names one of the report's photos in the private store.
  */
 export async function issueFor(
   report: string,
   maxPlain = MAX_PLAIN,
-  photoKey?: string,
+  photoKeys: readonly string[] = [],
 ): Promise<{ title: string; body: string }> {
   // A code block ends at a backtick fence, and a report has no use for one.
   const text = report.replaceAll("`", "'").trim();
@@ -74,7 +74,10 @@ export async function issueFor(
       shown,
       "```",
       "",
-      ...(photoKey === undefined ? [] : [`Photo, in the private store (not public): \`${photoKey}\``, ""]),
+      ...photoKeys.flatMap((key, index) => [
+        `Photo ${index + 1} of ${photoKeys.length}, in the private store (not public): \`${key}\``,
+        "",
+      ]),
     ].join("\n"),
   };
 }
@@ -110,13 +113,15 @@ export async function handleReport(request: Request, env: ReportEnv, send: typeo
   }
 
   let report: unknown;
-  let photo: unknown;
+  let photos: unknown;
   try {
     const raw = await request.text();
-    if (raw.length > MAX_REPORT + MAX_PHOTO_BASE64 + 1000) return json(413, { error: "the report is too large" });
-    const body = JSON.parse(raw) as { report?: unknown; photo?: unknown } | null;
+    if (raw.length > MAX_REPORT + MAX_PHOTOS * MAX_PHOTO_BASE64 + 1000) {
+      return json(413, { error: "the report is too large" });
+    }
+    const body = JSON.parse(raw) as { report?: unknown; photos?: unknown } | null;
     report = body?.report;
-    photo = body?.photo;
+    photos = body?.photos;
   } catch {
     return json(400, { error: "not JSON" });
   }
@@ -126,30 +131,41 @@ export async function handleReport(request: Request, env: ReportEnv, send: typeo
   const parsed = parseReport(report);
   if ("error" in parsed) return json(400, { error: parsed.error });
 
-  // The photo is checked and kept before the issue names it, so the issue
-  // never points at a photo that is not there.
-  let photoKey: string | undefined;
-  const store = env.REPORT_PHOTOS;
-  if (photo !== undefined && photo !== null) {
+  // Every photo is checked before any is kept, and all are kept before the
+  // issue names them, so the issue never points at a photo that is not there.
+  const list = photos === undefined || photos === null ? [] : photos;
+  if (!Array.isArray(list)) return json(400, { error: "the photos are not a list" });
+  if (list.length > MAX_PHOTOS) return json(400, { error: `a report takes at most ${MAX_PHOTOS} photos` });
+  const decodedPhotos: Uint8Array<ArrayBuffer>[] = [];
+  for (const photo of list) {
     if (typeof photo !== "string") return json(400, { error: "the photo is not a JPEG" });
     const decoded = decodePhoto(photo);
     if ("error" in decoded) return json(400, { error: decoded.error });
+    decodedPhotos.push(decoded.bytes);
+  }
+  const store = env.REPORT_PHOTOS;
+  const photoKeys: string[] = [];
+  // Photos that are not filed with their report are removed again.
+  const discard = async (): Promise<void> => {
+    if (store === undefined) return;
+    await Promise.all(photoKeys.map((key) => store.delete(key).catch(() => undefined)));
+  };
+  if (decodedPhotos.length > 0) {
     if (store === undefined) return json(503, { error: "photos are not set up on this site" });
-    photoKey = crypto.randomUUID();
-    try {
-      await store.put(photoKey, decoded.bytes, { httpMetadata: { contentType: "image/jpeg" } });
-    } catch (error) {
-      console.error(`the photo could not be stored: ${String(error)}`);
-      return json(502, { error: "the photo could not be stored" });
+    for (const bytes of decodedPhotos) {
+      const key = crypto.randomUUID();
+      try {
+        await store.put(key, bytes, { httpMetadata: { contentType: "image/jpeg" } });
+      } catch (error) {
+        console.error(`a photo could not be stored: ${String(error)}`);
+        await discard();
+        return json(502, { error: "the photo could not be stored" });
+      }
+      photoKeys.push(key);
     }
   }
-  // A photo that is not filed with its report is removed again.
-  const discard = async (): Promise<void> => {
-    if (photoKey === undefined || store === undefined) return;
-    await store.delete(photoKey).catch(() => undefined);
-  };
 
-  const issue = await issueFor(report, MAX_PLAIN, photoKey);
+  const issue = await issueFor(report, MAX_PLAIN, photoKeys);
   try {
     let created = await createIssue(env, issue, send, ["report"]);
     // A token that may not create the label must not lose the report.

@@ -1,9 +1,12 @@
 /**
- * A report's optional photo: one JPEG the app has already resized and
- * re-encoded on the phone, which drops its location and camera details. The
- * Worker checks that it really is a JPEG of bounded size before it is kept.
+ * A report's optional photos: up to MAX_PHOTOS JPEGs the app has already
+ * resized and re-encoded on the phone, which drops their location and camera
+ * details. The Worker checks that each really is a JPEG of bounded size before
+ * any is kept.
  */
 
+/** The most photos one report may carry. */
+export const MAX_PHOTOS = 3;
 /** The largest photo kept, in bytes once decoded. */
 export const MAX_PHOTO = 1_000_000;
 /** The same photo as base64 text, which is how the app sends it. */

@@ -11,7 +11,7 @@ import { viewFor } from "../../src/core/game/view.ts";
 import { buildReport, parseReport, replayReport } from "../../src/table/report.ts";
 import { GameStore } from "../../src/table/session.ts";
 import { PACKED_BEGIN, packReport, unpackReport } from "../../src/worker/pack.ts";
-import { MAX_PHOTO } from "../../src/worker/photo.ts";
+import { MAX_PHOTO, MAX_PHOTOS } from "../../src/worker/photo.ts";
 import { MAX_REPORT, handleReport, issueFor, type ReportEnv } from "../../src/worker/report.ts";
 
 const INFO = { version: "0.1.0-alpha.4", build: "abc1234", userAgent: "TestAgent/1.0 (iPhone)" };
@@ -153,17 +153,17 @@ describe("report endpoint", () => {
   });
 });
 
-/* A report's photo, kept in the private store. */
+/* Up to three photos, kept in the private store. */
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
-/** A stand-in for the R2 bucket: what it was given, and what was removed. */
-function photoStore(failPut = false) {
+/** A stand-in for the R2 bucket: what it was given, and what was removed. `failAfter` puts succeed, then fail. */
+function photoStore(failAfter = Infinity) {
   const puts = new Map<string, Uint8Array>();
   const deletes: string[] = [];
   const store = {
     async put(key: string, bytes: Uint8Array<ArrayBuffer>) {
-      if (failPut) throw new Error("the bucket is full");
+      if (puts.size >= failAfter) throw new Error("the bucket is full");
       puts.set(key, bytes);
       return undefined;
     },
@@ -190,13 +190,13 @@ function postWith(body: Record<string, unknown>): Request {
   });
 }
 
-describe("report photo", () => {
-  it("keeps the photo under a random key, and the issue names only that key", async () => {
+describe("report photos", () => {
+  it("keeps one photo under a random key, and the issue names only that key", async () => {
     const { text } = playedReport("the table looked wrong");
     const hub = github();
     const photos = photoStore();
     const env = { ...ENV, REPORT_PHOTOS: photos.store };
-    const response = await handleReport(postWith({ report: text, photo: jpegBase64() }), env, hub.send);
+    const response = await handleReport(postWith({ report: text, photos: [jpegBase64()] }), env, hub.send);
 
     assert.equal(response.status, 201);
     assert.equal(photos.puts.size, 1);
@@ -209,7 +209,30 @@ describe("report photo", () => {
     assert.deepEqual(photos.deletes, []);
   });
 
-  it("files a report without a photo as before, with no photo line", async () => {
+  it("keeps all three photos under their own keys, and the issue names each one in order", async () => {
+    const { text } = playedReport("three shots");
+    const hub = github();
+    const photos = photoStore();
+    const response = await handleReport(
+      postWith({ report: text, photos: [jpegBase64(64), jpegBase64(65), jpegBase64(66)] }),
+      { ...ENV, REPORT_PHOTOS: photos.store },
+      hub.send,
+    );
+
+    assert.equal(response.status, 201);
+    assert.equal(MAX_PHOTOS, 3);
+    assert.equal(photos.puts.size, 3);
+    const keys = [...photos.puts.keys()];
+    for (const key of keys) assert.match(key, UUID);
+    assert.equal(new Set(keys).size, 3);
+    const body = hub.calls[0]!.body.body;
+    const lines = keys.map((key, index) => `Photo ${index + 1} of 3, in the private store (not public): \`${key}\``);
+    for (const line of lines) assert.ok(body.includes(line), `the issue names ${line}`);
+    assert.ok(body.indexOf(lines[0]!) < body.indexOf(lines[2]!), "the photos are listed in the order sent");
+    assert.deepEqual(photos.deletes, []);
+  });
+
+  it("files a report without photos as before, with no photo line", async () => {
     const { text } = playedReport("no picture");
     const hub = github();
     const photos = photoStore();
@@ -219,12 +242,47 @@ describe("report photo", () => {
     assert.ok(!hub.calls[0]!.body.body.includes("private store"));
   });
 
-  it("refuses a photo that is not a JPEG, filing and keeping nothing", async () => {
+  it("treats an empty list of photos as no photos", async () => {
+    const { text } = playedReport("no picture");
+    const hub = github();
+    const photos = photoStore();
+    const response = await handleReport(postWith({ report: text, photos: [] }), { ...ENV, REPORT_PHOTOS: photos.store }, hub.send);
+    assert.equal(response.status, 201);
+    assert.equal(photos.puts.size, 0);
+  });
+
+  it("refuses more than three photos, filing and keeping nothing", async () => {
+    const { text } = playedReport();
+    const hub = github();
+    const photos = photoStore();
+    const four = [jpegBase64(), jpegBase64(), jpegBase64(), jpegBase64()];
+    const response = await handleReport(postWith({ report: text, photos: four }), { ...ENV, REPORT_PHOTOS: photos.store }, hub.send);
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { error: "a report takes at most 3 photos" });
+    assert.equal(hub.calls.length, 0);
+    assert.equal(photos.puts.size, 0);
+  });
+
+  it("refuses photos that are not a list", async () => {
+    const { text } = playedReport();
+    const hub = github();
+    const photos = photoStore();
+    const response = await handleReport(postWith({ report: text, photos: jpegBase64() }), { ...ENV, REPORT_PHOTOS: photos.store }, hub.send);
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { error: "the photos are not a list" });
+    assert.equal(hub.calls.length, 0);
+  });
+
+  it("refuses the whole report when one photo is not a JPEG, keeping none of them", async () => {
     const { text } = playedReport();
     const hub = github();
     const photos = photoStore();
     const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 0]).toString("base64");
-    const response = await handleReport(postWith({ report: text, photo: png }), { ...ENV, REPORT_PHOTOS: photos.store }, hub.send);
+    const response = await handleReport(
+      postWith({ report: text, photos: [jpegBase64(), png, jpegBase64()] }),
+      { ...ENV, REPORT_PHOTOS: photos.store },
+      hub.send,
+    );
     assert.equal(response.status, 400);
     assert.deepEqual(await response.json(), { error: "the photo is not a JPEG" });
     assert.equal(hub.calls.length, 0);
@@ -236,7 +294,7 @@ describe("report photo", () => {
     const hub = github();
     const photos = photoStore();
     const response = await handleReport(
-      postWith({ report: text, photo: jpegBase64(MAX_PHOTO + 1) }),
+      postWith({ report: text, photos: [jpegBase64(MAX_PHOTO + 1)] }),
       { ...ENV, REPORT_PHOTOS: photos.store },
       hub.send,
     );
@@ -248,7 +306,7 @@ describe("report photo", () => {
   it("refuses a photo that is not text", async () => {
     const { text } = playedReport();
     const hub = github();
-    const response = await handleReport(postWith({ report: text, photo: 42 }), { ...ENV, REPORT_PHOTOS: photoStore().store }, hub.send);
+    const response = await handleReport(postWith({ report: text, photos: [42] }), { ...ENV, REPORT_PHOTOS: photoStore().store }, hub.send);
     assert.equal(response.status, 400);
     assert.equal(hub.calls.length, 0);
   });
@@ -256,29 +314,49 @@ describe("report photo", () => {
   it("says photos are not set up, and files nothing, when no store is bound", async () => {
     const { text } = playedReport();
     const hub = github();
-    const response = await handleReport(postWith({ report: text, photo: jpegBase64() }), ENV, hub.send);
+    const response = await handleReport(postWith({ report: text, photos: [jpegBase64()] }), ENV, hub.send);
     assert.equal(response.status, 503);
     assert.deepEqual(await response.json(), { error: "photos are not set up on this site" });
     assert.equal(hub.calls.length, 0);
   });
 
-  it("keeps nothing and files nothing when the photo cannot be stored", async () => {
+  it("keeps nothing and files nothing when the first photo cannot be stored", async () => {
     const { text } = playedReport();
     const hub = github();
-    const photos = photoStore(true);
-    const response = await handleReport(postWith({ report: text, photo: jpegBase64() }), { ...ENV, REPORT_PHOTOS: photos.store }, hub.send);
+    const photos = photoStore(0);
+    const response = await handleReport(postWith({ report: text, photos: [jpegBase64(), jpegBase64()] }), { ...ENV, REPORT_PHOTOS: photos.store }, hub.send);
     assert.equal(response.status, 502);
     assert.deepEqual(await response.json(), { error: "the photo could not be stored" });
     assert.equal(hub.calls.length, 0);
+    assert.equal(photos.puts.size, 0);
   });
 
-  it("removes the stored photo when GitHub refuses the report", async () => {
+  it("removes the photos already stored when a later one cannot be stored", async () => {
+    const { text } = playedReport();
+    const hub = github();
+    const photos = photoStore(2);
+    const response = await handleReport(
+      postWith({ report: text, photos: [jpegBase64(), jpegBase64(), jpegBase64()] }),
+      { ...ENV, REPORT_PHOTOS: photos.store },
+      hub.send,
+    );
+    assert.equal(response.status, 502);
+    assert.equal(hub.calls.length, 0);
+    assert.equal(photos.puts.size, 2);
+    assert.deepEqual(photos.deletes.sort(), [...photos.puts.keys()].sort());
+  });
+
+  it("removes every stored photo when GitHub refuses the report", async () => {
     const { text } = playedReport();
     const hub = github([500]);
     const photos = photoStore();
-    const response = await handleReport(postWith({ report: text, photo: jpegBase64() }), { ...ENV, REPORT_PHOTOS: photos.store }, hub.send);
+    const response = await handleReport(
+      postWith({ report: text, photos: [jpegBase64(), jpegBase64(), jpegBase64()] }),
+      { ...ENV, REPORT_PHOTOS: photos.store },
+      hub.send,
+    );
     assert.equal(response.status, 502);
-    assert.equal(photos.puts.size, 1);
-    assert.deepEqual(photos.deletes, [...photos.puts.keys()]);
+    assert.equal(photos.puts.size, 3);
+    assert.deepEqual(photos.deletes.sort(), [...photos.puts.keys()].sort());
   });
 });
