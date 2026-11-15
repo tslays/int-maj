@@ -5,6 +5,7 @@
  */
 
 import { BUILD } from "./build-info.js";
+import { MAX_PHOTOS, preparePhoto } from "./photo.js";
 import { $, state, toast } from "./shared.js";
 
 const SEND_TIMEOUT_MS = 15000;
@@ -16,9 +17,14 @@ const note = $("#report-note");
 const sendButton = $("#report-send");
 const shareButton = $("#report-share");
 const status = $("#report-status");
+const photoInput = $("#report-photo-input");
+const photoAdd = $("#report-photo-add");
+const photoList = $("#report-photo-list");
 
 let sending = false;
 let closing = 0;
+/** The pictures to send with the report, in order: each its base64 JPEG and a preview address. */
+let photos = [];
 
 /* The keyboard does not resize the page on an iPhone, it covers it: only the
    visual viewport says what is still in sight. The sheet is kept on exactly
@@ -65,18 +71,102 @@ function reportText() {
   });
 }
 
-/** Post the report; resolves to the answer, or null when it did not arrive. */
+/** The photos on the sheet: a thumbnail of each, with its own Remove, and Add until the report is full. */
+function showPhotos() {
+  photoList.replaceChildren(
+    ...photos.map((item, index) => {
+      const figure = document.createElement("div");
+      figure.className = "report-photo-item";
+      const picture = document.createElement("img");
+      picture.src = item.url;
+      picture.alt = `Photo ${index + 1} to send`;
+      const remove = document.createElement("button");
+      remove.className = "ghost";
+      remove.type = "button";
+      remove.innerHTML = "<span>Remove</span>";
+      remove.setAttribute("aria-label", `Remove photo ${index + 1}`);
+      remove.addEventListener("click", () => removePhoto(index));
+      figure.append(picture, remove);
+      return figure;
+    }),
+  );
+  photoAdd.hidden = photos.length >= MAX_PHOTOS;
+  photoAdd.querySelector("span").textContent =
+    photos.length === 0 ? "Add a photo (optional)" : `Add a photo (${photos.length} of ${MAX_PHOTOS})`;
+}
+
+function clearPhotos() {
+  for (const item of photos) URL.revokeObjectURL(item.url);
+  photos = [];
+  showPhotos();
+}
+
+function removePhoto(index) {
+  URL.revokeObjectURL(photos[index].url);
+  photos.splice(index, 1);
+  showPhotos();
+  say("");
+}
+
+/** The pictures the tester chose, made small enough to send; a refusal says why. */
+async function choosePhotos() {
+  const files = Array.from(photoInput.files ?? []);
+  photoInput.value = "";
+  if (files.length === 0) return;
+  say("Preparing the photo...");
+  let refused = 0;
+  let full = false;
+  for (const file of files) {
+    // The room is checked again after each picture is made: Add stays up while the last ones are prepared.
+    if (photos.length >= MAX_PHOTOS) {
+      full = true;
+      break;
+    }
+    const prepared = await preparePhoto(file);
+    if (prepared === null) {
+      refused += 1;
+      continue;
+    }
+    if (photos.length >= MAX_PHOTOS) {
+      full = true;
+      break;
+    }
+    photos.push({ base64: prepared.base64, url: URL.createObjectURL(prepared.blob) });
+    showPhotos();
+  }
+  if (refused > 0) {
+    say(
+      refused === 1
+        ? "That is not a picture the report can take, even made smaller."
+        : `${refused} of those are not pictures the report can take, even made smaller.`,
+      true,
+    );
+  } else if (full) {
+    say(`A report takes at most ${MAX_PHOTOS} photos, so the rest were not added.`, true);
+  } else {
+    say("");
+  }
+}
+
+/**
+ * Post the report, with the picture when there is one. Resolves to the answer:
+ * the server's own refusal (with its `error`), or null when it did not arrive.
+ */
 async function post(text) {
   const abort = new AbortController();
   const timer = setTimeout(() => abort.abort(), SEND_TIMEOUT_MS);
   try {
+    const body = photos.length === 0 ? { report: text } : { report: text, photos: photos.map((item) => item.base64) };
     const response = await fetch("api/report", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ report: text }),
+      body: JSON.stringify(body),
       signal: abort.signal,
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      const refusal = await response.json().catch(() => ({}));
+      return { ok: false, error: typeof refusal.error === "string" ? refusal.error : "" };
+    }
     return await response.json();
   } catch {
     return null;
@@ -102,17 +192,26 @@ async function send() {
   if (sheet.hidden) {
     // Closed while it was on its way: say how it ended where it can be seen.
     toast(answer?.ok ? "Report sent. Thank you." : "The report could not be sent.");
-    if (answer?.ok) note.value = "";
+    if (answer?.ok) {
+      note.value = "";
+      clearPhotos();
+    }
     return;
   }
   if (answer?.ok) {
     note.value = "";
+    clearPhotos();
     note.blur();
     say(typeof answer.number === "number" ? `Sent as report #${answer.number}. Thank you.` : "Sent. Thank you.");
     closing = setTimeout(closeReport, 2200);
     return;
   }
-  say("It could not be sent. Check your connection and tap Send again, or share it as a message.", true);
+  // A refusal from the site says what to fix (a photo too large, say); a lost connection does not.
+  if (answer?.error) {
+    say(`It could not be sent: ${answer.error}.`, true);
+  } else {
+    say("It could not be sent. Check your connection and tap Send again, or share it as a message.", true);
+  }
   shareButton.hidden = false;
 }
 
@@ -146,6 +245,9 @@ sheet.addEventListener("click", (event) => {
 });
 sendButton.addEventListener("click", send);
 shareButton.addEventListener("click", share);
+photoAdd.addEventListener("click", () => photoInput.click());
+photoInput.addEventListener("change", () => void choosePhotos());
+showPhotos();
 note.addEventListener("keydown", (event) => {
   // The note is one line, so the keyboard's return key sends it.
   if (event.key === "Enter" && !event.isComposing) {

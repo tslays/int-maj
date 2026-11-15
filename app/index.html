@@ -254,11 +254,16 @@
           ></textarea>
           <button class="ghost" id="report-send" type="button" aria-label="Send report"><span>Send</span></button>
         </div>
+        <div class="report-photo">
+          <div class="report-photo-list" id="report-photo-list"></div>
+          <button class="ghost" id="report-photo-add" type="button"><span>Add a photo (optional)</span></button>
+          <input type="file" id="report-photo-input" class="report-photo-input" accept="image/*" multiple aria-label="Photos for the report">
+        </div>
         <p class="report-status" id="report-status" role="status" hidden></p>
         <button class="ghost" id="report-share" type="button" hidden><span>Share it instead</span></button>
         <p class="report-fine">
-          Goes straight to the developers, with the build, your device and every move of this game. No name
-          or account.
+          Goes straight to the developers, with the build, your device and every move of this game. Photos
+          (up to three) are kept privately for them and never shown publicly. No name or account.
         </p>
       </div>
     </div>
