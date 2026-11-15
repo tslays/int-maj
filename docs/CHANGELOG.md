@@ -4,7 +4,45 @@ Newest first. Written for players: what you will see, what was fixed, and
 what now works differently. Each version is a `v0.1.0-alpha.N` tag on `main`;
 testers get it at https://int.mah-jong.workers.dev.
 
-## alpha.9
+## alpha.10
+
+**New**
+
+- **A fourth step for Hands in play: Rare.** It leaves out the easy
+  mixed-suit hands that nearly any deal is halfway to (Crazy Chows, Three
+  Philosophers, Little Robert and Big Robert at half limit), so the rarer
+  hands are worth chasing. 73 hands stay in play. It is our own rule, not
+  the book's, and the Options sheet says so. (#166, #167)
+
+**Changed**
+
+- **Options is now three tabs:** *Game* (bot level, pace, table animations),
+  *Table* (sound, large discards, discards) and *Rules* (house rules). The
+  house rules no longer sit below the fold on a landscape phone. New game,
+  Help and Report stay under every tab. (#167)
+- **Hands in play shows a count** ("73 of 88 hands") and a note naming only
+  what the chosen step adds. *Announce fishing to win* now explains itself:
+  you go out only after announcing you need one tile. (#167)
+- A rule changed in the middle of a hand shows *Changes start next hand* in
+  the header, with an amber light on the Rules tab. It now covers all three
+  house rules, not only the hand set. (#167)
+
+**Fixed**
+
+- **A Goulash exchange marks all three tiles you received** (from your
+  report): sometimes only two were shaded teal, when a received tile matched
+  one you had passed away. (#163 → #164)
+- **The welcome card waits until the phone is turned sideways.** On a first
+  visit it covered the turn-your-phone screen and its install steps. It
+  steps aside again if you turn the phone back upright. (#168)
+
+**What works differently now**
+
+- The house rules are in the Options sheet's *Rules* tab; sound and discard
+  settings are in *Table*.
+- Hands in play can be set to *Rare*.
+
+## alpha.9 (15 November 2026)
 
 **New**
 
