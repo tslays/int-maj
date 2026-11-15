@@ -2311,6 +2311,12 @@ button.detail-rule {
   color: var(--muted);
   font-size: 12px;
 }
+/* Turned back upright, the welcome card steps aside: the turn-your-phone screen and its install steps stay visible. */
+@media (orientation: portrait) and (pointer: coarse) {
+  .welcome {
+    display: none;
+  }
+}
 @keyframes tip-in-center {
   from {
     opacity: 0;
