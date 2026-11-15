@@ -63,7 +63,7 @@ hook (`.claude/hooks/session-start.sh`) selects Node 24 and installs them.
 | `npm run bot-soak` | bot-only games: drawn rate and which hands win |
 
 Review boards show one screen without playing up to it:
-`/?state=turn|claim|wait|fishing|announce|ron|win|drawn|result|goulash|claims`.
+`/?state=turn|claim|wait|fishing|announce|selfdraw|ron|win|drawn|result|goulash|claims`.
 
 ## Project layout
 

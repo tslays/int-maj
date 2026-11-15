@@ -227,6 +227,10 @@ function button(label, kind, onClick, tiles = [], drawOnly = [], hand = "") {
   const element = document.createElement("button");
   element.type = "button";
   element.className = `act act-${kind}`;
+  // A wait that wins only from your own draw (Buried Treasure and kin) says so in a tab on the top edge,
+  // so nobody fishes for it by accident: a discard of that tile is no win.
+  const selfDrawTiles = tiles.filter((key) => drawOnly.includes(key));
+  const mixed = selfDrawTiles.length > 0 && selfDrawTiles.length < tiles.length;
   if (label !== "") {
     const text = document.createElement("span");
     text.textContent = label;
@@ -244,15 +248,15 @@ function button(label, kind, onClick, tiles = [], drawOnly = [], hand = "") {
     row.className = "act-tiles";
     for (const key of tiles) {
       const chip = faceChip(key);
-      if (drawOnly.includes(key)) chip.classList.add("chip-draw");
+      // Fade only when some waits win from a discard and some do not: the fade tells them apart.
+      if (mixed && drawOnly.includes(key)) chip.classList.add("chip-draw");
       row.append(chip);
     }
     element.append(row);
-    // A wait tile that wins only from your own draw says so: a discard of it is no win.
-    if (tiles.some((key) => drawOnly.includes(key))) {
+    if (selfDrawTiles.length > 0) {
       const note = document.createElement("small");
       note.className = "act-note";
-      note.textContent = tiles.every((key) => drawOnly.includes(key)) ? "own draw only" : "faded: own draw only";
+      note.textContent = mixed ? "faded: self-draw only" : "self-draw only";
       element.append(note);
     }
   }

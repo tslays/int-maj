@@ -346,10 +346,13 @@ likeliest hands first.
 
 The **Fishing** button shows the tiles you wait on. A tile that wins only when
 you draw it yourself (a wait on a self-drawn-only hand such as Buried Treasure,
-whose every tile must come from the wall) is faded, with "own draw only" after
+whose every tile must come from the wall) is faded, with "self-draw only" after
 the tiles, because the same tile thrown by another player is no win
 (`GameView.fishingDrawOnly`, from `drawOnlyWaits` in `src/core/game/hands.ts`;
-tester report #147).
+tester report #147). An offer with such a wait also carries a small deep-navy
+tab on the button's top edge that reads "self-draw only" ("faded: self-draw
+only" when only some waits are, and only then are the tiles faded), so nobody
+fishes for it by accident.
 
 ## Sound
 
@@ -387,7 +390,7 @@ Two URL options help when testing:
 
 | URL | Opens |
 | --- | --- |
-| `/?state=turn\|claim\|wait\|fishing\|announce\|ron\|win\|drawn\|result\|goulash\|claims` | one fixed review board, replayed from a seed (`claims` opens on the claims sheet) |
+| `/?state=turn\|claim\|wait\|fishing\|announce\|selfdraw\|ron\|win\|drawn\|result\|goulash\|claims` | one fixed review board, replayed from a seed (`claims` opens on the claims sheet) |
 | `/?phone` | the table inside an iPhone-landscape frame, on any screen |
 | `/?install=ios\|android\|ios-webview\|android-webview` | that install guide on the turn-your-phone screen, on any phone held upright |
 
