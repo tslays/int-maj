@@ -19,7 +19,7 @@ import { checkHand, summarizeMatch, type MatchSummary } from "../core/check.ts";
 import { tileKey } from "../core/tiles.ts";
 import { decisionOf, type Action } from "../core/game/actions.ts";
 import { chooseAction, DEFAULT_BOT_LEVEL, type BotLevel } from "../core/game/bot.ts";
-import { closestWithPins, type ClosestHand, type PinnedHand } from "../core/game/closest.ts";
+import { closestWithPins, handIndex, type ClosestHand, type PinnedHand } from "../core/game/closest.ts";
 import type { Event } from "../core/game/events.ts";
 import { isApplyError } from "../core/game/draft.ts";
 import { ledgerTotals } from "../core/game/settle.ts";
@@ -119,14 +119,26 @@ function leftOutName(id: string): string {
   return `${pattern.name} (${TIER_NAMES[pattern.tier] ?? pattern.tier})`;
 }
 
-/** The house rules on offer: each hand set with the names of the hands it leaves out. */
+/**
+ * The house rules on offer: each hand set with the names of the hands it
+ * leaves out and how many hands of the index (`total`) stay in play. A
+ * hand with a scoring variant is one entry in the index, so the counts are
+ * the index's, not the catalogue's.
+ */
 export function houseRulesPayload(): {
-  readonly handSets: readonly { readonly id: HandSet; readonly leftOut: readonly string[] }[];
+  readonly total: number;
+  readonly handSets: readonly {
+    readonly id: HandSet;
+    readonly leftOut: readonly string[];
+    readonly inPlay: number;
+  }[];
 } {
   return {
+    total: handIndex([]).hands.length,
     handSets: HAND_SETS.map((id) => ({
       id,
       leftOut: HAND_SET_EXCLUDED[id].map(leftOutName),
+      inPlay: handIndex(HAND_SET_EXCLUDED[id]).hands.length,
     })),
   };
 }

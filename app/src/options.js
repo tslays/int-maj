@@ -1,7 +1,8 @@
 /**
- * The Options sheet: sound, large discards (phones only), the discard layout, the pace, the bot
- * level, dice and dealing, the house rules, and the doors to New game, Help
- * and Report a problem.
+ * The Options sheet, in three tabs: Game (bot level, pace, dice and dealing),
+ * Table (sound, large discards on phones, the discard layout) and Rules (the
+ * house rules), with the doors to New game, Help and Report a problem under
+ * every tab.
  *
  * A house rule is a preference kept on the device. The table fixes a hand's
  * rules at its deal, so `houseRules()` is sent with every new game and every
@@ -19,14 +20,21 @@ import { $, request, state, storage } from "./shared.js";
 import { viewport } from "./stage.js";
 
 const RULES_KEY = "int-maj:house-rules";
-const HAND_SETS = ["all", "companion", "companion-pictured"];
+/** Widest first: each step leaves out what the one before does, and more. */
+const HAND_SETS = ["all", "companion", "companion-pictured", "rare"];
 
-/** What each hand set means, before the table names the hands it leaves out. */
+/**
+ * What each step of the filter means. Each step leaves out what the one before
+ * does and more; the table names only the hands the step adds.
+ */
 const HAND_SET_TEXT = {
-  all: "Every hand either book prints, with or without a sample picture.",
-  companion: "Only hands the Companion prints. Left out:",
-  "companion-pictured": "Only Companion hands that come with a sample picture. Left out:",
+  all: "Every hand either book prints. Each step to the right leaves out more.",
+  companion: "Only the hands the Companion prints. Left out:",
+  "companion-pictured": "Only Companion hands with a sample picture. Also left out:",
+  rare: "Our own house rule: also drops the easy hands nearly any deal is halfway to, so the rarer ones are worth chasing. Left out:",
 };
+
+const TABS = ["game", "table", "rules"];
 
 function savedRules() {
   const rules = { handSet: "all", goulashNoHalfLimit: true, winNeedsFish: false };
@@ -52,8 +60,12 @@ function saveRules() {
 }
 
 const rules = savedRules();
-/** The names of the hands each set leaves out, as the table reports them. */
+/** What the table reports for each set: the names it leaves out and how many hands stay. */
 let leftOut = null;
+let inPlay = null;
+let total = null;
+/** The tab the sheet opens on: the last one used while the page is open. */
+let tab = "game";
 
 /** The house rules the player has chosen, for the next deal. */
 export function houseRules() {
@@ -64,14 +76,37 @@ function showRules() {
   for (const button of document.querySelectorAll("#hand-set [data-set]")) {
     button.setAttribute("aria-checked", String(button.dataset.set === rules.handSet));
   }
-  const names = leftOut?.[rules.handSet] ?? [];
+  // Each step names only what it adds to the step before (Robin is already out of Pictured).
+  const step = HAND_SETS.indexOf(rules.handSet);
+  const before = new Set(step > 0 ? (leftOut?.[HAND_SETS[step - 1]] ?? []) : []);
+  const names = (leftOut?.[rules.handSet] ?? []).filter((name) => !before.has(name));
   $("#hand-set-note").textContent =
-    rules.handSet === "all" || leftOut === null ? HAND_SET_TEXT[rules.handSet] : `${HAND_SET_TEXT[rules.handSet]} ${names.join(", ")}.`;
-  // Pending: the hand on the table was dealt under another set.
-  const inForce = state.payload?.houseRules?.handSet;
-  $("#hand-set-pending").hidden = inForce === undefined || inForce === rules.handSet;
+    rules.handSet === "all" || names.length === 0
+      ? HAND_SET_TEXT[rules.handSet].replace(/ (Also left|Left) out:$/, "").replace(/:$/, ".")
+      : `${HAND_SET_TEXT[rules.handSet]} ${names.join(", ")}.`;
+  $("#hand-count").textContent = inPlay === null ? "" : `${inPlay[rules.handSet]} of ${total} hands`;
+  // Pending: the hand on the table was dealt under other rules.
+  const inForce = state.payload?.houseRules;
+  const pending =
+    inForce !== undefined &&
+    (inForce.handSet !== rules.handSet ||
+      inForce.goulashNoHalfLimit !== rules.goulashNoHalfLimit ||
+      inForce.winNeedsFish !== rules.winNeedsFish);
+  $("#hand-set-pending").hidden = !pending;
+  $("#rules-dot").hidden = !pending;
   $("#goulash-rule").setAttribute("aria-checked", String(rules.goulashNoHalfLimit));
   $("#fish-rule").setAttribute("aria-checked", String(rules.winNeedsFish));
+}
+
+function showTab(name) {
+  tab = name;
+  for (const button of document.querySelectorAll("#options-tabs [data-tab]")) {
+    const selected = button.dataset.tab === name;
+    button.setAttribute("aria-selected", String(selected));
+    button.tabIndex = selected ? 0 : -1;
+  }
+  for (const id of TABS) $(`#panel-${id}`).hidden = id !== name;
+  $(".options-body").scrollTop = 0;
 }
 
 function showSound() {
@@ -111,8 +146,10 @@ function showOpening() {
 /* The left-out hands are named by the table, never by a list kept here. */
 async function nameHands() {
   try {
-    const { handSets } = await request("/api/house-rules");
-    leftOut = Object.fromEntries(handSets.map((set) => [set.id, set.leftOut]));
+    const offered = await request("/api/house-rules");
+    leftOut = Object.fromEntries(offered.handSets.map((set) => [set.id, set.leftOut]));
+    inPlay = Object.fromEntries(offered.handSets.map((set) => [set.id, set.inPlay]));
+    total = offered.total;
     showRules();
   } catch {
     // The sentence reads without the names.
@@ -145,8 +182,20 @@ export function installOptions({ newGame }) {
     showLargeDiscards();
     showRules();
     void nameHands();
+    showTab(tab);
     $("#options-sheet").hidden = false;
     $("#options-close").focus();
+  });
+  $("#options-tabs").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-tab]");
+    if (button !== null) showTab(button.dataset.tab);
+  });
+  $("#options-tabs").addEventListener("keydown", (event) => {
+    const move = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+    if (move === 0) return;
+    const next = TABS[(TABS.indexOf(tab) + move + TABS.length) % TABS.length];
+    showTab(next);
+    $(`#tab-${next}`).focus();
   });
   $("#options-close").addEventListener("click", closeOptions);
   $("#new-game").addEventListener("click", () => {
