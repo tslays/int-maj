@@ -119,6 +119,24 @@ describe("closest hands", () => {
     assert.deepEqual(closestHands(viewFor(a, "E")), closestHands(viewFor(b, "E")));
   });
 
+  // After discarding to thirteen tiles one tile from Seven Twins, the seat is offered the
+  // Fishing announcement. The panel's chance there was 0% for every hand: the simulation
+  // started as if the seat had to discard again. The chance is that of the seat's next draw,
+  // which comes after the other three seats' turns, so it sits close to the draw-phase figure.
+  it("gives a fishing announcement the chance of the next draw, not zero", () => {
+    const SEVEN_LESS_ONE = "o5 o5 o6 o6 b2 b2 b4 b4 b7 b7 b9 b9 b3";
+    const chanceOf = (phase: "draw" | "announce") => {
+      const state = fixture({ hands: { E: SEVEN_LESS_ONE, ...OTHERS }, wall: LONG_WALL, phase, turn: "E" });
+      const hand = closestHands(viewFor(state, "E"), 100).find((entry) => entry.pattern === "seven-twins");
+      assert.ok(hand, `Seven Twins is in reach in the ${phase} phase`);
+      assert.equal(hand.away, 1);
+      return hand.chance;
+    };
+    const announced = chanceOf("announce");
+    assert.ok(announced > 0.1, `announced chance ${announced}`);
+    assert.ok(Math.abs(announced - chanceOf("draw")) < 0.12, "close to the draw-phase chance");
+  });
+
   // Reported by a player: holding Crazy Chows one tile from complete, the panel said "4 to go"
   // (and "3 to go" with the drawn tile in hand). The hand has far more versions than the
   // sample the panel then used, and the player's own version was not in it.
