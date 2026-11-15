@@ -109,6 +109,13 @@ export interface HandPattern {
    */
   readonly companionUnillustrated?: boolean;
   /**
+   * True for the special hands built only from chows, pungs or runs with free
+   * numbers spread over mixed suits, with no wind, dragon or number required:
+   * nearly any deal is halfway to one. The "Rare" hand set leaves these out
+   * (a house rule, rules/RULES.md Part III §5; docs/BALANCE.md).
+   */
+  readonly easyMixed?: boolean;
+  /**
    * For a scoring variant: the id of the canonical hand it is another reading
    * of. The variant shares that hand's card; see `scoringWhen`.
    */

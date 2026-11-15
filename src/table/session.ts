@@ -99,10 +99,24 @@ export function houseRulesOf(state: GameState): HouseRules {
   const excluded = state.excludedHands ?? [];
   const has = (set: HandSet) => HAND_SET_EXCLUDED[set].every((id) => excluded.includes(id));
   return {
-    handSet: has("companion-pictured") ? "companion-pictured" : has("companion") ? "companion" : "all",
+    handSet: has("rare") ? "rare" : has("companion-pictured") ? "companion-pictured" : has("companion") ? "companion" : "all",
     goulashNoHalfLimit: excluded.includes(GOULASH_NO_HALF_LIMIT),
     winNeedsFish: excluded.includes(WIN_NEEDS_FISH),
   };
+}
+
+const TIER_NAMES: Readonly<Record<string, string>> = { half: "half limit", limit: "limit", middle: "middle limit", double: "double limit" };
+
+/**
+ * A left-out hand's name. A scoring variant shares its card's name, so it is
+ * told apart by its tier: "Big Robert (half limit)" while the limit Big Robert
+ * stays in play.
+ */
+function leftOutName(id: string): string {
+  const pattern = PATTERN_BY_ID.get(id);
+  if (pattern === undefined) return id;
+  if (pattern.variantOf === undefined) return pattern.name;
+  return `${pattern.name} (${TIER_NAMES[pattern.tier] ?? pattern.tier})`;
 }
 
 /** The house rules on offer: each hand set with the names of the hands it leaves out. */
@@ -112,7 +126,7 @@ export function houseRulesPayload(): {
   return {
     handSets: HAND_SETS.map((id) => ({
       id,
-      leftOut: HAND_SET_EXCLUDED[id].map((hand) => PATTERN_NAMES.get(hand) ?? hand),
+      leftOut: HAND_SET_EXCLUDED[id].map(leftOutName),
     })),
   };
 }

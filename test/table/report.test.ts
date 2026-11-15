@@ -123,10 +123,23 @@ describe("house rules at the table", () => {
     const offered = (await api.request("/api/house-rules")) as {
       handSets: { id: string; leftOut: string[] }[];
     };
-    assert.deepEqual(offered.handSets.map((set) => set.id), ["all", "companion", "companion-pictured"]);
-    assert.deepEqual(offered.handSets.map((set) => set.leftOut.length), [0, 3, 12]);
+    assert.deepEqual(offered.handSets.map((set) => set.id), ["all", "companion", "companion-pictured", "rare"]);
+    assert.deepEqual(offered.handSets.map((set) => set.leftOut.length), [0, 3, 12, 16]);
     assert.ok(offered.handSets[1]!.leftOut.includes("Mixed Pung"));
     assert.ok(offered.handSets[2]!.leftOut.includes("Robin"));
+    assert.ok(offered.handSets[3]!.leftOut.includes("Crazy Chows"));
+    assert.ok(offered.handSets[3]!.leftOut.includes("Big Robert (half limit)"), "only the mixed-numbers reading");
+    assert.ok(!offered.handSets[3]!.leftOut.includes("Big Robert"));
+
+    const rare = (await api.request("/api/new", {
+      seed: "house-1",
+      houseRules: { ...PICTURED, handSet: "rare" },
+    })) as typeof dealt;
+    assert.equal(rare.houseRules.handSet, "rare", "read back from the dealt state");
+    assert.deepEqual(
+      [...rare.view.excludedHands].sort(),
+      [...ILLUSTRATED, ...UNPICTURED, "big-robert-mixed", "crazy-chows", "little-robert", "three-philosophers"].sort(),
+    );
   });
 
   it("bars half-limit hands in a Goulash unless the table turns it off (C p. 55)", async () => {
