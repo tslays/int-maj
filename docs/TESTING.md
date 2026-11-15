@@ -8,7 +8,7 @@ is new, what to try, how to report and what the app cannot do yet.
 
 <!-- guide:start -->
 
-# Mah Jong — test version alpha.8
+# Mah Jong — test version alpha.9
 
 **Play here:** https://int.mah-jong.workers.dev
 
@@ -18,58 +18,55 @@ International mahjong in your browser, against three bots, by the rules of
 ## Getting the new version
 
 Open the link (or the app on your home screen) and reload it once. The
-small label under the menu, top left, should read **alpha.8**. A game in progress carries on. If an update changes the game, the
+small label under the menu, top left, should read **alpha.9**. A game in progress carries on. If an update changes the game, the
 hand you were playing starts again with the scores kept.
 
 **New to the app?** On an iPhone open the link in Safari, tap Share, then
 *Add to Home Screen*, and play it from the home-screen icon with the phone
 turned sideways. Everything else, the app shows you: Options › **Help**.
 
-## New in alpha.8
+## New in alpha.9
 
-- **Counter sticks fly across the table** when a hand is paid: coloured
-  sticks thrown from each payer to the winner, landing with a wooden click
-  while the scores count up. A tap skips them.
-- **The Fishing button names the hand** you are fishing for. Tiles that win
-  only on your own draw are faded and marked *own draw only*.
-- **Clearer hints:** the hand sheet says when you need *one more* of a tile
-  you already hold, and which other tile would do instead.
-- **Bigger melds:** your own claimed sets get a second and third row instead
-  of shrinking.
-- **Scoring checked line by line against the book.** Some ordinary hands
-  now score differently (see below).
-- **Big Robert** is one card in the index of all hands, with both scorings.
-- A quieter **Goulash banner**; the explanation is in the first-game tip.
+- **Closest hands show how likely each hand is,** not how many tiles are
+  missing. A ring fills and brightens from *Long shot* to *Very likely*,
+  worked out only from the tiles you can see. A small arrow marks a hand
+  that moved since your last move. It is a guide, not advice: a long shot at
+  a big hand can still be worth playing.
+- **Tap a hand** to see its band named and how many copies of each tile you
+  need are still unseen. In **All hands**, *Order › Likeliest for my tiles*
+  sorts by it.
+- **The result card shows a winning hand's real groups:** a mixed chow
+  stays together and reads 2-3-4.
+- **Cleaner screens on a phone:** the claim buttons step aside in the
+  top-down view of the discards, and a long row of tiles stays inside the
+  result card.
+- **Big Robert's card** shows both values in its corner, like "500/1,000".
 
 ## Fixed thanks to your reports
 
 Thank you for your report. From the last round:
 
-- *"I should have got Mah Jong for Grand Sequence."* You were right. The two
-  extra tiles of Grand Sequence pair with tiles of the run, as the book's
-  picture shows, not a separate pair of any suit. That hand now wins, the
-  hints count it correctly, and the Fishing button says when a tile only
-  wins on your own draw.
+- *"For recent wins with mixed chows (Crazy Chows, Three Philosophers) the
+  winning hand shows the tiles sorted by suit. It doesn't show the mixed
+  chows."* You were right. The result card now shows each group of the hand
+  together, so a mixed chow reads 2-3-4.
 
 ## What works differently now
 
-- **Ordinary-hand scores:** a pung completed by a discard counts as exposed;
-  no double counts twice; East's first discard, the only-possible chow and
-  robbing a kong now earn their bonus; if your tiles can be read more than
-  one way, the best reading is paid.
-- **Grand Sequence** is easier to complete than before.
-- Options › *Dice and dealing* is now **Table animations**; Skip also skips
-  the counter sticks.
+- The hints panel no longer counts tiles to go; it shows how likely each
+  hand is.
+- The index of all hands can be sorted by that likelihood.
 
 ## What to try, and tell us
 
-- Win a few hands and watch the **counter sticks**. Fun, or too long?
-  Can you follow who paid whom?
-- When you are offered **Fishing**, does the button make clear which hand
-  and which tiles?
-- Check a few **scores** on the result card. Anything that looks wrong
-  against your own reckoning, please report it.
-- Claim three or four sets: do your **melds** stay easy to read?
+- Look at the **rings** in Closest hands. Is it clear what they mean? Does
+  the likelihood match how your hand feels as you play? Does it help you
+  choose what to throw?
+- Open a hand's sheet and the **All hands** index: is the *Order* choice
+  useful?
+- Win with a mixed chow (Crazy Chows, Three Philosophers) and check the
+  **result card** reads right.
+- Look at the discards from above: do you miss the claim buttons there?
 - Anything that broke, looked wrong or surprised you.
 
 ## How to report
@@ -99,16 +96,16 @@ as a message instead.
 
 <!-- whatsapp:start -->
 
-🀄 **Mah Jong test version alpha.8 is out!**
+🀄 **Mah Jong test version alpha.9 is out!**
 
 Play: https://int.mah-jong.workers.dev (reload once to update)
 
-New: counter sticks fly across the table when a hand is paid, the Fishing
-button names your hand, clearer hints, bigger melds, and scoring checked
-line by line against the book. Grand Sequence now wins as it should, thanks
-to your report!
+New: the Closest hands panel now shows how *likely* each hand is (a ring
+from "Long shot" to "Very likely") instead of counting tiles. Also: the result
+card shows winning hands in their real groups, so mixed chows read right
+(thanks for your report!), and a few cleaner screens on phones.
 
-What's new, what we fixed and what to try is in the attached guide. Found
-something odd? Options › Report a problem.
+I'd love to hear whether the new rings make sense and help you choose. The
+guide is attached. Found something odd? Options › Report a problem.
 
 <!-- whatsapp:end -->
