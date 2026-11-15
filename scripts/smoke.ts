@@ -28,7 +28,7 @@ import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import type { Browser, Page } from "playwright";
+import type { Browser, BrowserContextOptions, Page } from "playwright";
 
 import { newGame } from "../src/core/game/index.ts";
 import type { Seat } from "../src/core/game/index.ts";
@@ -260,8 +260,12 @@ function seedWithDealer(dealer: Seat): string {
 }
 
 /** A page that fails the run on any script error or console error. */
-async function openPage(browser: Browser, errors: string[]): Promise<Page> {
-  const context = await browser.newContext({ viewport: VIEWPORT, hasTouch: true });
+async function openPage(
+  browser: Browser,
+  errors: string[],
+  options: BrowserContextOptions = { viewport: VIEWPORT, hasTouch: true },
+): Promise<Page> {
+  const context = await browser.newContext(options);
   const page = await context.newPage();
   page.on("pageerror", (error) => errors.push(`page error: ${error.message}`));
   page.on("console", (message) => {
@@ -747,6 +751,43 @@ async function opening(browser: Browser, origin: string, shots: string | null): 
   }
 }
 
+/**
+ * A first visit on an iPhone, held upright: the turn-your-phone screen with
+ * its install steps shows, and the welcome card waits. Turned sideways, the
+ * card appears; turned back, it steps aside, and the turn screen returns.
+ */
+async function welcomeCard(browser: Browser, origin: string, shots: string | null): Promise<void> {
+  const errors: string[] = [];
+  const page = await openPage(browser, errors, {
+    viewport: { width: VIEWPORT.height, height: VIEWPORT.width },
+    isMobile: true,
+    hasTouch: true,
+    userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1",
+  });
+  await page.goto(`${origin}/`);
+  await page.waitForSelector('.rotate [data-guide="ios"]', { state: "visible", timeout: READY_MS });
+  assert.equal(await page.locator(".welcome").count(), 0, "welcome: no card while the phone is upright");
+  if (shots !== null) await page.screenshot({ path: join(shots, "welcome-upright.png") });
+
+  await page.setViewportSize(VIEWPORT);
+  await page.waitForSelector(".welcome", { state: "visible", timeout: READY_MS });
+  await page.waitForSelector(".rotate", { state: "hidden", timeout: READY_MS });
+  if (shots !== null) await page.screenshot({ path: join(shots, "welcome-landscape.png") });
+
+  await page.setViewportSize({ width: VIEWPORT.height, height: VIEWPORT.width });
+  await page.waitForSelector(".welcome", { state: "hidden", timeout: READY_MS });
+  await page.waitForSelector('.rotate [data-guide="ios"]', { state: "visible", timeout: READY_MS });
+
+  await page.setViewportSize(VIEWPORT);
+  await page.waitForSelector(".welcome", { state: "visible", timeout: READY_MS });
+  await page.click("#welcome-play");
+  await page.waitForSelector(".welcome", { state: "detached", timeout: READY_MS });
+  await yourMove(page);
+  assert.deepEqual(errors, [], "welcome: no errors");
+  await page.context().close();
+  console.log("  ok  the welcome card waits for landscape, and never covers the turn-your-phone screen");
+}
+
 function option(argv: readonly string[], name: string): string | undefined {
   const index = argv.indexOf(name);
   return index >= 0 ? argv[index + 1] : undefined;
@@ -777,6 +818,8 @@ try {
   await playThrough(browser, origin, shots);
   console.log("The opening of a hand");
   await opening(browser, origin, shots);
+  console.log("The first visit on a phone");
+  await welcomeCard(browser, origin, shots);
   console.log("Smoke test passed.");
 } catch (error) {
   failed = true;
