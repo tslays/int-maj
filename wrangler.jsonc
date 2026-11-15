@@ -25,6 +25,8 @@
   },
   // Five reports a minute from one address.
   "ratelimits": [{ "name": "REPORT_LIMIT", "namespace_id": "1001", "simple": { "limit": 5, "period": 60 } }],
+  // A report's optional photos (up to three), kept private (no public access on the bucket).
+  "r2_buckets": [{ "binding": "REPORT_PHOTOS", "bucket_name": "int-maj" }],
   "env": {
     "dev": {
       "name": "int-dev",
@@ -38,7 +40,8 @@
       "vars": {
         "REPORT_REPO": "tslays/int-maj"
       },
-      "ratelimits": [{ "name": "REPORT_LIMIT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }]
+      "ratelimits": [{ "name": "REPORT_LIMIT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }],
+      "r2_buckets": [{ "binding": "REPORT_PHOTOS", "bucket_name": "int-maj" }]
     }
   }
 }

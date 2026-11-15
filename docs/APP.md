@@ -517,7 +517,16 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   `npm run replay` unpacks it. The endpoint takes only a same-origin post of
   one well-formed report of at most 300 000 characters, five a minute per
   address, and needs the Worker secret `REPORT_GITHUB_TOKEN`
-  (`docs/WORKFLOW.md`, "Problem reports"). When the post fails (offline, or
+  (`docs/WORKFLOW.md`, "Problem reports"). The sheet may carry up to
+  three photos (`MAX_PHOTOS`, `app/src/photo.js`). Each is drawn at most 1024
+  pixels on its longer side and re-encoded as a JPEG, which drops its location
+  and camera details. The Worker checks that each is a JPEG of at most 1 MB
+  (`src/worker/photo.ts`), checks all of them before it keeps any, keeps each
+  in the private R2 bucket `int-maj` under its own random key (`REPORT_PHOTOS`),
+  and the issue names only those keys, in order. The photos are sent in the
+  same post as the report, as a `photos` list; if one cannot be stored, the
+  ones already stored are removed and nothing is filed. The share fallback sends the text only. When
+  the post fails (offline, or
   no token on that site, as under `npm run dev`) the sheet says so and offers
   "Share it instead": `navigator.share` (the iOS share sheet) or, where that
   is missing or fails, the clipboard with a toast.
