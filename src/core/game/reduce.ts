@@ -403,6 +403,7 @@ function applyGoulashExchange(
   }
 
   const stage = draft.goulashStage ?? 0;
+  const received: Partial<Record<Seat, string[]>> = {};
   for (const [a, b] of GOULASH_PAIRS[stage]!) {
     const pickedA = picks[a]!;
     const pickedB = picks[b]!;
@@ -414,6 +415,8 @@ function applyGoulashExchange(
     handB.push(...pickedA);
     handA.splice(0, handA.length, ...sortKeys(handA));
     handB.splice(0, handB.length, ...sortKeys(handB));
+    received[a] = [...pickedB];
+    received[b] = [...pickedA];
     emit({
       type: "GoulashExchanged",
       stage,
@@ -421,6 +424,7 @@ function applyGoulashExchange(
       b: { seat: b, tiles: [...pickedB] },
     });
   }
+  draft.goulashLast = { stage, received };
 
   if (stage < 2) {
     draft.goulashStage = (stage + 1) as 1 | 2;
