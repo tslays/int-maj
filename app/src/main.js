@@ -14,6 +14,7 @@ import { playOpening } from "./ceremony.js";
 import { openingPref } from "./opening.js";
 import { clearSelection, goulashKeys, installInput, resetGoulash } from "./input.js";
 import { refreshGoulash } from "./goulash.js";
+import { receivedPlan } from "./received.js";
 import { refreshHints } from "./hints.js";
 import { warmIndex } from "./handbook.js";
 import { installMenu } from "./menu.js";
@@ -83,32 +84,14 @@ async function callOut(seat, word, hold = 700) {
 
 let previousFishing = new Set();
 
-/** Tiles in `after` beyond those in `before`, one key per extra copy. */
-function addedKeys(before, after) {
-  const left = [...before];
-  const added = [];
-  for (const key of after) {
-    const at = left.indexOf(key);
-    if (at >= 0) left.splice(at, 1);
-    else added.push(key);
-  }
-  return added;
-}
-
 /**
- * The tiles a Goulash exchange brought in stay marked (#119) until the next
- * exchange replaces them or the first tile of the hand is thrown.
+ * The tiles a Goulash exchange brought in stay marked (#119, #163) until the
+ * next exchange replaces them or the first tile of the hand is thrown.
  */
 function markReceivedTiles(before, next) {
-  const view = next.view;
-  const sameHand = before !== null && before.game === next.game && before.view.handNumber === view.handNumber;
-  if (!sameHand || next.table.some((seat) => seat.discards.length > 0)) {
-    board.clearReceived();
-    return;
-  }
-  if (before.view.phase !== "exchange") return;
-  const added = addedKeys(before.view.player.hand, view.player.hand);
-  if (added.length > 0) board.markReceived(added);
+  const plan = receivedPlan(before, next);
+  if (plan === "clear") board.clearReceived();
+  else if (plan !== null) board.markReceived(plan);
 }
 
 /** Hand an answer to the board; announce calls; wait for the animation. */

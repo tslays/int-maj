@@ -179,6 +179,15 @@ export interface GameState {
   readonly goulashStage?: 0 | 1 | 2;
   /** Picks already submitted in the current Goulash exchange. */
   readonly goulashPicks?: Partial<Record<Seat, readonly string[]>>;
+  /**
+   * The last Goulash exchange completed this hand, and the tiles each seat
+   * received in it (#163). Kept so the table marks exactly what came in, not a
+   * guess from the hand. Cleared at the deal.
+   */
+  readonly goulashLast?: {
+    readonly stage: 0 | 1 | 2;
+    readonly received: Partial<Record<Seat, readonly string[]>>;
+  };
   /** A drawn Western hand repeats the dealer only once. */
   readonly drawRepeatUsed?: boolean;
   /** Ground bonus (d), I p. 24: the seat that claimed East's first discard. */

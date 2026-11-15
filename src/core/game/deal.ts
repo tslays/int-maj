@@ -74,6 +74,7 @@ export function dealHand(
   draft.ledger = [];
   draft.lastDraw = null;
   draft.result = null;
+  delete draft.goulashLast;
 
   // Four tiles at a time for three rounds (12 each), then one each, then
   // East's extra tile: East starts at 14 and discards first (I p. 18).
