@@ -207,8 +207,8 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   "Show tips again" brings them back, review boards show none; and the
   welcome card before the first deal on a device, offering the guide, which
   a review board or a `?seed=` link skips), `options.js` (the
-  Options sheet: the Sound switch, the Large discards switch (phones only), the Discards choice (Rows or Pile), the Pace choice, the Bot level, the house rules, and the Help and Report
-  buttons) and `report.js` (report a problem). Modules that need the loop (`input`,
+  Options sheet in three tabs: Game (Bot level, Pace, Table animations), Table (Sound, Large discards on phones, Discards Rows or Pile) and Rules (the house rules), with New game, Help and Report
+  under every tab) and `report.js` (report a problem). Modules that need the loop (`input`,
   `result`, `menu`) get its functions from `main.js` through an `installX`
   call, so imports never run in a circle.
 - `app/src/standings.js` ranks the seats by total score for the final standings
@@ -480,15 +480,20 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   (`version`, `stage`, `id`) and `BUILD_LABEL`; import it to put the build in
   a problem report. Unbuilt, the label reads `dev · local`.
 - **Options and house rules.** The menu's Options button opens a sheet with
-  the Sound switch, the Pace choice (Slower, Normal, Faster), the Bot level (Easy, Medium, Hard), the house rules, and the Help and Report buttons (their
-  sheets open on top of it). The Bot level is a device preference too (`int-maj.level`, `app/src/level.js`, Medium by default): it is sent as `level` with every `/api/step`, so it takes effect with the bots' next move; the decision is recorded as a step, so undo, Play again and a saved game never depend on it. Pace is a device preference (`int-maj.pace`, `app/src/pace.js`): `pace.scale(ms)` multiplies every bot beat, call-out hold, tile animation and animation-timed sound delay (Normal 1, Slower 1.5, Faster 0.6); ambient and camera animations stay fixed, and the engine never sees it. A house rule is a preference kept on the device
+  three tabs, Game, Table and Rules, and the New game, Help and Report buttons
+  under every tab (their sheets open on top of it). It reopens on the last
+  tab used while the page is open, and keeps one height so a tab never jumps. The Bot level is a device preference too (`int-maj.level`, `app/src/level.js`, Medium by default): it is sent as `level` with every `/api/step`, so it takes effect with the bots' next move; the decision is recorded as a step, so undo, Play again and a saved game never depend on it. Pace is a device preference (`int-maj.pace`, `app/src/pace.js`): `pace.scale(ms)` multiplies every bot beat, call-out hold, tile animation and animation-timed sound delay (Normal 1, Slower 1.5, Faster 0.6); ambient and camera animations stay fixed, and the engine never sees it. A house rule is a preference kept on the device
   (`int-maj:house-rules`); `houseRules()` in `options.js` is sent with every
   `/api/new` and `/api/next`, and the table fixes a hand's rules at its deal
-  (`GameState.excludedHands`), so a change made mid-hand reads "Takes effect
-  with the next hand" until then. Every payload carries the rules in force
-  (`houseRules`), `/api/house-rules` names the hands each hand set leaves out, and a
-  problem report carries the rules so it replays. There are three rules: which hands are in play
-  (all, the Companion's, or the Companion's with sample pictures), and the
+  (`GameState.excludedHands`), so a change made mid-hand shows "Changes start
+  next hand" in the header and an amber light on the Rules tab until then.
+  Every payload carries the rules in force (`houseRules`), `/api/house-rules`
+  names the hands each hand set leaves out and counts the hands it keeps (as
+  the hand index counts them), and a problem report carries the rules so it
+  replays. There are three rules: which hands are in play, a filter of four
+  steps that each leave out more (All, Companion, Pictured, and our own Rare,
+  which drops the easy mixed-suit hands, `docs/BALANCE.md`); the note under it
+  names only what the chosen step adds; and the
   switch "No half-limit hands in a Goulash" (C p. 55, on by default; it rides
   in `excludedHands` as the token `rule:goulash-no-half-limit`, read by
   `exclusionsOf` in `src/core/game/hands.ts`), and "Announce fishing to win"
@@ -496,7 +501,7 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   seat that has shown the fish carries a small fish beside its wind on the
   middle console (`drawFish` in `stage.js`). For the hand set, see
   `rules/RULES.md` Part III §5. Hand values are the Companion's in every set;
-  in the two Companion sets the hand sheet and result card name only Companion
+  in the three Companion sets (Companion, Pictured, Rare) the hand sheet and result card name only Companion
   pages (`pages.js`) and the payment explanations drop their Illustrated page
   citations (`explainSettlement({ cite: false })`).
 - **Report a problem.** The Report button in Options (accessible name "Report a

@@ -1,7 +1,7 @@
 # Balance: the easy special hands, and the "Rare" hand set
 
-Status: **the Rare hand set is built in the engine and the table service;
-the Options sheet redesign that offers it is next (§7).** The owner wanted a
+Status: **the Rare hand set is built, and offered on the redesigned Options
+sheet (§7).** The owner wanted a
 house rule that lets a player explore the special-hand catalogue without the
 bots going out early on a handful of easy hands (2026-11-15), and decided on
 2026-11-15: these five hands, the name "Rare" as the narrowest step of
@@ -140,24 +140,27 @@ it back (`src/table/session.ts`), and the left-out list names the variant
 printed examples score nothing under Rare, and the hands are no wait, hint or
 bot plan), `test/table/report.test.ts`, `test/table/api.test.ts`.
 
-## 7. The Options sheet redesign (next, visual)
+## 7. The Options sheet redesign
 
-On a phone in landscape the sheet is already taller than the screen: the
-House rules group starts below the fold, and a fourth hand set and its
-left-out list make it longer. The redesign:
+On a phone in landscape the old two-column sheet was taller than the screen,
+and the house rules started below the fold. The sheet now has three tabs
+(Game, Table, Rules), one height for all of them, and New game, Help and
+Report under every tab.
 
-- Tabs across the top, like the Guide: **Game** (bot level, pace, table
-  animations), **Table** (sound, large discards, discard layout), **Rules**
-  (house rules). Each tab fits a landscape phone without scrolling.
-- **Rules**: "Hands in play" as a four-step control, All, Companion,
-  Pictured, Rare, with a count ("73 of 89 hands") and the left-out names
-  under it; then "Rules of play" with the Goulash and fishing switches, and
-  one "Takes effect with the next hand" note.
-- New game, Install app, Help and Report a problem stay one row at the
-  bottom, on every tab.
+- **Hands in play** is a filter of four steps, All, Companion, Pictured,
+  Rare, each leaving out more, with a count of the hands that stay ("73 of 88
+  hands", as the hand index counts them). The note names only what the chosen
+  step adds, so Robin, already out of Pictured, is not named again under
+  Rare. Rare's note says it is our own rule and why: the easy hands nearly
+  any deal is halfway to are out, so the rarer ones are worth chasing.
+- **Rules of play**: the Goulash switch, and "Announce fishing to win",
+  described as our own rule: you go out only after announcing you need one
+  tile, so no win comes without warning.
+- A rule changed mid-hand shows "Changes start next hand" in the header and
+  an amber light on the Rules tab.
 
-`app/index.html`, `app/src/options.js`, `app/styles.css`; `npm run smoke`;
-checked by the owner on the preview before merging.
+On a landscape phone the Rules tab scrolls a little when Rare is chosen;
+Game and Table fit.
 
 ## 8. Still to measure
 
