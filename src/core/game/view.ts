@@ -101,6 +101,11 @@ export interface GameView {
   /** During a Goulash: which of the three exchanges, and your partner in it. */
   readonly goulash: { readonly stage: 0 | 1 | 2; readonly partner: Seat } | null;
   /**
+   * The last Goulash exchange this hand, and the tiles you received in it
+   * (your own tiles only, in the order passed). Null before any exchange.
+   */
+  readonly goulashReceived: { readonly stage: 0 | 1 | 2; readonly tiles: readonly string[] } | null;
+  /**
    * House rules: hands this hand is played without (public, the same for
    * every seat), by id or as a tier (`tierExclusion`, e.g. half limit in a
    * Goulash). Pass it to the matcher as `excluded`.
@@ -186,6 +191,10 @@ export function viewFor(state: GameState, seat: Seat): GameView {
       state.phase === "exchange"
         ? { stage: state.goulashStage ?? 0, partner: goulashPartner(state.goulashStage ?? 0, seat) }
         : null,
+    goulashReceived:
+      state.goulashLast === undefined
+        ? null
+        : { stage: state.goulashLast.stage, tiles: [...(state.goulashLast.received[seat] ?? [])] },
     excludedHands: [...exclusionsOf(state)],
     winNeedsFish: hasRule(state, WIN_NEEDS_FISH),
   };
