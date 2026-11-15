@@ -237,12 +237,10 @@ function button(label, kind, onClick, tiles = [], drawOnly = [], hand = "") {
   const selfDrawTiles = tiles.filter((key) => drawOnly.includes(key));
   if (selfDrawTiles.length > 0) {
     element.classList.add("act-warned");
+    // The tab is the warning sign alone; the words sit once, on the note after the tiles.
     const warning = document.createElement("span");
     warning.className = "act-warn";
     warning.innerHTML = WARN_ICON;
-    const words = document.createElement("span");
-    words.textContent = selfDrawTiles.length === tiles.length ? "Self-draw only" : "Some tiles: self-draw only";
-    warning.append(words);
     element.append(warning);
   }
   if (label !== "") {
