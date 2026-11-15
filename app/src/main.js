@@ -223,26 +223,14 @@ function hideChoices() {
   hideTip();
 }
 
-/** The warning glyph on a self-draw tab: a dark triangle with an amber mark (CSS: `.act-warn`). */
-const WARN_ICON =
-  '<svg viewBox="0 0 24 22" aria-hidden="true"><path d="M12 1 L23.5 21 H0.5 Z" fill="currentColor"/>' +
-  '<path class="bang" d="M12 7.5 V14.5 M12 17 V18.2" fill="none" stroke-width="2.6" stroke-linecap="round"/></svg>';
-
 function button(label, kind, onClick, tiles = [], drawOnly = [], hand = "") {
   const element = document.createElement("button");
   element.type = "button";
   element.className = `act act-${kind}`;
-  // A wait that wins only from your own draw (Buried Treasure and kin) gets a warning tab on the top edge,
-  // so nobody fishes for it by accident: a discard of that tile is no win.
+  // A wait that wins only from your own draw (Buried Treasure and kin) says so in a capsule after the
+  // tiles, so nobody fishes for it by accident: a discard of that tile is no win.
   const selfDrawTiles = tiles.filter((key) => drawOnly.includes(key));
-  if (selfDrawTiles.length > 0) {
-    element.classList.add("act-warned");
-    // The tab is the warning sign alone; the words sit once, on the note after the tiles.
-    const warning = document.createElement("span");
-    warning.className = "act-warn";
-    warning.innerHTML = WARN_ICON;
-    element.append(warning);
-  }
+  const mixed = selfDrawTiles.length > 0 && selfDrawTiles.length < tiles.length;
   if (label !== "") {
     const text = document.createElement("span");
     text.textContent = label;
@@ -260,15 +248,15 @@ function button(label, kind, onClick, tiles = [], drawOnly = [], hand = "") {
     row.className = "act-tiles";
     for (const key of tiles) {
       const chip = faceChip(key);
-      if (drawOnly.includes(key)) chip.classList.add("chip-draw");
+      // Fade only when some waits win from a discard and some do not: the fade tells them apart.
+      if (mixed && drawOnly.includes(key)) chip.classList.add("chip-draw");
       row.append(chip);
     }
     element.append(row);
-    // A wait tile that wins only from your own draw says so: a discard of it is no win.
     if (selfDrawTiles.length > 0) {
       const note = document.createElement("small");
       note.className = "act-note";
-      note.textContent = selfDrawTiles.length === tiles.length ? "self-draw only" : "faded: self-draw only";
+      note.textContent = mixed ? "faded: self-draw only" : "self-draw only";
       element.append(note);
     }
   }
