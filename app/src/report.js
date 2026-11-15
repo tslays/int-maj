@@ -5,6 +5,7 @@
  */
 
 import { BUILD } from "./build-info.js";
+import { preparePhoto } from "./photo.js";
 import { $, state, toast } from "./shared.js";
 
 const SEND_TIMEOUT_MS = 15000;
@@ -16,9 +17,15 @@ const note = $("#report-note");
 const sendButton = $("#report-send");
 const shareButton = $("#report-share");
 const status = $("#report-status");
+const photoInput = $("#report-photo-input");
+const photoAdd = $("#report-photo-add");
+const photoRemove = $("#report-photo-remove");
+const photoPreview = $("#report-photo-preview");
 
 let sending = false;
 let closing = 0;
+/** The picture to send with the report: its base64 JPEG and a preview address. */
+let photo = null;
 
 /* The keyboard does not resize the page on an iPhone, it covers it: only the
    visual viewport says what is still in sight. The sheet is kept on exactly
@@ -65,18 +72,55 @@ function reportText() {
   });
 }
 
-/** Post the report; resolves to the answer, or null when it did not arrive. */
+function showPhoto() {
+  photoAdd.hidden = photo !== null;
+  photoRemove.hidden = photo === null;
+  photoPreview.hidden = photo === null;
+  photoPreview.src = photo === null ? "" : photo.url;
+}
+
+function clearPhoto() {
+  if (photo !== null) URL.revokeObjectURL(photo.url);
+  photo = null;
+  showPhoto();
+}
+
+/** The picture the tester chose, made small enough to send; a refusal says why. */
+async function choosePhoto() {
+  const file = photoInput.files?.[0];
+  photoInput.value = "";
+  if (file === undefined) return;
+  say("Preparing the photo...");
+  const prepared = await preparePhoto(file);
+  if (prepared === null) {
+    say("That is not a picture the report can take, even made smaller.", true);
+    return;
+  }
+  clearPhoto();
+  photo = { base64: prepared.base64, url: URL.createObjectURL(prepared.blob) };
+  say("");
+  showPhoto();
+}
+
+/**
+ * Post the report, with the picture when there is one. Resolves to the answer:
+ * the server's own refusal (with its `error`), or null when it did not arrive.
+ */
 async function post(text) {
   const abort = new AbortController();
   const timer = setTimeout(() => abort.abort(), SEND_TIMEOUT_MS);
   try {
+    const body = photo === null ? { report: text } : { report: text, photo: photo.base64 };
     const response = await fetch("api/report", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ report: text }),
+      body: JSON.stringify(body),
       signal: abort.signal,
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      const refusal = await response.json().catch(() => ({}));
+      return { ok: false, error: typeof refusal.error === "string" ? refusal.error : "" };
+    }
     return await response.json();
   } catch {
     return null;
@@ -102,17 +146,26 @@ async function send() {
   if (sheet.hidden) {
     // Closed while it was on its way: say how it ended where it can be seen.
     toast(answer?.ok ? "Report sent. Thank you." : "The report could not be sent.");
-    if (answer?.ok) note.value = "";
+    if (answer?.ok) {
+      note.value = "";
+      clearPhoto();
+    }
     return;
   }
   if (answer?.ok) {
     note.value = "";
+    clearPhoto();
     note.blur();
     say(typeof answer.number === "number" ? `Sent as report #${answer.number}. Thank you.` : "Sent. Thank you.");
     closing = setTimeout(closeReport, 2200);
     return;
   }
-  say("It could not be sent. Check your connection and tap Send again, or share it as a message.", true);
+  // A refusal from the site says what to fix (a photo too large, say); a lost connection does not.
+  if (answer?.error) {
+    say(`It could not be sent: ${answer.error}.`, true);
+  } else {
+    say("It could not be sent. Check your connection and tap Send again, or share it as a message.", true);
+  }
   shareButton.hidden = false;
 }
 
@@ -146,6 +199,12 @@ sheet.addEventListener("click", (event) => {
 });
 sendButton.addEventListener("click", send);
 shareButton.addEventListener("click", share);
+photoAdd.addEventListener("click", () => photoInput.click());
+photoInput.addEventListener("change", () => void choosePhoto());
+photoRemove.addEventListener("click", () => {
+  clearPhoto();
+  say("");
+});
 note.addEventListener("keydown", (event) => {
   // The note is one line, so the keyboard's return key sends it.
   if (event.key === "Enter" && !event.isComposing) {

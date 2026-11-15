@@ -1860,6 +1860,27 @@ button.detail-rule {
 #report-share {
   margin-top: 8px;
 }
+.report-photo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+/* The file input is chosen through its button, so it is kept out of sight. */
+.report-photo-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.report-photo-preview {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+}
 .report-fine {
   margin-top: 8px;
   color: var(--muted);

@@ -6,11 +6,20 @@
  * The endpoint is public, so it only accepts what the app sends: a same-origin
  * JSON post holding one well-formed report of bounded size, a few per minute
  * per address. The issue shows the report inside a code block, so nothing in
- * a note can mention a user or draw markup.
+ * a note can mention a user or draw markup. A report may carry one photo; it
+ * is kept in a private store under a random key, and the issue names only
+ * that key.
  */
 
 import { parseReport } from "../table/report.ts";
 import { packReport } from "./pack.ts";
+import { MAX_PHOTO_BASE64, decodePhoto } from "./photo.ts";
+
+/** The private store of report photos: an R2 bucket, bound as `REPORT_PHOTOS`. */
+export interface PhotoStore {
+  put(key: string, bytes: Uint8Array<ArrayBuffer>, options: { httpMetadata: { contentType: string } }): Promise<unknown>;
+  delete(key: string): Promise<unknown>;
+}
 
 export interface ReportEnv {
   /** A GitHub token that may write issues in `REPORT_REPO`; a Worker secret. */
@@ -19,6 +28,8 @@ export interface ReportEnv {
   readonly REPORT_REPO?: string;
   /** Cloudflare's rate limiter, where it is bound. */
   readonly REPORT_LIMIT?: { limit(options: { key: string }): Promise<{ success: boolean }> };
+  /** Where a report's photo is kept, where it is bound. Private: nothing reads it back over HTTP. */
+  readonly REPORT_PHOTOS?: PhotoStore;
 }
 
 /** The largest report accepted, about forty hands: packed, it still fits an issue. */
@@ -39,8 +50,15 @@ function header(text: string, name: string): string {
   return match?.[1]?.trim() ?? "";
 }
 
-/** The issue for one report text; a report longer than `maxPlain` is packed. */
-export async function issueFor(report: string, maxPlain = MAX_PLAIN): Promise<{ title: string; body: string }> {
+/**
+ * The issue for one report text; a report longer than `maxPlain` is packed.
+ * A `photoKey` names the report's photo in the private store.
+ */
+export async function issueFor(
+  report: string,
+  maxPlain = MAX_PLAIN,
+  photoKey?: string,
+): Promise<{ title: string; body: string }> {
   // A code block ends at a backtick fence, and a report has no use for one.
   const text = report.replaceAll("`", "'").trim();
   const note = header(text, "Note");
@@ -56,6 +74,7 @@ export async function issueFor(report: string, maxPlain = MAX_PLAIN): Promise<{ 
       shown,
       "```",
       "",
+      ...(photoKey === undefined ? [] : [`Photo, in the private store (not public): \`${photoKey}\``, ""]),
     ].join("\n"),
   };
 }
@@ -91,31 +110,60 @@ export async function handleReport(request: Request, env: ReportEnv, send: typeo
   }
 
   let report: unknown;
+  let photo: unknown;
   try {
     const raw = await request.text();
-    if (raw.length > MAX_REPORT + 1000) return json(413, { error: "the report is too large" });
-    report = (JSON.parse(raw) as { report?: unknown } | null)?.report;
+    if (raw.length > MAX_REPORT + MAX_PHOTO_BASE64 + 1000) return json(413, { error: "the report is too large" });
+    const body = JSON.parse(raw) as { report?: unknown; photo?: unknown } | null;
+    report = body?.report;
+    photo = body?.photo;
   } catch {
     return json(400, { error: "not JSON" });
   }
-  if (typeof report !== "string" || report.length > MAX_REPORT) return json(400, { error: "no report" });
+  if (typeof report === "string" && report.length > MAX_REPORT) return json(413, { error: "the report is too large" });
+  if (typeof report !== "string") return json(400, { error: "no report" });
   if (!report.startsWith("int-maj problem report\n")) return json(400, { error: "not a report" });
   const parsed = parseReport(report);
   if ("error" in parsed) return json(400, { error: parsed.error });
 
-  const issue = await issueFor(report);
+  // The photo is checked and kept before the issue names it, so the issue
+  // never points at a photo that is not there.
+  let photoKey: string | undefined;
+  const store = env.REPORT_PHOTOS;
+  if (photo !== undefined && photo !== null) {
+    if (typeof photo !== "string") return json(400, { error: "the photo is not a JPEG" });
+    const decoded = decodePhoto(photo);
+    if ("error" in decoded) return json(400, { error: decoded.error });
+    if (store === undefined) return json(503, { error: "photos are not set up on this site" });
+    photoKey = crypto.randomUUID();
+    try {
+      await store.put(photoKey, decoded.bytes, { httpMetadata: { contentType: "image/jpeg" } });
+    } catch (error) {
+      console.error(`the photo could not be stored: ${String(error)}`);
+      return json(502, { error: "the photo could not be stored" });
+    }
+  }
+  // A photo that is not filed with its report is removed again.
+  const discard = async (): Promise<void> => {
+    if (photoKey === undefined || store === undefined) return;
+    await store.delete(photoKey).catch(() => undefined);
+  };
+
+  const issue = await issueFor(report, MAX_PLAIN, photoKey);
   try {
     let created = await createIssue(env, issue, send, ["report"]);
     // A token that may not create the label must not lose the report.
     if (created.status === 422) created = await createIssue(env, issue, send, []);
     if (!created.ok) {
       console.error(`GitHub answered ${created.status}: ${(await created.text()).slice(0, 300)}`);
+      await discard();
       return json(502, { error: "the report could not be filed" });
     }
     const { number } = (await created.json()) as { number?: unknown };
     return json(201, { ok: true, number: typeof number === "number" ? number : null });
   } catch (error) {
     console.error(`GitHub could not be reached: ${String(error)}`);
+    await discard();
     return json(502, { error: "the report could not be filed" });
   }
 }
