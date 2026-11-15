@@ -208,6 +208,14 @@ report could not be sent and offers the share sheet. When the token expires
 the same happens: create a new one, replace the secret, and re-run a deploy.
 The token can only read and write this repository's issues.
 
+Report photos are kept in the Cloudflare R2 bucket `int-maj`, bound to the
+Worker as `REPORT_PHOTOS` in `wrangler.jsonc` (both the `int` and `int-dev`
+environments). The bucket must stay private: no public access and no custom
+domain on it. Photos are kept for 30 days: add a lifecycle rule to the bucket
+in the Cloudflare dashboard (R2 > `int-maj` > Settings > Object lifecycle
+rules) that expires objects 30 days after creation. Read a photo only from
+that dashboard or with `wrangler r2`, using the keys named in the issue.
+
 ## Private material
 
 `rules/pages/` holds the owner's copies of copyrighted books. The repository
