@@ -19,7 +19,7 @@ import { checkHand, summarizeMatch, type MatchSummary } from "../core/check.ts";
 import { tileKey } from "../core/tiles.ts";
 import { decisionOf, type Action } from "../core/game/actions.ts";
 import { chooseAction, DEFAULT_BOT_LEVEL, type BotLevel } from "../core/game/bot.ts";
-import { closestWithPins, handIndex, type ClosestHand, type PinnedHand } from "../core/game/closest.ts";
+import { closestWithPins, handIndex, type ClosestHand, type HintOptions, type PinnedHand } from "../core/game/closest.ts";
 import type { Event } from "../core/game/events.ts";
 import { isApplyError } from "../core/game/draft.ts";
 import { ledgerTotals } from "../core/game/settle.ts";
@@ -610,7 +610,7 @@ export function statePayload(session: WebSession): StatePayload {
 /**
  * The catalogue hands your tiles are nearest to, for the "closest hands"
  * helper, and how near each hand you pinned is (`pins`, in the order they were
- * pinned; `hands` leaves those out). Built from your own `viewFor` projection
+ * pinned; `hands` leaves those out), chosen by the hint style (`options`). Built from your own `viewFor` projection
  * only, and on request rather than with every state, because planning costs a
  * few milliseconds. Empty once the hand is over.
  */
@@ -618,9 +618,10 @@ export function closestPayload(
   session: WebSession,
   limit?: number,
   pins: readonly string[] = [],
+  options: HintOptions = {},
 ): { readonly game: string; readonly hands: readonly ClosestHand[]; readonly pinned: readonly PinnedHand[] } {
   if (session.state.phase === "finished") return { game: session.id, hands: [], pinned: [] };
-  return { game: session.id, ...closestWithPins(viewFor(session.state, session.seat), pins, limit) };
+  return { game: session.id, ...closestWithPins(viewFor(session.state, session.seat), pins, limit, options) };
 }
 
 export interface GameStoreOptions {

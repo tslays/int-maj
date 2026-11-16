@@ -8,6 +8,8 @@
  *
  *   GET  /api/state?game=     one seat's view, legal actions and wait panel
  *   GET  /api/closest?game=   the catalogue hands your tiles are nearest to
+ *                             (&style=likeliest|mixed|discovery picks them; &seen=id:n,id:n
+ *                             says how familiar hands are, for the discovery places)
  *                             (`&limit=` up to 100 instead of the default three;
  *                             `&pins=a,b,c` also reports how near each pinned hand is)
  *   GET  /api/hand?pattern=   one catalogue hand's conditions (concealed or open)
@@ -30,7 +32,7 @@
  * it was dealt with, so a change shows from the next deal.
  */
 
-import { handDetail, handIndex } from "../core/game/closest.ts";
+import { handDetail, handIndex, HINT_STYLES, type HintStyle } from "../core/game/closest.ts";
 import { HAND_SET_EXCLUDED, HAND_SETS } from "../core/patterns/table.ts";
 import { describeEventFor } from "../core/game/describe.ts";
 import { BOT_LEVELS, DEFAULT_BOT_LEVEL, isBotLevel } from "../core/game/bot.ts";
@@ -184,11 +186,14 @@ function routeGet(context: ApiContext, request: ApiRequest): ApiResponse | null 
     const session = store.get(id);
     if (session === undefined) return fail(404, `unknown game: ${id}`);
     const limit = Number(request.query.get("limit") ?? "");
+    const style = request.query.get("style") ?? "likeliest";
+    if (!(HINT_STYLES as readonly string[]).includes(style)) return fail(400, `style must be one of ${HINT_STYLES.join(", ")}`);
     return ok(
       closestPayload(
         session,
         Number.isInteger(limit) && limit > 0 ? Math.min(limit, 100) : undefined,
         (request.query.get("pins") ?? "").split(",").filter((id) => id.length > 0),
+        { style: style as HintStyle, familiarity: parseSeen(request.query.get("seen") ?? "") },
       ),
       request.query.has("pretty"),
     );
@@ -301,4 +306,15 @@ export function routeApi(context: ApiContext, request: ApiRequest): ApiResponse 
     if (error instanceof ApiError) return fail(error.status, error.message);
     throw error;
   }
+}
+
+/** The `seen` query, "id:weight,id:weight": a weight is a number of zero or more; anything else is ignored. */
+function parseSeen(text: string): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const entry of text.split(",").slice(0, 200)) {
+    const [id, weight] = entry.split(":");
+    const value = Number(weight);
+    if (id !== undefined && id.length > 0 && weight !== undefined && Number.isFinite(value) && value >= 0) out[id] = value;
+  }
+  return out;
 }

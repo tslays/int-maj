@@ -29,6 +29,7 @@ import { situationFor } from "./bot.ts";
 import { completion, KEYS, MAX_MISSING, oddsFor, planGoals, type Goal, type Situation } from "./bot/plan.ts";
 import type { GameView } from "./view.ts";
 import { handChance, tableOf, type ClaimRule, type OddsTarget, type Table } from "./odds.ts";
+import { createRng } from "../rng.ts";
 
 const PATTERN_BY_ID = new Map(PATTERNS.map((pattern) => [pattern.id, pattern]));
 
@@ -83,6 +84,12 @@ export interface ClosestHand {
   readonly chance: number;
   /** Copies of each needed key, and of each stand-in, the seat has not seen (in the wall or an opponent's hand). */
   readonly unseen: Readonly<Record<string, number>>;
+  /**
+   * Why the panel shows the hand: "likely" for one of the likeliest hands (and
+   * every pinned hand), "discover" for one picked to be new to the player
+   * (`HintStyle`). The chance is the same honest figure either way.
+   */
+  readonly pick: "likely" | "discover";
 }
 
 /** Hands shown by default: enough to compare, few enough for a phone. */
@@ -228,6 +235,7 @@ function exactVersion(
   return {
     rank: chance * value,
     versions: reach.wants,
+    flex: reach.wants.length,
     widen,
     claims: claimRule(pattern),
     hand: {
@@ -243,6 +251,7 @@ function exactVersion(
       instead,
       chance: Math.round(chance * 1000) / 1000,
       unseen: unseenOf([...need, ...instead.flatMap((entry) => entry.or)], situation.unseen),
+      pick: "likely",
     },
   };
 }
@@ -264,6 +273,8 @@ interface Found {
    */
   readonly widen?: () => readonly ArrayLike<number>[];
   readonly claims: ClaimRule;
+  /** How many versions of the hand are open to the seat: a measure of how flexible it is. */
+  readonly flex: number;
 }
 
 /**
@@ -322,6 +333,7 @@ function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { f
     best.set(goal.pattern, {
       rank,
       versions: [],
+      flex: 1,
       claims: claimRule(pattern),
       hand: {
         pattern: pattern.id,
@@ -336,6 +348,7 @@ function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { f
         instead: [],
         chance: Math.round(chance * 1000) / 1000,
         unseen: unseenOf(need, situation.unseen),
+        pick: "likely",
       },
     });
   }
@@ -346,7 +359,7 @@ function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { f
       .sort((a, b) => a.away - b.away)
       .slice(0, VERSIONS_KEPT)
       .map((version) => version.need);
-    best.set(id, { ...entry, versions });
+    best.set(id, { ...entry, versions, flex: Math.max(1, versions.length) });
   }
 
   // Nearest first, widening the search a tile at a time, and stopping once
@@ -389,7 +402,9 @@ function rated(view: GameView, cards: readonly Found[], pinned: ReadonlySet<stri
     const target = { versions: entry.widen?.() ?? entry.versions, claims: entry.claims };
     const options = full ? { salt: entry.hand.pattern } : { salt: entry.hand.pattern, trials: QUICK_TRIALS };
     const chance = entry.hand.away === 0 ? 1 : handChance(table, target, options);
-    return [chance === null ? entry : { ...entry, hand: { ...entry.hand, chance: Math.round(chance * 1000) / 1000 } }];
+    // The versions the simulation plays are the truest count of how flexible the hand is.
+    const flexed = { ...entry, flex: Math.max(entry.flex, target.versions.length) };
+    return [chance === null ? flexed : { ...flexed, hand: { ...entry.hand, chance: Math.round(chance * 1000) / 1000 } }];
   });
   return out.sort(
     (a, b) =>
@@ -453,21 +468,148 @@ export interface PinnedHand {
 }
 
 /**
+ * How the panel picks its hands. "likeliest": the hands most likely to be
+ * built, as ever. "mixed": the two likeliest and one discovery. "discovery":
+ * every free place is a discovery. The chance shown is the same honest figure
+ * in all three; only the choice of hands differs.
+ */
+export type HintStyle = "likeliest" | "mixed" | "discovery";
+
+export const HINT_STYLES: readonly HintStyle[] = ["likeliest", "mixed", "discovery"];
+
+export const DEFAULT_HINT_STYLE: HintStyle = "mixed";
+
+export interface HintOptions {
+  readonly style?: HintStyle;
+  /**
+   * How familiar each hand already is to the player (hands shown as a
+   * discovery, hands built), by pattern id: zero or absent for a new hand.
+   * Only the discovery places read it; the likeliest never do.
+   */
+  readonly familiarity?: Readonly<Record<string, number>>;
+}
+
+/**
+ * The least chance a hand needs to be offered as a discovery: 5 %, inside the
+ * "Long shot" band, which the ring still labels as such. A discovery is a
+ * possibility the tiles really hold, not a fantasy; a higher floor (the
+ * census, `docs/HINT-ODDS.md` §13, put 20 % at under 2 % of decisions with the
+ * Rare hand set) would leave the discovery places empty.
+ */
+export const DISCOVERY_FLOOR = 0.05;
+
+/** Hands simulated for a discovery pick: the likeliest few and the nearest further ones, the latter with fewer trials. */
+const DISCOVERY_POOL = 16;
+
+/** Places the likeliest hands keep in the mixed style (when the panel has room for a discovery too). */
+const MIXED_LIKELY = 2;
+
+/** What a hand's score is multiplied by when its family already has a place in the panel. */
+const SAME_FAMILY = 0.25;
+
+/** How strongly many open versions count against a hand: a flexible hand wins everywhere, so it is no surprise. */
+const FLEXIBILITY_WEIGHT = 0.15;
+
+/** A hand's family: the first book heading it is filed under. */
+function familyOf(id: string): string {
+  return GROUPS.find((group) => group.hands.includes(id))?.id ?? id;
+}
+
+/**
+ * Fills the panel's `places` from `cards` (likeliest first, none pinned).
+ *
+ * A discovery is a hand the likeliest style would not have shown (ranked below
+ * the panel's places), eligible when its chance is at least `DISCOVERY_FLOOR`,
+ * with the best score: the square root of its chance, less for a hand the
+ * player has seen or built before, for one with very many versions, and for
+ * one whose family already has a place; plus a small spread seeded from the
+ * view, so the same position always gives the same panel and a new position
+ * can give a different one.
+ *
+ * Places no eligible discovery fills go, in the mixed style, to the likeliest
+ * hands left; in the discovery style they are scored the same way among all
+ * the hands left (the likeliest included), so the panel still rotates and
+ * varies when the tiles offer little that is new.
+ */
+function choose(
+  cards: readonly Found[],
+  places: number,
+  style: HintStyle,
+  familiarity: Readonly<Record<string, number>>,
+  seed: string,
+): ClosestHand[] {
+  if (places <= 0) return [];
+  if (style === "likeliest") return cards.slice(0, places).map((entry) => entry.hand);
+  const discoveries = style === "discovery" ? places : places >= 2 ? places - Math.min(MIXED_LIKELY, places - 1) : 0;
+  const likely = cards.slice(0, places - discoveries);
+  const families = new Map<string, number>();
+  for (const entry of likely) families.set(familyOf(entry.hand.pattern), 1);
+
+  const score = (entry: Found): number => {
+    const id = entry.hand.pattern;
+    return (
+      Math.sqrt(entry.hand.chance) *
+      (1 / (1 + Math.max(0, familiarity[id] ?? 0))) *
+      (1 / (1 + FLEXIBILITY_WEIGHT * Math.log2(1 + entry.flex))) *
+      (families.has(familyOf(id)) ? SAME_FAMILY : 1) *
+      (1 + 0.1 * createRng(`${seed}#${id}`).next())
+    );
+  };
+  /** The best-scoring hand of `pool`, taken out of it. */
+  const take = (pool: Found[]): Found => {
+    let best = 0;
+    let bestScore = -1;
+    pool.forEach((entry, at) => {
+      const value = score(entry);
+      if (value > bestScore) {
+        best = at;
+        bestScore = value;
+      }
+    });
+    const [entry] = pool.splice(best, 1);
+    families.set(familyOf(entry!.hand.pattern), 1);
+    return entry!;
+  };
+
+  // A discovery is a hand the likeliest style would not have shown: one ranked below its places.
+  const eligible = cards.slice(places).filter((entry) => entry.hand.chance >= DISCOVERY_FLOOR);
+  const picked: Found[] = [];
+  while (picked.length < discoveries && eligible.length > 0) picked.push(take(eligible));
+  const chosen = [...likely, ...picked];
+  const rest = cards.filter((entry) => !chosen.includes(entry));
+  if (style === "discovery") {
+    // Nothing more that is new: the same scoring over what is left, never a hand with no chance.
+    const left = rest.filter((entry) => entry.hand.chance > 0);
+    while (chosen.length < places && left.length > 0) chosen.push(take(left));
+  } else {
+    for (const entry of rest) {
+      if (chosen.length >= places) break;
+      chosen.push(entry);
+    }
+  }
+  return chosen.map((entry) => (picked.includes(entry) ? { ...entry.hand, pick: "discover" as const } : entry.hand));
+}
+
+/**
  * The panel's contents: the player's pinned hands first, in the order they
- * were pinned, then the nearest other hands (at most `limit`, never one that
- * is pinned). Pins naming no hand, or a hand this table plays without, are
- * left out; so are repeats and every pin beyond `MAX_PINS`.
+ * were pinned, then the other hands (at most `limit`, never one that is
+ * pinned) chosen by the hint style: the likeliest by default, or with
+ * discoveries (`HintStyle`). Pins naming no hand, or a hand this table plays
+ * without, are left out; so are repeats and every pin beyond `MAX_PINS`.
  */
 export function closestWithPins(
   view: GameView,
   pins: readonly string[],
   limit = CLOSEST_SHOWN,
+  options: HintOptions = {},
 ): { hands: ClosestHand[]; pinned: PinnedHand[] } {
   // A pin on a scoring variant pins its card.
   const ids = [...new Set(pins.map((id) => cardIdOf(id)))].slice(0, MAX_PINS);
   const chosen = new Set(ids);
-  const { found, excluded } = search(view, Math.max(limit, SHORTLIST), chosen);
-  const cards = rated(view, asCards(found), chosen, limit);
+  const style = options.style ?? "likeliest";
+  const pool = style === "likeliest" ? limit : Math.max(limit, DISCOVERY_POOL);
+  const { found, excluded } = search(view, Math.max(pool, SHORTLIST), chosen);
+  const cards = rated(view, asCards(found), chosen, pool);
   const byId = new Map(cards.map((entry) => [entry.hand.pattern, entry.hand]));
   const pinned: PinnedHand[] = [];
   for (const id of ids) {
@@ -475,10 +617,9 @@ export function closestWithPins(
     if (pattern === undefined || excluded.includes(id)) continue;
     pinned.push({ pattern: id, name: pattern.name, hand: byId.get(id) ?? null });
   }
-  const hands = cards
-    .filter((entry) => !chosen.has(entry.hand.pattern))
-    .slice(0, limit)
-    .map((entry) => entry.hand);
+  const others = cards.filter((entry) => !chosen.has(entry.hand.pattern));
+  const seed = `${view.seat}/${view.handNumber}/${view.phase}/${view.turn}/${view.wallRemaining}/${view.player.hand.join("")}`;
+  const hands = choose(others, limit, style, options.familiarity ?? {}, seed);
   return { hands, pinned };
 }
 
