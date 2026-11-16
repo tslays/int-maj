@@ -789,12 +789,11 @@ export async function openHandDetail(pattern, progress = null) {
       more.className = "need-more";
       more.setAttribute("aria-expanded", "false");
       more.setAttribute("aria-controls", "hand-need-note");
-      more.setAttribute("aria-label", "What the numbers under the tiles mean");
       const moreChevron = document.createElement("span");
       moreChevron.className = "rule-chevron";
       moreChevron.setAttribute("aria-hidden", "true");
-      more.append(moreChevron);
-      heading.append(more);
+      more.append(heading.textContent, moreChevron);
+      heading.replaceChildren(more);
       more.addEventListener("click", () => {
         left.hidden = !left.hidden;
         more.setAttribute("aria-expanded", String(!left.hidden));

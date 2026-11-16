@@ -1292,8 +1292,9 @@ button.detail-rule {
   padding: 2px 0 2px 10px;
   border-left: 2px solid rgba(229, 161, 47, 0.7);
 }
+/* The heading is set like the card's other section headings; the gold rule alone marks it as the player's own. */
 .detail-yours h3 {
-  color: var(--gold-1);
+  color: var(--muted);
 }
 .detail-yours .detail-need {
   margin-top: 3px;
@@ -1321,19 +1322,22 @@ button.detail-rule {
 .need-note[hidden] {
   display: none;
 }
-/* The chevron beside "Tiles you still need": tap to read what the numbers mean. */
+/* "Tiles you still need" is one button, text and chevron together: tap it to read what the numbers mean. */
 .need-more {
   display: inline-flex;
   align-items: center;
-  margin-left: 6px;
-  padding: 6px 8px;
+  gap: 6px;
+  margin: 0;
+  padding: 2px 0;
   border: 0;
   background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
   cursor: pointer;
-  vertical-align: middle;
 }
 .need-more .rule-chevron {
-  margin-top: -3px;
+  margin: -3px 0 0;
 }
 .need-more[aria-expanded="true"] .rule-chevron {
   margin-top: 3px;
