@@ -6,6 +6,8 @@
  * planner suggests fills the places left (`pins.js`).
  */
 
+import { familiar } from "./familiar.js";
+import { hintStyle } from "./hint-style.js";
 import { bookPages, visibleSamples } from "./pages.js";
 import { createPins, MAX_PINS } from "./pins.js";
 import { $, companionRules, faceChip, request, showToggle, state, storage } from "./shared.js";
@@ -24,6 +26,7 @@ function readHints() {
 
 let hintsOn = readHints();
 let hintsFor = null; // the tiles and pins the panel was last built for
+let recorded = null; // the position whose discoveries were last counted as seen
 
 const pins = createPins(storage());
 const pinListeners = [];
@@ -70,7 +73,7 @@ export async function refreshHints(force = false) {
   if (!force && hintsFor !== null && !panel.hidden) return;
   const player = state.payload.view.player;
   const melds = player.melds.map((meld) => meld.tiles.join()).join("/");
-  const key = `${state.payload.game}|${player.hand.join()}|${melds}|${mine.join()}|${hintsOn}`;
+  const key = `${state.payload.game}|${player.hand.join()}|${melds}|${mine.join()}|${hintsOn}|${hintStyle.id}`;
   if (!force && key === hintsFor) return;
   // A new position: what the panel showed so far is what the arrows compare with.
   if (key !== hintsFor) {
@@ -81,10 +84,18 @@ export async function refreshHints(force = false) {
   try {
     // The places the pins leave are the suggestions'.
     const room = Math.max(1, MAX_PINS - mine.length);
+    // Only the styles that pick discoveries read what the player has met.
+    const style = hintStyle.id === "likeliest" ? "" : `&style=${hintStyle.id}&seen=${encodeURIComponent(familiar.query())}`;
     const answer = await request(
-      `/api/closest?game=${encodeURIComponent(state.payload.game)}&limit=${room}&pins=${encodeURIComponent(mine.join())}`,
+      `/api/closest?game=${encodeURIComponent(state.payload.game)}&limit=${room}&pins=${encodeURIComponent(mine.join())}${style}`,
     );
     if (hintsFor !== key) return;
+    // A discovery shown is one sighting more familiar, once per position.
+    if (hintStyle.rotates && hintsOn && recorded !== key) {
+      recorded = key;
+      const found = answer.hands.slice(0, room).filter((hand) => hand.pick === "discover").map((hand) => hand.pattern);
+      if (found.length > 0) familiar.recordShown(found);
+    }
     if (!hintsOn && answer.pinned.length === 0) panel.hidden = true;
     else renderHints(hintsOn ? answer.hands.slice(0, room) : [], answer.pinned);
   } catch {
@@ -253,6 +264,19 @@ export function pinIcon() {
   return svg;
 }
 
+/** A small spark: the mark of a hand offered as an idea that may be new to the player. */
+export function newIcon() {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("class", "play-icon new-icon");
+  svg.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS(ns, "path");
+  path.setAttribute("d", "M12 2.5l2.2 6.3 6.3 2.2-6.3 2.2L12 19.5l-2.2-6.3L3.5 11l6.3-2.2z");
+  svg.append(path);
+  return svg;
+}
+
 /** One row of the panel: a hand, how far it is, and its icon. `hand` is null for a pinned hand out of reach. */
 function hintRow(hand, { name: label, pinned }) {
   const item = document.createElement("li");
@@ -267,7 +291,7 @@ function hintRow(hand, { name: label, pinned }) {
     `${pinned ? "Pinned: " : ""}${label}${
       away
         ? ", out of reach: more than six tiles away, or no longer possible with the tiles in sight or your exposed melds"
-        : `, ${hand.away === 0 ? "complete" : chanceWords(hand.chance)}${moved}, ${hand.concealedOnly ? "concealed, no exposed melds" : "exposed melds allowed"}`
+        : `, ${hand.pick === "discover" ? "an idea that may be new to you, " : ""}${hand.away === 0 ? "complete" : chanceWords(hand.chance)}${moved}, ${hand.concealedOnly ? "concealed, no exposed melds" : "exposed melds allowed"}`
     }. Tap for details.`,
   );
   // The chance leads the row as a ring alone, in its band's colour and filled
@@ -277,6 +301,7 @@ function hintRow(hand, { name: label, pinned }) {
   name.className = "closest-name";
   if (!away && hand.away > 0) name.append(chanceMark(hand.chance, trend));
   if (pinned) name.append(pinIcon());
+  if (!away && hand.pick === "discover") name.append(newIcon());
   name.append(label);
   const meta = document.createElement("span");
   meta.className = "closest-meta";
@@ -305,7 +330,11 @@ function renderHints(hands, pinned) {
   const panel = $("#closest");
   const title = document.createElement("p");
   title.className = "closest-title";
-  title.textContent = pinned.length === 0 ? "Closest hands" : hands.length === 0 ? "Pinned hands" : "Pinned and closest";
+  const ideas = hands.some((hand) => hand.pick === "discover");
+  title.textContent =
+    pinned.length === 0
+      ? ideas ? "Closest and new hands" : "Closest hands"
+      : hands.length === 0 ? "Pinned hands" : ideas ? "Pinned, closest and new" : "Pinned and closest";
   if (hands.length === 0 && pinned.length === 0) {
     const empty = document.createElement("p");
     empty.className = "closest-empty";

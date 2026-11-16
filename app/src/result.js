@@ -2,6 +2,7 @@
  * The result card after a hand and the final standings after the last one.
  */
 
+import { familiar } from "./familiar.js";
 import { houseRules } from "./options.js";
 import { bookPages } from "./pages.js";
 import { playExchange } from "./exchange.js";
@@ -56,6 +57,8 @@ function renderOutcome(outcome) {
   const side = document.createElement("div");
   side.className = "result-side";
   const win = outcome.kind === "win" && outcome.winner !== null;
+  // A hand the player built is a hand they know: the panel leans away from it.
+  if (win && outcome.winner === state.payload.seat) familiar.recordBuilt(outcome.patternId);
 
   const head = document.createElement("p");
   head.className = "result-kicker";

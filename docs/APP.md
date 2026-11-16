@@ -195,7 +195,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   the goulash picks), `goulash.js` (the small Goulash banner over the middle of the
   table during the three exchanges: which exchange, who your tiles go to, how
   many are picked; what a Goulash is lives in the first-game tip), `hints.js` (closest-hands panel, the hand
-  sheet with the book's own sample hand, and the Hints toggle), `handbook.js`
+  sheet with the book's own sample hand, and the Hints toggle; `hint-style.js` and `familiar.js` are its style and memory), `handbook.js`
   (the index of all hands), `result.js` (the result card and the final
   standings), `menu.js`
   (the Calls and Sort buttons and closing the help sheet), `guide.js`
@@ -272,6 +272,17 @@ counted), so a player learns what their tiles can make and finds hands they
 would not have tried; the guide and the hand's sheet say so. It is asked for at
 each of your decisions, and hides on the result card. The menu's Hints button
 turns it off (remembered on the device).
+
+**Hint style.** Options > Game > Hint style (`app/src/hint-style.js`, kept on
+the device) says which hands the panel picks: *Likeliest* (the hands most
+likely to be built), *Mixed* (the default: the two likeliest and one idea the
+player may not have thought of) or *Discovery* (only such ideas). An idea
+carries a small spark and a screen-reader note, and the title reads "Closest
+and new hands"; its ring is the same honest building chance as any other
+(`pick` and `HintStyle` in `closest.ts`, `docs/HINT-ODDS.md` §13). Mixed and
+Discovery also send what the player has met (`app/src/familiar.js`: ideas
+shown, hands built, halved with every new game) as `seen`, so the ideas
+rotate; Likeliest sends and reads nothing.
 
 **Pinning.** A hand's sheet (from the panel or from All hands) has a pin
 button, an icon at the top right beside the close cross (gold and filled while

@@ -245,7 +245,7 @@ const TABS = [
     cards: [
       {
         title: "Closest hands",
-        text: "Top right: the hands your tiles could build, likeliest first, often ones you would never have thought of. The ring fills and brightens with how likely you are to build each if you play only for it until the wall runs out, from a long shot to very likely, worked out only from the tiles you can see; an arrow shows a hand that moved since your last move. It is a building chance, not a winning chance: another player going out first is not counted. A guide for trying new hands, not advice: a long shot may pay far more. Then how it is played and what it pays. Tap one for its sheet; the pin keeps it there. Out of reach means more than six tiles away, or no longer possible with the tiles in sight or your exposed melds. Hints in the menu shows or hides it.",
+        text: "Top right: the hands your tiles could build, likeliest first, often ones you would never have thought of. The ring fills and brightens with how likely you are to build each if you play only for it until the wall runs out, from a long shot to very likely, worked out only from the tiles you can see; an arrow shows a hand that moved since your last move. It is a building chance, not a winning chance: another player going out first is not counted. A guide for trying new hands, not advice: a long shot may pay far more. Then how it is played and what it pays. Tap one for its sheet; the pin keeps it there. Out of reach means more than six tiles away, or no longer possible with the tiles in sight or your exposed melds. Hints in the menu shows or hides it. Options has the Hint style: Likeliest shows the hands you are most likely to build; Mixed adds one idea you may not have thought of, marked with a small spark; Discovery shows only such ideas, and leans away from hands it has shown you or you have built. The ring tells the truth in every style.",
         picture: closestPicture,
       },
       {
@@ -269,7 +269,7 @@ const TABS = [
     cards: [
       {
         title: "The menu",
-        text: "Calls, Sort and Hints switch on and off; a green light is on. Options has the bots' level, pace, sound, table animations, the house rules, and New game.",
+        text: "Calls, Sort and Hints switch on and off; a green light is on. Options has the bots' level, pace, hint style, sound, table animations, the house rules, and New game.",
         picture: () => row(ghost("Calls", true), ghost("Hints", true), ghost("Options")),
       },
       {
