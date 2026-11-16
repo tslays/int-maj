@@ -1150,6 +1150,16 @@ html.pond-zoom .act-claim {
   width: 15px;
   height: 15px;
 }
+/* The "New" chip: the spark and its word, in the same accent as the panel's spark. */
+.detail-fact.detail-new {
+  color: var(--chance-trend);
+  font-weight: 700;
+}
+.detail-fact.detail-new .new-icon {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+}
 button.detail-rule {
   cursor: pointer;
   font-weight: 700;

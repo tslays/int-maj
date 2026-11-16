@@ -621,6 +621,15 @@ export async function openHandDetail(pattern, progress = null) {
   });
   const facts = document.createElement("div");
   facts.className = "detail-facts";
+  // A hand offered as an idea that may be new says so first, with the same
+  // spark the panel's row carries, so the mark never has to be guessed at.
+  if (progress?.pick === "discover") {
+    const fresh = factChip(null, "New");
+    fresh.classList.add("detail-new");
+    fresh.prepend(newIcon());
+    fresh.setAttribute("aria-label", "An idea that may be new to you");
+    facts.append(fresh);
+  }
   facts.append(rule);
   // How it is played, how far you are, and last what it pays: the panel's order.
   if (detail.requiresSelfDrawn) facts.append(factChip(null, "Self-drawn only"));
