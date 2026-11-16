@@ -474,3 +474,68 @@ family not already in the panel and a hand the device has suggested or seen
 built less. The device remembers this; rotation applies only in Mixed (the one
 discovery place) and Discovery, and Likeliest ignores the memory. The figure
 shown is always the honest one.
+
+## 13. Hint styles (engine, built 2026-11-16)
+
+`closestWithPins(view, pins, limit, { style, familiarity })` and
+`GET /api/closest?style=likeliest|mixed|discovery&seen=id:n,...`. The app does
+not use the styles yet (the next pull request adds the option and the memory);
+the default is the likeliest, exactly as before.
+
+- **likeliest**: ranked by chance, as ever. Never reads the memory.
+- **mixed**: the two likeliest hands and one discovery (with fewer places: one
+  likeliest and one discovery; with one place, the likeliest).
+- **discovery**: every free place is a discovery. Pins always come first.
+
+A hand is `pick: "likely"` or `pick: "discover"`; the chance is the same
+honest figure either way (§12).
+
+A **discovery** is a hand the likeliest style would not have shown (ranked
+below the panel's places) whose chance is at least `DISCOVERY_FLOOR`. The
+best is the one with the highest score: the square root of the chance, divided
+by one plus the hand's familiarity (hands shown as a discovery and hands built,
+which the app keeps), reduced for a hand with very many open versions
+(`FLEXIBILITY_WEIGHT`), and for a hand whose book family already has a place
+(`SAME_FAMILY`), with a small spread seeded from the view so one position gives
+one panel. When no discovery qualifies, mixed fills the place with the next
+likeliest; discovery scores the hands left the same way, so it still rotates.
+
+### Choosing the floor
+
+Hands ranked 4 to 8 by chance are seldom likely: of East's decisions, the
+share with such a hand at or above a given chance (40 games):
+
+| Floor | Rare set | All hands |
+| --- | --- | --- |
+| 3 % | 46 % | 71 % |
+| **5 %** | **32 %** | **66 %** |
+| 10 % | 10 % | 52 % |
+| 20 % | 1 % | 34 % |
+
+A floor of 20 % would leave the discovery places empty with the Rare set, so
+the floor is **5 %**, inside the ring's "Long shot" band, which the ring still
+names. It is one constant to tune.
+
+### What the styles do to the panel
+
+40 games, East's panel (top 3), memory simulated within each game (every
+discovery shown counts as one more sighting).
+
+| | Likeliest | Mixed | Discovery |
+| --- | --- | --- | --- |
+| **Rare set**: pair/knitting hands in the panel's places | 30 % | 30 % | 24 % |
+| two or more pair/knitting hands in one panel | 28 % | 24 % | 9 % |
+| Triple Knitting first | 23 % | 23 % | 13 % |
+| distinct hands one game's panels show | 10.1 | 11.0 | 12.6 |
+| discovery places / panels with one | 0 | 12 % / 35 % | 25 % / 35 % |
+| **All hands**: Crazy Chows in a panel | 64 % | 63 % | 21 % |
+| Crazy Chows first | 50 % | 50 % | 11 % |
+| distinct hands one game's panels show | 7.6 | 9.8 | 12.4 |
+| discovery places / panels with one | 0 | 23 % / 68 % | 60 % / 68 % |
+
+Read with care: with the Rare set few hands are reachable at all, so even the
+discovery style shows pair hands (they are what the tiles hold); what it
+removes is the stacking of several of them. Across games the app's memory
+(kept for days, not one game) rotates further. Panel time is about 110 ms
+median, 280 ms p95, against 70 ms and 190 ms for the likeliest (the extra
+hands are simulated with 300 trials).
