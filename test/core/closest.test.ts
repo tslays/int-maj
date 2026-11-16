@@ -6,7 +6,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { closestHands, closestWithPins, MAX_PINS, viewFor } from "../../src/core/game/index.ts";
+import {
+  closestHands,
+  closestWithPins,
+  DISCOVERY_FLOOR,
+  MAX_PINS,
+  newGame,
+  viewFor,
+} from "../../src/core/game/index.ts";
 import { fixture } from "../helpers/game-fixture.ts";
 
 const OTHERS = {
@@ -351,5 +358,86 @@ describe("closest hands", () => {
       assert.equal(pinned[0]!.hand?.tier, "half");
       assert.ok(!hands.some((hand) => hand.pattern.startsWith("big-robert")), "the pinned card is not listed twice");
     });
+  });
+});
+
+describe("hint styles", () => {
+  /** East's first discard on a fresh deal: a real position with plenty of candidate hands. */
+  const view = (seed: string) => {
+    const { state } = newGame(seed);
+    return viewFor(state, state.turn);
+  };
+  const SEED = "styles-1";
+
+  it("shows the likeliest hands by default, none of them marked as a discovery", () => {
+    const likeliest = closestWithPins(view(SEED), [], 3, { style: "likeliest" });
+    assert.deepEqual(closestWithPins(view(SEED), []), likeliest);
+    assert.deepEqual(
+      likeliest.hands.map((hand) => hand.pattern),
+      closestHands(view(SEED)).map((hand) => hand.pattern),
+    );
+    assert.ok(likeliest.hands.every((hand) => hand.pick === "likely"));
+  });
+
+  it("mixed keeps the two likeliest and adds one discovery the likeliest style would not show", () => {
+    const likeliest = closestWithPins(view(SEED), [], 3).hands;
+    const mixed = closestWithPins(view(SEED), [], 3, { style: "mixed" }).hands;
+    assert.equal(mixed.length, 3);
+    assert.deepEqual(
+      mixed.slice(0, 2).map((hand) => hand.pattern),
+      likeliest.slice(0, 2).map((hand) => hand.pattern),
+    );
+    assert.deepEqual(mixed.map((hand) => hand.pick), ["likely", "likely", "discover"]);
+    const found = mixed[2]!;
+    assert.ok(found.chance >= DISCOVERY_FLOOR, "a discovery is a real possibility");
+    assert.ok(!likeliest.some((hand) => hand.pattern === found.pattern));
+  });
+
+  it("discovery fills every place with hands the likeliest style would not show, never a long shot", () => {
+    const likeliest = closestWithPins(view(SEED), [], 3).hands.map((hand) => hand.pattern);
+    const hands = closestWithPins(view(SEED), [], 3, { style: "discovery" }).hands;
+    assert.equal(hands.length, 3);
+    assert.equal(new Set(hands.map((hand) => hand.pattern)).size, 3);
+    for (const hand of hands.filter((entry) => entry.pick === "discover")) {
+      assert.ok(hand.chance >= DISCOVERY_FLOOR);
+      assert.ok(!likeliest.includes(hand.pattern));
+    }
+    assert.ok(hands.some((hand) => hand.pick === "discover"));
+  });
+
+  it("rotates away from a hand the player knows well, in the discovery places only", () => {
+    const mixed = closestWithPins(view(SEED), [], 3, { style: "mixed" }).hands;
+    const known = mixed[2]!.pattern;
+    const rotated = closestWithPins(view(SEED), [], 3, { style: "mixed", familiarity: { [known]: 50 } }).hands;
+    assert.notEqual(rotated[2]!.pattern, known);
+    assert.deepEqual(
+      rotated.slice(0, 2).map((hand) => hand.pattern),
+      mixed.slice(0, 2).map((hand) => hand.pattern),
+      "the likeliest places do not read the memory",
+    );
+    const likeliest = closestWithPins(view(SEED), [], 3).hands;
+    const familiar = Object.fromEntries(likeliest.map((hand) => [hand.pattern, 50]));
+    assert.deepEqual(closestWithPins(view(SEED), [], 3, { style: "likeliest", familiarity: familiar }).hands, likeliest);
+  });
+
+  it("gives the same panel for the same position, and keeps pins first", () => {
+    const a = closestWithPins(view(SEED), [], 3, { style: "discovery" });
+    assert.deepEqual(closestWithPins(view(SEED), [], 3, { style: "discovery" }), a);
+    const pinned = closestWithPins(view(SEED), ["knitting"], 2, { style: "mixed" });
+    assert.equal(pinned.pinned[0]?.pattern, "knitting");
+    assert.ok(!pinned.hands.some((hand) => hand.pattern === "knitting"));
+    assert.equal(pinned.hands.length, 2);
+  });
+
+  it("never reads another seat's concealed tiles: only the view decides the panel", () => {
+    const base = newGame("styles-peek").state;
+    const east = viewFor(base, base.turn);
+    // The same view, as if the opponents held other tiles of the same count: the view cannot tell.
+    const clone = JSON.parse(JSON.stringify(east));
+    assert.deepEqual(
+      closestWithPins(clone, [], 3, { style: "discovery" }),
+      closestWithPins(east, [], 3, { style: "discovery" }),
+    );
+    for (const opponent of east.opponents) assert.equal("hand" in opponent, false);
   });
 });

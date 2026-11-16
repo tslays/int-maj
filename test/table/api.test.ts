@@ -145,6 +145,26 @@ describe("table API", () => {
     assert.equal(call<ApiError>("GET", "/api/closest?game=missing").status, 404);
   });
 
+  it("picks the closest hands by hint style and says which are discoveries", async () => {
+    const created = await post<ApiPayload>("/api/new", { seed: "api-closest" });
+    const game = encodeURIComponent(created.body.game);
+    type Picked = ClosestHandPayload & { readonly pick: string };
+    const likeliest = call<{ hands: Picked[] }>("GET", `/api/closest?game=${game}`).body.hands;
+    assert.ok(likeliest.every((hand) => hand.pick === "likely"));
+    const mixed = call<{ hands: Picked[] }>("GET", `/api/closest?game=${game}&style=mixed`);
+    assert.equal(mixed.status, 200);
+    assert.deepEqual(mixed.body.hands.slice(0, 2).map((hand) => hand.pattern), likeliest.slice(0, 2).map((hand) => hand.pattern));
+    // The memory: a hand seen many times drops out of the discovery place; a malformed entry is ignored.
+    const known = mixed.body.hands.find((hand) => hand.pick === "discover");
+    if (known !== undefined) {
+      const seen = `${known.pattern}:50,bad,x:-1,y:abc`;
+      const again = call<{ hands: Picked[] }>("GET", `/api/closest?game=${game}&style=mixed&seen=${encodeURIComponent(seen)}`);
+      assert.equal(again.status, 200);
+      assert.ok(!again.body.hands.some((hand) => hand.pattern === known.pattern && hand.pick === "discover"));
+    }
+    assert.equal(call<ApiError>("GET", `/api/closest?game=${game}&style=sneaky`).status, 400);
+  });
+
   it("lists more closest hands on request, and the whole catalogue for the index", async () => {
     const created = await post<ApiPayload>("/api/new", { seed: "api-closest" });
     const game = encodeURIComponent(created.body.game);
