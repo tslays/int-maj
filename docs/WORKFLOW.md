@@ -170,7 +170,10 @@ Testers send reports in batches. The way that worked for alpha.7 (#118-#122):
 
 1. **Triage first, in one session.** Read every new `report` issue: the note,
    the hand and the house rules. Check whether each is already fixed since the
-   last tag (`git log v0.1.0-alpha.N..origin/main`).
+   last tag (`git log v0.1.0-alpha.N..origin/main`). **Also fetch every photo**
+   the issue names (up to 3 per issue, with `GET /api/report-photo/<key>`, see
+   "Reading a photo back" below). Photos always come with triage: they show
+   the problem the note describes, so a report is not sorted without them.
 2. **Sort each report** as one of four: *as designed* (answer with the rule's
    page), *needs an owner ruling* (a rule the books leave open, or a design
    choice), *visual*, or *engine*. Ask the owner every ruling up front, in one
@@ -224,6 +227,16 @@ domain on it. Photos are kept for 30 days: add a lifecycle rule to the bucket
 in the Cloudflare dashboard (R2 > `int-maj` > Settings > Object lifecycle
 rules) that expires objects 30 days after creation. Read a photo only from
 that dashboard or with `wrangler r2`, using the keys named in the issue.
+
+Every report issue names up to 3 photos, each by key (`Photo 1 of N, in the
+private store (not public)`). Triage always reads them: each is fetched with
+`GET /api/report-photo/<key>` on `int-dev.mah-jong.workers.dev` (the host a
+session has the token for) and looked at before the report is sorted. Check
+that the photo is the one the report describes; a repeated image across
+different keys means the store is not returning the report's own photo, so
+say so rather than sorting from the note alone. The `int` site uses the same
+route and needs its own `REPORT_PHOTO_TOKEN`; a 404 from `int` is not proof
+the photo is missing.
 
 ## Private material
 
