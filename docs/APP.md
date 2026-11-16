@@ -563,6 +563,8 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   Build: <build id>
   User agent: <navigator.userAgent>
   Hand: <n> (<phase>)
+  Goulash: <no (this hand is not a Goulash) | yes, half-limit hands barred|allowed in this hand>
+  House rules: hand set <set>, half-limit hands in a Goulash <barred|allowed>, a win <needs the fish shown|needs no announcement>
   Decisions: <all steps> (yours: <human steps>)
   Note: <one line, 280 characters at most, or (none)>
 

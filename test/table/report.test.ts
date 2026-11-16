@@ -167,6 +167,28 @@ describe("house rules at the table", () => {
     assert.match(buildReport(store.get(session.id)!, INFO), /^House rules: hand set all, half-limit hands in a Goulash allowed, a win needs no announcement$/m);
   });
 
+  it("logs whether the hand in play is a Goulash, and whether half-limit hands are barred in it", () => {
+    const store = new GameStore();
+    const { session } = store.create("goulash-log", PICTURED);
+    const live = store.get(session.id)!;
+    assert.match(buildReport(live, INFO), /^Goulash: no \(this hand is not a Goulash\)$/m);
+
+    // The same table, in a Goulash hand, with the bar on and then off.
+    const inGoulash = (barred: boolean) => ({
+      ...live,
+      state: {
+        ...live.state,
+        goulash: true,
+        excludedHands: [
+          ...(live.state.excludedHands ?? []).filter((id) => id !== GOULASH_NO_HALF_LIMIT),
+          ...(barred ? [GOULASH_NO_HALF_LIMIT] : []),
+        ],
+      },
+    });
+    assert.match(buildReport(inGoulash(true), INFO), /^Goulash: yes, half-limit hands barred in this hand$/m);
+    assert.match(buildReport(inGoulash(false), INFO), /^Goulash: yes, half-limit hands allowed in this hand$/m);
+  });
+
   it("changes the hand set only at the next deal, and the report replays it", () => {
     const store = new GameStore();
     const { session } = store.create("house-2", PICTURED);
