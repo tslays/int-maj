@@ -11,7 +11,7 @@ import type { PhotoStore } from "./report.ts";
 export interface PhotoReadEnv {
   /** The bearer token that opens the route; a Worker secret. */
   readonly REPORT_PHOTO_TOKEN?: string;
-  readonly REPORT_PHOTOS?: PhotoStore;
+  readonly REPORT_PHOTOS?: Pick<PhotoStore, "get">;
 }
 
 export const PHOTO_ROUTE = "/api/report-photo/";

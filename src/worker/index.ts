@@ -7,7 +7,7 @@
 import { PHOTO_ROUTE, handlePhotoRead, type PhotoReadEnv } from "./photo-read.ts";
 import { handleReport, type ReportEnv } from "./report.ts";
 
-interface Env extends ReportEnv, PhotoReadEnv {
+interface Env extends ReportEnv, Omit<PhotoReadEnv, "REPORT_PHOTOS"> {
   readonly ASSETS: { fetch(request: Request): Promise<Response> };
 }
 
