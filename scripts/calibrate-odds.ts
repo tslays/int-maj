@@ -18,6 +18,10 @@
  * far the race against the other three pulls the real outcome below the
  * figure.
  *
+ * Set CALIBRATE_HAND=<id> to commit East to that hand in every game instead
+ * of the panel's top one, to check one hand's figure on its own (hands far
+ * from East's tiles then give low figures, which is part of the check).
+ *
  * It prints a reliability table (predicted bucket against the share
  * completed) and the Brier score of both figures. Defaults: 400 hands,
  * prefix "odds", on every core.
@@ -84,7 +88,7 @@ function playHand(seed: string, race: boolean, samples: Sample[]): void {
     let action: Action | null;
     if (actor === EAST) {
       if (view.phase === "discard") {
-        pattern ??= closestHands(view)[0]?.pattern ?? null;
+        pattern ??= process.env.CALIBRATE_HAND ?? closestHands(view)[0]?.pattern ?? null;
         if (pattern !== null) {
           const found = handTarget(view, pattern);
           const chance = found === null ? 0 : (handChance(tableOf(view), found.target, { salt: pattern }) ?? 0);
