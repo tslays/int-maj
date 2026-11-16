@@ -42,6 +42,7 @@ describe("closest hands", () => {
     assert.deepEqual(snake.need, ["wN"]);
     assert.equal(snake.tier, "limit");
     assert.equal(snake.concealedOnly, true, "Wriggly Snake exists only concealed");
+    assert.equal(snake.requiresSelfDrawn, false, "Wriggly Snake may win on a discard");
     assert.equal(snake.points, 1000);
     assert.ok(snake.chance > 0 && snake.chance <= 1);
     assert.deepEqual(snake.unseen, { wN: 4 }, "every North Wind is still out of sight");

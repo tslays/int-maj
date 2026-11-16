@@ -291,7 +291,7 @@ function hintRow(hand, { name: label, pinned }) {
     `${pinned ? "Pinned: " : ""}${label}${
       away
         ? ", out of reach: more than six tiles away, or no longer possible with the tiles in sight or your exposed melds"
-        : `, ${hand.pick === "discover" ? "an idea that may be new to you, " : ""}${hand.away === 0 ? "complete" : chanceWords(hand.chance)}${moved}, ${hand.concealedOnly ? "concealed, no exposed melds" : "exposed melds allowed"}`
+        : `, ${hand.pick === "discover" ? "an idea that may be new to you, " : ""}${hand.away === 0 ? "complete" : chanceWords(hand.chance)}${moved}, ${hand.concealedOnly ? "concealed, no exposed melds" : "exposed melds allowed"}${hand.requiresSelfDrawn ? ", self-drawn only" : ""}`
     }. Tap for details.`,
   );
   // The chance leads the row as a ring alone, in its band's colour and filled
@@ -319,6 +319,7 @@ function hintRow(hand, { name: label, pinned }) {
     meta.append(
       piece(playWord(hand.concealedOnly)),
       piece("\u00b7"),
+      ...(hand.requiresSelfDrawn ? [piece("Self-drawn"), piece("\u00b7")] : []),
       piece(hand.points === null ? "calculated" : hand.points.toLocaleString("en")),
     );
   }
@@ -593,6 +594,21 @@ export async function openHandDetail(pattern, progress = null) {
   head.className = "detail-head";
   head.append(heading, actions);
 
+  // The chips each open a note, one at a time: opening one closes the others.
+  const notes = [];
+  const wireNote = (button, note) => {
+    notes.push({ button, note });
+    button.addEventListener("click", () => {
+      const opening = note.hidden;
+      for (const other of notes) {
+        other.note.hidden = true;
+        other.button.setAttribute("aria-expanded", "false");
+      }
+      note.hidden = !opening;
+      button.setAttribute("aria-expanded", String(opening));
+    });
+  };
+
   // How it is played and what it pays, in one row of chips. The play chip
   // opens the long explanation, which a player needs once and then knows.
   const rule = document.createElement("button");
@@ -615,26 +631,118 @@ export async function openHandDetail(pattern, progress = null) {
       : "You may call discards to make exposed melds and still win this hand, " +
         "though it pays less than playing it concealed.") +
     (detail.requiresSelfDrawn ? " Self-drawn: every tile, the winning one included, must come from the wall." : "");
-  rule.addEventListener("click", () => {
-    ruleNote.hidden = !ruleNote.hidden;
-    rule.setAttribute("aria-expanded", String(!ruleNote.hidden));
-  });
+  wireNote(rule, ruleNote);
   const facts = document.createElement("div");
   facts.className = "detail-facts";
+  // A hand offered as an idea that may be new says so first, with the same
+  // spark the panel's row carries, so the mark never has to be guessed at.
+  let newNote = null;
+  let chanceNote = null;
+  if (progress?.pick === "discover") {
+    const fresh = document.createElement("button");
+    fresh.type = "button";
+    fresh.className = "detail-fact detail-new";
+    fresh.setAttribute("aria-expanded", "false");
+    fresh.setAttribute("aria-controls", "hand-new-note");
+    fresh.append(newIcon(), "New");
+    const freshChevron = document.createElement("span");
+    freshChevron.className = "rule-chevron";
+    freshChevron.setAttribute("aria-hidden", "true");
+    fresh.append(freshChevron);
+    newNote = document.createElement("p");
+    newNote.className = "detail-note";
+    newNote.id = "hand-new-note";
+    newNote.hidden = true;
+    newNote.textContent =
+      "The hints offer this as an idea that may be new to you: a hand you have not met much yet, " +
+      "so you can learn what else is out there. How often that happens is your choice, under " +
+      "Options, Game, Hint style: Likeliest never offers new hands, Mixed offers one, Discovery offers only new ones.";
+    wireNote(fresh, newNote);
+    facts.append(fresh);
+  }
   facts.append(rule);
   // How it is played, how far you are, and last what it pays: the panel's order.
-  if (detail.requiresSelfDrawn) facts.append(factChip(null, "Self-drawn only"));
+  let selfNote = null;
+  if (detail.requiresSelfDrawn) {
+    const self = document.createElement("button");
+    self.type = "button";
+    self.className = "detail-fact detail-self";
+    self.setAttribute("aria-expanded", "false");
+    self.setAttribute("aria-controls", "hand-self-note");
+    const selfChevron = document.createElement("span");
+    selfChevron.className = "rule-chevron";
+    selfChevron.setAttribute("aria-hidden", "true");
+    self.append("Self-drawn", selfChevron);
+    selfNote = document.createElement("p");
+    selfNote.className = "detail-note";
+    selfNote.id = "hand-self-note";
+    selfNote.hidden = true;
+    selfNote.textContent =
+      "This hand only counts if you win on a tile you draw yourself. Every tile of it, the winning one " +
+      "included, must come from the wall, so you cannot win it on another player's discard.";
+    wireNote(self, selfNote);
+    facts.append(self);
+  }
   if (progress !== null) {
-    const far = factChip(null, progress.away === 0 ? "Complete" : chanceBadge(progress.chance));
-    if (progress.away === 0) far.classList.add("detail-done");
-    else far.setAttribute("aria-label", chanceWords(progress.chance));
-    facts.append(far);
+    if (progress.away === 0) {
+      const far = factChip(null, "Complete");
+      far.classList.add("detail-done");
+      facts.append(far);
+    } else {
+      // The band opens a note on what the chance means, like the play chip.
+      const far = document.createElement("button");
+      far.type = "button";
+      far.className = "detail-fact detail-chance";
+      far.setAttribute("aria-label", chanceWords(progress.chance));
+      far.setAttribute("aria-expanded", "false");
+      far.setAttribute("aria-controls", "hand-chance-note");
+      const farChevron = document.createElement("span");
+      farChevron.className = "rule-chevron";
+      farChevron.setAttribute("aria-hidden", "true");
+      far.append(chanceBadge(progress.chance), farChevron);
+      chanceNote = document.createElement("p");
+      chanceNote.className = "detail-note";
+      chanceNote.id = "hand-chance-note";
+      chanceNote.hidden = true;
+      chanceNote.textContent =
+        "How likely you are to complete this hand, worked out from your tiles and what you can see, " +
+        "if you play only for it from now on. It is a building chance, not a winning chance: another " +
+        "player going out first is not counted. An arrow means it moved a band since your last move. " +
+        "You can turn hints off from the menu's Hints button, and change which hands they suggest " +
+        "under Options, Game, Hint style.";
+      wireNote(far, chanceNote);
+      facts.append(far);
+    }
   }
   const concealedWorth = worth(detail.concealedTier, detail.concealedPoints);
   const exposedWorth = detail.concealedOnly ? null : worth(detail.exposedTier, detail.exposedPoints);
-  // A hand with more than one scoring lists each one below, so it gets no single "Pays" chip.
+  // A hand with more than one scoring gets a "Pays" chip over the range; it opens each scoring and when it applies.
   const scorings = detail.readings.length > 1;
-  if (!scorings) {
+  let paysNote = null;
+  if (scorings) {
+    const values = detail.readings.map((reading) => reading.concealedPoints);
+    const range = values.some((value) => value === null)
+      ? "Varies"
+      : `${Math.min(...values).toLocaleString("en")}\u2013${Math.max(...values).toLocaleString("en")}`;
+    const pays = document.createElement("button");
+    pays.type = "button";
+    pays.className = "detail-fact detail-pays";
+    pays.setAttribute("aria-expanded", "false");
+    pays.setAttribute("aria-controls", "hand-pays-note");
+    const paysLabel = document.createElement("small");
+    paysLabel.textContent = "Pays";
+    const paysChevron = document.createElement("span");
+    paysChevron.className = "rule-chevron";
+    paysChevron.setAttribute("aria-hidden", "true");
+    pays.append(paysLabel, range, paysChevron);
+    paysNote = document.createElement("div");
+    paysNote.className = "detail-note";
+    paysNote.id = "hand-pays-note";
+    paysNote.hidden = true;
+    paysNote.append(readingList(detail.readings));
+    wireNote(pays, paysNote);
+    facts.append(pays);
+  } else {
     if (exposedWorth === null || exposedWorth === concealedWorth) {
       // One value when the hand pays the same either way, or cannot be exposed.
       facts.append(factChip("Pays", concealedWorth));
@@ -649,8 +757,7 @@ export async function openHandDetail(pattern, progress = null) {
 
   card.append(head);
   if (pin !== null) card.append(pin.note);
-  card.append(facts, ruleNote);
-  if (scorings) card.append(readingList(detail.readings));
+  card.append(facts, ...[newNote, selfNote, chanceNote, paysNote].filter((note) => note !== null), ruleNote);
 
   // First the book's sample hand, then what the hand is, below it. A
   // Companion-only table sees the Companion's pictures and pages alone.
@@ -672,8 +779,25 @@ export async function openHandDetail(pattern, progress = null) {
     heading.textContent = progress.away === 0 ? "Your hand" : "Tiles you still need";
     yours.append(heading, need);
     if (progress.away > 0) {
+      // The long explanation waits behind the heading: tap it to read.
       const left = document.createElement("p");
       left.className = "detail-muted need-note";
+      left.id = "hand-need-note";
+      left.hidden = true;
+      const more = document.createElement("button");
+      more.type = "button";
+      more.className = "need-more";
+      more.setAttribute("aria-expanded", "false");
+      more.setAttribute("aria-controls", "hand-need-note");
+      const moreChevron = document.createElement("span");
+      moreChevron.className = "rule-chevron";
+      moreChevron.setAttribute("aria-hidden", "true");
+      more.append(heading.textContent, moreChevron);
+      heading.replaceChildren(more);
+      more.addEventListener("click", () => {
+        left.hidden = !left.hidden;
+        more.setAttribute("aria-expanded", String(!left.hidden));
+      });
       left.textContent =
         "The number under each tile: copies you have not seen yet, in the wall or another player's hand. " +
         "The chance reads them, and every claim this hand may make. " +
