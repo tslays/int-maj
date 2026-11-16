@@ -8,7 +8,7 @@ is new, what to try, how to report and what the app cannot do yet.
 
 <!-- guide:start -->
 
-# Mah Jong — test version alpha.10
+# Mah Jong — test version alpha.11
 
 **Play here:** https://int.mah-jong.workers.dev
 
@@ -18,63 +18,46 @@ International mahjong in your browser, against three bots, by the rules of
 ## Getting the new version
 
 Open the link (or the app on your home screen) and reload it once. The
-small label under the menu, top left, should read **alpha.10**. A game in progress carries on. If an update changes the game, the
+small label under the menu, top left, should read **alpha.11**. A game in progress carries on. If an update changes the game, the
 hand you were playing starts again with the scores kept.
 
 **New to the app?** On an iPhone open the link in Safari, tap Share, then
 *Add to Home Screen*, and play it from the home-screen icon with the phone
 turned sideways. Everything else, the app shows you: Options › **Help**.
 
-## New in alpha.10
+## New in alpha.11
 
-- **A new hand set, Rare.** In Options › **Rules**, *Hands in play* has a
-  fourth step. It leaves out the easy mixed-suit hands that nearly any deal
-  is halfway to (Crazy Chows, Three Philosophers, Little Robert, Big Robert
-  at half limit), so the rarer hands are worth chasing. 73 hands stay in
-  play. It is our own rule, not the book's.
-- **Options in three tabs:** *Game*, *Table* and *Rules*. The house rules no
-  longer sit below the fold on a landscape phone.
-- **Hands in play shows a count,** and its note names only what the chosen
-  step adds. *Announce fishing to win* now explains itself.
-- **Changes start next hand:** a rule changed mid-hand shows it in the
-  header, with an amber light on the Rules tab.
-- **The welcome card waits** until the phone is turned sideways, so it no
-  longer covers the turn-your-phone screen.
-
-## Fixed thanks to your reports
-
-Thank you for your report. From the last round:
-
-- *"In goulash, the 3 received tiles are not always appearing shaded teal
-  color - sometimes 3 tiles, sometimes only 2 tiles."* You were right. All
-  three received tiles are now marked, also when one matches a tile you
-  passed away.
+- **Up to three photos in a report.** Options › **Report a problem** takes
+  up to three photos, for problems that need several screenshots.
+- **A "self-draw only" mark on Fishing.** When a Fishing offer can only win
+  from the wall (Buried Treasure and its kin), its button carries a navy
+  *self-draw only* tab across the top. A mixed offer reads *Some tiles:
+  self-draw only*.
 
 ## What works differently now
 
-- The house rules are in the *Rules* tab of Options; sound and discard
-  settings are in *Table*.
-- Hands in play can be set to *Rare*.
+- During a Fishing announcement, the closest-hands panel shows the real
+  chance of your next draw, not 0%.
+- A report can carry up to three photos. The fallback that shares a report
+  as a message still sends the text only.
 
 ## What to try, and tell us
 
-- Open **Options** and look through the three tabs. Is everything where you
-  expect it? Does the sheet fit your phone?
-- Choose **Rare** under Hands in play and play a few hands. Do the rarer
-  hands make the game more interesting? Does the note explain it?
-- Play a **Goulash** and check that all three tiles you receive are shaded
-  teal.
-- On a phone, open the link for the first time (or in a private tab): does
-  the welcome card appear only once the phone is sideways?
+- Send a report with two or three photos attached (Options › Report a
+  problem). Do they all arrive, and does the sheet stay easy to use?
+- Find a Fishing offer that can only be won from the wall, such as Buried
+  Treasure. Is the *self-draw only* tab clear before you tap?
+- Announce fishing to win, and look at the closest-hands panel. Does it show
+  a real chance rather than 0%?
 - Anything that broke, looked wrong or surprised you.
 
 ## How to report
 
 Open **Options**, tap **Report a problem**, type a line about what you saw
-(optional) and tap **Send**. It reaches us at once and shows you a report
-number. It holds the version, your device and the moves of the game so far,
-and no name or account. Without a connection it offers to share the report
-as a message instead.
+(optional), add up to three photos if they help, and tap **Send**. It
+reaches us at once and shows you a report number. It holds the version, your
+device and the moves of the game so far, and no name or account. Without a
+connection it offers to share the report as a message instead.
 
 ## Known limits
 
@@ -89,6 +72,8 @@ as a message instead.
   all three players, and a player who announced fishing also scores. Other
   losing hands are not scored against each other.
 - Crazy Chows is a common way for the bots to win, unless you play Rare.
+- Closest hands are ranked by chance, so a hand that can only be won from the
+  wall, such as Seven Twins, can drop out of the top three.
 
 <!-- guide:end -->
 
@@ -96,16 +81,15 @@ as a message instead.
 
 <!-- whatsapp:start -->
 
-🀄 **Mah Jong test version alpha.10 is out!**
+🀄 **Mah Jong test version alpha.11 is out!**
 
 Play: https://int.mah-jong.workers.dev (reload once to update)
 
-New: Options now has three tabs (Game, Table, Rules), and a new hand set,
-*Rare*, drops the easy mixed-suit hands so the rarer ones are worth chasing.
-Also: all three Goulash tiles you receive are now marked (thanks for your
-report!), and the welcome card waits until your phone is sideways.
+New: a report can now carry up to three photos, for problems that need
+several screenshots. A Fishing offer that can only win from the wall says
+*self-draw only* on its button, and the closest-hands panel shows real
+chances during a Fishing announcement.
 
-I'd love to hear whether the new Options sheet and the Rare set feel right.
 The guide is attached. Found something odd? Options › Report a problem.
 
 <!-- whatsapp:end -->
