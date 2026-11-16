@@ -15,6 +15,7 @@ import { openingPref } from "./opening.js";
 import { clearSelection, goulashKeys, installInput, resetGoulash } from "./input.js";
 import { refreshGoulash } from "./goulash.js";
 import { receivedPlan } from "./received.js";
+import { familiar } from "./familiar.js";
 import { refreshHints } from "./hints.js";
 import { warmIndex } from "./handbook.js";
 import { installMenu } from "./menu.js";
@@ -350,6 +351,7 @@ async function newGame() {
   }
   state.newGameWanted = false;
   state.busy = true;
+  familiar.decay(); // what the panel has offered fades a little with every game
   $("#result").hidden = true;
   $("#result").dataset.hand = "";
   hideChoices();

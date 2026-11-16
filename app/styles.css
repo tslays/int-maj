@@ -892,6 +892,15 @@ html.pond-zoom .act-claim {
   margin: 0 3px -1px 0;
   color: var(--gold-1);
 }
+/* The spark of a hand offered as an idea that may be new: soft, in the panel's accent, never louder than the ring. */
+.closest-name .new-icon {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 0 3px -1px 0;
+  fill: currentColor;
+  color: var(--chance-trend);
+}
 /* The pin, top right of a hand's sheet beside the close cross: an icon, gold and filled while pinned. */
 .pin-button {
   display: grid;
