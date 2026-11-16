@@ -319,23 +319,34 @@ export function tripleSetGroup(): Group {
 }
 
 /** A pair made of the same number in two different suits ("mixed pair"). */
-const MIXED_PAIR: Group = (() => {
+function mixedPairs(suits: readonly Suit[]): Group {
   const options: string[][] = [];
   for (let rank = 1; rank <= 9; rank++) {
-    for (let first = 0; first < SUITS.length; first++) {
-      for (let second = first + 1; second < SUITS.length; second++) {
-        options.push([
-          suitTileKey(SUITS[first]!, rank),
-          suitTileKey(SUITS[second]!, rank),
-        ]);
+    for (let first = 0; first < suits.length; first++) {
+      for (let second = first + 1; second < suits.length; second++) {
+        options.push([suitTileKey(suits[first]!, rank), suitTileKey(suits[second]!, rank)]);
       }
     }
   }
   return { options: () => options };
-})();
+}
 
-export function mixedPairGroup(): Group {
-  return MIXED_PAIR;
+const MIXED_PAIR: Group = mixedPairs(SUITS);
+const MIXED_PAIR_IN = new Map<string, Group>();
+
+/**
+ * A mixed pair from any two suits, or, given two suits, from exactly those two
+ * (Knitting: every pair of the hand is in the same two suits).
+ */
+export function mixedPairGroup(first?: Suit, second?: Suit): Group {
+  if (first === undefined || second === undefined) return MIXED_PAIR;
+  const id = `${first}${second}`;
+  let group = MIXED_PAIR_IN.get(id);
+  if (group === undefined) {
+    group = mixedPairs([first, second]);
+    MIXED_PAIR_IN.set(id, group);
+  }
+  return group;
 }
 
 /** Pool keys, in pool order, with at least `least` tiles that pass `predicate`. */
