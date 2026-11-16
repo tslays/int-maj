@@ -139,10 +139,29 @@ export const handMethods = {
     const pointer = new THREE.Vector2((x / rect.width) * 2 - 1, (fromBottom / viewport.strip) * 2 - 1);
     this.raycaster.setFromCamera(pointer, handCamera);
     const hits = this.raycaster.intersectObjects(this.handGroup.children, true);
-    if (hits.length === 0) return null;
+    if (hits.length === 0) return this.liftedGapHit() ? this.lifted : null;
     let object = hits[0].object;
     while (object.parent !== this.handGroup) object = object.parent;
     return this.hand.find((entry) => entry.tile === object) ?? null;
+  },
+
+  /**
+   * Whether the pointer ray (set by `pick`) passes through the gap a raised
+   * tile leaves beneath it. That gap counts as part of the tile, so moving
+   * from the tile down into it keeps the tile up instead of flickering.
+   */
+  liftedGapHit() {
+    const entry = this.lifted;
+    if (entry === null || !this.hand.includes(entry)) return false;
+    const tile = entry.tile;
+    const y = tile.position.y;
+    const box = new THREE.Box3().setFromObject(tile);
+    tile.position.y = 0;
+    tile.updateMatrixWorld(true);
+    box.union(new THREE.Box3().setFromObject(tile));
+    tile.position.y = y;
+    tile.updateMatrixWorld(true);
+    return this.raycaster.ray.intersectsBox(box);
   },
 
   /** Raise a hand tile (marking its copies on the table) or put it back; `lifted` is the one raised. */
