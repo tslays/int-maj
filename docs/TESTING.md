@@ -8,7 +8,7 @@ is new, what to try, how to report and what the app cannot do yet.
 
 <!-- guide:start -->
 
-# Mah Jong — test version alpha.11
+# Mah Jong — test version alpha.12
 
 **Play here:** https://int.mah-jong.workers.dev
 
@@ -18,37 +18,48 @@ International mahjong in your browser, against three bots, by the rules of
 ## Getting the new version
 
 Open the link (or the app on your home screen) and reload it once. The
-small label under the menu, top left, should read **alpha.11**. A game in progress carries on. If an update changes the game, the
+small label under the menu, top left, should read **alpha.12**. A game in progress carries on. If an update changes the game, the
 hand you were playing starts again with the scores kept.
 
 **New to the app?** On an iPhone open the link in Safari, tap Share, then
 *Add to Home Screen*, and play it from the home-screen icon with the phone
 turned sideways. Everything else, the app shows you: Options › **Help**.
 
-## New in alpha.11
+## New in alpha.12
 
-- **Up to three photos in a report.** Options › **Report a problem** takes
-  up to three photos, for problems that need several screenshots.
-- **A "self-draw only" mark on Fishing.** When a Fishing offer can only win
-  from the wall (Buried Treasure and its kin), its button carries a navy
-  *self-draw only* tab across the top. A mixed offer reads *Some tiles:
-  self-draw only*.
+- **Hint style.** Options › **Game** › **Hint style** chooses how the
+  closest-hands panel picks its hands. **Mixed** (the default) shows the two
+  likeliest plus one *idea*, marked with a small spark: a hand you may not
+  have tried. **Discovery** favours ideas; **Likeliest** shows only the
+  likeliest hands. Ideas rotate from hand to hand.
+- **Winning hands in the book's own groups.** A special hand's winning tiles
+  now appear grouped as the book prints them, for about twenty-five hands
+  (Wriggly Snake, Gates of Heaven, Windfall, Dragon's Breath and more).
+- **A chance to build, not to win.** The Guide, the hand sheet and the screen
+  reader now say that the ring is the chance your tiles build the hand by the
+  end of the wall, and invite you to try hands you would not normally play.
+
+## Fixed thanks to your reports
+
+- **Knitting looked far too likely.** The hints counted pairs across three
+  suits as Knitting, so it read about 90% on an ordinary hand. It now needs
+  the same two suits throughout.
 
 ## What works differently now
 
-- During a Fishing announcement, the closest-hands panel shows the real
-  chance of your next draw, not 0%.
-- A report can carry up to three photos. The fallback that shares a report
-  as a message still sends the text only.
+- Closest hands in Mixed style show one idea beside the likeliest two. Pick
+  *Likeliest* in Options › Game for the old panel. The device remembers which
+  ideas you have met, so they rotate.
 
 ## What to try, and tell us
 
-- Send a report with two or three photos attached (Options › Report a
-  problem). Do they all arrive, and does the sheet stay easy to use?
-- Find a Fishing offer that can only be won from the wall, such as Buried
-  Treasure. Is the *self-draw only* tab clear before you tap?
-- Announce fishing to win, and look at the closest-hands panel. Does it show
-  a real chance rather than 0%?
+- Open Options › Game and try each Hint style. Does the panel change at once,
+  and is the spark on an idea easy to read?
+- Play a few hands in Mixed. Do the ideas rotate, or do the same ones keep
+  coming back? Are they worth trying?
+- Look at the winning hand of a special hand such as Wriggly Snake or Gates
+  of Heaven. Are its tiles grouped as the book shows?
+- Does Knitting stay low unless your hand really leans on two suits?
 - Anything that broke, looked wrong or surprised you.
 
 ## How to report
@@ -81,15 +92,16 @@ connection it offers to share the report as a message instead.
 
 <!-- whatsapp:start -->
 
-🀄 **Mah Jong test version alpha.11 is out!**
+🀄 **Mah Jong test version alpha.12 is out!**
 
 Play: https://int.mah-jong.workers.dev (reload once to update)
 
-New: a report can now carry up to three photos, for problems that need
-several screenshots. A Fishing offer that can only win from the wall says
-*self-draw only* on its button, and the closest-hands panel shows real
-chances during a Fishing announcement.
+New: a Hint style option (Options › Game) so the closest-hands panel can
+suggest hands you have not tried yet, special hands shown in the book's own
+groups, and a fix for Knitting looking far too likely. The ring now says it
+is a chance to build a hand, not to win.
 
-The guide is attached. Found something odd? Options › Report a problem.
+Thank you for the Knitting report. The guide is attached. Found something
+odd? Options › Report a problem.
 
 <!-- whatsapp:end -->
