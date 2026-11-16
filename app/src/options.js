@@ -9,6 +9,8 @@
  * next hand, and a change made mid-hand shows as pending until then.
  */
 
+import { refreshHints } from "./hints.js";
+import { hintStyle, HINT_STYLES } from "./hint-style.js";
 import { largeDiscards } from "./large-discards.js";
 import { discardLayout } from "./discard-layout.js";
 import { roundLayersWanted } from "./layout.js";
@@ -131,6 +133,13 @@ function showPace() {
   }
 }
 
+function showHintStyle() {
+  for (const button of document.querySelectorAll("#hint-style [data-hint-style]")) {
+    button.setAttribute("aria-checked", String(button.dataset.hintStyle === hintStyle.id));
+  }
+  $("#hint-style-note").textContent = HINT_STYLES.find((entry) => entry.id === hintStyle.id)?.about ?? "";
+}
+
 function showLevel() {
   for (const button of document.querySelectorAll("#level [data-level]")) {
     button.setAttribute("aria-checked", String(button.dataset.level === level.id));
@@ -173,6 +182,7 @@ export function installOptions({ newGame }) {
   showLargeDiscards();
   showDiscardLayout();
   showPace();
+  showHintStyle();
   showLevel();
   showOpening();
   showRules();
@@ -246,6 +256,14 @@ export function installOptions({ newGame }) {
     if (button === null) return;
     pace.set(button.dataset.pace);
     showPace();
+  });
+
+  /* Hint style: the panel picks its hands anew at once. */
+  $("#hint-style").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-hint-style]");
+    if (button === null || !hintStyle.set(button.dataset.hintStyle)) return;
+    showHintStyle();
+    void refreshHints(true);
   });
 
   /* Discards: rows or the centre pile (#122); the table re-lays them at once. */
