@@ -30,6 +30,31 @@ function inReadingOrder(keys: readonly string[]): string[] {
   return [...keys].sort((a, b) => rank(a) - rank(b) || ORDER.get(a)! - ORDER.get(b)!);
 }
 
+/**
+ * The groups in a steady order: groups of the same size keep their slots (so a
+ * pattern's own layout, a pair last, stands) but are sorted among themselves
+ * by number (runs) or tile order (pungs). What the pool held first no longer decides.
+ */
+function settled(groups: string[][]): string[][] {
+  const rank = (key: string): number => (/^[bco][1-9]$/.test(key) ? Number(key[1]) : 0);
+  const isSame = (group: string[]): boolean => group.every((key) => key === group[0]);
+  // Runs and mixed sets first, by number; then pungs and pairs, by tile order.
+  const sortKey = (group: string[]): number[] =>
+    isSame(group) ? [1, ORDER.get(group[0]!)!, 0] : [0, rank(group[0]!), ORDER.get(group[0]!)!];
+  const before = (a: string[], b: string[]): number => {
+    const x = sortKey(a);
+    const y = sortKey(b);
+    return x[0]! - y[0]! || x[1]! - y[1]! || x[2]! - y[2]!;
+  };
+  const result = groups.slice();
+  for (const size of new Set(groups.map((group) => group.length))) {
+    const slots = groups.flatMap((group, index) => (group.length === size ? [index] : []));
+    const sorted = slots.map((index) => groups[index]!).sort(before);
+    slots.forEach((slot, at) => (result[slot] = sorted[at]!));
+  }
+  return result;
+}
+
 /** A meld's identity as a group: its first three tiles (a kong is a pung with a spare tile), in tile order. */
 function signature(keys: readonly string[]): string {
   return inTileOrder(keys.slice(0, 3)).join(",");
@@ -102,7 +127,7 @@ export function arrangeConcealed(hand: Hand, pattern: Pick<HandPattern, "groups"
       if (at >= 0 && group.length >= 3) open.splice(at, 1);
       else rest.push(inReadingOrder(group));
     }
-    return open.length === 0 ? rest : null;
+    return open.length === 0 ? settled(rest) : null;
   };
 
   if (pattern.groups !== undefined) {

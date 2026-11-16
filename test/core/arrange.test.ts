@@ -55,3 +55,33 @@ describe("arrangeConcealed", () => {
     assert.equal(arrangeConcealed(hand, { groups: undefined }), null);
   });
 });
+
+describe("arrangeConcealed, mixed-suit hands", () => {
+  it("lays Triple Knitting out as four triple sets by number, then the pair", () => {
+    const hand = createHand({ concealed: "o7 c1 b4 o1 c4 b1 c7 b7 o4 b9 o9 c9 c1 b1" });
+    assert.deepEqual(arrangeConcealed(hand, pattern("triple-knitting")), [
+      ["b1", "c1", "o1"],
+      ["b4", "c4", "o4"],
+      ["b7", "c7", "o7"],
+      ["b9", "c9", "o9"],
+      ["b1", "c1"],
+    ]);
+  });
+
+  it("pairs Knitting by number", () => {
+    const hand = createHand({ concealed: "o8 b1 o1 b8 b2 o2 b2 o2 b4 o4 b5 o5 b7 o7" });
+    const groups = arrangeConcealed(hand, pattern("knitting"))!;
+    assert.deepEqual(groups.map((group) => group.map((key) => key[1]).join("")), ["11", "22", "22", "44", "55", "77", "88"]);
+  });
+
+  it("orders the pungs of Mixed Pung whatever order the tiles came in", () => {
+    const hand = createHand({ concealed: "o9 o9 o9 c2 c2 c2 b5 b5 b5 wE wE wE dR dR", selfDrawn: true });
+    assert.deepEqual(arrangeConcealed(hand, pattern("mixed-pung")), [
+      ["b5", "b5", "b5"],
+      ["c2", "c2", "c2"],
+      ["o9", "o9", "o9"],
+      ["wE", "wE", "wE"],
+      ["dR", "dR"],
+    ]);
+  });
+});
