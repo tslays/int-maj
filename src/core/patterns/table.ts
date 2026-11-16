@@ -108,6 +108,15 @@ function isMixedPairKeys(first: string, second: string): boolean {
   );
 }
 
+/** Every choice of four different numbers from 1 to 9, in order. */
+function fourRanks(): number[][] {
+  const choices: number[][] = [];
+  for (let a = 1; a <= 9; a++)
+    for (let b = a + 1; b <= 9; b++)
+      for (let c = b + 1; c <= 9; c++) for (let d = c + 1; d <= 9; d++) choices.push([a, b, c, d]);
+  return choices;
+}
+
 /**
  * Triple Knitting: four "triple sets" (one tile of the same number in each
  * suit) plus a knitting pair (the same number in two suits). The four ranks
@@ -1129,7 +1138,11 @@ const BASE_PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The p. 20 and p. 50 printings are one shape. Matching counts per rank " +
       "in the two suits also allows a kong as two knitting pairs.",
-    groups: groupReadings(() => [repeat(mixedPairGroup(), 7)]),
+    // One reading per pair of suits: all seven pairs sit in the same two suits.
+    groups: groupReadings(() =>
+      SUITS.flatMap((first, at) =>
+        SUITS.slice(at + 1).map((second) => repeat(mixedPairGroup(first, second), 7)),
+      )),
     match: ({ shape }) => {
       if (shape.total !== 14 || shape.honoursTotal !== 0) return false;
       const suits = usedSuits(shape);
@@ -1161,7 +1174,12 @@ const BASE_PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The p. 20 and p. 60 printings are one shape. The four set ranks are " +
       "distinct; the pair may repeat one of them.",
-    groups: groupReadings(() => [[...repeat(tripleSetGroup(), 4), mixedPairGroup()]]),
+    // One reading per choice of four distinct set numbers, as `tripleKnitting` matches.
+    groups: groupReadings(() =>
+      fourRanks().map((ranks) => [
+        ...ranks.map((rank) => exactGroup(SUITS.map((suit) => suitTileKey(suit, rank)))),
+        mixedPairGroup(),
+      ])),
     match: ({ shape }) => tripleKnitting(shape),
   },
   {
