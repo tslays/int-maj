@@ -37,6 +37,7 @@ import {
   tileKey,
   type Suit,
 } from "../tiles.ts";
+import { ARRANGEMENTS } from "./arrangement.ts";
 import type { HandPattern } from "./types.ts";
 import {
   BLUE_CIRCLE_RANKS,
@@ -183,7 +184,7 @@ const pungWind = (set: Parameters<typeof isPungSet>[0]) => isPungSet(set) && isW
 const pungDragon = (set: Parameters<typeof isPungSet>[0]) => isPungSet(set) && isDragon(set.tile);
 const honourPung = (set: Parameters<typeof isPungSet>[0]) => isPungSet(set) && isHonourKey(set.tile);
 
-export const PATTERNS: readonly HandPattern[] = Object.freeze([
+const BASE_PATTERNS: readonly HandPattern[] = Object.freeze([
   {
     id: "ordinary-mahjong",
     name: "Ordinary Mah Jong",
@@ -2553,6 +2554,14 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
   },
 
 ]);
+
+/** The catalogue, each hand with the way its winning tiles are laid out when shown (display only). */
+export const PATTERNS: readonly HandPattern[] = Object.freeze(
+  BASE_PATTERNS.map((pattern) => {
+    const arrangement = ARRANGEMENTS[pattern.id];
+    return arrangement === undefined ? pattern : Object.freeze({ ...pattern, arrangement });
+  }),
+);
 
 /**
  * The hands only the Illustrated book prints: the Companion's catalogue does

@@ -107,7 +107,7 @@ function setKeys(set: StandardSet): string[] {
  * known (a hand that is not a partition into groups, such as seven pairs), so
  * the caller falls back to a plain sorted row.
  */
-export function arrangeConcealed(hand: Hand, pattern: Pick<HandPattern, "groups">): string[][] | null {
+export function arrangeConcealed(hand: Hand, pattern: Pick<HandPattern, "groups" | "arrangement">): string[][] | null {
   const shape = normalizeHand(hand);
   const melds = hand.melds.map((meld) => signature(meld.tiles.map(tileKey)));
 
@@ -130,8 +130,9 @@ export function arrangeConcealed(hand: Hand, pattern: Pick<HandPattern, "groups"
     return open.length === 0 ? settled(rest) : null;
   };
 
-  if (pattern.groups !== undefined) {
-    for (const reading of pattern.groups(`w${hand.seatWind}`)) {
+  const readings = pattern.arrangement ?? pattern.groups;
+  if (readings !== undefined) {
+    for (const reading of readings(`w${hand.seatWind}`)) {
       let found: string[][] | null = null;
       if (
         search({ ...pool }, reading, [], (chosen) => {

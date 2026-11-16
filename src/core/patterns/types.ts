@@ -143,4 +143,10 @@ export interface HandPattern {
    * Absent for hands no group list describes.
    */
   readonly groups?: (ownWind: string) => readonly (readonly Group[])[];
+  /**
+   * How the winning hand is laid out when shown, where the book's picture
+   * groups it differently from `groups` (or from four sets and a pair).
+   * Display only; see `arrangement.ts`.
+   */
+  readonly arrangement?: (ownWind: string) => readonly (readonly Group[])[];
 }
