@@ -171,6 +171,9 @@ function photoStore(failAfter = Infinity) {
       deletes.push(key);
       return undefined;
     },
+    async get() {
+      return null;
+    },
   };
   return { store, puts, deletes };
 }

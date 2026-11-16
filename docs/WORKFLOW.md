@@ -208,6 +208,15 @@ report could not be sent and offers the share sheet. When the token expires
 the same happens: create a new one, replace the secret, and re-run a deploy.
 The token can only read and write this repository's issues.
 
+Reading a photo back (owner-set, once): `GET /api/report-photo/<key>` on a
+site returns the photo named in a report issue, but only with the header
+`Authorization: Bearer <token>`; anything else gets a 404. The token is the
+repository secret `REPORT_PHOTO_TOKEN` (any long random string, for example
+`openssl rand -hex 32`), which each deploy hands to its Worker like the
+GitHub token. A session gets the same string through its environment's
+network secrets for the host `int-dev.mah-jong.workers.dev`. To revoke it,
+change the repository secret and redeploy.
+
 Report photos are kept in the Cloudflare R2 bucket `int-maj`, bound to the
 Worker as `REPORT_PHOTOS` in `wrangler.jsonc` (both the `int` and `int-dev`
 environments). The bucket must stay private: no public access and no custom
