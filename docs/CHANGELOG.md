@@ -4,7 +4,44 @@ Newest first. Written for players: what you will see, what was fixed, and
 what now works differently. Each version is a `v0.1.0-alpha.N` tag on `main`;
 testers get it at https://int.mah-jong.workers.dev.
 
-## alpha.11
+## alpha.12
+
+**New**
+
+- **Hint style.** Options › Game › Hint style chooses how the closest-hands
+  panel picks its hands: *Likeliest*, *Mixed* (the default: the two likeliest
+  plus one idea) or *Discovery* (hands you have not met yet). An idea carries
+  a small spark, and ideas rotate from hand to hand rather than repeating.
+  (#194, #195)
+- **Winning hands shown in the book's own groups.** A special hand's winning
+  tiles now appear grouped as the book prints them (Wriggly Snake, Gates of
+  Heaven, Windfall, Dragon's Breath, Dragonette and about twenty more), not
+  as one lump or split into the wrong sets. (#187)
+
+**Changed**
+
+- **Closest hands say the chance is a building chance.** The ring shows how
+  likely your tiles are to build a hand by the end of the wall, not to win
+  with it; the Guide, the hand sheet and the screen reader now say so, and
+  invite you to try hands you would not normally play. (#183)
+- Triple Knitting and Mixed Pung show their winning tiles grouped by their
+  own sets. (#184 → #186)
+
+**Fixed**
+
+- **Knitting no longer looks far closer than it is.** The hints counted
+  pairs across three suits as Knitting, so it showed 90% on an ordinary
+  opening hand. It now needs the same two suits throughout, and Triple
+  Knitting needs four different sets. (#191 → #192)
+
+**What works differently now**
+
+- Closest hands in Mixed style show one idea beside the likeliest two. Choose
+  *Likeliest* in Options › Game to see only the likeliest hands, as before.
+  The device remembers which ideas you have met, and halves that memory with
+  every new game.
+
+## alpha.11 (16 November 2026)
 
 **New**
 
