@@ -393,3 +393,84 @@ right for them:
   With the race on, built 0.5 / 4 / 7 / 22 %: the gap a player feels is the
   race, which the figure leaves out on purpose. The slight overshoot below
   20 % stays inside the Long shot band, so it is left as it is.
+
+## 12. Audit of selection and per-hand calibration (2026-11-16)
+
+Prompted by the owner's impression that Knitting, Triple Knitting and the
+seven-pair hands are suggested too often, and that the hints should help a
+player discover unusual hands, never act as a cheat code. Two tools were
+added: `scripts/hint-census.ts` (what the panel suggests, over seeded games)
+and `CALIBRATE_HAND=<id>` for `scripts/calibrate-odds.ts` (East commits to one
+named hand, to check its figure on its own).
+
+### What the panel suggests
+
+40 games, all four seats hard bots, East's panel (top 3) at each of its
+discard decisions (about 700 to 770 decisions).
+
+| | All hands | Rare set (five easy hands left out) |
+| --- | --- | --- |
+| Most often in the panel | Three Philosophers 69 %, Crazy Chows 64 %, Robin 42 % | Triple Knitting 35 %, Little Brother 29 %, Windy Chow 27 %, Professors 26 %, Knitting 23 % |
+| First place | Crazy Chows 50 %, Three Philosophers 9 %, Ordinary 8 % | Triple Knitting 23 %, Windy Chow 14 %, Ordinary 10 % |
+| Pair / knitting hands in a panel place | 11 % of places | 36 % of places (the pairs family is in 60 % of panels) |
+| Two or more pair / knitting hands in one panel | 4.6 % | not counted |
+| Distinct hands one game's panels show | 7.6 | not counted |
+| Panel time, top 8 (median / p95) | 154 / 362 ms | |
+
+So the impression is right, and what crowds the panel depends on the hands in
+play: with all hands the chow-run hands that the Rare set leaves out take over;
+with the Rare set the pair and knitting hands do. In both cases the cause is
+the same: a hand with very many versions is the likeliest hand almost every
+time, and the panel ranks by chance alone.
+
+### Is the figure inflated for those hands?
+
+200 hands each, East committed to the hand, no other seat going out.
+
+| Hand | Shown 20-30 % | Shown 40-50 % | Shown 60-70 % | Reading |
+| --- | --- | --- | --- | --- |
+| Knitting | built 34 % | 68 % | 97 % | cautious |
+| Triple Knitting | 37 % | 44 % | 66 % | about right to cautious |
+| Crazy Chows | 33 % | 62 % | 84 % | cautious |
+| All Pair | 6 % | 25 % | 0 % (4 cases) | high, but see below |
+| Ordinary Mahjong | 3 % | 13 % | 13 % | high, but see below |
+
+The flexible hands are not overrated: they are shown often because their
+chance really is high, and the figure is, if anything, a little low for them
+(the finding of §10 again). Nothing here justifies lowering their figure.
+
+All Pair and Ordinary Mahjong look overrated, but the check is too strict for
+them. It counts a hand as built only when East goes out **scored as that
+card**. Played to the end, committed to All Pair, East won with All Pair in
+2 of 7 wins and the rest as All Pair Honours, Triple Knitting, Crazy Chows and
+Three Philosophers; committed to Ordinary Mahjong, 1 of 9 wins was Ordinary,
+four were Crazy Chows. The same tiles are scored as the more specific card.
+The simulation counts the tiles completed, which is the right question for a
+player (they get at least that hand), so the gap is in the measurement, not
+the figure. A calibration that counts "went out with tiles one of the target's
+versions describes" would settle it; it is left for the selection work, since
+the panel's order does not depend on it.
+
+### Findings
+
+1. **No inflation of the flexible hands.** The figure stays as it is.
+2. **Selection is the cause.** Ranking by chance alone makes the most
+   flexible hands the answer almost every time. The remedy is in what is shown
+   (a choice of hint styles, below), not in the figure.
+3. **Calibration caveat.** For hands that overlap (Ordinary, All Pair), the
+   named-card measurement undercounts; do not read it as an error in the figure.
+4. The panel takes a median of 154 ms and up to 736 ms for the top eight on
+   this machine. More candidates for a discovery pick must stay inside the
+   §3.6 budget, probably with fewer trials for the extra hands.
+
+### Next: hint styles
+
+The owner's decision of 2026-11-16: a **Hint style** option with three
+settings. *Likeliest*: the panel as it is, no rotation. *Mixed*: the two
+likeliest hands and one discovery. *Discovery*: every free place is a discovery
+pick. A discovery pick is a hand that is still a real possibility (about 20 %
+or more), chosen for being different and less familiar: it favours a hand
+family not already in the panel and a hand the device has suggested or seen
+built less. The device remembers this; rotation applies only in Mixed (the one
+discovery place) and Discovery, and Likeliest ignores the memory. The figure
+shown is always the honest one.
