@@ -1314,6 +1314,8 @@ button.detail-rule {
   flex-wrap: wrap;
   align-items: center;
   gap: 3px;
+  /* The same top and bottom room as a capsule, so a lone tile sits level with the tiles inside one. */
+  padding: 4px 0;
 }
 /* A tile with alternatives sits in its own soft capsule, so it reads as one choice apart from the other needed tiles. */
 .need-pick[role="group"] {
