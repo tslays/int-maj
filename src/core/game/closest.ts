@@ -61,6 +61,8 @@ export interface ClosestHand {
    * pung, kong or chow) rules it out. Most special hands are like this.
    */
   readonly concealedOnly: boolean;
+  /** True when every tile, the winning one included, must come from the wall. */
+  readonly requiresSelfDrawn: boolean;
   /** Tiles still to collect; 0 means the hand in front of you is complete. */
   readonly away: number;
   /** The missing tiles, one key per copy, in canonical order. */
@@ -245,6 +247,7 @@ function exactVersion(
       points: TIER_POINTS[tier],
       pages: pattern.pages,
       concealedOnly: pattern.exposedTier === null,
+      requiresSelfDrawn: pattern.requiresSelfDrawn,
       away: reach.missing,
       need,
       another: anotherOf(need, situation.hand),
@@ -342,6 +345,7 @@ function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { f
         points: TIER_POINTS[tier],
         pages: pattern.pages,
         concealedOnly: pattern.exposedTier === null,
+        requiresSelfDrawn: pattern.requiresSelfDrawn,
         away: need.length,
         need,
         another: anotherOf(need, situation.hand),
