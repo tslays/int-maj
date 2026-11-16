@@ -1155,6 +1155,13 @@ html.pond-zoom .act-claim {
   color: var(--chance-trend);
   font-weight: 700;
 }
+button.detail-new {
+  cursor: pointer;
+}
+.detail-new[aria-expanded="true"] .rule-chevron {
+  margin-top: 3px;
+  transform: rotate(225deg);
+}
 .detail-fact.detail-new .new-icon {
   width: 12px;
   height: 12px;

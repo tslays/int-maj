@@ -623,11 +623,30 @@ export async function openHandDetail(pattern, progress = null) {
   facts.className = "detail-facts";
   // A hand offered as an idea that may be new says so first, with the same
   // spark the panel's row carries, so the mark never has to be guessed at.
+  let newNote = null;
   if (progress?.pick === "discover") {
-    const fresh = factChip(null, "New");
-    fresh.classList.add("detail-new");
-    fresh.prepend(newIcon());
-    fresh.setAttribute("aria-label", "An idea that may be new to you");
+    const fresh = document.createElement("button");
+    fresh.type = "button";
+    fresh.className = "detail-fact detail-new";
+    fresh.setAttribute("aria-expanded", "false");
+    fresh.setAttribute("aria-controls", "hand-new-note");
+    fresh.append(newIcon(), "New");
+    const freshChevron = document.createElement("span");
+    freshChevron.className = "rule-chevron";
+    freshChevron.setAttribute("aria-hidden", "true");
+    fresh.append(freshChevron);
+    newNote = document.createElement("p");
+    newNote.className = "detail-note";
+    newNote.id = "hand-new-note";
+    newNote.hidden = true;
+    newNote.textContent =
+      "The hints offer this as an idea that may be new to you: a hand you have not met much yet, " +
+      "so you can learn what else is out there. How often that happens is your choice, under " +
+      "Options, Game, Hint style: Likeliest never offers new hands, Mixed offers one, Discovery offers only new ones.";
+    fresh.addEventListener("click", () => {
+      newNote.hidden = !newNote.hidden;
+      fresh.setAttribute("aria-expanded", String(!newNote.hidden));
+    });
     facts.append(fresh);
   }
   facts.append(rule);
@@ -658,7 +677,7 @@ export async function openHandDetail(pattern, progress = null) {
 
   card.append(head);
   if (pin !== null) card.append(pin.note);
-  card.append(facts, ruleNote);
+  card.append(facts, ...(newNote === null ? [] : [newNote]), ruleNote);
   if (scorings) card.append(readingList(detail.readings));
 
   // First the book's sample hand, then what the hand is, below it. A
