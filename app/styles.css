@@ -1151,7 +1151,8 @@ html.pond-zoom .act-claim {
   height: 15px;
 }
 /* The "New" chip reads like the others: spark and word share the chips' colour. */
-.detail-fact.detail-new {
+.detail-fact.detail-new,
+.detail-fact.detail-self {
   font-weight: 700;
 }
 button.detail-new,
