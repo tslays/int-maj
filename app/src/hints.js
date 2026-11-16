@@ -652,7 +652,30 @@ export async function openHandDetail(pattern, progress = null) {
   }
   facts.append(rule);
   // How it is played, how far you are, and last what it pays: the panel's order.
-  if (detail.requiresSelfDrawn) facts.append(factChip(null, "Self-drawn only"));
+  let selfNote = null;
+  if (detail.requiresSelfDrawn) {
+    const self = document.createElement("button");
+    self.type = "button";
+    self.className = "detail-fact detail-self";
+    self.setAttribute("aria-expanded", "false");
+    self.setAttribute("aria-controls", "hand-self-note");
+    const selfChevron = document.createElement("span");
+    selfChevron.className = "rule-chevron";
+    selfChevron.setAttribute("aria-hidden", "true");
+    self.append("Self-drawn only", selfChevron);
+    selfNote = document.createElement("p");
+    selfNote.className = "detail-note";
+    selfNote.id = "hand-self-note";
+    selfNote.hidden = true;
+    selfNote.textContent =
+      "This hand only counts if you win on a tile you draw yourself. Every tile of it, the winning one " +
+      "included, must come from the wall, so you cannot win it on another player's discard.";
+    self.addEventListener("click", () => {
+      selfNote.hidden = !selfNote.hidden;
+      self.setAttribute("aria-expanded", String(!selfNote.hidden));
+    });
+    facts.append(self);
+  }
   if (progress !== null) {
     if (progress.away === 0) {
       const far = factChip(null, "Complete");
@@ -706,7 +729,7 @@ export async function openHandDetail(pattern, progress = null) {
 
   card.append(head);
   if (pin !== null) card.append(pin.note);
-  card.append(facts, ...[newNote, chanceNote].filter((note) => note !== null), ruleNote);
+  card.append(facts, ...[newNote, selfNote, chanceNote].filter((note) => note !== null), ruleNote);
   if (scorings) card.append(readingList(detail.readings));
 
   // First the book's sample hand, then what the hand is, below it. A
