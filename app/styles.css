@@ -1150,9 +1150,8 @@ html.pond-zoom .act-claim {
   width: 15px;
   height: 15px;
 }
-/* The "New" chip: the spark and its word, in the same accent as the panel's spark. */
+/* The "New" chip reads like the others: spark and word share the chips' colour. */
 .detail-fact.detail-new {
-  color: var(--chance-trend);
   font-weight: 700;
 }
 button.detail-new,
@@ -1315,6 +1314,27 @@ button.detail-rule {
 }
 .need-note {
   margin-top: 4px;
+}
+.need-note[hidden] {
+  display: none;
+}
+/* The chevron beside "Tiles you still need": tap to read what the numbers mean. */
+.need-more {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 6px 8px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.need-more .rule-chevron {
+  margin-top: -3px;
+}
+.need-more[aria-expanded="true"] .rule-chevron {
+  margin-top: 3px;
+  transform: rotate(225deg);
 }
 /* A needed tile with how many copies of it are still out of sight, under it. */
 .need-tile {
