@@ -1157,11 +1157,13 @@ html.pond-zoom .act-claim {
 }
 button.detail-new,
 button.detail-self,
+button.detail-pays,
 button.detail-chance {
   cursor: pointer;
 }
 .detail-new[aria-expanded="true"] .rule-chevron,
 .detail-self[aria-expanded="true"] .rule-chevron,
+.detail-pays[aria-expanded="true"] .rule-chevron,
 .detail-chance[aria-expanded="true"] .rule-chevron {
   margin-top: 3px;
   transform: rotate(225deg);

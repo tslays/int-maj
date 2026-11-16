@@ -716,9 +716,33 @@ export async function openHandDetail(pattern, progress = null) {
   }
   const concealedWorth = worth(detail.concealedTier, detail.concealedPoints);
   const exposedWorth = detail.concealedOnly ? null : worth(detail.exposedTier, detail.exposedPoints);
-  // A hand with more than one scoring lists each one below, so it gets no single "Pays" chip.
+  // A hand with more than one scoring gets a "Pays" chip over the range; it opens each scoring and when it applies.
   const scorings = detail.readings.length > 1;
-  if (!scorings) {
+  let paysNote = null;
+  if (scorings) {
+    const values = detail.readings.map((reading) => reading.concealedPoints);
+    const range = values.some((value) => value === null)
+      ? "Varies"
+      : `${Math.min(...values).toLocaleString("en")}\u2013${Math.max(...values).toLocaleString("en")}`;
+    const pays = document.createElement("button");
+    pays.type = "button";
+    pays.className = "detail-fact detail-pays";
+    pays.setAttribute("aria-expanded", "false");
+    pays.setAttribute("aria-controls", "hand-pays-note");
+    const paysLabel = document.createElement("small");
+    paysLabel.textContent = "Pays";
+    const paysChevron = document.createElement("span");
+    paysChevron.className = "rule-chevron";
+    paysChevron.setAttribute("aria-hidden", "true");
+    pays.append(paysLabel, range, paysChevron);
+    paysNote = document.createElement("div");
+    paysNote.className = "detail-note";
+    paysNote.id = "hand-pays-note";
+    paysNote.hidden = true;
+    paysNote.append(readingList(detail.readings));
+    wireNote(pays, paysNote);
+    facts.append(pays);
+  } else {
     if (exposedWorth === null || exposedWorth === concealedWorth) {
       // One value when the hand pays the same either way, or cannot be exposed.
       facts.append(factChip("Pays", concealedWorth));
@@ -733,8 +757,7 @@ export async function openHandDetail(pattern, progress = null) {
 
   card.append(head);
   if (pin !== null) card.append(pin.note);
-  card.append(facts, ...[newNote, selfNote, chanceNote].filter((note) => note !== null), ruleNote);
-  if (scorings) card.append(readingList(detail.readings));
+  card.append(facts, ...[newNote, selfNote, chanceNote, paysNote].filter((note) => note !== null), ruleNote);
 
   // First the book's sample hand, then what the hand is, below it. A
   // Companion-only table sees the Companion's pictures and pages alone.
