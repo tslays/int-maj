@@ -309,6 +309,15 @@ export function mixedChowGroup(): Group {
   return MIXED_CHOW;
 }
 
+/** A "triple set": the same number, one tile in each of the three suits (Triple Knitting). */
+const TRIPLE_SET: Group = {
+  options: () => Array.from({ length: 9 }, (_, index) => SUITS.map((suit) => suitTileKey(suit, index + 1))),
+};
+
+export function tripleSetGroup(): Group {
+  return TRIPLE_SET;
+}
+
 /** A pair made of the same number in two different suits ("mixed pair"). */
 const MIXED_PAIR: Group = (() => {
   const options: string[][] = [];
