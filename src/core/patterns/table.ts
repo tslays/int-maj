@@ -64,6 +64,7 @@ import {
   pairGroup,
   pairsInSuitGroup,
   pungGroup,
+  tripleSetGroup,
   pungOf,
   pungOnlyGroup,
   pungOnlySuit,
@@ -1127,6 +1128,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The p. 20 and p. 50 printings are one shape. Matching counts per rank " +
       "in the two suits also allows a kong as two knitting pairs.",
+    groups: groupReadings(() => [repeat(mixedPairGroup(), 7)]),
     match: ({ shape }) => {
       if (shape.total !== 14 || shape.honoursTotal !== 0) return false;
       const suits = usedSuits(shape);
@@ -1158,6 +1160,7 @@ export const PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The p. 20 and p. 60 printings are one shape. The four set ranks are " +
       "distinct; the pair may repeat one of them.",
+    groups: groupReadings(() => [[...repeat(tripleSetGroup(), 4), mixedPairGroup()]]),
     match: ({ shape }) => tripleKnitting(shape),
   },
   {
