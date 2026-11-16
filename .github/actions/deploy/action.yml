@@ -18,6 +18,13 @@ inputs:
       secret as it is.
     required: false
     default: ""
+  photo-token:
+    description: >-
+      The bearer token that opens GET /api/report-photo/<key> (pass the
+      repository secret REPORT_PHOTO_TOKEN). Empty leaves the Worker's
+      secret as it is.
+    required: false
+    default: ""
 runs:
   using: composite
   steps:
@@ -42,16 +49,18 @@ runs:
         CLOUDFLARE_API_TOKEN: ${{ inputs.token }}
         WRANGLER_ARGS: ${{ inputs.command }}
         REPORT_GITHUB_TOKEN: ${{ inputs.report-token }}
+        REPORT_PHOTO_TOKEN: ${{ inputs.photo-token }}
       run: |
         set -o pipefail
         secrets=()
-        if [ -n "$REPORT_GITHUB_TOKEN" ]; then
-          # Written outside the checkout and removed again; never printed.
-          file="$RUNNER_TEMP/worker-secrets.json"
-          node -e 'require("fs").writeFileSync(process.argv[1], JSON.stringify({ REPORT_GITHUB_TOKEN: process.env.REPORT_GITHUB_TOKEN }))' "$file"
+        # Written outside the checkout and removed again; never printed. Only
+        # the secrets that are set are sent; the others stay as the Worker has them.
+        file="$RUNNER_TEMP/worker-secrets.json"
+        node -e 'const o = {}; for (const n of ["REPORT_GITHUB_TOKEN", "REPORT_PHOTO_TOKEN"]) if (process.env[n]) o[n] = process.env[n]; if (Object.keys(o).length) require("fs").writeFileSync(process.argv[1], JSON.stringify(o))' "$file"
+        if [ -f "$file" ]; then
           secrets=(--secrets-file "$file")
           trap 'rm -f "$file"' EXIT
         else
-          echo "::notice::No REPORT_GITHUB_TOKEN secret, so the Worker's report token is left as it is."
+          echo "::notice::No REPORT_GITHUB_TOKEN or REPORT_PHOTO_TOKEN secret, so the Worker's secrets are left as they are."
         fi
         npx --yes wrangler@4.158.0 $WRANGLER_ARGS "${secrets[@]}" | tee wrangler.log

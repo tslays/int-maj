@@ -1,18 +1,21 @@
 /**
- * The Cloudflare Worker in front of the static app. It answers one address,
- * `POST /api/report`; every other request is a file of the built app. The
+ * The Cloudflare Worker in front of the static app. It answers `POST /api/report`
+ * and, behind a secret token, `GET /api/report-photo/<key>`; every other request is a file of the built app. The
  * game itself still runs entirely in the browser.
  */
 
+import { PHOTO_ROUTE, handlePhotoRead, type PhotoReadEnv } from "./photo-read.ts";
 import { handleReport, type ReportEnv } from "./report.ts";
 
-interface Env extends ReportEnv {
+interface Env extends ReportEnv, PhotoReadEnv {
   readonly ASSETS: { fetch(request: Request): Promise<Response> };
 }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (new URL(request.url).pathname === "/api/report") return handleReport(request, env);
+    const path = new URL(request.url).pathname;
+    if (path === "/api/report") return handleReport(request, env);
+    if (path.startsWith(PHOTO_ROUTE)) return handlePhotoRead(request, env);
     return env.ASSETS.fetch(request);
   },
 };

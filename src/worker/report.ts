@@ -19,6 +19,7 @@ import { MAX_PHOTOS, MAX_PHOTO_BASE64, decodePhoto } from "./photo.ts";
 export interface PhotoStore {
   put(key: string, bytes: Uint8Array<ArrayBuffer>, options: { httpMetadata: { contentType: string } }): Promise<unknown>;
   delete(key: string): Promise<unknown>;
+  get(key: string): Promise<{ body: ReadableStream; httpMetadata?: { contentType?: string } } | null>;
 }
 
 export interface ReportEnv {
@@ -28,7 +29,7 @@ export interface ReportEnv {
   readonly REPORT_REPO?: string;
   /** Cloudflare's rate limiter, where it is bound. */
   readonly REPORT_LIMIT?: { limit(options: { key: string }): Promise<{ success: boolean }> };
-  /** Where a report's photos are kept, where it is bound. Private: nothing reads them back over HTTP. */
+  /** Where a report's photos are kept, where it is bound. Private: read back only through `photo-read.ts`, behind a token. */
   readonly REPORT_PHOTOS?: PhotoStore;
 }
 
