@@ -245,12 +245,12 @@ const TABS = [
     cards: [
       {
         title: "Closest hands",
-        text: "Top right: the hands you are likeliest to complete. The ring fills and brightens with how likely you are to complete each before the wall runs out, from a long shot to very likely, worked out only from the tiles you can see; an arrow shows a hand that moved since your last move. A guide, not advice: a long shot may pay far more. Then how it is played and what it pays. Tap one for its sheet; the pin keeps it there. Out of reach means more than six tiles away, or no longer possible with the tiles in sight or your exposed melds. Hints in the menu shows or hides it.",
+        text: "Top right: the hands your tiles could build, likeliest first, often ones you would never have thought of. The ring fills and brightens with how likely you are to build each if you play only for it until the wall runs out, from a long shot to very likely, worked out only from the tiles you can see; an arrow shows a hand that moved since your last move. It is a building chance, not a winning chance: another player going out first is not counted. A guide for trying new hands, not advice: a long shot may pay far more. Then how it is played and what it pays. Tap one for its sheet; the pin keeps it there. Out of reach means more than six tiles away, or no longer possible with the tiles in sight or your exposed melds. Hints in the menu shows or hides it.",
         picture: closestPicture,
       },
       {
         title: "All hands",
-        text: "Every hand in play, with the book's sample. Search by name or tiles (\"dragon pairs\", \"1-9\") and filter; during a hand each card says how far you are.",
+        text: "Every hand in play, with the book's sample. Search by name or tiles (\"dragon pairs\", \"1-9\") and filter; during a hand each card says how likely your tiles are to build it, so you can explore hands you would not normally try.",
         picture: () =>
           row(
             el("span", "guide-search", "All hands"),

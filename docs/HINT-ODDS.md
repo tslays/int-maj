@@ -369,3 +369,27 @@ rather than corrected with a fitted curve, pending the owner's choice in §11.
    change the figure's meaning to include the race (phase 4)?
 2. Is the panel quick enough on a phone? If not, the hint moves into a Web
    Worker.
+
+### Owner's answer (2026-11-16)
+
+The hint is a **building chance**, not a winning chance: it is there to teach
+the odds of the hands and to lead players to hands they would not think of at
+a real table, never to min-max a win. So §11.1 is settled as "keep the raw
+figure", and the race against the other three (phase 4's "before anyone else
+goes out" figure) is **not** to be built. The guide's Closest hands card, the
+hand's sheet and the screen-reader words ("likely to build") now say plainly
+that the figure leaves out another player going out first.
+
+A check of the pair and self-drawn hands on the same day found the figure
+right for them:
+
+- A self-drawn-only hand (Seven Twins, Chow Chow, Mixed Pung, Buried
+  Treasure) claims nothing in the simulation, not even the winning tile; a
+  concealed one (Heavenly Twins) claims only the winning tile. Six pairs and a
+  single, three live copies, gave 39 / 22 / 11 % with 78 / 40 / 20 draws left
+  at the table, against 39 / 21 / 11 % worked out by hand.
+- 400 hands with East committed to Seven Twins (at most four tiles away),
+  nobody else going out: shown 3 / 7 / 13 / 24 %, built 1 / 6 / 11 / 23 %.
+  With the race on, built 0.5 / 4 / 7 / 22 %: the gap a player feels is the
+  race, which the figure leaves out on purpose. The slight overshoot below
+  20 % stays inside the Long shot band, so it is left as it is.

@@ -157,10 +157,10 @@ function bandRank(chance) {
   return BANDS.length - 1 - BANDS.indexOf(chanceBand(chance));
 }
 
-/** The chance for a screen reader: "likely to complete", "a long shot to complete". */
+/** The chance for a screen reader: "likely to build", "a long shot to build". */
 export function chanceWords(chance) {
   const band = chanceBand(chance);
-  return band.id === "long-shot" ? "a long shot to complete" : `${band.name.toLowerCase()} to complete`;
+  return band.id === "long-shot" ? "a long shot to build" : `${band.name.toLowerCase()} to build`;
 }
 
 /**
@@ -647,7 +647,8 @@ export async function openHandDetail(pattern, progress = null) {
       left.className = "detail-muted need-note";
       left.textContent =
         "The number under each tile: copies you have not seen yet, in the wall or another player's hand. " +
-        "The chance reads them, and every claim this hand may make.";
+        "The chance reads them, and every claim this hand may make. " +
+        "It is the chance to build this hand by the end of the wall, not to win with it: another player going out first is not counted.";
       yours.append(left);
       const note = anotherNote(progress);
       if (note !== null) yours.append(note);

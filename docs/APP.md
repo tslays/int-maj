@@ -266,7 +266,10 @@ previous decision. The panel is worked out once per
 decision (your turn to discard, a claim offered to you) and stays put while
 the bots play. The chance is worked out from what you can see only
 (`src/core/game/odds.ts`, `docs/HINT-ODDS.md`): it is the chance of finishing
-the hand before the wall runs out if you play only for it from now on. It is asked for at
+the hand before the wall runs out if you play only for it from now on: a
+building chance, not a winning chance (another player going out first is not
+counted), so a player learns what their tiles can make and finds hands they
+would not have tried; the guide and the hand's sheet say so. It is asked for at
 each of your decisions, and hides on the result card. The menu's Hints button
 turns it off (remembered on the device).
 
