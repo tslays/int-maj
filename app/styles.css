@@ -1155,10 +1155,12 @@ html.pond-zoom .act-claim {
   color: var(--chance-trend);
   font-weight: 700;
 }
-button.detail-new {
+button.detail-new,
+button.detail-chance {
   cursor: pointer;
 }
-.detail-new[aria-expanded="true"] .rule-chevron {
+.detail-new[aria-expanded="true"] .rule-chevron,
+.detail-chance[aria-expanded="true"] .rule-chevron {
   margin-top: 3px;
   transform: rotate(225deg);
 }

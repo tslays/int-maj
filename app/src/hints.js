@@ -624,6 +624,7 @@ export async function openHandDetail(pattern, progress = null) {
   // A hand offered as an idea that may be new says so first, with the same
   // spark the panel's row carries, so the mark never has to be guessed at.
   let newNote = null;
+  let chanceNote = null;
   if (progress?.pick === "discover") {
     const fresh = document.createElement("button");
     fresh.type = "button";
@@ -653,10 +654,38 @@ export async function openHandDetail(pattern, progress = null) {
   // How it is played, how far you are, and last what it pays: the panel's order.
   if (detail.requiresSelfDrawn) facts.append(factChip(null, "Self-drawn only"));
   if (progress !== null) {
-    const far = factChip(null, progress.away === 0 ? "Complete" : chanceBadge(progress.chance));
-    if (progress.away === 0) far.classList.add("detail-done");
-    else far.setAttribute("aria-label", chanceWords(progress.chance));
-    facts.append(far);
+    if (progress.away === 0) {
+      const far = factChip(null, "Complete");
+      far.classList.add("detail-done");
+      facts.append(far);
+    } else {
+      // The band opens a note on what the chance means, like the play chip.
+      const far = document.createElement("button");
+      far.type = "button";
+      far.className = "detail-fact detail-chance";
+      far.setAttribute("aria-label", chanceWords(progress.chance));
+      far.setAttribute("aria-expanded", "false");
+      far.setAttribute("aria-controls", "hand-chance-note");
+      const farChevron = document.createElement("span");
+      farChevron.className = "rule-chevron";
+      farChevron.setAttribute("aria-hidden", "true");
+      far.append(chanceBadge(progress.chance), farChevron);
+      chanceNote = document.createElement("p");
+      chanceNote.className = "detail-note";
+      chanceNote.id = "hand-chance-note";
+      chanceNote.hidden = true;
+      chanceNote.textContent =
+        "How likely you are to complete this hand, worked out from your tiles and what you can see, " +
+        "if you play only for it from now on. It is a building chance, not a winning chance: another " +
+        "player going out first is not counted. An arrow means it moved a band since your last move. " +
+        "You can turn hints off from the menu's Hints button, and change which hands they suggest " +
+        "under Options, Game, Hint style.";
+      far.addEventListener("click", () => {
+        chanceNote.hidden = !chanceNote.hidden;
+        far.setAttribute("aria-expanded", String(!chanceNote.hidden));
+      });
+      facts.append(far);
+    }
   }
   const concealedWorth = worth(detail.concealedTier, detail.concealedPoints);
   const exposedWorth = detail.concealedOnly ? null : worth(detail.exposedTier, detail.exposedPoints);
@@ -677,7 +706,7 @@ export async function openHandDetail(pattern, progress = null) {
 
   card.append(head);
   if (pin !== null) card.append(pin.note);
-  card.append(facts, ...(newNote === null ? [] : [newNote]), ruleNote);
+  card.append(facts, ...[newNote, chanceNote].filter((note) => note !== null), ruleNote);
   if (scorings) card.append(readingList(detail.readings));
 
   // First the book's sample hand, then what the hand is, below it. A
