@@ -4,7 +4,21 @@ Newest first. Written for players: what you will see, what was fixed, and
 what now works differently. Each version is a `v0.1.0-alpha.N` tag on `main`;
 testers get it at https://int.mah-jong.workers.dev.
 
-## alpha.12
+## alpha.13
+
+**New**
+
+- **The hand sheet explains its pills.** Tap *New*, *chance*, *Self-drawn* or
+  *Pays* on a hand's sheet and a short note opens, one at a time. Tiles with
+  alternatives sit together in a capsule, and the panel row shows Self-drawn.
+
+**Fixed**
+
+- **Raised tiles no longer flicker.** Moving the pointer from a lifted tile
+  down into the gap beneath it dropped the tile and lifted it again. The gap
+  now counts as part of the tile. (#197)
+
+## alpha.12 (16 November 2026)
 
 **New**
 

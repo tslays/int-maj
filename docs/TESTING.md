@@ -8,7 +8,7 @@ is new, what to try, how to report and what the app cannot do yet.
 
 <!-- guide:start -->
 
-# Mah Jong — test version alpha.12
+# Mah Jong — test version alpha.13
 
 **Play here:** https://int.mah-jong.workers.dev
 
@@ -18,48 +18,34 @@ International mahjong in your browser, against three bots, by the rules of
 ## Getting the new version
 
 Open the link (or the app on your home screen) and reload it once. The
-small label under the menu, top left, should read **alpha.12**. A game in progress carries on. If an update changes the game, the
+small label under the menu, top left, should read **alpha.13**. A game in progress carries on. If an update changes the game, the
 hand you were playing starts again with the scores kept.
 
 **New to the app?** On an iPhone open the link in Safari, tap Share, then
 *Add to Home Screen*, and play it from the home-screen icon with the phone
 turned sideways. Everything else, the app shows you: Options › **Help**.
 
-## New in alpha.12
+## New in alpha.13
 
-- **Hint style.** Options › **Game** › **Hint style** chooses how the
-  closest-hands panel picks its hands. **Mixed** (the default) shows the two
-  likeliest plus one *idea*, marked with a small spark: a hand you may not
-  have tried. **Discovery** favours ideas; **Likeliest** shows only the
-  likeliest hands. Ideas rotate from hand to hand.
-- **Winning hands in the book's own groups.** A special hand's winning tiles
-  now appear grouped as the book prints them, for about twenty-five hands
-  (Wriggly Snake, Gates of Heaven, Windfall, Dragon's Breath and more).
-- **A chance to build, not to win.** The Guide, the hand sheet and the screen
-  reader now say that the ring is the chance your tiles build the hand by the
-  end of the wall, and invite you to try hands you would not normally play.
-
-## Fixed thanks to your reports
-
-- **Knitting looked far too likely.** The hints counted pairs across three
-  suits as Knitting, so it read about 90% on an ordinary hand. It now needs
-  the same two suits throughout.
+- **The hand sheet explains its pills.** Tap **New**, **chance**,
+  **Self-drawn** or **Pays** on a hand's sheet and a short note opens, one at
+  a time. Tiles with alternatives sit together in a capsule, and the panel
+  row shows Self-drawn.
 
 ## What works differently now
 
-- Closest hands in Mixed style show one idea beside the likeliest two. Pick
-  *Likeliest* in Options › Game for the old panel. The device remembers which
-  ideas you have met, so they rotate.
+- **Raised tiles hold still.** Moving the pointer from a lifted tile down into
+  the gap beneath it no longer drops the tile and lifts it again.
 
 ## What to try, and tell us
 
-- Open Options › Game and try each Hint style. Does the panel change at once,
-  and is the spark on an idea easy to read?
-- Play a few hands in Mixed. Do the ideas rotate, or do the same ones keep
-  coming back? Are they worth trying?
-- Look at the winning hand of a special hand such as Wriggly Snake or Gates
-  of Heaven. Are its tiles grouped as the book shows?
-- Does Knitting stay low unless your hand really leans on two suits?
+- Open a hand's sheet from the closest-hands panel and tap each pill (New,
+  chance, Self-drawn, Pays). Does each note explain itself, and does opening
+  one close the one before?
+- Does the hand sheet of a hand you have not met show a spark and **New**
+  beside its Concealed or Exposed chip?
+- Move the pointer over a raised tile, then down into the gap beneath it.
+  Does the tile stay up?
 - Anything that broke, looked wrong or surprised you.
 
 ## How to report
@@ -92,16 +78,14 @@ connection it offers to share the report as a message instead.
 
 <!-- whatsapp:start -->
 
-🀄 **Mah Jong test version alpha.12 is out!**
+🀄 **Mah Jong test version alpha.13 is out!**
 
 Play: https://int.mah-jong.workers.dev (reload once to update)
 
-New: a Hint style option (Options › Game) so the closest-hands panel can
-suggest hands you have not tried yet, special hands shown in the book's own
-groups, and a fix for Knitting looking far too likely. The ring now says it
-is a chance to build a hand, not to win.
+New: the hand sheet now explains its New, chance, Self-drawn and Pays pills,
+one note at a time. Also fixed: a raised tile no longer drops and lifts again
+when the pointer moves down into the gap beneath it.
 
-Thank you for the Knitting report. The guide is attached. Found something
-odd? Options › Report a problem.
+Found something odd? Options › Report a problem.
 
 <!-- whatsapp:end -->
