@@ -4,7 +4,33 @@ Newest first. Written for players: what you will see, what was fixed, and
 what now works differently. Each version is a `v0.1.0-alpha.N` tag on `main`;
 testers get it at https://int.mah-jong.workers.dev.
 
-## alpha.10
+## alpha.11
+
+**New**
+
+- **Up to three photos in a problem report.** Options › Report a problem
+  now takes up to three photos (it took one), for problems that need several
+  screenshots. (#176)
+
+**Changed**
+
+- **A Fishing offer that can only win from the wall says so.** Buried
+  Treasure and its kin now read *self-draw only* on a navy tab across the top
+  of the Fishing button, so nobody fishes for them by accident. A mixed offer
+  reads *Some tiles: self-draw only*. (#181)
+
+**Fixed**
+
+- **Closest hands show the real chance during a Fishing announcement.** They
+  showed 0% while you were offered the announcement; they now show the chance
+  of your next draw. (#178)
+
+**What works differently now**
+
+- A report can carry up to three photos. The fallback that shares a report
+  as a message still sends the text only.
+
+## alpha.10 (15 November 2026)
 
 **New**
 
