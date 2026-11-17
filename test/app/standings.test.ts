@@ -10,11 +10,21 @@ import { ledgerTotals } from "../../src/core/game/index.ts";
 import { fixture, play } from "../helpers/game-fixture.ts";
 
 // @ts-expect-error - a plain browser module without type declarations
-const { rankSeats, winnerLine } = await import("../../app/src/standings.js");
+const { discardFrom, rankSeats, winnerLine } = await import("../../app/src/standings.js");
 
 const NAMES: Record<string, string> = { E: "East", S: "South", W: "West", N: "North" };
 const name = (seat: string) => NAMES[seat];
 const START = 16000;
+
+describe("discardFrom", () => {
+  it("says 'your discard' when the player threw the tile, never 'You's'", () => {
+    assert.equal(discardFrom("E", "E", name), "your discard");
+  });
+
+  it("names another seat's discard with a possessive", () => {
+    assert.equal(discardFrom("N", "E", name), "North's discard");
+  });
+});
 
 function wonHand() {
   const state = fixture({
