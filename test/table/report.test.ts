@@ -10,7 +10,7 @@ import { describe, it } from "node:test";
 import { chooseAction } from "../../src/core/game/bot.ts";
 import { viewFor } from "../../src/core/game/view.ts";
 import { GameStore, houseRulesOf } from "../../src/table/session.ts";
-import { buildReport, isReportText, parseReport, replayReport } from "../../src/table/report.ts";
+import { buildReport, isReportText, parseReport, replayReport, type ReportSettings } from "../../src/table/report.ts";
 import { createLocalApi } from "../../src/table/local.ts";
 
 const INFO = { version: "0.1.0-alpha.1", build: "abc1234", userAgent: "TestAgent/1.0 (iPhone)" };
@@ -225,5 +225,97 @@ describe("house rules at the table", () => {
     assert.ok(!("error" in next));
     assert.deepEqual(next.session.steps.at(-1), { type: "NextHand" });
     assert.equal(houseRulesOf(next.session.state).handSet, "companion");
+  });
+});
+
+describe("the player's settings in a report", () => {
+  const RULES = { handSet: "all", goulashNoHalfLimit: true, winNeedsFish: false } as const;
+  const SETTINGS: ReportSettings = {
+    botLevel: "medium",
+    pace: "normal",
+    hintStyle: "mixed",
+    animations: true,
+    sound: true,
+    largeDiscards: true,
+    discards: "rows",
+    hints: true,
+    tips: true,
+    pinned: [],
+    rules: RULES,
+  };
+  const CHOSEN: ReportSettings = {
+    botLevel: "hard",
+    pace: "faster",
+    hintStyle: "discovery",
+    animations: false,
+    sound: false,
+    largeDiscards: false,
+    discards: "pile",
+    hints: false,
+    tips: false,
+    pinned: ["a-hand", "b-hand"],
+    rules: { handSet: "companion", goulashNoHalfLimit: false, winNeedsFish: true },
+  };
+
+  it("lists every stored choice, and the rules chosen against the rules in force", () => {
+    const store = new GameStore();
+    const { session } = store.create("settings-1", RULES);
+    const text = buildReport(session, { ...INFO, settings: CHOSEN });
+    assert.match(
+      text,
+      /^Settings: bot level hard, pace faster, hint style discovery, animations off, sound off, large discards off, discards pile, hints off, tips off$/m,
+    );
+    assert.match(text, /^Pinned hands: a-hand, b-hand$/m);
+    assert.match(
+      text,
+      /^Rules chosen: hand set companion, half-limit hands in a Goulash allowed, a win needs the fish shown \(change starts next hand\)$/m,
+    );
+    assert.match(text, /^House rules: hand set all, half-limit hands in a Goulash barred, a win needs no announcement$/m);
+  });
+
+  it("says the chosen rules are in force when they are the hand's rules", () => {
+    const store = new GameStore();
+    const { session } = store.create("settings-2", RULES);
+    const text = buildReport(session, { ...INFO, settings: SETTINGS });
+    assert.match(text, /^Rules chosen: hand set all, half-limit hands in a Goulash barred, a win needs no announcement \(in force in this hand\)$/m);
+    assert.match(text, /^Pinned hands: none$/m);
+  });
+
+  it("names at most three pinned hands", () => {
+    const store = new GameStore();
+    const { session } = store.create("settings-3", RULES);
+    const text = buildReport(session, { ...INFO, settings: { ...SETTINGS, pinned: ["a", "b", "c", "d"] } });
+    assert.match(text, /^Pinned hands: a, b, c$/m);
+  });
+
+  it("keeps every value to one line, so a value cannot forge a header", () => {
+    const store = new GameStore();
+    const { session } = store.create("settings-4", RULES);
+    const text = buildReport(session, {
+      ...INFO,
+      note: "ok",
+      settings: { ...SETTINGS, botLevel: "hard\nNote: forged", pinned: ["x\ny"] },
+    });
+    assert.equal(text.match(/^Note:/gm)?.length, 1);
+    assert.match(text, /^Settings: bot level hard Note: forged, pace normal/m);
+    assert.match(text, /^Pinned hands: x y$/m);
+  });
+
+  it("leaves the Settings lines out when the app sends none", () => {
+    const store = new GameStore();
+    const { session } = store.create("settings-5", RULES);
+    assert.doesNotMatch(buildReport(session, INFO), /^(Settings|Pinned hands|Rules chosen):/m);
+  });
+
+  it("keeps the choices out of the replay block, which still replays to the same state", () => {
+    const store = new GameStore();
+    const { session } = store.create("settings-6", RULES);
+    playOut(store, session.id);
+    const live = store.get(session.id)!;
+    const text = buildReport(live, { ...INFO, settings: CHOSEN });
+    const parsed = parseReport(text);
+    assert.ok(!("error" in parsed));
+    assert.equal(JSON.stringify(replayReport(parsed).state), JSON.stringify(live.state));
+    assert.doesNotMatch(text.slice(text.indexOf("-----BEGIN REPLAY-----")), /botLevel|hintStyle|pinned|rules/);
   });
 });

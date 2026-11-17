@@ -36,6 +36,16 @@ function pinsNow() {
   return state.payload === null ? [] : pins.list(state.payload.game);
 }
 
+/** Whether the closest-hands panel is on (the Hints toggle); read by the report. */
+export function closestHandsOn() {
+  return hintsOn;
+}
+
+/** The hands pinned to the panel for the game on the table, in pin order. */
+export function pinnedHands() {
+  return pinsNow();
+}
+
 export function isPinned(pattern) {
   return state.payload !== null && pins.has(state.payload.game, pattern);
 }
