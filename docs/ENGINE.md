@@ -33,6 +33,30 @@ A fishing hand is paid by the other two losers as a difference between losing
 hands, the winner paying nothing (I p. 21 #24, p. 24, p. 32; R-070). A drawn
 hand pays no fishing at all.
 
+### No fishing prompt in a Goulash (issue #200)
+
+In a Goulash hand with the half-limit rule on (`GOULASH_NO_HALF_LIMIT`, the
+default), half-limit hands are left out of the wait, the win and the fishing
+offer (`exclusionsOf` in `hands.ts`). A player waiting on a half-limit hand
+such as Knitting gets no fishing prompt, and the hints and All hands leave the
+hand out too.
+
+Treated as **working as designed, not a bug**. Report #200 (alpha.12) said
+"Fishing for knitting but didn't get the prompt". Its house rules show the
+rule on, but the Goulash status of hand 25 was never confirmed by replay, so
+this is an assumption. If it comes up again:
+
+1. Check the report's `Goulash:` line (added after alpha.13, #201). It says
+   whether the hand was a Goulash and whether half-limit hands were barred.
+2. If the hand was a Goulash with the bar on, the missing prompt is expected.
+   Explain the house rule to the reporter.
+3. If it was not a Goulash, or the bar was off, replay the report
+   (`npm run replay -- report.txt`) and treat it as a real fishing bug.
+
+Older reports wrap the replay as `-----BEGIN REPLAY GZIP-----`, which the
+replay CLI does not read. Decode the base64 and gunzip it to JSON, then wrap
+the JSON in the plain `-----BEGIN REPLAY-----` markers before replaying.
+
 ## Table checker
 
 Type a hand from the table and see what it is. Canonical keys are `b1..b9`,
