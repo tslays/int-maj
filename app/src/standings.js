@@ -25,6 +25,11 @@ export function rankSeats(totals) {
   });
 }
 
+/** "your discard" for the player's own discard, else "North's discard"; `name` gives a seat's words. */
+export function discardFrom(from, you, name) {
+  return from === you ? "your discard" : `${name(from)}'s discard`;
+}
+
 /** "East wins the game" / "East and West tie for the win"; `name` gives a seat's words. */
 export function winnerLine(ranking, name) {
   const winners = ranking.filter((entry) => entry.winner).map((entry) => name(entry.seat));
