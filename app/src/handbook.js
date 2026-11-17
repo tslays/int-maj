@@ -11,6 +11,7 @@
 
 import { chanceBadge, chanceWords, isPinned, onPinsChange, openHandDetail, pinIcon, playWord, TIER_LABEL } from "./hints.js";
 import { bookPages } from "./pages.js";
+import { barredInGoulash } from "./goulash-bar.js";
 import { $, companionRules, faceChip, handSetInForce, request, state } from "./shared.js";
 
 let catalogue = null; // { set, groups, hands }: the hands in play, fetched again when the hand set changes
@@ -168,9 +169,12 @@ function applyProgress() {
 }
 
 function renderList() {
-  const hands = ordered(catalogue.hands.filter(matches));
+  // In a Goulash with the half-limit rule on, the hands the bar leaves out are not listed (as in the hints).
+  const excluded = state.payload?.view?.excludedHands ?? [];
+  const hands = ordered(catalogue.hands.filter(matches).filter((hand) => !barredInGoulash(hand, excluded)));
   const list = $("#index-list");
-  $("#index-count").textContent = `${hands.length} of ${catalogue.hands.length}`;
+  const listed = catalogue.hands.filter((hand) => !barredInGoulash(hand, excluded)).length;
+  $("#index-count").textContent = `${hands.length} of ${listed}`;
   if (hands.length === 0) {
     const empty = document.createElement("p");
     empty.className = "index-empty";
@@ -222,7 +226,9 @@ function choices(title, key, options) {
 }
 
 function renderFilters() {
-  const count = (test) => catalogue.hands.filter(test).length;
+  const excluded = state.payload?.view?.excludedHands ?? [];
+  const listed = catalogue.hands.filter((hand) => !barredInGoulash(hand, excluded));
+  const count = (test) => listed.filter(test).length;
   const sections = [];
   if (progress.size > 0) {
     sections.push(
@@ -234,7 +240,7 @@ function renderFilters() {
   }
   sections.push(
     choices("Kind of hand", "group", [
-      ["all", "All hands", catalogue.hands.length],
+      ["all", "All hands", listed.length],
       ...catalogue.groups.map((group) => [group.id, group.name, group.hands.length]),
     ]),
     choices("Value", "tier", [

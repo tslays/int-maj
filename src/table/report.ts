@@ -14,7 +14,7 @@
  */
 
 import { replaySteps, type ApplyOk, type ReplayStep } from "../core/game/index.ts";
-import { SEATS, type Seat } from "../core/game/state.ts";
+import { SEATS, type GameState, type Seat } from "../core/game/state.ts";
 import { houseRulesOf, type WebSession } from "./session.ts";
 
 export const REPORT_FORMAT = "int-maj-report/1";
@@ -53,6 +53,17 @@ function oneLine(text: string, limit: number): string {
   return text.replace(/[\u0000-\u001f\u007f\s]+/g, " ").trim().slice(0, limit);
 }
 
+/**
+ * Whether the hand in play is a Goulash, and if so whether the table bars
+ * half-limit hands in it. Logged per hand, so a report shows the hand it was
+ * filed from, not only the table's house-rule setting.
+ */
+function goulashWord(state: GameState): string {
+  if (state.goulash !== true) return "no (this hand is not a Goulash)";
+  const barred = houseRulesOf(state).goulashNoHalfLimit;
+  return `yes, half-limit hands ${barred ? "barred" : "allowed"} in this hand`;
+}
+
 export function buildReport(session: WebSession, info: ReportInfo): string {
   const replay: ReportReplay = {
     format: REPORT_FORMAT,
@@ -72,6 +83,7 @@ export function buildReport(session: WebSession, info: ReportInfo): string {
     `Build: ${oneLine(info.build, 40)}`,
     `User agent: ${oneLine(info.userAgent, 300)}`,
     `Hand: ${session.state.handNumber} (${session.state.phase})`,
+    `Goulash: ${goulashWord(session.state)}`,
     `House rules: hand set ${houseRulesOf(session.state).handSet}, half-limit hands in a Goulash ${
       houseRulesOf(session.state).goulashNoHalfLimit ? "barred" : "allowed"
     }, a win ${houseRulesOf(session.state).winNeedsFish ? "needs the fish shown" : "needs no announcement"}`,
