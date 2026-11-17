@@ -12,7 +12,7 @@ import { explainSettlement } from "./settlement.js";
 import { sound } from "./sound.js";
 import { stickColor, sticksFor } from "./sticks.js";
 import { showTip } from "./tips.js";
-import { rankSeats, winnerLine } from "./standings.js";
+import { discardFrom, rankSeats, winnerLine } from "./standings.js";
 import { tileOrder } from "./tiles.js";
 import { $, WIND_NAME, board, companionRules, faceChip, request, scores, seatName, state, storage, toast } from "./shared.js";
 
@@ -64,7 +64,7 @@ function renderOutcome(outcome) {
   head.className = "result-kicker";
   head.textContent = win
     ? `${seatName(outcome.winner)} ${outcome.winner === state.payload.seat ? "win" : "wins"} · ${
-        outcome.selfDrawn ? "self-drawn" : `on ${seatName(outcome.from)}'s discard`
+        outcome.selfDrawn ? "self-drawn" : `on ${discardFrom(outcome.from, state.payload.seat, seatName)}`
       } · Hand ${state.payload.view.handNumber}`
     : `Hand ${state.payload.view.handNumber} · drawn`;
   const title = document.createElement("h2");

@@ -180,8 +180,8 @@ entries + 3 missing primary hands).
 | `three-sisters` | Three Sisters | 43 | 55 |
 | `seven-brothers` | Seven Brothers | 42 | 55 |
 
-Note: `chow-mein` is spelled `Chow Mien` in the table; the printed hand is
-CHOW MEIN (p. 58). Spelling only; composition and tier match. `gates-of-heaven`
+Note: `chow-mein` was spelled `Chow Mien` in the table; the printed hand is
+CHOW MEIN (p. 58). Spelling corrected to `Chow Mein`; composition and tier match. `gates-of-heaven`
 and `run-pung-pair` carry a correct composition but stale Companion page
 citations (p. 9); the primary pages are 36 and 36.
 
