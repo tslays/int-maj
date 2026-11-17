@@ -5,8 +5,18 @@
  */
 
 import { BUILD } from "./build-info.js";
+import { closestHandsOn, pinnedHands } from "./hints.js";
+import { hintStyle } from "./hint-style.js";
+import { discardLayout } from "./discard-layout.js";
+import { largeDiscards } from "./large-discards.js";
+import { level } from "./level.js";
+import { houseRules } from "./options.js";
+import { openingPref } from "./opening.js";
+import { pace } from "./pace.js";
 import { MAX_PHOTOS, preparePhoto } from "./photo.js";
 import { $, state, toast } from "./shared.js";
+import { sound } from "./sound.js";
+import { tipsOn } from "./tips.js";
 
 const SEND_TIMEOUT_MS = 15000;
 /** Below this much visible height (a landscape phone with its keyboard up) the sheet drops its small print. */
@@ -61,6 +71,24 @@ function closeReport() {
   sheet.hidden = true;
 }
 
+/* Every choice the player has stored on this device, so a report shows the
+   settings a bug happened under. The table prints them; it cannot see them. */
+function settingsNow() {
+  return {
+    botLevel: level.id,
+    pace: pace.id,
+    hintStyle: hintStyle.id,
+    animations: openingPref.enabled,
+    sound: !sound.muted,
+    largeDiscards: largeDiscards.on,
+    discards: discardLayout.id,
+    hints: closestHandsOn(),
+    tips: tipsOn(),
+    pinned: pinnedHands(),
+    rules: houseRules(),
+  };
+}
+
 /* The report text is built in the table layer (`api.report`). */
 function reportText() {
   return state.api.report({
@@ -68,6 +96,7 @@ function reportText() {
     build: BUILD.id,
     userAgent: navigator.userAgent,
     note: note.value,
+    settings: settingsNow(),
   });
 }
 

@@ -15,11 +15,41 @@
 
 import { replaySteps, type ApplyOk, type ReplayStep } from "../core/game/index.ts";
 import { SEATS, type GameState, type Seat } from "../core/game/state.ts";
-import { houseRulesOf, type WebSession } from "./session.ts";
+import { houseRulesOf, type HouseRules, type WebSession } from "./session.ts";
 
 export const REPORT_FORMAT = "int-maj-report/1";
 export const REPLAY_BEGIN = "-----BEGIN REPLAY-----";
 export const REPLAY_END = "-----END REPLAY-----";
+
+/**
+ * Every choice the player has made on the device, as the app keeps it: the
+ * table cannot see these, and a bug often turns on one of them. Values are the
+ * app's own ids (`medium`, `pile`), printed as they are.
+ */
+export interface ReportSettings {
+  /** Bot level: easy, medium or hard. */
+  readonly botLevel: string;
+  /** Pace: slower, normal or faster. */
+  readonly pace: string;
+  /** Hint style: likeliest, mixed or discovery. */
+  readonly hintStyle: string;
+  /** Table animations (dice, dealing, thrown counters) on or skipped. */
+  readonly animations: boolean;
+  /** Sound on, or muted. */
+  readonly sound: boolean;
+  /** Large discards on: the phone's switch, reported whichever device filed the report. */
+  readonly largeDiscards: boolean;
+  /** Discards laid out in rows or in a pile. */
+  readonly discards: string;
+  /** The Hints toggle: the closest-hands panel shown. */
+  readonly hints: boolean;
+  /** Tips shown on this device; "No more tips" turns them off. */
+  readonly tips: boolean;
+  /** The hands pinned to the panel, in pin order. */
+  readonly pinned: readonly string[];
+  /** The house rules chosen for the next deal; they differ from the hand's in force when pending. */
+  readonly rules: HouseRules;
+}
 
 /** What the app knows about itself and the tester; the table knows the rest. */
 export interface ReportInfo {
@@ -28,7 +58,12 @@ export interface ReportInfo {
   readonly build: string;
   readonly userAgent: string;
   readonly note?: string;
+  /** The player's stored choices; absent, the report carries no Settings lines. */
+  readonly settings?: ReportSettings;
 }
+
+/** Most pinned hands the panel holds; the report lists no more. */
+const MAX_PINNED = 3;
 
 /** The replayable part of a report. */
 export interface ReportReplay {
@@ -51,6 +86,36 @@ const NOTE_LIMIT = 280;
 function oneLine(text: string, limit: number): string {
   // eslint-disable-next-line no-control-regex
   return text.replace(/[\u0000-\u001f\u007f\s]+/g, " ").trim().slice(0, limit);
+}
+
+/** The three house rules in words; the same wording serves the hand in force and the choice. */
+function rulesText(rules: HouseRules): string {
+  return [
+    `hand set ${oneLine(rules.handSet, 30)}`,
+    `half-limit hands in a Goulash ${rules.goulashNoHalfLimit ? "barred" : "allowed"}`,
+    `a win ${rules.winNeedsFish ? "needs the fish shown" : "needs no announcement"}`,
+  ].join(", ");
+}
+
+/**
+ * The Settings, Pinned hands and Rules chosen lines: the player's choices as
+ * they stand when the report is filed. The rules line says whether the choice
+ * is the one in force in the hand, or waits for the next deal.
+ */
+function settingsLines(settings: ReportSettings, inForce: HouseRules): string[] {
+  const word = (value: string) => oneLine(value, 30);
+  const onOff = (on: boolean) => (on ? "on" : "off");
+  const pinned = settings.pinned.slice(0, MAX_PINNED).map((id) => oneLine(id, 60));
+  const chosen = settings.rules;
+  const same =
+    chosen.handSet === inForce.handSet &&
+    chosen.goulashNoHalfLimit === inForce.goulashNoHalfLimit &&
+    chosen.winNeedsFish === inForce.winNeedsFish;
+  return [
+    `Settings: bot level ${word(settings.botLevel)}, pace ${word(settings.pace)}, hint style ${word(settings.hintStyle)}, animations ${onOff(settings.animations)}, sound ${onOff(settings.sound)}, large discards ${onOff(settings.largeDiscards)}, discards ${word(settings.discards)}, hints ${onOff(settings.hints)}, tips ${onOff(settings.tips)}`,
+    `Pinned hands: ${pinned.length === 0 ? "none" : pinned.join(", ")}`,
+    `Rules chosen: ${rulesText(chosen)} (${same ? "in force in this hand" : "change starts next hand"})`,
+  ];
 }
 
 /**
@@ -77,6 +142,7 @@ export function buildReport(session: WebSession, info: ReportInfo): string {
     humanSteps: session.humanSteps,
   };
   const note = oneLine(info.note ?? "", NOTE_LIMIT);
+  const inForce = houseRulesOf(session.state);
   return [
     "int-maj problem report",
     `Version: ${oneLine(info.version, 40)}`,
@@ -84,10 +150,9 @@ export function buildReport(session: WebSession, info: ReportInfo): string {
     `User agent: ${oneLine(info.userAgent, 300)}`,
     `Hand: ${session.state.handNumber} (${session.state.phase})`,
     `Goulash: ${goulashWord(session.state)}`,
-    `House rules: hand set ${houseRulesOf(session.state).handSet}, half-limit hands in a Goulash ${
-      houseRulesOf(session.state).goulashNoHalfLimit ? "barred" : "allowed"
-    }, a win ${houseRulesOf(session.state).winNeedsFish ? "needs the fish shown" : "needs no announcement"}`,
+    `House rules: ${rulesText(inForce)}`,
     `Decisions: ${session.steps.length} (yours: ${session.humanSteps.length})`,
+    ...(info.settings === undefined ? [] : settingsLines(info.settings, inForce)),
     `Note: ${note === "" ? "(none)" : note}`,
     "",
     REPLAY_BEGIN,

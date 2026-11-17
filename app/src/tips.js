@@ -33,6 +33,11 @@ function save() {
   }
 }
 
+/** Whether tips are on: false after "No more tips" until the guide shows them again. */
+export function tipsOn() {
+  return !memory.off;
+}
+
 /** Whether the tip `id` would still show. */
 export function tipPending(id) {
   return !REVIEW && !memory.off && !memory.seen.includes(id);

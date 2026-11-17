@@ -566,6 +566,9 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   Goulash: <no (this hand is not a Goulash) | yes, half-limit hands barred|allowed in this hand>
   House rules: hand set <set>, half-limit hands in a Goulash <barred|allowed>, a win <needs the fish shown|needs no announcement>
   Decisions: <all steps> (yours: <human steps>)
+  Settings: bot level <easy|medium|hard>, pace <slower|normal|faster>, hint style <likeliest|mixed|discovery>, animations <on|off>, sound <on|off>, large discards <on|off>, discards <rows|pile>, hints <on|off>, tips <on|off>
+  Pinned hands: <none | the pinned hands, at most three>
+  Rules chosen: hand set <set>, half-limit hands in a Goulash <barred|allowed>, a win <needs the fish shown|needs no announcement> (<in force in this hand|change starts next hand>)
   Note: <one line, 280 characters at most, or (none)>
 
   -----BEGIN REPLAY-----
