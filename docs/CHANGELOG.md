@@ -4,7 +4,17 @@ Newest first. Written for players: what you will see, what was fixed, and
 what now works differently. Each version is a `v0.1.0-alpha.N` tag on `main`;
 testers get it at https://int.mah-jong.workers.dev.
 
-## alpha.13
+## alpha.14
+
+**Changed**
+
+- **Problem reports list your settings.** A report now also lists the Settings you have stored on the device, your pinned hands, and the house rules chosen for the next deal, marked as in force or waiting for the next hand. (#206)
+
+**Fixed**
+
+- **The Wall counter counts the last two tiles.** It read 0 while two loose tiles were still to be drawn. It now counts them until the hand is drawn. (#204 → #205)
+
+## alpha.13 (17 November 2026)
 
 **New**
 
