@@ -1008,7 +1008,7 @@ const BASE_PATTERNS: readonly HandPattern[] = Object.freeze([
   },
   {
     id: "chow-mein",
-    name: "Chow Mien",
+    name: "Chow Mein",
     pages: { illustrated: [58], companion: [18, 26] },
     category: "chow",
     tier: "limit",
