@@ -97,6 +97,9 @@ describe("table API", () => {
     assert.equal(payload.view.player.hand.length, 14);
     assert.equal(payload.view.opponents.length, 3);
     assert.equal(payload.wallRemaining, payload.view.wallRemaining);
+    // The Wall counter (#204) shows every tile still to draw, the loose pair included.
+    assert.equal(payload.wall.draws, payload.view.drawsLeft, "the Wall counter is the engine's draws-left count");
+    assert.equal(payload.wall.draws, payload.wall.remaining + payload.wall.loose, "live wall plus loose pair");
     assert.ok(
       payload.legalActions.length > 0 &&
         payload.legalActions.every((action) => action.type === "Discard"),

@@ -350,6 +350,12 @@ export interface StatePayload {
     readonly front: number;
     /** Tiles in the whole set this hand: 144, or 136 in the Chinese game. */
     readonly size: number;
+    /**
+     * Tiles still to be drawn by anyone: the live wall plus, in the Western
+     * game, the loose pair (I p. 21: a hand is drawn only once "all tiles have
+     * been drawn from the wall"). The table's Wall counter shows this figure.
+     */
+    readonly draws: number;
   };
   readonly checker: CheckerPayload;
   readonly outcome: OutcomePayload | null;
@@ -598,6 +604,7 @@ export function statePayload(session: WebSession): StatePayload {
       dead: session.state.wall.dead?.length ?? 0,
       front: session.state.wall.front,
       size: session.state.wall.tiles.length,
+      draws: view.drawsLeft,
     },
     checker: checkerFor(view.player, view.excludedHands),
     outcome: outcomeFor(session, view),
