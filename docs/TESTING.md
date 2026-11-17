@@ -8,7 +8,7 @@ is new, what to try, how to report and what the app cannot do yet.
 
 <!-- guide:start -->
 
-# Mah Jong — test version alpha.13
+# Mah Jong — test version alpha.14
 
 **Play here:** https://int.mah-jong.workers.dev
 
@@ -18,40 +18,36 @@ International mahjong in your browser, against three bots, by the rules of
 ## Getting the new version
 
 Open the link (or the app on your home screen) and reload it once. The
-small label under the menu, top left, should read **alpha.13**. A game in progress carries on. If an update changes the game, the
-hand you were playing starts again with the scores kept.
+small label under the menu, top left, should read **alpha.14**. A game in
+progress carries on. If an update changes the game, the hand you were playing
+starts again with the scores kept.
 
 **New to the app?** On an iPhone open the link in Safari, tap Share, then
 *Add to Home Screen*, and play it from the home-screen icon with the phone
 turned sideways. Everything else, the app shows you: Options › **Help**.
 
-## New in alpha.13
+## New in alpha.14
 
-- **The hand sheet explains its pills.** Tap **New**, **chance**,
-  **Self-drawn** or **Pays** on a hand's sheet and a short note opens, one at
-  a time. Tiles with alternatives sit together in a capsule, and the panel
-  row shows Self-drawn.
+Nothing new to play with this time. The changes below fix a counter and add
+to what a problem report holds.
+
+## Fixed thanks to your reports
+
+- **The Wall counter counts the last two tiles.** It read 0 while two loose
+  tiles were still to be drawn. It now counts them until the hand is drawn.
+  Thank you for the report.
 
 ## What works differently now
 
-- **Raised tiles hold still.** Moving the pointer from a lifted tile down into
-  the gap beneath it no longer drops the tile and lifts it again.
-- **All hands in a Goulash.** With the half-limit rule on, All hands leaves out
-  half-limit hands in a Goulash round, as the hints already do. A hand stays
-  listed if any of its scorings is above half limit. Normal rounds are
-  unchanged.
+- **Problem reports list your settings.** A report now also lists the
+  Settings you have stored on the device, your pinned hands, and the house
+  rules chosen for the next deal, marked as in force or waiting for the next
+  hand.
 
 ## What to try, and tell us
 
-- In a Goulash round (with the half-limit rule on), open All hands. Are the
-  half-limit hands gone, and does the count match the list?
-- Open a hand's sheet from the closest-hands panel and tap each pill (New,
-  chance, Self-drawn, Pays). Does each note explain itself, and does opening
-  one close the one before?
-- Does the hand sheet of a hand you have not met show a spark and **New**
-  beside its Concealed or Exposed chip?
-- Move the pointer over a raised tile, then down into the gap beneath it.
-  Does the tile stay up?
+- Near the end of the wall, watch the Wall counter. Does it count the last two
+  tiles down to 0, and read 0 only once they have been drawn?
 - Anything that broke, looked wrong or surprised you.
 
 ## How to report
@@ -84,14 +80,11 @@ connection it offers to share the report as a message instead.
 
 <!-- whatsapp:start -->
 
-🀄 **Mah Jong test version alpha.13 is out!**
+🀄 **Mah Jong test version alpha.14 is out!**
 
 Play: https://int.mah-jong.workers.dev (reload once to update)
 
-New: the hand sheet now explains its New, chance, Self-drawn and Pays pills,
-one note at a time. In a Goulash, All hands now leaves out the half-limit
-hands, as the hints do. Also fixed: a raised tile no longer drops and lifts
-again when the pointer moves down into the gap beneath it.
+Fixed: the Wall counter now counts the last two tiles until the hand is drawn, so it no longer reads 0 while two are still to come. Changed: a problem report also lists your stored settings, pinned hands and house rules. Thank you to the tester whose report found the counter problem!
 
 Found something odd? Options › Report a problem.
 
