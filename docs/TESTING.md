@@ -36,9 +36,15 @@ turned sideways. Everything else, the app shows you: Options › **Help**.
 
 - **Raised tiles hold still.** Moving the pointer from a lifted tile down into
   the gap beneath it no longer drops the tile and lifts it again.
+- **All hands in a Goulash.** With the half-limit rule on, All hands leaves out
+  half-limit hands in a Goulash round, as the hints already do. A hand stays
+  listed if any of its scorings is above half limit. Normal rounds are
+  unchanged.
 
 ## What to try, and tell us
 
+- In a Goulash round (with the half-limit rule on), open All hands. Are the
+  half-limit hands gone, and does the count match the list?
 - Open a hand's sheet from the closest-hands panel and tap each pill (New,
   chance, Self-drawn, Pays). Does each note explain itself, and does opening
   one close the one before?
@@ -83,8 +89,9 @@ connection it offers to share the report as a message instead.
 Play: https://int.mah-jong.workers.dev (reload once to update)
 
 New: the hand sheet now explains its New, chance, Self-drawn and Pays pills,
-one note at a time. Also fixed: a raised tile no longer drops and lifts again
-when the pointer moves down into the gap beneath it.
+one note at a time. In a Goulash, All hands now leaves out the half-limit
+hands, as the hints do. Also fixed: a raised tile no longer drops and lifts
+again when the pointer moves down into the gap beneath it.
 
 Found something odd? Options › Report a problem.
 
