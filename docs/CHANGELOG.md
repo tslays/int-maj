@@ -12,6 +12,16 @@ testers get it at https://int.mah-jong.workers.dev.
   *Pays* on a hand's sheet and a short note opens, one at a time. Tiles with
   alternatives sit together in a capsule, and the panel row shows Self-drawn.
 
+**Changed**
+
+- **All hands leaves out half-limit hands in a Goulash.** With the half-limit
+  rule on, the All hands index in a Goulash round leaves out the half-limit
+  hands, as the hints already did, so the two agree. A hand stays listed if
+  any of its scorings is above half limit. Normal rounds are unchanged. (#201)
+- **Problem reports say whether a hand was a Goulash.** The report header now
+  notes whether the hand was a Goulash and whether half-limit hands were
+  barred in it. (#201)
+
 **Fixed**
 
 - **Raised tiles no longer flicker.** Moving the pointer from a lifted tile
