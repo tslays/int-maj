@@ -1,7 +1,8 @@
 // Cloudflare deployment of the offline app. The site is the static `dist/`
 // folder from `npm run build`, served as assets; the Worker in front of it
-// (`src/worker/`) answers only `/api/*`, which is where "Report a problem"
-// posts. Only `dist/` and the bundled Worker are uploaded, never the
+// (`src/worker/`) answers `/api/*`, which is where "Report a problem" posts,
+// and writes each site's home-screen name (APP_SHORT_NAME) into the page and
+// manifest. Only `dist/` and the bundled Worker are uploaded, never the
 // repository.
 //   int      the tester site, deployed on a tag v* (`npm run deploy`)
 //   int-dev  the development site: every green push to main, and the
@@ -18,10 +19,12 @@
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*"]
+    "run_worker_first": ["/api/*", "/", "/index.html", "/manifest.webmanifest"]
   },
   "vars": {
-    "REPORT_REPO": "tslays/int-maj"
+    "REPORT_REPO": "tslays/int-maj",
+    // The name the home screen gives the app (src/worker/short-name.ts).
+    "APP_SHORT_NAME": "int-maj"
   },
   // Five reports a minute from one address.
   "ratelimits": [{ "name": "REPORT_LIMIT", "namespace_id": "1001", "simple": { "limit": 5, "period": 60 } }],
@@ -35,10 +38,11 @@
       "assets": {
         "directory": "./dist",
         "binding": "ASSETS",
-        "run_worker_first": ["/api/*"]
+        "run_worker_first": ["/api/*", "/", "/index.html", "/manifest.webmanifest"]
       },
       "vars": {
-        "REPORT_REPO": "tslays/int-maj"
+        "REPORT_REPO": "tslays/int-maj",
+        "APP_SHORT_NAME": "int-dev"
       },
       "ratelimits": [{ "name": "REPORT_LIMIT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }],
       "r2_buckets": [{ "binding": "REPORT_PHOTOS", "bucket_name": "int-maj" }]

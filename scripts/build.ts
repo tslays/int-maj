@@ -47,7 +47,9 @@ const APP_DIRS = [
 const isNote = (name: string) => name.endsWith(".md") || name === "LICENSE";
 
 const APP_NAME = "International Mahjong";
-const SHORT_NAME = "Mahjong";
+// The home-screen name. The Worker writes each site's own name over it
+// (APP_SHORT_NAME in wrangler.jsonc); this is what a build served without it shows.
+const SHORT_NAME = "int-maj";
 const THEME_COLOR = "#11191c";
 
 const IMPORT_SPECIFIER = /(\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(["'])(\.{1,2}\/[^"']+?)\.ts\2/g;
