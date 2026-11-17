@@ -45,7 +45,8 @@ function refreshConsole(litView = state.payload.view) {
   const info = {
     round: view.prevailingWind,
     hand: view.handNumber,
-    wall: state.payload.wall.remaining,
+    // The tiles still to be drawn (live wall plus loose pair), as the engine counts them.
+    wall: state.payload.wall.draws,
     seats: state.payload.table.map((entry) => ({
       rel: board.rel(entry.seat),
       wind: entry.wind,

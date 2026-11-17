@@ -83,6 +83,7 @@ function partial(payload, counts, total) {
   const gap = payload.wall.front - front;
   copy.wall.front = front;
   copy.wall.remaining = payload.wall.remaining + gap;
+  copy.wall.draws = payload.wall.draws + gap;
   return copy;
 }
 
