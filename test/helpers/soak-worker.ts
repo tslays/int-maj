@@ -36,6 +36,7 @@ import {
   replaySteps,
   serialize,
   SEATS,
+  viewFor,
   type Action,
   type Event,
   type GameState,
@@ -130,6 +131,25 @@ function assertTileCensus(state: GameState, seed: string, step: number): void {
   }
   for (const key of census.keys()) {
     assert.ok(EXPECTED_TILES.has(key), `${seed} step ${step}: unknown tile ${key}`);
+  }
+}
+
+/**
+ * The Wall counter (#204): the figure every seat sees must equal the tiles
+ * still undrawn, counted from the tiles themselves. Those are the set less
+ * every tile in a hand, meld, discard or bonus pool, less the Chinese dead
+ * wall. The counter once showed 0 with the loose pair still to be drawn.
+ */
+function assertDrawsLeft(state: GameState, seed: string, step: number): void {
+  let held = 0;
+  for (const player of state.players) {
+    held += player.hand.length + player.flowers.length + player.seasons.length + player.discards.length;
+    for (const meld of player.melds) held += meld.tiles.length;
+  }
+  const undrawn = state.wall.tiles.length - held - (state.wall.dead?.length ?? 0);
+  for (const seat of SEATS) {
+    const shown = viewFor(state, seat).drawsLeft;
+    assert.equal(shown, undrawn, `${seed} step ${step}: the Wall counter shows ${shown} for ${seat}, but ${undrawn} tiles are undrawn`);
   }
 }
 
@@ -283,6 +303,7 @@ function playHand(seed: string, replayEvery: number): SoakStats {
   };
 
   assertTileCensus(state, seed, 0);
+  assertDrawsLeft(state, seed, 0);
 
   while (state.phase !== "finished") {
     assert.ok(stats.steps < MAX_STEPS, `${seed}: hand did not terminate in ${MAX_STEPS} actions`);
@@ -322,9 +343,13 @@ function playHand(seed: string, replayEvery: number): SoakStats {
     if (action!.type === "Claim") stats.claimAttempts += 1;
 
     assertTileCensus(state, seed, stats.steps);
+    assertDrawsLeft(state, seed, stats.steps);
   }
 
   assert.equal(state.result?.kind === "win" || state.result?.kind === "drawn", true, `${seed}: no result`);
+  if (state.result?.kind === "drawn") {
+    assert.equal(viewFor(state, SEATS[0]).drawsLeft, 0, `${seed}: a drawn hand shows tiles still to draw`);
+  }
   assertEventLog(log, state, seed);
   assertLedger(state, log, seed);
 
