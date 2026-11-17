@@ -61,8 +61,13 @@ it is given (`claude/...`), so delivery is a pull request:
 
 1. `npm test` and `npm run typecheck` pass locally (the hook has already
    picked Node 24 and installed the type checker).
-2. Commit, push the branch, open a pull request into `main` (mirror
-   `.github/pull_request_template.md` if one exists). The pull request gets
+2. Commit, push the branch, open a pull request into `main`. Fill in
+   `.github/pull_request_template.md` and delete the sections that do not
+   apply (no `Closes #` without an issue, no Preview line for a non-visual
+   change, no Rules section without a rule change). Once the pull request
+   number is known, edit its body so the Preview line carries the real link.
+   The squash-merge message stays the title plus two or three lines, not the
+   template. The pull request gets
    a preview link (`pr-<number>-int-dev...workers.dev`), shown in the run
    summary of its `Preview (PR link)` job, not as a comment.
    Every reply to the owner names the pull request by number and full URL
