@@ -13,7 +13,7 @@ import { describe, it } from "node:test";
 
 import { chooseAction } from "../../src/core/game/bot.ts";
 import type { Seat } from "../../src/core/game/state.ts";
-import { RoomObject, type RoomObjectState, type RoomRuntime, type RoomSocket, type RoomStorage } from "../../src/worker/room-object.ts";
+import { EXPIRE_MS, RoomObject, type RoomObjectState, type RoomRuntime, type RoomSocket, type RoomStorage } from "../../src/worker/room-object.ts";
 import { handleRoom, isRoomCode, newCode, type RoomNamespace } from "../../src/worker/room-route.ts";
 
 class FakeSocket implements RoomSocket {
@@ -45,6 +45,7 @@ class FakeState implements RoomObjectState {
     get: async <T>(key: string) => structuredClone(this.data.get(key)) as T | undefined,
     put: async (key, value) => void this.data.set(key, structuredClone(value)),
     delete: async (key) => this.data.delete(key),
+    deleteAll: async () => this.data.clear(),
     setAlarm: async (time) => void (this.alarm = time),
     deleteAlarm: async () => void (this.alarm = null),
   };
@@ -114,11 +115,11 @@ describe("room object", () => {
     await say(object, stranger, { type: "start" });
     assert.equal(stranger.last("error")?.error, "join the room first");
 
-    await say(object, ann, { type: "join", name: "Ann" });
-    await say(object, bo, { type: "join", name: "Bo", token: "bo-token" });
+    await say(object, ann, { type: "join", protocol: 1, name: "Ann" });
+    await say(object, bo, { type: "join", protocol: 1, name: "Bo", token: "bo-token" });
     assert.deepEqual(ann.last("seated"), { type: "seated", seat: "E", token: "secret-1" });
     assert.deepEqual(bo.last("seated"), { type: "seated", seat: "S", token: "bo-token" });
-    await say(object, ann, { type: "join", name: "Ann again" });
+    await say(object, ann, { type: "join", protocol: 1, name: "Ann again" });
     assert.equal(ann.last("error")?.error, "you are already seated");
 
     await say(object, bo, { type: "start" });
@@ -135,8 +136,8 @@ describe("room object", () => {
   it("plays a hand: people by message, bots and the next deal by alarm", async () => {
     const { state, clock, object } = await openRoom();
     const sockets = { E: await connect(object, state), S: await connect(object, state) } as Record<Seat, FakeSocket>;
-    await say(object, sockets.E, { type: "join", name: "Ann" });
-    await say(object, sockets.S, { type: "join", name: "Bo" });
+    await say(object, sockets.E, { type: "join", protocol: 1, name: "Ann" });
+    await say(object, sockets.S, { type: "join", protocol: 1, name: "Bo" });
     await say(object, sockets.E, { type: "configure", settings: { turnSeconds: null } });
     await say(object, sockets.E, { type: "start" });
 
@@ -170,11 +171,11 @@ describe("room object", () => {
   it("moves a person whose time ran out, once, and ignores a stale alarm", async () => {
     const { state, clock, object } = await openRoom();
     const sockets = [await connect(object, state), await connect(object, state), await connect(object, state), await connect(object, state)];
-    for (const [index, socket] of sockets.entries()) await say(object, socket, { type: "join", name: `P${index}` });
+    for (const [index, socket] of sockets.entries()) await say(object, socket, { type: "join", protocol: 1, name: `P${index}` });
     await say(object, sockets[0]!, { type: "start" });
     const waiting = latest(sockets[0]!).room.waitingOn!;
     assert.equal(waiting.human, true);
-    assert.equal(state.alarm, clock.clock + 30_000);
+    assert.equal(state.alarm, clock.clock + 15_000);
     const timer = state.data.get("timer") as { stamp: number };
     const steps = () => (state.data.get("room") as { game: { steps: unknown[] } }).game.steps.length;
     assert.equal(steps(), timer.stamp);
@@ -193,7 +194,7 @@ describe("room object", () => {
   it("hands a dropped phone's seat to the bot and keeps the room through hibernation", async () => {
     const { state, clock, object } = await openRoom();
     const ann = await connect(object, state);
-    await say(object, ann, { type: "join", name: "Ann", token: "ann" });
+    await say(object, ann, { type: "join", protocol: 1, name: "Ann", token: "ann" });
     await say(object, ann, { type: "start" });
 
     ann.closed = true;
@@ -204,7 +205,7 @@ describe("room object", () => {
     // The object wakes from hibernation with no memory: only storage and sockets.
     const woken = new RoomObject(state, {}, clock);
     const back = await connect(woken, state);
-    await say(woken, back, { type: "join", name: "", token: "ann" });
+    await say(woken, back, { type: "join", protocol: 1, name: "", token: "ann" });
     assert.deepEqual(back.last("seated"), { type: "seated", seat: "E", token: "ann" });
     assert.equal(latest(back).room.seats[0]!.connected, true);
     assert.equal(latest(back).state!.seat, "E");
@@ -214,6 +215,44 @@ describe("room object", () => {
     assert.deepEqual(back.sent.at(-1), { type: "pong" });
     await say(later, back, { type: "leave" });
     assert.deepEqual(back.last("left"), { type: "left" });
+  });
+});
+
+describe("room upkeep", () => {
+  it("tells a phone on another protocol to reload", async () => {
+    const { state, object } = await openRoom();
+    const old = await connect(object, state);
+    await say(object, old, { type: "join", name: "Ann" });
+    assert.deepEqual(old.sent.at(-1), { type: "reload", protocol: 1 });
+    assert.equal(old.last("seated"), undefined);
+  });
+
+  it("stops the bots when nobody is here, and closes an empty room after a day", async () => {
+    const { state, clock, object } = await openRoom();
+    assert.equal((state.data.get("timer") as { kind: string }).kind, "expire", "a room nobody joins expires too");
+    const ann = await connect(object, state);
+    await say(object, ann, { type: "join", protocol: 1, name: "Ann" });
+    await say(object, ann, { type: "start" });
+    ann.closed = true;
+    await object.webSocketClose(ann);
+    const timer = state.data.get("timer") as { kind: string; at: number };
+    assert.equal(timer.kind, "expire", "no bot plays on for an empty table");
+    assert.equal(timer.at, clock.clock + EXPIRE_MS);
+
+    clock.clock = timer.at;
+    await object.alarm();
+    assert.equal(state.data.size, 0, "the room is gone");
+    assert.equal(state.alarm, null);
+    assert.equal((await object.fetch(upgrade())).status, 404);
+  });
+
+  it("keeps a room someone came back to", async () => {
+    const { state, object } = await openRoom();
+    const ann = await connect(object, state);
+    await say(object, ann, { type: "join", protocol: 1, name: "Ann" });
+    state.data.set("timer", { kind: "expire", stamp: 0, at: 0 });
+    await object.alarm();
+    assert.ok(state.data.has("room"));
   });
 });
 

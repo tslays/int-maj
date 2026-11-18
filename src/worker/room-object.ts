@@ -11,11 +11,14 @@
  * phones over hibernating WebSockets. Each socket is sent the payload for its
  * own seat, so a concealed tile never reaches another phone.
  *
- * Client -> room: { type: "join", name, token? } | { type: "start" }
+ * Client -> room: { type: "join", protocol, name, token? } | { type: "start" }
  *   | { type: "configure", settings } | { type: "act", action } | { type: "next" }
  *   | { type: "leave" } | { type: "ping" }
  * Room -> client: { type: "seated", seat, token } | { type: "room", ...RoomPayload }
  *   | { type: "error", error } | { type: "pong" } | { type: "left" }
+ *   | { type: "reload", protocol } (the phone runs another version of this protocol)
+ *
+ * Nobody connected: no bot plays on, and after `EXPIRE_MS` the room is deleted.
  */
 
 import type { Action } from "../core/game/actions.ts";
@@ -31,6 +34,13 @@ const TIMER_KEY = "timer";
 export const BOT_DELAY_MS = 900;
 /** How long a finished hand's result stays up before the next deal, when the room has a time limit. */
 export const RESULT_SECONDS = 60;
+/** A room nobody has been connected to for this long is deleted. */
+export const EXPIRE_MS = 24 * 60 * 60 * 1000;
+/**
+ * The message format's version. A phone on another version is told to
+ * reload (`{ type: "reload" }`) instead of playing on a protocol it misreads.
+ */
+export const PROTOCOL = 1;
 /** Largest message a phone may send. */
 const MAX_MESSAGE = 8_000;
 
@@ -45,6 +55,7 @@ export interface RoomStorage {
   get<T>(key: string): Promise<T | undefined>;
   put(key: string, value: unknown): Promise<void>;
   delete(key: string): Promise<boolean>;
+  deleteAll(): Promise<void>;
   setAlarm(time: number): Promise<void>;
   deleteAlarm(): Promise<void>;
 }
@@ -66,7 +77,7 @@ export interface RoomRuntime {
 }
 
 interface Timer {
-  readonly kind: "bot" | "turn" | "result";
+  readonly kind: "bot" | "turn" | "result" | "expire";
   readonly stamp: number;
   readonly at: number;
 }
@@ -110,6 +121,7 @@ export class RoomObject {
       const code = url.searchParams.get("code") ?? "";
       this.room = new Room(code);
       await this.save();
+      await this.schedule();
       return json(201, { code });
     }
     if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") {
@@ -134,6 +146,7 @@ export class RoomObject {
       case "ping":
         return this.send(socket, { type: "pong" });
       case "join": {
+        if (request.protocol !== PROTOCOL) return this.send(socket, { type: "reload", protocol: PROTOCOL });
         if (seat !== null) return fail("you are already seated");
         const given = typeof request.token === "string" && request.token.length > 0 && request.token.length <= 64;
         const token = given ? (request.token as string) : this.runtime.random();
@@ -197,6 +210,14 @@ export class RoomObject {
     const timer = await this.state.storage.get<Timer>(TIMER_KEY);
     if (room === null || timer === undefined) return;
     await this.state.storage.delete(TIMER_KEY);
+    if (timer.kind === "expire") {
+      if (room.humans().length > 0) return this.schedule();
+      for (const socket of this.state.getWebSockets()) socket.close(4404, "the room has closed");
+      await this.state.storage.deleteAll();
+      await this.state.storage.deleteAlarm();
+      this.room = null;
+      return;
+    }
     if (timer.stamp !== room.stamp()) return this.schedule();
     if (timer.kind === "bot") {
       const stepped = room.stepBot();
@@ -244,7 +265,10 @@ export class RoomObject {
     const waiting = room.waitingOn();
     const seconds = room.settings.turnSeconds;
     let timer: Timer | null = null;
-    if (waiting !== null && !waiting.human) {
+    if (room.humans().length === 0) {
+      // Nobody is here: the bots do not play on alone, and an empty room closes after a day.
+      timer = { kind: "expire", stamp: room.stamp(), at: now + EXPIRE_MS };
+    } else if (waiting !== null && !waiting.human) {
       timer = { kind: "bot", stamp: room.stamp(), at: now + BOT_DELAY_MS };
     } else if (waiting !== null && seconds !== null) {
       timer = { kind: "turn", stamp: room.stamp(), at: now + seconds * 1000 };

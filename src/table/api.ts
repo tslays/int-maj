@@ -37,8 +37,9 @@ import { HAND_SET_EXCLUDED, HAND_SETS } from "../core/patterns/table.ts";
 import { describeEventFor } from "../core/game/describe.ts";
 import { BOT_LEVELS, DEFAULT_BOT_LEVEL, isBotLevel } from "../core/game/bot.ts";
 import type { Action } from "../core/game/actions.ts";
+import { viewFor, type GameView } from "../core/game/view.ts";
 import {
-  closestPayload,
+  closestForView,
   DEFAULT_HOUSE_RULES,
   GameStore,
   houseRulesPayload,
@@ -75,10 +76,12 @@ export interface ApiContext {
   readonly store: GameStore;
   /** Scenario id per name: reloading a state reuses its board until it moves. */
   readonly scenarios: Map<ScenarioName, string>;
+  /** Views of games played elsewhere (an online room), by id, for `/api/closest`. */
+  readonly views: Map<string, GameView>;
 }
 
 export function createApiContext(store: GameStore = new GameStore()): ApiContext {
-  return { store, scenarios: new Map() };
+  return { store, scenarios: new Map(), views: new Map() };
 }
 
 export class ApiError extends Error {
@@ -184,13 +187,15 @@ function routeGet(context: ApiContext, request: ApiRequest): ApiResponse | null 
     const id = request.query.get("game");
     if (id === null || id.length === 0) return fail(400, "game is required");
     const session = store.get(id);
-    if (session === undefined) return fail(404, `unknown game: ${id}`);
+    const remote = context.views.get(id);
+    if (session === undefined && remote === undefined) return fail(404, `unknown game: ${id}`);
     const limit = Number(request.query.get("limit") ?? "");
     const style = request.query.get("style") ?? "likeliest";
     if (!(HINT_STYLES as readonly string[]).includes(style)) return fail(400, `style must be one of ${HINT_STYLES.join(", ")}`);
     return ok(
-      closestPayload(
-        session,
+      closestForView(
+        id,
+        session === undefined ? remote! : viewFor(session.state, session.seat),
         Number.isInteger(limit) && limit > 0 ? Math.min(limit, 100) : undefined,
         (request.query.get("pins") ?? "").split(",").filter((id) => id.length > 0),
         { style: style as HintStyle, familiarity: parseSeen(request.query.get("seen") ?? "") },

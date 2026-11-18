@@ -19,6 +19,7 @@ import { familiar } from "./familiar.js";
 import { refreshHints } from "./hints.js";
 import { warmIndex } from "./handbook.js";
 import { installMenu } from "./menu.js";
+import { awaitingNextHand, installOnline, leaveRoom, sendAction } from "./online.js";
 import { houseRules, installOptions } from "./options.js";
 import { level } from "./level.js";
 import { pace } from "./pace.js";
@@ -141,13 +142,32 @@ function onlyPass(actions) {
 const REVIEW = new URLSearchParams(window.location.search).has("state");
 const botLevel = () => (REVIEW ? "hard" : level.id);
 
+/**
+ * At a room the server moves the table: show your choices when it waits on
+ * you, send the moves that are not decisions, and otherwise wait for its push.
+ */
+function runOnline() {
+  if (state.busy || state.payload === null) return;
+  if (state.payload.outcome !== null) {
+    if (!awaitingNextHand()) void showOutcome();
+    return;
+  }
+  const legal = state.payload.legalActions;
+  if (legal.length === 0) return;
+  if (legal.length === 1 && legal[0].type === "Draw") return sendAction(legal[0]);
+  if (onlyPass(legal)) return sendAction(legal[0]);
+  if (state.callsOff && onlyWinOrPass(legal)) return sendAction(legal.find((a) => a.type === "Pass"));
+  showChoices();
+}
+
 /** Let the table run until it needs you, then show your choices. */
 async function run() {
+  if (state.online) return runOnline();
   if (state.busy || state.payload === null) return;
   state.busy = true;
   try {
     for (;;) {
-      if (state.newGameWanted) return; // asked for while the bots played
+      if (state.newGameWanted || state.online) return; // asked for while the bots played
       if (state.payload.outcome !== null) {
         await showOutcome();
         return;
@@ -208,6 +228,11 @@ function threwSince(before, after) {
 
 /** Send one of your decisions, then let the table carry on. */
 async function act(action) {
+  if (state.online) {
+    hideChoices();
+    sendAction(action);
+    return;
+  }
   if (state.busy) return;
   state.busy = true;
   hideChoices();
@@ -348,6 +373,11 @@ function showChoices({ chime = true } = {}) {
 let pinnedSeed = new URLSearchParams(window.location.search).get("seed");
 
 async function newGame() {
+  // A new game of your own leaves the room you sit in.
+  if (state.online) {
+    leaveRoom();
+    clearTable();
+  }
   // Mid-move: the turn loop stops at its next step and starts it then.
   if (state.busy) {
     state.newGameWanted = true;
@@ -368,6 +398,28 @@ async function newGame() {
   } finally {
     state.busy = false;
   }
+  void run();
+}
+
+/* --------------------------------------------------------- rooms */
+
+/** Clear the board for a different game: a room's, or your own again. */
+function clearTable() {
+  $("#result").hidden = true;
+  $("#result").dataset.hand = "";
+  board.handId = null;
+  hideChoices();
+  previousFishing = new Set();
+}
+
+/** Back from a room: your own game where you left it, or a new one. */
+async function leftRoom() {
+  state.online = false;
+  clearTable();
+  state.payload = null;
+  const resumed = state.api.resume();
+  if (resumed === null) return newGame();
+  await apply(resumed, { animated: false });
   void run();
 }
 
@@ -403,6 +455,8 @@ async function boot() {
       toast(error.message);
     }
   }
+  // Back in a room after a reload: the room sends the table.
+  if (installOnline({ apply, run, enterRoom: clearTable, leftRoom })) return;
   const resumed = state.api.resume();
   if (resumed !== null) {
     await apply(resumed, { animated: false });
@@ -425,6 +479,7 @@ window.mahjong = {
   pile: () => board.pilePoses !== null,
   largeFace: () => (board.round[0] ? `${board.round[0].key}` : null),
   act: (action) => act(action),
+  online: () => state.online === true,
   next: () => $("#result .result-next")?.click(),
   sound,
 };

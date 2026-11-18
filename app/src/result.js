@@ -15,6 +15,7 @@ import { stickColor, sticksFor } from "./sticks.js";
 import { showTip } from "./tips.js";
 import { discardFrom, rankSeats, winnerLine } from "./standings.js";
 import { tileOrder } from "./tiles.js";
+import { askNextHand, isOnline } from "./online.js";
 import { $, WIND_NAME, board, companionRules, faceChip, request, scores, seatName, state, storage, toast } from "./shared.js";
 
 let callOut = null;
@@ -266,6 +267,11 @@ function renderOutcome(outcome) {
     }
     panel.hidden = true;
     panel.replaceChildren();
+    // At a room the next hand comes when everyone has asked.
+    if (isOnline()) {
+      askNextHand();
+      return;
+    }
     state.busy = true;
     try {
       await apply(await request("/api/next", { game: state.payload.game, houseRules: houseRules() }), { animated: false, opening: true });
@@ -277,7 +283,8 @@ function renderOutcome(outcome) {
     void run();
   });
   side.append(next);
-  side.append(againLink(panel));
+  // Playing a hand again would take back the other players' turns.
+  if (!isOnline()) side.append(againLink(panel));
   card.append(main, side);
   panel.replaceChildren(card);
   panel.hidden = false;

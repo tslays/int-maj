@@ -42,7 +42,7 @@ export interface RoomSettings {
   readonly turnSeconds: number | null;
 }
 
-export const DEFAULT_TURN_SECONDS = 30;
+export const DEFAULT_TURN_SECONDS = 15;
 
 export const DEFAULT_ROOM_SETTINGS: RoomSettings = Object.freeze({
   houseRules: DEFAULT_HOUSE_RULES,
