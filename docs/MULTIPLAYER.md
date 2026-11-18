@@ -86,7 +86,17 @@ seat ever contains another seat's concealed tiles (property test over whole
 games); timeout actions pass or discard the drawn tile; a dropped seat is
 played by the bot and handed back on rejoin.
 
-**M2 - Durable Object and protocol (non-visual).** `src/worker/room.ts`: the
+**M2 - Durable Object and protocol (non-visual). Done (2026-11-18):** the
+object is `src/worker/room-object.ts` in its own Worker (`wrangler.rooms.jsonc`:
+`int-rooms`, `int-rooms-dev`), because Cloudflare gives no preview links to a
+Worker that implements a Durable Object and only `wrangler deploy` may create
+its class. The app Worker binds to it by script name (`src/worker/room-route.ts`)
+and the deploy action deploys the rooms Worker first. Pull-request previews use
+`int-rooms-dev` as `main` last deployed it, so a change to the room object
+itself is first seen on int-dev after merging. The protocol is the comment at
+the top of `room-object.ts`. Budget: each bot move is one alarm and every
+change one storage write, a few hundred per hand, well inside the free daily
+allowance for a group of friends. The plan as written: `src/worker/room.ts`: the
 `Room` Durable Object (SQLite-backed, WebSocket Hibernation), routes
 `/api/room/new` and `/api/room/<code>` in `src/worker/index.ts`, alarms for
 deadlines, and saves after every applied action. The message protocol is
