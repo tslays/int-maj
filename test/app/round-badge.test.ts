@@ -16,7 +16,7 @@ describe("the round badge's Goulash marker", () => {
 
   it("says briefly when half-limit hands are barred, and carries no tooltip", () => {
     assert.match(goulashRow(false), /Goulash<\/span>/);
-    assert.match(goulashRow(true), /no half limit/);
+    assert.match(goulashRow(true), /Goulash<br>No half limit/);
     assert.doesNotMatch(goulashRow(true), /title/);
   });
 });

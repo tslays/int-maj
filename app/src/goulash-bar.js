@@ -39,7 +39,7 @@ export function readingBarred(reading, excludedHands) {
 
 /** The quiet marker row of a Goulash hand: a whole row under the figures. */
 export function goulashRow(barred) {
-  return `<span class="badge-goulash">Goulash${barred ? " · no half limit" : ""}</span>`;
+  return `<span class="badge-goulash">Goulash${barred ? "<br>No half limit" : ""}</span>`;
 }
 
 /** Is this view's hand a Goulash? The exchange view or the record of the exchanges says so, the whole hand through. */
