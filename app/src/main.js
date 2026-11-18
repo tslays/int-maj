@@ -31,6 +31,7 @@ import { ALL_FACES, initTiles, preloadFaces, tileOrder } from "./tiles.js";
 import { mountStage, renderer, requestRender, screenPoint, setConsoleShown, sleep, updateConsole, viewport } from "./stage.js";
 import { discardLayout } from "./discard-layout.js";
 import { openClaims, refreshClaims } from "./claims.js";
+import { halfLimitBarred, isGoulashView } from "./goulash-bar.js";
 import { hideRoundBadge, showRoundBadge } from "./round-badge.js";
 
 const CALL_WORD = { pung: "Pung", kong: "Kong", chow: "Chow", mahjong: "Mah Jong" };
@@ -47,6 +48,8 @@ function refreshConsole(litView = state.payload.view) {
     hand: view.handNumber,
     // The tiles still to be drawn (live wall plus loose pair), as the engine counts them.
     wall: state.payload.wall.draws,
+    goulash: isGoulashView(view),
+    goulashBarred: halfLimitBarred(view.excludedHands),
     seats: state.payload.table.map((entry) => ({
       rel: board.rel(entry.seat),
       wind: entry.wind,
