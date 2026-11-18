@@ -50,6 +50,20 @@ export interface ScoreOptions {
   readonly excluded?: readonly string[];
 }
 
+/**
+ * One line of a calculated hand's score sheet: a ground-score item (`amount`
+ * is points) or a double (`amount` is the number of doubles). `id` is stable
+ * for tests and the app; `what` is a short label; `cite` is the sheet line
+ * (I p. 24-25) as RULES.md R-084..R-091 print it.
+ */
+export interface ScoreItem {
+  readonly kind: "ground" | "double";
+  readonly id: string;
+  readonly what: string;
+  readonly amount: number;
+  readonly cite: string;
+}
+
 export interface ScoreResult {
   readonly matches: readonly PatternMatch[];
   readonly winning: PatternMatch | null;
@@ -62,6 +76,8 @@ export interface ScoreResult {
   readonly doubles: number | null;
   /** ground × 2^doubles before the limit cap; null for a fixed-tier hand. */
   readonly raw: number | null;
+  /** Each ground item and double behind `ground` and `doubles`; null for a fixed-tier hand. */
+  readonly items: readonly ScoreItem[] | null;
   readonly limit: number;
 }
 
@@ -88,6 +104,7 @@ interface Candidate {
   readonly ground: number | null;
   readonly doubles: number | null;
   readonly raw: number | null;
+  readonly items: readonly ScoreItem[] | null;
 }
 
 /**
@@ -100,7 +117,7 @@ interface Candidate {
 export function scoreHand(hand: Hand, options: ScoreOptions = {}): ScoreResult {
   const limit = options.limit ?? DEFAULT_LIMIT;
   const matches = matchHand(hand, undefined, options.excluded);
-  const miss = { points: null, ground: null, doubles: null, raw: null } as const;
+  const miss = { points: null, ground: null, doubles: null, raw: null, items: null } as const;
   const none = (winning: PatternMatch | null): ScoreResult => ({
     matches,
     winning,
@@ -137,6 +154,7 @@ export function scoreHand(hand: Hand, options: ScoreOptions = {}): ScoreResult {
           ground: score.ground,
           doubles: score.doubles,
           raw: score.raw,
+          items: score.items,
         });
       }
     }
@@ -155,6 +173,7 @@ export function scoreHand(hand: Hand, options: ScoreOptions = {}): ScoreResult {
     ground: best.ground,
     doubles: best.doubles,
     raw: best.raw,
+    items: best.items,
     limit,
   };
 }
@@ -173,6 +192,7 @@ interface CalculatedScore {
   readonly ground: number;
   readonly doubles: number;
   readonly raw: number;
+  readonly items: readonly ScoreItem[];
 }
 
 function meldSet(meld: Meld): ScoredSet {
@@ -203,6 +223,15 @@ function setGround(set: ScoredSet): number {
   const high = isHighGroup(set.tile!);
   const exposed = set.kind === "kong" ? (high ? 16 : 8) : high ? 4 : 2;
   return set.exposed ? exposed : exposed * 2;
+}
+
+function tileLabel(key: string): string {
+  const suits: Record<string, string> = { b: "Bamboo", c: "Characters", o: "Circles" };
+  const winds: Record<string, string> = { E: "East", S: "South", W: "West", N: "North" };
+  const dragons: Record<string, string> = { R: "Red", G: "Green", W: "White" };
+  if (key.startsWith("w")) return `${winds[key.slice(1)] ?? key}`;
+  if (key.startsWith("d")) return `${dragons[key.slice(1)] ?? key} Dragon`;
+  return `${key.slice(1)} of ${suits[key[0]!] ?? key[0]}`;
 }
 
 function pairGround(pair: string, hand: Hand): number {
@@ -314,19 +343,35 @@ function calculateReading(
   });
   const pair = reading.pair;
 
-  let ground = hand.flowers.length * 4 + hand.seasons.length * 4;
-  for (const set of sets) ground += setGround(set);
-  ground += pairGround(pair, hand);
-  if (options.firstDiscardByEast) ground += 2; // (d)
+  const items: ScoreItem[] = [];
+  const addGround = (id: string, what: string, amount: number, cite: string) => {
+    if (amount > 0) items.push({ kind: "ground", id, what, amount, cite });
+  };
+  addGround("flowers", `${hand.flowers.length} Flower${hand.flowers.length === 1 ? "" : "s"}`, hand.flowers.length * 4, "I p. 24");
+  addGround("seasons", `${hand.seasons.length} Season${hand.seasons.length === 1 ? "" : "s"}`, hand.seasons.length * 4, "I p. 24");
+  for (const set of sets) {
+    if (set.kind === "chow") continue;
+    addGround(
+      set.kind,
+      `${set.exposed ? "Exposed" : "Concealed"} ${set.kind} of ${tileLabel(set.tile!)}`,
+      setGround(set),
+      "I p. 24",
+    );
+  }
+  addGround("pair-dragon", `Pair of ${tileLabel(pair)}`, pair.startsWith("d") ? 2 : 0, "(a)");
+  addGround("pair-own-wind", "Pair of own wind", pair === `w${hand.seatWind}` ? 2 : 0, "(b)");
+  addGround("pair-round-wind", "Pair of the round's wind", pair === `w${hand.prevailingWind}` ? 2 : 0, "(c)");
+  if (options.firstDiscardByEast) addGround("east-first-discard", "East's first discard claimed", 2, "(d)");
   if (role.kind === "set") {
     const completed = sets[role.index]!;
     if (completed.kind === "chow" && chowInOnlyPossiblePlace(completed, tileKey(hand.winningTile!))) {
-      ground += 2; // (e)
+      addGround("only-place", "Chow made in the only possible place", 2, "(e)");
     }
   }
-  if (hand.selfDrawn) ground += 2; // (f)
-  if (role.kind === "pair") ground += 2; // (g)
-  if (!options.withoutMahJongBonus) ground += 20; // (h)
+  if (hand.selfDrawn) addGround("self-drawn", "Winning tile drawn from the wall", 2, "(f)");
+  if (role.kind === "pair") addGround("pair-completed", "Pair completed by the winning tile", 2, "(g)");
+  if (!options.withoutMahJongBonus) addGround("mah-jong", "Going Mah Jong", 20, "(h)");
+  const ground = items.reduce((sum, item) => sum + item.amount, 0);
 
   const shape = normalizeHand(hand);
   const suits = usedSuits(shape);
@@ -359,24 +404,33 @@ function calculateReading(
   // second double for them, and (k) already "includes one double for all
   // Pungs", so the no-chows double is not added on top (rules/archive/
   // ASSUMPTIONS.md, "Doubles are counted once").
-  let doubles = 0;
-  doubles += dragonPungs; // (a) each pung/kong of Dragons
-  if (ownWindPung) doubles += 1; // (b)
-  if (prevailingPung) doubles += 1; // (c)
-  if (ownSeason && !bouquetSeasons) doubles += 1; // (d)
-  if (ownFlower && !bouquetFlowers) doubles += 1; // (e)
-  if (suits.length === 1 && hasHonour) doubles += 1; // (f), and (k)'s cleared suit
-  if (noChows && !allHonours) doubles += 1; // (g)
+  const addDouble = (id: string, what: string, amount: number, cite: string) => {
+    if (amount > 0) items.push({ kind: "double", id, what, amount, cite });
+  };
+  addDouble("dragon-pungs", `${dragonPungs} pung${dragonPungs === 1 ? "" : "s"} of Dragons`, dragonPungs, "(a)");
+  if (ownWindPung) addDouble("own-wind", "Pung of own wind", 1, "(b)");
+  if (prevailingPung) addDouble("round-wind", "Pung of the round's wind", 1, "(c)");
+  if (ownSeason && !bouquetSeasons) addDouble("own-season", "Own Season", 1, "(d)");
+  if (ownFlower && !bouquetFlowers) addDouble("own-flower", "Own Flower", 1, "(e)");
+  if (suits.length === 1 && hasHonour) addDouble("one-suit-honours", "One suit with Winds or Dragons", 1, "(f)");
+  if (noChows && !allHonours) addDouble("no-chows", "No chows", 1, "(g)");
   if (options.wonOnLooseTile || options.wonOnLastWallTile || options.robbedKong) {
-    doubles += 1; // (h)(i)-(iii): one double, not one per manner
+    // one double, not one per manner
+    const what = options.wonOnLooseTile
+      ? "Won with a loose tile"
+      : options.wonOnLastWallTile
+        ? "Won with the last wall tile"
+        : "Won by robbing the kong";
+    addDouble("winning-manner", what, 1, "(h)");
   }
-  if (isConcealed(hand) && hand.selfDrawn) doubles += 2; // concealed Mah Jong
-  if (allOneSuitNoHonours) doubles += 3; // (j)
-  if (allHonours) doubles += 3; // (k), includes one double for all pungs
-  if (bouquetSeasons) doubles += 3; // includes own Season
-  if (bouquetFlowers) doubles += 3; // includes own Flower
+  if (isConcealed(hand) && hand.selfDrawn) addDouble("concealed-mah-jong", "Concealed Mah Jong", 2, "I p. 25");
+  if (allOneSuitNoHonours) addDouble("pure", "All one suit, no Winds or Dragons", 3, "(j)");
+  if (allHonours) addDouble("all-honours", "Honour tiles only", 3, "(k)");
+  if (bouquetSeasons) addDouble("bouquet-seasons", "Bouquet of Seasons", 3, "I p. 25");
+  if (bouquetFlowers) addDouble("bouquet-flowers", "Bouquet of Flowers", 3, "I p. 25");
+  const doubles = items.reduce((sum, item) => sum + (item.kind === "double" ? item.amount : 0), 0);
 
-  return { ground, doubles, raw: ground * 2 ** doubles };
+  return { ground, doubles, raw: ground * 2 ** doubles, items };
 }
 
 /** The best reading of the hand, the way a player would choose to count it. */

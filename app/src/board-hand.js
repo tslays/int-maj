@@ -7,6 +7,8 @@
 
 import * as THREE from "three";
 import { W, makeTile, markReceived, tileOrder } from "./tiles.js";
+import { picksStand, planHand } from "./hand-plan.js";
+import { sortPref } from "./sort-pref.js";
 import { HAND_DRAWN_GAP, HAND_GAP, HAND_LIFT, handTileStart, handWidth } from "./layout.js";
 import { pace } from "./pace.js";
 import { sound } from "./sound.js";
@@ -25,54 +27,30 @@ export const handMethods = {
     if (ownTurn && view.lastDraw !== null && view.lastDraw.seat === this.me && keys.includes(view.lastDraw.tile)) {
       drawnKey = view.lastDraw.tile;
     }
-    const plain = [...keys];
-    if (drawnKey !== null) plain.splice(plain.indexOf(drawnKey), 1);
-    plain.sort((a, b) => tileOrder(a) - tileOrder(b));
+    // Picked for a Goulash pass, or just thrown: these copies are the ones that leave (#210, #214).
+    const leaving = new Set(this.raised);
+    if (this.thrown !== null) leaving.add(this.thrown);
+    const { order } = planHand({ hand: this.hand, keys, drawnKey, sorted: sortPref.on, leaving });
 
-    // Keep the tile objects still in the hand; a newly drawn tile is always new.
-    const pool = [...this.hand];
-    const take = (key, drawn) => {
-      let index = pool.findIndex((entry) => entry.key === key && entry.drawn === drawn);
-      if (index < 0 && !drawn) index = pool.findIndex((entry) => entry.key === key);
-      return index < 0 ? null : pool.splice(index, 1)[0];
-    };
     const next = [];
     const fresh = new Set();
-    const make = (key) => {
-      const entry = { key, tile: makeTile(key, { shadows: false }), drawn: false, glide: 0 };
-      entry.tile.rotation.x = HAND_TILT;
-      this.handGroup.add(entry.tile);
-      fresh.add(entry);
-      return entry;
-    };
-    if (this.custom) {
-      // Your own arrangement stands: tiles keep their places, new ones join at the end.
-      const left = [...keys];
-      for (const entry of this.hand) {
-        const at = left.indexOf(entry.key);
-        if (at < 0) continue;
-        left.splice(at, 1);
-        pool.splice(pool.indexOf(entry), 1);
-        next.push(entry);
+    for (const item of order) {
+      let entry = item.entry;
+      if (entry === null) {
+        entry = { key: item.key, tile: makeTile(item.key, { shadows: false }), drawn: false, glide: 0 };
+        entry.tile.rotation.x = HAND_TILT;
+        this.handGroup.add(entry.tile);
+        fresh.add(entry);
       }
-      left.sort((a, b) => tileOrder(a) - tileOrder(b));
-      if (drawnKey !== null && left.includes(drawnKey)) left.push(left.splice(left.indexOf(drawnKey), 1)[0]);
-      for (const key of left) next.push(make(key));
-      next.forEach((entry, index) => {
-        entry.drawn = drawnKey !== null && index === next.length - 1;
-      });
-    } else {
-      const order = plain.map((key) => [key, false]);
-      if (drawnKey !== null) order.push([drawnKey, true]);
-      for (const [key, drawn] of order) {
-        const entry = take(key, drawn) ?? make(key);
-        entry.drawn = drawn;
-        next.push(entry);
-      }
+      entry.drawn = item.drawn;
+      next.push(entry);
     }
-    for (const entry of pool) entry.tile.removeFromParent();
+    for (const entry of this.hand) if (!next.includes(entry)) entry.tile.removeFromParent();
+    if (!next.includes(this.thrown)) this.thrown = null;
     this.hand = next;
     for (const entry of this.raised) if (!next.includes(entry)) this.raised.delete(entry);
+    // Picks stand up only while an exchange is offered: once it is over none stays raised.
+    if (!picksStand(payload)) this.raised.clear();
     // The tile you raised was used up (a call took it): if you still hold another copy, the lift moves to it.
     if (this.lifted !== null && !next.includes(this.lifted)) {
       const key = this.lifted.key;
@@ -255,20 +233,12 @@ export const handMethods = {
     this.hand[i] = b;
     this.hand[j] = a;
     [a.drawn, b.drawn] = [b.drawn, a.drawn];
-    this.setCustom(true);
+    sortPref.set(false); // your own order now: the game stops sorting (#213)
     sound.cue("swap");
-  },
-
-  /** Note (and announce) whether the hand is in your own order. */
-  setCustom(custom) {
-    if (this.custom === custom) return;
-    this.custom = custom;
-    this.onCustomChange?.(custom);
   },
 
   /** Back to the default order: sorted, the drawn tile apart at the end. */
   autoSort() {
-    this.setCustom(false);
     const drawn = this.hand.filter((entry) => entry.drawn);
     const plain = this.hand.filter((entry) => !entry.drawn);
     plain.sort((a, b) => tileOrder(a.key) - tileOrder(b.key));
@@ -278,7 +248,7 @@ export const handMethods = {
 
   /**
    * Carry a tile with the pointer; with `reorder` it trades places with each
-   * tile it passes (and so takes the hand off auto sort), otherwise it only follows.
+   * tile it passes (and so turns Sort off), otherwise it only follows.
    */
   dragTo(entry, event, reorder = true) {
     const x = this.handX(event);
@@ -327,6 +297,7 @@ export const handMethods = {
   /** Remember where the tile you throw left the hand, so its arc starts there. */
   noteThrow(entry) {
     this.lastThrowX = entry.tile.position.x;
+    this.thrown = entry; // this copy leaves the hand, not another of the same face
     this.carried = null;
     this.lifted = null;
   },
