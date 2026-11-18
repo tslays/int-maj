@@ -25,3 +25,13 @@ export function barredInGoulash(hand, excludedHands) {
     (reading) => reading.concealedTier === "half" && (reading.exposedTier === null || reading.exposedTier === "half"),
   );
 }
+
+/** The quiet marker row of a Goulash hand: a whole row under the figures. */
+export function goulashRow(barred) {
+  return `<span class="badge-goulash">Goulash${barred ? " · no half limit" : ""}</span>`;
+}
+
+/** Is this view's hand a Goulash? The exchange view or the record of the exchanges says so, the whole hand through. */
+export function isGoulashView(view) {
+  return view?.goulash != null || view?.goulashReceived != null;
+}
