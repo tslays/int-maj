@@ -9,6 +9,7 @@
  * in its claims lane instead (board.js `reconcileMelds`).
  */
 
+import { goulashRow } from "./goulash-bar.js";
 import { $ } from "./shared.js";
 
 const WIND_WORD = { E: "East", S: "South", W: "West", N: "North" };
@@ -23,7 +24,7 @@ function cell(caption, value, extra = "") {
 
 /**
  * Show the badge for `info` (the console's: `round`, `hand`, `wall`, and
- * `seats` with `rel`, `wind`, `dealer`, `fishing`; rel 0 is the player).
+ * `goulash`, `goulashBarred`, and `seats` with `rel`, `wind`, `dealer`, `fishing`; rel 0 is the player).
  */
 export function showRoundBadge(info) {
   const badge = $("#wall-badge");
@@ -34,7 +35,8 @@ export function showRoundBadge(info) {
     (you
       ? cell("You", WIND_WORD[you.wind] + (you.fishing ? FISH : ""), you.dealer ? " dealer" : "")
       : "") +
-    cell("Wall", String(info.wall));
+    cell("Wall", String(info.wall)) +
+    (info.goulash ? goulashRow(info.goulashBarred) : "");
   if (badge.innerHTML !== html) badge.innerHTML = html;
   badge.hidden = false;
 }
