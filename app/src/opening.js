@@ -10,6 +10,7 @@
  */
 
 import { browserStorage, storedString } from "./prefs.js";
+import { tileOrder } from "./tile-order.js";
 
 export const OPENING_KEY = "int-maj.opening";
 
@@ -52,7 +53,10 @@ const ROUND = 4;
  * each, and the last is `payload` itself (the thirteenth tile, East's
  * fourteenth, and any flowers and seasons already put out). Every stage is a
  * copy of the payload the board can reconcile, so the board needs no deal
- * logic of its own and ends exactly where the engine says.
+ * logic of its own and ends exactly where the engine says. Your own tiles are
+ * dealt in the table's hand order (`tileOrder`), not the engine's, so that with
+ * Sort off, where every round joins at the end, the hand still lies in one run
+ * instead of four blocks sorted apart (#230).
  */
 export function dealStages(payload) {
   const finals = Object.fromEntries(payload.table.map((entry) => [entry.seat, entry.handCount]));
@@ -77,7 +81,8 @@ function partial(payload, counts, total) {
     entry.flowers = [];
     entry.seasons = [];
   }
-  copy.view.player.hand = payload.view.player.hand.slice(0, counts[payload.seat]);
+  const inOrder = [...payload.view.player.hand].sort((a, b) => tileOrder(a) - tileOrder(b));
+  copy.view.player.hand = inOrder.slice(0, counts[payload.seat]);
   copy.view.lastDraw = null;
   const front = total === 0 ? 0 : Math.round((payload.wall.front * held) / total);
   const gap = payload.wall.front - front;

@@ -13,6 +13,10 @@ import { seedWithDealer } from "../helpers/seeds.ts";
 
 // @ts-expect-error - a plain browser module without type declarations
 const { createOpeningPref, dealStages, openingMs, OPENING_KEY, OPENING_SPEED, PIPS } = await import("../../app/src/opening.js");
+// @ts-expect-error - a plain browser module without type declarations
+const { tileOrder } = await import("../../app/src/tile-order.js");
+// @ts-expect-error - a plain browser module without type declarations
+const { planHand } = await import("../../app/src/hand-plan.js");
 
 function memory(initial: Record<string, string> = {}) {
   const data = new Map(Object.entries(initial));
@@ -82,7 +86,9 @@ describe("the deal's stages", () => {
       for (const [index, stage] of stages.entries()) {
         const own = stage.table.find((entry) => entry.seat === payload.seat)!;
         assert.equal(stage.view.player.hand.length, own.handCount, "your hand is as large as your count says");
-        assert.deepEqual(stage.view.player.hand, payload.view.player.hand.slice(0, own.handCount));
+        const inOrder = [...payload.view.player.hand].sort((a, b) => tileOrder(a) - tileOrder(b));
+        const expected = stage === payload ? payload.view.player.hand : inOrder.slice(0, own.handCount);
+        assert.deepEqual(stage.view.player.hand, expected, "your tiles come in the table's hand order");
         // The wall is drawn down as the hands fill, and its tiles are accounted for.
         assert.equal(stage.wall.front + stage.wall.remaining, payload.wall.front + payload.wall.remaining);
         assert.ok(stage.wall.front >= (stages[index - 1]?.wall.front ?? 0));
@@ -91,6 +97,19 @@ describe("the deal's stages", () => {
       assert.equal(stages[0]!.wall.remaining, payload.wall.remaining + payload.wall.front);
     });
   }
+
+  it("lays your hand in one sorted run with Sort off, whatever order the engine sends (#230)", () => {
+    // Report #230: seat E's hand, engine order (bamboo, characters, circles, dragons).
+    const payload = dealt("opening-sort-off");
+    (payload.view.player as { hand: string[] }).hand = ["b4", "b5", "c1", "c4", "c4", "c6", "c9", "o4", "o4", "o4", "o9", "dR", "dW"];
+    for (const entry of payload.table) (entry as { handCount: number }).handCount = 13;
+    let held: { key: string; drawn: boolean }[] = [];
+    for (const stage of dealStages(payload) as Payload[]) {
+      const { order } = planHand({ hand: held, keys: stage.view.player.hand, drawnKey: null, sorted: false });
+      held = order.map((item: { key: string; drawn: boolean }) => ({ key: item.key, drawn: item.drawn }));
+    }
+    assert.deepEqual(held.map((tile) => tile.key), ["c1", "c4", "c4", "c6", "c9", "o4", "o4", "o4", "o9", "b4", "b5", "dW", "dR"]);
+  });
 
   it("leaves the payload it was given untouched", () => {
     const payload = dealt("opening-copy");
