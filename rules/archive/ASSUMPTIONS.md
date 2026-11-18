@@ -493,3 +493,24 @@ which sticks a payment is made with is not a rule.
 fewest sticks, largest first (1200 is one blue and two yellow). The scores
 always come from the ledger, never from the sticks; nothing in the engine
 depends on this.
+
+## A-TIMER: a time limit at online rooms (2026-11-18)
+
+**Source:** *Illustrated* p. 22, Courtesies 2 ("Lose no time in drawing and
+discarding, for a slow player tends to spoil the game for others"), 4 (decide
+your discard while the others take their turns) and 5 (once the next player
+has drawn, it is too late to pung the previous discard).
+
+**Silent point:** the book asks for speed as a courtesy but sets no time
+limit and says nothing about a player who does not act at all. That never
+arises at a real table; at an online room (`docs/MULTIPLAYER.md`) a phone that
+stops answering would stall the other three.
+
+**Assumption (table setting, not a rule):** a room may give each decision a
+time limit (30 seconds by default, or none). When it runs out the room makes
+the move that changes least for that player (`fallbackAction` in
+`src/table/room.ts`): pass a claim or an announcement, draw when it is time
+to draw, throw the tile just drawn; any other decision (a throw after a
+claim, a Goulash exchange) is made by the bot policy. A player who has
+dropped off is played by the bot until they come back. Nothing in the engine
+depends on this; every move is still a legal one applied by the reducer.

@@ -76,7 +76,7 @@ phone (app)  --WebSocket-->  Worker /api/room/<code>  -->  Durable Object "Room"
 
 Each slice is tested and merged before the next one starts.
 
-**M1 - Room core (non-visual).** `src/table/room.ts`: a pure room over the
+**M1 - Room core (non-visual). Done (2026-11-18):** `src/table/room.ts`; the timer is assumption A-TIMER in `rules/archive/ASSUMPTIONS.md`. `src/table/room.ts`: a pure room over the
 existing session code. It holds 1-4 human seats plus bots, takes
 `{ seat, action }`, returns per-seat messages (each seat's payload and event
 text) plus "bots to step next" and "deadline to arm". Undo and retry are
