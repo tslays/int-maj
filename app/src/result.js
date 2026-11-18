@@ -2,6 +2,7 @@
  * The result card after a hand and the final standings after the last one.
  */
 
+import { PAYMENT_NOTES, breakdownRows } from "./breakdown.js";
 import { familiar } from "./familiar.js";
 import { houseRules } from "./options.js";
 import { bookPages } from "./pages.js";
@@ -143,6 +144,46 @@ function renderOutcome(outcome) {
       line("Paid", `${outcome.points.toLocaleString("en")}${capped ? ` (limit ${outcome.limit.toLocaleString("en")})` : ""}`);
     }
     main.append(sums);
+    const sheet = outcome.ground !== null ? breakdownRows(outcome.items, { cite: !companionRules() }) : null;
+    if (sheet !== null) {
+      const details = document.createElement("details");
+      details.className = "result-breakdown";
+      const summary = document.createElement("summary");
+      summary.textContent = "How the score was found";
+      details.append(summary);
+      const part = (heading, rows, total) => {
+        if (rows.length === 0) return;
+        const head = document.createElement("h4");
+        head.textContent = `${heading}${total}`;
+        const list = document.createElement("ul");
+        for (const entry of rows) {
+          const item = document.createElement("li");
+          const what = document.createElement("span");
+          what.textContent = entry.what;
+          const value = document.createElement("b");
+          value.textContent = entry.value;
+          item.append(what, value);
+          if (entry.cite) {
+            const cite = document.createElement("i");
+            cite.textContent = entry.cite;
+            item.append(cite);
+          }
+          list.append(item);
+        }
+        details.append(head, list);
+      };
+      part("Ground score", sheet.ground, ` = ${outcome.ground}`);
+      part("Doubles", sheet.doubles, ` = ${outcome.doubles}`);
+      const notes = document.createElement("div");
+      notes.className = "result-notes";
+      for (const text of PAYMENT_NOTES) {
+        const note = document.createElement("p");
+        note.textContent = text;
+        notes.append(note);
+      }
+      details.append(notes);
+      main.append(details);
+    }
   }
 
   const account = explainSettlement({

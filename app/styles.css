@@ -589,6 +589,48 @@ html.pond-zoom .act-claim {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+.result-breakdown {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+.result-breakdown summary {
+  cursor: pointer;
+  color: var(--muted);
+  padding: 6px 0;
+}
+.result-breakdown h4 {
+  margin: 8px 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.result-breakdown ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.result-breakdown li {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0;
+}
+.result-breakdown li span {
+  flex: 1;
+}
+.result-breakdown li b {
+  font-variant-numeric: tabular-nums;
+}
+.result-breakdown li i {
+  min-width: 3.4em;
+  text-align: right;
+  color: var(--muted);
+  font-style: normal;
+  font-size: 11px;
+}
+.result-notes p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.35;
+}
 .result-scores {
   display: grid;
   gap: 4px;

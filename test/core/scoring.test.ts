@@ -189,6 +189,7 @@ describe("scoring precedence", () => {
     assert.deepEqual(Object.keys(result).sort(), [
       "doubles",
       "ground",
+      "items",
       "limit",
       "matches",
       "points",
