@@ -4,14 +4,18 @@ Newest first. Written for players: what you will see, what was fixed, and
 what now works differently. Each version is a `v0.1.0-alpha.N` tag on `main`;
 testers get it at https://int.mah-jong.workers.dev.
 
-## Next
+## alpha.16
+
+**New**
+
+- **Play with friends.** Options › Play with friends: create a room, or join one by its code or link, deal, and fill any empty seats with bots. A turn timer (15, 30 or 60 seconds, or off) sits in a pill on the table. The game reconnects when your phone wakes, and an empty room stops and expires on its own. (#225, #226, #227)
 
 **Changed**
 
-- **Chance bands are re-cut.** Most hands in the panel are small chances, and *Long shot* used to cover everything under 20 %. The five bands are now *Likely* (half or better), *Possible*, *Unlikely*, *Long shot* and the new lowest, *Remote* (under 1 in 50); *Very likely* is gone. The hand's sheet says what the band means in plain odds.
-- **A tile you need several copies of is shown as a small fan.** Three White Dragons overlap over one count of the copies still unseen, so "three of these four" is plain at a glance.
+- **Chance bands are re-cut.** Most hands in the panel are small chances, and *Long shot* used to cover everything under 20 %. The five bands are now *Likely* (half or better), *Possible*, *Unlikely*, *Long shot* and the new lowest, *Remote* (under 1 in 50); *Very likely* is gone. The hand's sheet says what the band means in plain odds. (#223)
+- **A tile you need several copies of is shown as a small fan.** Three White Dragons overlap over one count of the copies still unseen, so "three of these four" is plain at a glance. (#223)
 
-## alpha.15
+## alpha.15 (18 November 2026)
 
 **New**
 
