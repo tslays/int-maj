@@ -38,6 +38,7 @@ import {
 import { viewFor, type GameView, type PlayerView } from "../core/game/view.ts";
 import type { Wind } from "../core/tiles.ts";
 import type { PageRefs, Tier } from "../core/patterns/types.ts";
+import type { ScoreItem } from "../core/score.ts";
 import { HAND_SET_EXCLUDED, HAND_SETS, PATTERNS, type HandSet } from "../core/patterns/table.ts";
 import { GOULASH_NO_HALF_LIMIT, WIN_NEEDS_FISH, buildHand } from "../core/game/hands.ts";
 import { arrangeConcealed } from "../core/arrange.ts";
@@ -231,6 +232,8 @@ export interface OutcomePayload {
   readonly ground: number | null;
   readonly doubles: number | null;
   readonly raw: number | null;
+  /** The score sheet behind ground and doubles; null for a printed tier or a drawn hand. */
+  readonly items: readonly ScoreItem[] | null;
   readonly limit: number;
   readonly reason: string;
   /** The tile that completed the hand, as shown on the table. */
@@ -564,6 +567,7 @@ function outcomeFor(session: WebSession, view: GameView): OutcomePayload | null 
     ground: result.ground,
     doubles: result.doubles,
     raw: result.raw,
+    items: result.items ?? null,
     limit: result.limit,
     reason: result.reason,
     gameOver: endsGame(state),

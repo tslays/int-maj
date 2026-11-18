@@ -25,6 +25,7 @@
 
 import type { MeldKind } from "../hand.ts";
 import type { Tier } from "../patterns/types.ts";
+import type { ScoreItem } from "../score.ts";
 import { WINDS, type Wind } from "../tiles.ts";
 import type { ClaimKind } from "./actions.ts";
 
@@ -129,6 +130,8 @@ export interface HandResult {
   readonly doubles: number | null;
   /** Calculated hand: ground x 2^doubles before the limit cap. */
   readonly raw: number | null;
+  /** Calculated hand: each ground item and double behind ground and doubles. */
+  readonly items?: readonly ScoreItem[] | null;
   /** The limit used for this hand. */
   readonly limit: number;
   /** Dealer of the next hand: repeats on a dealer win or a drawn hand. */
