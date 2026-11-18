@@ -9,7 +9,7 @@ testers get it at https://int.mah-jong.workers.dev.
 **Changed**
 
 - **Chance bands are re-cut.** Most hands in the panel are small chances, and *Long shot* used to cover everything under 20 %. The five bands are now *Likely* (half or better), *Possible*, *Unlikely*, *Long shot* and the new lowest, *Remote* (under 1 in 50); *Very likely* is gone. The hand's sheet says what the band means in plain odds.
-- **A tile you need several copies of is shown once.** Three White Dragons show as one chip, "x3", with "3 of 4" under it: copies needed of those still unseen.
+- **A tile you need several copies of is shown as a small fan.** Three White Dragons overlap over one count of the copies still unseen, so "three of these four" is plain at a glance.
 
 ## alpha.15
 

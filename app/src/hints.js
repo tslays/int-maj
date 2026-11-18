@@ -481,37 +481,30 @@ export function tileWords(key) {
 }
 
 /**
- * A needed tile's chip with, under it, how many copies the hand needs of
- * those still out of sight (in the wall or another player's hand): "3 of 4"
- * for three White Dragons with four unseen. That is the evidence behind the
- * chance, and it shows an overlap at a glance. A tile whose count is not
- * known shows the chip alone.
+ * A needed tile with, under it, how many copies are still out of sight (in
+ * the wall or another player's hand): the evidence behind the chance. When
+ * the hand needs several copies the chips overlap in a small fan, so three
+ * White Dragons over a single "4" show at a glance that you need three of
+ * the four still unseen. A tile whose count is not known shows the chips alone.
  */
 function withLeft(key, count, left) {
-  const chip = faceChip(key);
-  if (left === undefined) return chip;
+  const fan = document.createElement("span");
+  fan.className = "need-fan";
+  for (let copy = 0; copy < count; copy++) fan.append(faceChip(key));
+  if (left === undefined) return count > 1 ? fan : fan.firstChild;
   const stack = document.createElement("span");
   stack.className = "need-tile";
-  if (count > 1) {
-    const times = document.createElement("span");
-    times.className = "need-times";
-    times.textContent = `\u00d7${count}`;
-    stack.append(chip, times);
-  } else {
-    stack.append(chip);
-  }
   const note = document.createElement("span");
   note.className = "need-left";
-  note.textContent = `${count} of ${left}`;
-  stack.append(note);
-  stack.setAttribute("aria-label", `${tileWords(key)}, need ${count} of ${left} unseen`);
+  note.textContent = String(left);
+  stack.append(fan, note);
+  stack.setAttribute("aria-label", `${count > 1 ? `${count} ` : ""}${tileWords(key)}${count > 1 ? "s" : ""}, ${left} left`);
   stack.setAttribute("role", "img");
   return stack;
 }
 
 /**
- * The tiles still needed, one chip per kind (with its count when the hand
- * needs several copies). Where another tile would do as well (a 4 where the
+ * The tiles still needed, one fan per kind (a chip per copy needed). Where another tile would do as well (a 4 where the
  * 1 completes a pair) it follows the chip after "or", each standing in for
  * one copy.
  */
@@ -808,7 +801,7 @@ export async function openHandDetail(pattern, progress = null) {
         more.setAttribute("aria-expanded", String(!left.hidden));
       });
       left.textContent =
-        "Under each tile: how many copies this hand still needs, of those you have not seen yet (in the wall or another player's hand). " +
+        "The number under each tile: copies you have not seen yet, in the wall or another player's hand. Overlapping tiles are copies this hand needs more than once, all from that number. " +
         "The chance reads them, and every claim this hand may make. " +
         "It is the chance to build this hand by the end of the wall, not to win with it: another player going out first is not counted.";
       yours.append(left);

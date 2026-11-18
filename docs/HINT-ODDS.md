@@ -564,7 +564,7 @@ and up, **Possible** 25-50, **Unlikely** 10-25, **Long shot** 2-10,
 **Remote** under 2 %. The sheet's note gives the band in plain odds. The
 discovery floor (5 %) stays inside "Long shot": a discovery is never Remote.
 
-The sheet lists a tile needed several times once, "x3", with "3 of 4" under it:
-copies needed of those unseen. The early stop of `handChance` also now asks,
+The sheet shows a tile needed several times as a fan of overlapping chips over
+one count of the unseen copies (three White Dragons over a "4"). The early stop of `handChance` also now asks,
 below 10 %, for a standard error under a third of the figure, so a hand near a
 cut does not change band by noise.
