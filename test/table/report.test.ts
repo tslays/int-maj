@@ -240,6 +240,7 @@ describe("the player's settings in a report", () => {
     discards: "rows",
     hints: true,
     tips: true,
+    sort: true,
     pinned: [],
     rules: RULES,
   };
@@ -253,6 +254,7 @@ describe("the player's settings in a report", () => {
     discards: "pile",
     hints: false,
     tips: false,
+    sort: false,
     pinned: ["a-hand", "b-hand"],
     rules: { handSet: "companion", goulashNoHalfLimit: false, winNeedsFish: true },
   };
@@ -263,7 +265,7 @@ describe("the player's settings in a report", () => {
     const text = buildReport(session, { ...INFO, settings: CHOSEN });
     assert.match(
       text,
-      /^Settings: bot level hard, pace faster, hint style discovery, animations off, sound off, large discards off, discards pile, hints off, tips off$/m,
+      /^Settings: bot level hard, pace faster, hint style discovery, animations off, sound off, large discards off, discards pile, hints off, tips off, sort off$/m,
     );
     assert.match(text, /^Pinned hands: a-hand, b-hand$/m);
     assert.match(
