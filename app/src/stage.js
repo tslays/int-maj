@@ -396,6 +396,17 @@ export function updateConsole(info) {
     context.fillStyle = "#e8e2cf";
     context.font = `600 38px -apple-system, "Helvetica Neue", Arial, sans-serif`;
     context.fillText(`${WIND_WORD[info.round]} ${info.hand}`, size / 2, size / 2 - 30);
+    if (info.goulash) {
+      // A Goulash hand, the whole hand through: two quiet lines above the round.
+      context.fillStyle = "#e8c46a";
+      context.font = `700 30px -apple-system, "Helvetica Neue", Arial, sans-serif`;
+      context.fillText("GOULASH", size / 2, size / 2 - 104);
+      if (info.goulashBarred) {
+        context.font = `700 24px -apple-system, "Helvetica Neue", Arial, sans-serif`;
+        context.fillText("NO HALF LIMIT", size / 2, size / 2 - 74);
+      }
+      context.fillStyle = "#e8e2cf";
+    }
     context.fillStyle = "#62f2ea";
     context.font = `700 104px -apple-system, "Helvetica Neue", Arial, sans-serif`;
     context.fillText(String(info.wall), size / 2, size / 2 + 70);
