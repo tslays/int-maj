@@ -420,9 +420,13 @@ function startSession(id: string, seed: string | number, rules: HouseRules): Web
  * Bots see only their own `viewFor` projection, so this cannot reveal a hand
  * to the client either: only their public events are appended.
  */
-function botStep(session: WebSession, level: BotLevel): SessionUpdate | null {
+function botStep(
+  session: WebSession,
+  level: BotLevel,
+  humans: readonly Seat[] = [session.seat],
+): SessionUpdate | null {
   if (session.state.phase === "finished") return null;
-  if (viewFor(session.state, session.seat).legalActions.length > 0) return null;
+  if (humans.some((seat) => viewFor(session.state, seat).legalActions.length > 0)) return null;
   const actor = session.state.turn;
   const action = chooseAction(viewFor(session.state, actor), actor, level);
   if (action === null) return null;
@@ -832,10 +836,18 @@ export class GameStore {
     return this.sessions.get(id)?.state;
   }
 
-  move(id: string, action: Action): SessionUpdate | { readonly error: string } {
+  /**
+   * Apply a human decision. `seats` are the seats a human plays: the one
+   * seat of a game against bots by default, several at an online room.
+   */
+  move(
+    id: string,
+    action: Action,
+    seats: readonly Seat[] = [],
+  ): SessionUpdate | { readonly error: string } {
     const session = this.sessions.get(id);
     if (session === undefined) return { error: `unknown game: ${id}` };
-    if (action.seat !== session.seat) {
+    if (action.seat !== session.seat && !seats.includes(action.seat)) {
       return { error: `not your turn: ${String(action.seat)}` };
     }
     const before = session.events.length;
@@ -861,10 +873,10 @@ export class GameStore {
    * a rule: the decision it makes is recorded as a step like any other, so a
    * replay, undo or saved game never needs to know the level.
    */
-  step(id: string, level: BotLevel = DEFAULT_BOT_LEVEL): StepUpdate {
+  step(id: string, level: BotLevel = DEFAULT_BOT_LEVEL, humans?: readonly Seat[]): StepUpdate {
     const session = this.sessions.get(id);
     if (session === undefined) return { error: `unknown game: ${id}` };
-    const stepped = botStep(session, level);
+    const stepped = botStep(session, level, humans);
     if (stepped === null) return { done: true };
     this.sessions.set(id, stepped.session);
     return stepped;
