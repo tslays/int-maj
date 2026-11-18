@@ -11,6 +11,13 @@ inputs:
   command:
     description: The wrangler arguments, for example "deploy --env dev".
     required: true
+  rooms:
+    description: >-
+      The wrangler arguments that deploy the rooms Worker first (for example
+      "deploy -c wrangler.rooms.jsonc --env dev"). Empty skips it, as a
+      preview does: previews use the dev rooms Worker as main deployed it.
+    required: false
+    default: ""
   report-token:
     description: >-
       The GitHub token the Worker files problem reports with (pass the
@@ -41,6 +48,14 @@ runs:
       if: inputs.token != ''
       with:
         node-version-file: .nvmrc
+    # The app Worker binds to the rooms Worker's Durable Object, so it goes first.
+    - name: wrangler ${{ inputs.rooms }}
+      if: inputs.token != '' && inputs.rooms != ''
+      shell: bash
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ inputs.token }}
+        WRANGLER_ARGS: ${{ inputs.rooms }}
+      run: npx --yes wrangler@4.158.0 $WRANGLER_ARGS
     # The output is kept in wrangler.log for a job that needs to read it.
     - name: wrangler ${{ inputs.command }}
       if: inputs.token != ''

@@ -71,6 +71,7 @@ jobs:
           token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           report-token: ${{ secrets.REPORT_GITHUB_TOKEN }}
           photo-token: ${{ secrets.REPORT_PHOTO_TOKEN }}
+          rooms: deploy -c wrangler.rooms.jsonc --env dev
           command: deploy --env dev
 
   # The tester site (int) changes only when a tag v* is pushed, or when this
@@ -94,6 +95,7 @@ jobs:
           token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           report-token: ${{ secrets.REPORT_GITHUB_TOKEN }}
           photo-token: ${{ secrets.REPORT_PHOTO_TOKEN }}
+          rooms: deploy -c wrangler.rooms.jsonc
           command: deploy
 
   # Each pull request from this repository gets its own link on int-dev

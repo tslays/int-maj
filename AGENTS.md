@@ -69,7 +69,8 @@ src/core/     the rules engine: pure and deterministic
   game/         the turn engine: reduce (apply), with hands, draws, settle
                 and deal working on the draft copy
 src/table/    the table service: sessions, bots, saving, `routeApi`
-src/worker/   the Cloudflare Worker: files a problem report as a GitHub issue
+src/worker/   the Cloudflare Workers: files a problem report as a GitHub issue,
+              and hosts online rooms (room-object, in its own Worker)
 src/cli/      the console table
 bin/          command-line entry points: check, play, replay
 scripts/      build, preview, smoke test, release tools (release-prep,
@@ -80,8 +81,8 @@ docs/         PLAN, APP and ENGINE references
 ```
 
 Layers only call downwards: `app` -> `src/table` -> `src/core`; `src/worker`
-(the one piece of server code, reached only by the Report button) also sits
-on `src/table`. The app talks
+(the server code: the Report button and online rooms) also sits on
+`src/table`. The app talks
 to the game only through `routeApi` (via `src/table/local.ts`) and receives
 `viewFor` projections and per-seat event text, never a `GameState` and never
 another seat's concealed tile. Put new code in the layer that owns it and its

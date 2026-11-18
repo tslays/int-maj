@@ -1,0 +1,26 @@
+// The rooms Worker: it hosts only the RoomObject Durable Object
+// (src/worker/room-object.ts), one per online room (docs/MULTIPLAYER.md).
+// The app Worker (wrangler.jsonc) binds to it by script name and forwards
+// /api/room/* here; this Worker has no public address of its own. It is
+// deployed before the app Worker by the deploy action (`rooms` input).
+//   int-rooms      for the tester site, deployed on a tag v*
+//   int-rooms-dev  for int-dev and the pull-request previews, on every push to main
+// Durable Objects on the free plan must be SQLite-backed: new_sqlite_classes.
+{
+  "name": "int-rooms",
+  // Not a secret: it names the account; the API token is the secret.
+  "account_id": "8dff3ba1767be52478763587743e143b",
+  "compatibility_date": "2026-11-04",
+  "main": "src/worker/rooms.ts",
+  "workers_dev": false,
+  "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "RoomObject" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RoomObject"] }],
+  "env": {
+    "dev": {
+      "name": "int-rooms-dev",
+      "workers_dev": false,
+      "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "RoomObject" }] },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RoomObject"] }]
+    }
+  }
+}
