@@ -194,7 +194,7 @@ const TABS = [
       },
       {
         title: "Arrange your hand",
-        text: "Drag a tile sideways, any time. That turns Sort off; tap Sort to put the hand back in order.",
+        text: "Drag a tile sideways, any time. That turns Sort off, and it stays off, in later hands too, until you tap Sort to put the hand back in order.",
         picture: () => row(icon('<path d="M8 24h32M14 18l-6 6 6 6M34 18l6 6-6 6"/>'), ghost("Sort", true)),
       },
       {

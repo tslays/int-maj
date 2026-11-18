@@ -185,7 +185,17 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   the shrinking wall. Two parts of the `Board` live in their own files and
   are installed on it: `board-wall.js` (building and showing the wall) and
   `board-hand.js` (your own hand: its tiles, layout, picking, lifting,
-  dragging). The page's CSS is `app/styles.css`.
+  dragging). Which tiles stay and in what order they lie is the pure
+  `hand-plan.js`: when one copy of a face leaves, the copy picked for a
+  Goulash pass or thrown is the one that goes, and picks stand raised only
+  while an exchange is offered (#210, #214). The page's CSS is `app/styles.css`.
+- Sort (`app/src/sort-pref.js`, #213) is a preference kept on the device, on by
+  default, holding across hands and games. On, the hand lies in order with the
+  drawn tile apart at the end. Off, the game never re-orders the hand by itself
+  (not at the deal, not after a Goulash exchange, not on a draw): tiles keep
+  their places and new ones join at the end. Dragging a tile sideways turns it
+  off; the Sort button toggles it, and turning it on sorts the hand at once.
+  The problem report lists it in its Settings line.
 - `app/src/main.js` is the boot, the turn loop (bots one decision per beat,
   automatic draws and passes), the decision buttons and call-outs, and the
   wiring of the modules below. Its siblings, each a plain ES module:
@@ -566,7 +576,7 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   Goulash: <no (this hand is not a Goulash) | yes, half-limit hands barred|allowed in this hand>
   House rules: hand set <set>, half-limit hands in a Goulash <barred|allowed>, a win <needs the fish shown|needs no announcement>
   Decisions: <all steps> (yours: <human steps>)
-  Settings: bot level <easy|medium|hard>, pace <slower|normal|faster>, hint style <likeliest|mixed|discovery>, animations <on|off>, sound <on|off>, large discards <on|off>, discards <rows|pile>, hints <on|off>, tips <on|off>
+  Settings: bot level <easy|medium|hard>, pace <slower|normal|faster>, hint style <likeliest|mixed|discovery>, animations <on|off>, sound <on|off>, large discards <on|off>, discards <rows|pile>, hints <on|off>, tips <on|off>, sort <on|off>
   Pinned hands: <none | the pinned hands, at most three>
   Rules chosen: hand set <set>, half-limit hands in a Goulash <barred|allowed>, a win <needs the fish shown|needs no announcement> (<in force in this hand|change starts next hand>)
   Note: <one line, 280 characters at most, or (none)>

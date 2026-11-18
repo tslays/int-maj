@@ -6,6 +6,7 @@
 
 import { openGuide } from "./guide.js";
 import { $, board, showToggle, state } from "./shared.js";
+import { sortPref } from "./sort-pref.js";
 
 /** `hooks.run` resumes the turn loop. */
 export function installMenu({ run }) {
@@ -18,16 +19,19 @@ export function installMenu({ run }) {
   });
   showToggle("#calls", !state.callsOff);
 
-  /* Sort: lit = the game sorts your tiles; off = you arrange them yourself (by dragging). */
-  function showSort(custom) {
-    showToggle("#sort", !custom);
-  }
-  board.onCustomChange = showSort;
-  showSort(board.custom);
+  /* Sort (#213): lit = the game keeps your tiles in order; off = they stay where you put them,
+     new ones joining at the end. A stored preference: it holds across hands and games. */
+  const showSort = (on) => showToggle("#sort", on);
+  sortPref.onChange(showSort);
+  showSort(sortPref.on);
 
   $("#sort").addEventListener("click", () => {
-    if (board.custom) void board.autoSort();
-    else board.setCustom(true);
+    if (sortPref.on) {
+      sortPref.set(false);
+      return;
+    }
+    sortPref.set(true);
+    void board.autoSort();
   });
 }
 

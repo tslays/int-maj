@@ -123,10 +123,10 @@ export class Board {
     this.handGroup = new THREE.Group();
     handScene.add(this.handGroup);
     this.hand = []; // { key, tile, drawn }
-    this.custom = false; // true once you have arranged the hand yourself
     this.carried = null; // the hand tile under your pointer: no animation moves it
     this.lifted = null; // the hand tile you have raised (hover or tap): it stays up, and marked, while the table moves
     this.raised = new Set(); // tiles picked for a Goulash pass: up together, unmarked
+    this.thrown = null; // the hand tile you just threw: that copy leaves the hand
     this.lastThrowX = 0;
     this.raycaster = new THREE.Raycaster();
     this.marked = [];
@@ -299,8 +299,8 @@ export class Board {
     this.carried = null;
     this.lifted = null;
     this.raised.clear();
+    this.thrown = null;
     this.clearMarks();
-    this.setCustom(false);
     this.seats = {};
     this.endRound();
     for (const seat of SEATS) {
