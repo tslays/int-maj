@@ -188,7 +188,8 @@ const UPRIGHT_PHONE = "(orientation: portrait) and (pointer: coarse)";
  * chooses to play, or closes the guide.
  */
 export function welcome() {
-  if (REVIEW || PARAMS.has("seed") || memory.seen.includes("welcome")) return Promise.resolve();
+  // A friend's room link goes straight to the room sheet.
+  if (REVIEW || PARAMS.has("seed") || PARAMS.has("room") || memory.seen.includes("welcome")) return Promise.resolve();
   return new Promise((resolve) => {
     const upright = window.matchMedia(UPRIGHT_PHONE);
     if (!upright.matches) {

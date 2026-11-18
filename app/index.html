@@ -218,6 +218,7 @@
         <footer class="options-foot">
           <nav class="option-links" id="option-links" aria-label="More">
             <button class="option-link" id="new-game" type="button">New game</button>
+            <button class="option-link" id="room-open" type="button">Play with friends</button>
             <button class="option-link" id="install-open" type="button" hidden>Install app</button>
             <button class="option-link" id="help" type="button">Help</button>
             <button class="option-link" id="report" type="button" aria-label="Report a problem">Report a problem</button>
@@ -232,6 +233,44 @@
         </footer>
       </div>
     </div>
+    <div class="hand-detail" id="room-sheet" hidden>
+      <div class="detail-card room-card" role="dialog" aria-modal="true" aria-labelledby="room-title">
+        <h2 id="room-title">Play with friends</h2>
+        <button class="detail-close" id="room-close" type="button" aria-label="Close">&times;</button>
+        <div id="room-start-view">
+          <label class="room-field">
+            <span>Your name</span>
+            <input id="room-name" type="text" maxlength="16" autocomplete="nickname" enterkeyhint="done" />
+          </label>
+          <button class="act act-win room-wide" id="room-create" type="button"><span>New room</span></button>
+          <form class="room-join" id="room-join-form">
+            <input id="room-code" type="text" maxlength="4" placeholder="Code" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="Room code" />
+            <button class="act act-claim" type="submit"><span>Join</span></button>
+          </form>
+          <p class="detail-muted room-note">Up to four people, each on their own phone. Bots play the empty seats, and the seat of anyone who drops out until they are back.</p>
+        </div>
+        <div id="room-lobby-view" hidden>
+          <div class="room-code-row">
+            <p class="room-code">Room <b id="room-code-text"></b></p>
+            <button class="option-link" id="room-share" type="button">Share link</button>
+          </div>
+          <ul class="room-seats" id="room-seats"></ul>
+          <div class="setting" id="room-timer-row">
+            <div class="setting-text"><b id="room-timer-label">Time to move</b><small>Then the table moves for you</small></div>
+            <div class="seg" id="room-timer" role="radiogroup" aria-labelledby="room-timer-label">
+              <button type="button" role="radio" data-seconds="15">15s</button>
+              <button type="button" role="radio" data-seconds="30">30s</button>
+              <button type="button" role="radio" data-seconds="60">60s</button>
+              <button type="button" role="radio" data-seconds="null">Off</button>
+            </div>
+          </div>
+          <button class="act act-win room-wide" id="room-start" type="button"><span>Deal</span></button>
+          <button class="act act-pass room-wide" id="room-back" type="button" hidden><span>Back to the table</span></button>
+          <button class="option-link option-danger" id="room-leave" type="button">Leave room</button>
+        </div>
+      </div>
+    </div>
+    <p class="room-status" id="room-status" role="status" aria-live="polite" hidden></p>
     <div class="hand-detail" id="help-sheet" hidden>
       <div class="detail-card guide-card" role="dialog" aria-modal="true" aria-label="Guide">
         <header class="guide-head">

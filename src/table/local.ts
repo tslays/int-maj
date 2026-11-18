@@ -14,6 +14,7 @@
  */
 
 import { createApiContext, routeApi } from "./api.ts";
+import type { GameView } from "../core/game/view.ts";
 import { describeEventFor } from "../core/game/describe.ts";
 import { buildReport, type ReportInfo } from "./report.ts";
 import { isSessionSnapshot, statePayload } from "./session.ts";
@@ -40,6 +41,11 @@ export interface LocalApi {
   clear(): void;
   /** The problem-report text for the game being played, or null before one is dealt. */
   report(info: ReportInfo): string | null;
+  /**
+   * Keep the latest view of a game played elsewhere (an online room) under
+   * `game`, so `/api/closest?game=` answers for it like a local game.
+   */
+  remember(game: string, view: unknown): void;
 }
 
 export function createLocalApi(storage: KeyValueStorage | null): LocalApi {
@@ -123,6 +129,11 @@ export function createLocalApi(storage: KeyValueStorage | null): LocalApi {
     },
 
     clear,
+
+    remember(game, view) {
+      context.views.clear();
+      context.views.set(game, view as GameView);
+    },
 
     report(info) {
       const session = saved === null ? undefined : context.store.get(saved);

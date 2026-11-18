@@ -106,14 +106,22 @@ room -> client: `seated`, `state`, `events`, `left`, `error`). It adds
 per-IP rate limit on room creation like the report limit. Tests drive the
 handler with a fake socket and storage.
 
-**M3 - Lobby and online play in the app (visual).** A "Play with friends"
+**M3 - Lobby and online play in the app (visual). Built (2026-11-18):**
+`app/src/online.js` (Options › Play with friends, the room sheet, the turn
+pill, rejoin after a reload); the time to move is 15 (default), 30 or 60
+seconds, or off. The plan as written: A "Play with friends"
 entry in the menu, the lobby screen, a share link
 (`https://.../?room=K7QX`), the socket transport beside `local.ts`, a
 connection indicator, and a turn timer shown on the table. Smoke test: two
 headless pages join one room on `npm run dev` and play a hand. Review on the
 PR preview by the owner on their phone.
 
-**M4 - Hardening (mixed).** Reconnect after the phone locks or switches
+**M4 - Hardening (mixed). Done (2026-11-18):** a phone that wakes, comes back
+to the tab or back online pings the room and reconnects at once if the socket
+is dead; with nobody connected the bots stop and the room is deleted after a
+day (`EXPIRE_MS`); a phone on another protocol version (`PROTOCOL`, checked by
+`test/app/online-protocol.test.ts`) reloads once to the current build; the
+house rules are the dealer's at Deal. The plan as written: Reconnect after the phone locks or switches
 network, room expiry (rooms with no one connected for a day are deleted),
 version mismatch (a phone on an older build is told to reload), and the
 house rules chosen by the room's creator. Settle on the timer defaults after
