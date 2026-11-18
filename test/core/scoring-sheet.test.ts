@@ -335,3 +335,30 @@ describe("the limit and the readings", () => {
     );
   });
 });
+
+describe("itemised score sheet (#212)", () => {
+  const score = (input: HandInput, options: ScoreOptions = {}) =>
+    scoreHand(createHand({ ...input, seatWind: "S", prevailingWind: "E" }), options);
+
+  it("lists each ground item and double, adding up to ground and doubles", () => {
+    const result = score({ concealed: REST, melds: [exposed("pung", "b7 b7 b7")] });
+    const items = result.items!;
+    assert.ok(items.length > 0);
+    const ground = items.filter((item) => item.kind === "ground");
+    const doubles = items.filter((item) => item.kind === "double");
+    assert.equal(ground.reduce((sum, item) => sum + item.amount, 0), result.ground);
+    assert.equal(doubles.reduce((sum, item) => sum + item.amount, 0), result.doubles);
+    assert.ok(ground.some((item) => item.id === "mah-jong" && item.amount === 20 && item.cite === "(h)"));
+    assert.ok(doubles.some((item) => item.id === "pure" && item.amount === 3 && item.cite === "(j)"));
+  });
+  it("leaves out items that do not apply, and the 20 when fishing", () => {
+    const result = score({ concealed: REST, melds: [exposed("pung", "b7 b7 b7")] }, { withoutMahJongBonus: true });
+    assert.ok(!result.items!.some((item) => item.id === "mah-jong"));
+    assert.ok(!result.items!.some((item) => item.id === "concealed-mah-jong"));
+    assert.ok(result.items!.every((item) => item.amount > 0));
+  });
+  it("has no list for a printed-tier hand", () => {
+    const result = score({ concealed: "c1 c1 c1 c9 c9 c9 o1 o1 o1 o9 o9 o9 b1 b1" });
+    if (result.tier !== "calculate") assert.equal(result.items, null);
+  });
+});
