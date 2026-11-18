@@ -7,8 +7,7 @@ short **WhatsApp message**. How to play is not here: the app teaches itself
 is new, what to try, how to report and what the app cannot do yet.
 
 <!-- guide:start -->
-
-# Mah Jong — test version alpha.14
+# Mah Jong — test version alpha.15
 
 **Play here:** https://int.mah-jong.workers.dev
 
@@ -18,7 +17,7 @@ International mahjong in your browser, against three bots, by the rules of
 ## Getting the new version
 
 Open the link (or the app on your home screen) and reload it once. The
-small label under the menu, top left, should read **alpha.14**. A game in
+small label under the menu, top left, should read **alpha.15**. A game in
 progress carries on. If an update changes the game, the hand you were playing
 starts again with the scores kept.
 
@@ -26,28 +25,44 @@ starts again with the scores kept.
 *Add to Home Screen*, and play it from the home-screen icon with the phone
 turned sideways. Everything else, the app shows you: Options › **Help**.
 
-## New in alpha.14
+## New in alpha.15
 
-Nothing new to play with this time. The changes below fix a counter and add
-to what a problem report holds.
+- **A Goulash is marked on the table.** The round badge and the table
+  console both read GOULASH, and when half-limit hands are barred they add
+  NO HALF LIMIT.
+- **The result card breaks the score down.** Under Score, each ground item
+  and the double are listed, with notes on rounding and on how the losers
+  settle.
 
 ## Fixed thanks to your reports
 
-- **The Wall counter counts the last two tiles.** It read 0 while two loose
-  tiles were still to be drawn. It now counts them until the hand is drawn.
-  Thank you for the report.
+- **Sort stays as you set it.** It holds across hands and games, it no longer
+  turns itself back on in a new game, and on a Goulash hand it no longer
+  sorts on the first tile drawn. Thank you for the report.
+- **A Goulash tile no longer stays raised.** The copy you pick for a pass or
+  a throw is the one that leaves your hand, and the raised tile comes down
+  once no exchange is offered. Thank you for the reports.
+- **Hints say when a nearer hand is out of reach.** The closest-hands entry
+  names the scoring it is for, and a nearer version you cannot play: a
+  half-limit scoring barred in a Goulash, or a tile with every copy in sight.
+  Thank you for the reports.
+- **The score breakdown you asked for** is on the result card (see New
+  above). Thank you for the report.
 
 ## What works differently now
 
-- **Problem reports list your settings.** A report now also lists the
-  Settings you have stored on the device, your pinned hands, and the house
-  rules chosen for the next deal, marked as in force or waiting for the next
-  hand.
+- **Sort is a setting that holds.** Turn it off and it stays off, across hands
+  and games, until you turn it on again.
+- **The home-screen name is int-maj** on the tester site (int-dev on the dev
+  site).
 
 ## What to try, and tell us
 
-- Near the end of the wall, watch the Wall counter. Does it count the last two
-  tiles down to 0, and read 0 only once they have been drawn?
+- On a Goulash hand, look at the round badge and the table console. Both
+  should read GOULASH, with NO HALF LIMIT when half-limit hands are barred.
+- Turn Sort off, start a new game, and check that it stays off.
+- After a win, open the result card and tap Score. Do the items add up to the
+  total?
 - Anything that broke, looked wrong or surprised you.
 
 ## How to report
@@ -79,12 +94,11 @@ connection it offers to share the report as a message instead.
 ## WhatsApp message
 
 <!-- whatsapp:start -->
-
-🀄 **Mah Jong test version alpha.14 is out!**
+🀄 **Mah Jong test version alpha.15 is out!**
 
 Play: https://int.mah-jong.workers.dev (reload once to update)
 
-Fixed: the Wall counter now counts the last two tiles until the hand is drawn, so it no longer reads 0 while two are still to come. Changed: a problem report also lists your stored settings, pinned hands and house rules. Thank you to the tester whose report found the counter problem!
+New: a Goulash is marked on the round badge and the table console, and the result card breaks the score down. Fixed: Sort stays as you set it, a Goulash tile no longer stays raised, and hints say when a nearer hand is out of reach. Thank you to the testers whose reports made these fixes!
 
 Found something odd? Options › Report a problem.
 
