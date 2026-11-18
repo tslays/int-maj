@@ -4,7 +4,25 @@ Newest first. Written for players: what you will see, what was fixed, and
 what now works differently. Each version is a `v0.1.0-alpha.N` tag on `main`;
 testers get it at https://int.mah-jong.workers.dev.
 
-## alpha.14
+## alpha.15
+
+**New**
+
+- **A Goulash is marked on the table.** The round badge and the table console both read GOULASH, and when half-limit hands are barred they add NO HALF LIMIT. (#214 → #220, #221)
+- **The result card breaks the score down.** Under Score, each ground item and the double are listed, with notes on rounding and on how the losers settle. (#212 → #217)
+
+**Changed**
+
+- **The home-screen name matches the site.** On the tester site the app is int-maj on the home screen; on the dev site it is int-dev. (#215)
+
+**Fixed**
+
+- **Sort stays as you set it.** It is now a setting that holds across hands and games. With Sort off the game never re-orders your hand, it no longer turns itself back on in a new game, and on a Goulash hand it no longer sorts on the first tile drawn. (#213 → #218)
+- **A Goulash tile no longer stays raised.** In a Goulash, the copy you pick for a pass or a throw is the one that leaves your hand, not the first of that face, and the raised tile comes down once no exchange is offered. (#210, #214 → #218)
+- **Hints say when a nearer hand is out of reach.** The closest-hands entry names the scoring it is for and a nearer version you cannot play: a half-limit scoring barred in a Goulash, or a tile with every copy in sight. The hand sheet drops barred scorings and explains both. (#209, #211 → #219)
+- **Win-line wording.** The hand is spelt CHOW MEIN, and your own discard reads "on your discard", not "on You's discard". (#208)
+
+## alpha.14 (17 November 2026)
 
 **Changed**
 
