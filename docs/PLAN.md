@@ -97,6 +97,11 @@ as **candidates, not commitments**:
 - Bot tuning, including Crazy Chows being a common way for the bots to win
   (over a quarter of bot wins in the soak).
 
+**After alpha-1: multiplayer (owner, 2026-11-18).** Online rooms on
+Cloudflare Durable Objects (free plan, no accounts). Playing over the same
+Wi-Fi is the same thing: friends join one room code. Plan and slices M1-M4:
+`docs/MULTIPLAYER.md`.
+
 ## Known follow-ups
 
 - Done (2026-11-09): `apply` was profiled. Its cost was the wait check after
