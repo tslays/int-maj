@@ -2945,14 +2945,11 @@ button.detail-rule {
 #room-start {
   margin-top: 8px;
 }
-/* Under the menu on the left, clear of the tips and toasts at the top. */
+/* In the menu column under the round badge (index.html), so it stacks below
+   whatever the menu holds and never covers it. */
 .room-status {
-  position: fixed;
-  z-index: 20;
-  top: calc(var(--safe-t) + 168px);
-  left: var(--safe-l);
   max-width: 130px;
-  margin: 0;
+  margin: 4px 0 0 4px;
   padding: 5px 12px;
   border-radius: 999px;
   background: var(--panel);
