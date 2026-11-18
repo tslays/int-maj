@@ -256,6 +256,7 @@ export function finishDrawn(draft: Draft, reason: string, emit: Emit): void {
     ground: null,
     doubles: null,
     raw: null,
+    items: null,
     limit: draft.limit ?? DEFAULT_LIMIT,
     nextDealer:
       draft.tournament === true
@@ -341,6 +342,7 @@ export function finishWin(
     ground: score.ground,
     doubles: score.doubles,
     raw: score.raw,
+    items: score.items,
     limit: score.limit,
     matches: score.matches.map((match) => match.pattern.id),
   });
@@ -375,6 +377,7 @@ export function finishWin(
     ground: score.ground,
     doubles: score.doubles,
     raw: score.raw,
+    items: score.items === null ? null : [...score.items],
     limit: score.limit,
     nextDealer:
       draft.tournament === true

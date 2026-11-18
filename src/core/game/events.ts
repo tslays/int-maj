@@ -28,6 +28,7 @@
 
 import type { MeldKind } from "../hand.ts";
 import type { Tier } from "../patterns/types.ts";
+import type { ScoreItem } from "../score.ts";
 import type { ClaimKind } from "./actions.ts";
 import type { LedgerEntry, Seat } from "./state.ts";
 
@@ -124,6 +125,7 @@ export interface HandScoredEvent extends EventBase {
   readonly ground?: number | null;
   readonly doubles?: number | null;
   readonly raw?: number | null;
+  readonly items?: readonly ScoreItem[] | null;
   readonly limit?: number;
   readonly matches: readonly string[];
 }
