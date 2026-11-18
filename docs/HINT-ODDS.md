@@ -310,7 +310,7 @@ the panel's order changes, which is a visible change anyway.
   percentage anywhere, and no judgement: the figure is a guide for an
   educated choice, not advice. The ring fills and brightens in one warm
   colour across five bands named for likelihood: Very likely (80 % and up),
-  Likely (60), Possible (40), Unlikely (20), Long shot. The panel shows the
+  Likely (60), Possible (40), Unlikely (20), Long shot (re-cut in §14). The panel shows the
   ring alone; the sheet and the index name the band. A neutral arrow marks a
   hand that moved a band since the previous decision, and the panel is
   worked out once per decision.
@@ -539,3 +539,32 @@ removes is the stacking of several of them. Across games the app's memory
 (kept for days, not one game) rotates further. Panel time is about 110 ms
 median, 280 ms p95, against 70 ms and 190 ms for the likeliest (the extra
 hands are simulated with 300 trials).
+
+## 14. Bands re-cut (2026-11-18)
+
+Prompted by Apple Blossom shown as "Long shot" with no White Dragon held. The
+figure was right (0.7 %; self-drawn only 0.15 % simulated against 0.17 % from
+the hypergeometric formula; three copies of one tile are counted as three of
+the unseen four, since a trial deals real tiles). The words were the problem.
+
+Census, 12 seeded games, East's discards, `closestHands` chances:
+
+| Chance | Top three | Hands ranked 4-8 |
+| --- | --- | --- |
+| under 1 % | 8 % | 28 % |
+| 1-5 % | 5 % | 24 % |
+| 5-20 % | 15 % | 34 % |
+| 20-50 % | 32 % | 14 % |
+| 50 % and up | 41 % | 1 % |
+
+Five 20-point bands put 70 % of the eight likeliest hands in "Long shot", and
+the top two bands were finer than the figure is exact (§10: shown 60-98 %,
+built 60-79 % with the race on). New cuts, still five bands: **Likely** 50 %
+and up, **Possible** 25-50, **Unlikely** 10-25, **Long shot** 2-10,
+**Remote** under 2 %. The sheet's note gives the band in plain odds. The
+discovery floor (5 %) stays inside "Long shot": a discovery is never Remote.
+
+The sheet lists a tile needed several times once, "x3", with "3 of 4" under it:
+copies needed of those unseen. The early stop of `handChance` also now asks,
+below 10 %, for a standard error under a third of the figure, so a hand near a
+cut does not change band by noise.

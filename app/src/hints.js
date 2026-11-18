@@ -6,6 +6,7 @@
  * planner suggests fills the places left (`pins.js`).
  */
 
+import { bandOdds, bandRank, chanceBand, chanceWords, needGroups } from "./chance.js";
 import { familiar } from "./familiar.js";
 import { readingBarred } from "./goulash-bar.js";
 import { nearerNote, versionNote } from "./nearer.js";
@@ -155,36 +156,7 @@ export function playWord(concealedOnly) {
  * without fixing on percentages the estimate is not that precise about.
  */
 
-/**
- * Five bands of likelihood, each with its name and a shade of one warm
- * colour (`--chance-<id>` in styles.css), dim for a long shot and bright for
- * a hand that is very likely. The words describe the tiles, not the choice:
- * a long shot at a limit hand is a fair play, and the panel never says
- * otherwise. Lower bounds, likeliest first.
- */
-const BANDS = [
-  { id: "very-likely", name: "Very likely", from: 0.8 },
-  { id: "likely", name: "Likely", from: 0.6 },
-  { id: "possible", name: "Possible", from: 0.4 },
-  { id: "unlikely", name: "Unlikely", from: 0.2 },
-  { id: "long-shot", name: "Long shot", from: 0 },
-];
-
-/** The band a chance falls in. */
-export function chanceBand(chance) {
-  return BANDS.find((band) => chance >= band.from) ?? BANDS[BANDS.length - 1];
-}
-
-/** A band's rank, 0 for a long shot up to 4 for very likely: the arrows compare ranks. */
-function bandRank(chance) {
-  return BANDS.length - 1 - BANDS.indexOf(chanceBand(chance));
-}
-
-/** The chance for a screen reader: "likely to build", "a long shot to build". */
-export function chanceWords(chance) {
-  const band = chanceBand(chance);
-  return band.id === "long-shot" ? "a long shot to build" : `${band.name.toLowerCase()} to build`;
-}
+export { chanceBand, chanceWords };
 
 /**
  * The chance as a ring that fills clockwise from the top, in its band's
@@ -209,8 +181,8 @@ export function chanceRing(chance) {
     circle.setAttribute("r", String(radius));
   }
   const share = Math.max(0, Math.min(1, chance));
-  // Anything above nothing shows at least a sliver, so "under 1%" is not an empty ring.
-  const shown = share === 0 ? 0 : Math.max(share, 0.04);
+  // Anything above nothing shows at least a sliver, so "under 1%" is not an empty ring (a remote hand's ring is almost empty).
+  const shown = share === 0 ? 0 : Math.max(share, 0.02);
   fill.setAttribute("stroke-dasharray", `${(shown * around).toFixed(2)} ${around.toFixed(2)}`);
   svg.classList.add(`chance-${chanceBand(share).id}`);
   svg.append(track, fill);
@@ -509,44 +481,54 @@ export function tileWords(key) {
 }
 
 /**
- * A needed tile's chip with, under it, how many copies are still out of
- * sight (in the wall or another player's hand): the evidence behind the
- * chance. A tile whose count is not known shows the chip alone.
+ * A needed tile's chip with, under it, how many copies the hand needs of
+ * those still out of sight (in the wall or another player's hand): "3 of 4"
+ * for three White Dragons with four unseen. That is the evidence behind the
+ * chance, and it shows an overlap at a glance. A tile whose count is not
+ * known shows the chip alone.
  */
-function withLeft(key, left) {
+function withLeft(key, count, left) {
   const chip = faceChip(key);
   if (left === undefined) return chip;
   const stack = document.createElement("span");
   stack.className = "need-tile";
-  const count = document.createElement("span");
-  count.className = "need-left";
-  count.textContent = String(left);
-  stack.append(chip, count);
-  stack.setAttribute("aria-label", `${tileWords(key)}, ${left} left`);
+  if (count > 1) {
+    const times = document.createElement("span");
+    times.className = "need-times";
+    times.textContent = `\u00d7${count}`;
+    stack.append(chip, times);
+  } else {
+    stack.append(chip);
+  }
+  const note = document.createElement("span");
+  note.className = "need-left";
+  note.textContent = `${count} of ${left}`;
+  stack.append(note);
+  stack.setAttribute("aria-label", `${tileWords(key)}, need ${count} of ${left} unseen`);
   stack.setAttribute("role", "img");
   return stack;
 }
 
 /**
- * The tiles still needed, one chip each. Where another tile would do as well
- * (a 4 where the 1 completes a pair) it follows the chip after "or".
+ * The tiles still needed, one chip per kind (with its count when the hand
+ * needs several copies). Where another tile would do as well (a 4 where the
+ * 1 completes a pair) it follows the chip after "or", each standing in for
+ * one copy.
  */
 function needChips(into, progress) {
   const standIns = new Map((progress.instead ?? []).map((entry) => [entry.need, entry.or]));
-  const shown = new Set();
   const unseen = progress.unseen ?? {};
-  for (const key of progress.need) {
+  for (const { key, count, left } of needGroups(progress)) {
     const group = document.createElement("span");
     group.className = "need-pick";
-    group.append(withLeft(key, unseen[key]));
+    group.append(withLeft(key, count, left));
     const or = standIns.get(key);
-    if (or !== undefined && !shown.has(key)) {
-      shown.add(key);
+    if (or !== undefined) {
       const word = document.createElement("span");
       word.className = "need-or";
       word.textContent = "or";
       group.append(word);
-      for (const other of or) group.append(withLeft(other, unseen[other]));
+      for (const other of or) group.append(withLeft(other, 1, unseen[other]));
       group.setAttribute("role", "group");
       group.setAttribute("aria-label", `${tileWords(key)} or ${or.map(tileWords).join(" or ")}`);
     }
@@ -720,7 +702,7 @@ export async function openHandDetail(pattern, progress = null) {
         "How likely you are to complete this hand if you play only for it from now on. It is worked out " +
         "from what you can see: the rest of the hand is played out up to two thousand times, the tiles " +
         "you cannot see dealt at random, so every discard and exposed meld counts. It is a building chance, not a winning chance: another " +
-        "player going out first is not counted. An arrow means it moved a band since your last move. " +
+        "player going out first is not counted. " + bandOdds(progress.chance) + " An arrow means it moved a band since your last move. " +
         "You can turn hints off from the menu's Hints button, and change which hands they suggest " +
         "under Options, Game, Hint style.";
       wireNote(far, chanceNote);
@@ -826,7 +808,7 @@ export async function openHandDetail(pattern, progress = null) {
         more.setAttribute("aria-expanded", String(!left.hidden));
       });
       left.textContent =
-        "The number under each tile: copies you have not seen yet, in the wall or another player's hand. " +
+        "Under each tile: how many copies this hand still needs, of those you have not seen yet (in the wall or another player's hand). " +
         "The chance reads them, and every claim this hand may make. " +
         "It is the chance to build this hand by the end of the wall, not to win with it: another player going out first is not counted.";
       yours.append(left);
