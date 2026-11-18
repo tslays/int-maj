@@ -20,6 +20,11 @@ const SAVE_KEY = "int-maj:room";
 const NAME_KEY = "int-maj:name";
 const CODE = /^[ACDEFGHJKMNPQRTUVWXY34679]{4}$/;
 const PING_MS = 25_000;
+/** The room's message format; `PROTOCOL` in src/worker/room-object.ts must match. */
+export const PROTOCOL = 1;
+/** After the phone wakes, a socket that says nothing for this long is taken for dead. */
+const WAKE_CHECK_MS = 4000;
+const RELOADED_KEY = "int-maj:room-reloaded";
 /** Reconnect after 1, 2, 4 ... seconds, at most 15. */
 const retryDelay = (attempt) => Math.min(15_000, 1000 * 2 ** attempt);
 
@@ -40,6 +45,8 @@ let sentFor = null;
 /** Next hand asked for; the result card stays down until the room deals. */
 let waitingNext = false;
 let clock = null;
+let retryTimer = null;
+let wakeTimer = null;
 
 function read(key) {
   try {
@@ -105,7 +112,7 @@ function connect() {
   ws.addEventListener("open", () => {
     everOpened = true;
     attempt = 0;
-    ws.send(JSON.stringify({ type: "join", name: seat.name, ...(seat.token ? { token: seat.token } : {}) }));
+    ws.send(JSON.stringify({ type: "join", protocol: PROTOCOL, name: seat.name, ...(seat.token ? { token: seat.token } : {}) }));
     clearInterval(pinger);
     pinger = setInterval(() => ws.readyState === WebSocket.OPEN && ws.send('{"type":"ping"}'), PING_MS);
     showStatus();
@@ -124,18 +131,70 @@ function connect() {
       return;
     }
     showStatus();
-    setTimeout(connect, retryDelay(attempt++));
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(connect, retryDelay(attempt++));
   });
 }
 
+/**
+ * The phone came back (unlocked, back to the tab, back online): a closed
+ * socket reconnects at once, and an open one must answer a ping quickly, or
+ * it is taken for dead (iOS keeps a frozen socket "open") and replaced.
+ */
+function wake() {
+  if (seat === null || document.visibilityState === "hidden") return;
+  const ws = socket;
+  if (ws === null || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
+    clearTimeout(retryTimer);
+    attempt = 0;
+    connect();
+    return;
+  }
+  if (ws.readyState !== WebSocket.OPEN) return;
+  ws.send('{"type":"ping"}');
+  clearTimeout(wakeTimer);
+  wakeTimer = setTimeout(() => {
+    if (socket !== ws) return;
+    socket = null;
+    ws.close();
+    attempt = 0;
+    connect();
+  }, WAKE_CHECK_MS);
+}
+
 function receive(data) {
+  clearTimeout(wakeTimer);
   let message;
   try {
     message = JSON.parse(data);
   } catch {
     return;
   }
+  if (message.type === "reload") {
+    // This page is older (or newer) than the room. A reload fetches the current build, once.
+    let reloaded = false;
+    try {
+      reloaded = window.sessionStorage.getItem(RELOADED_KEY) !== null;
+      window.sessionStorage.setItem(RELOADED_KEY, "1");
+    } catch {
+      reloaded = true;
+    }
+    if (!reloaded) {
+      toast("A new version is out: reloading");
+      setTimeout(() => window.location.reload(), 1200);
+    } else {
+      toast("This room runs another version of the game");
+      forget();
+      hooks.leftRoom();
+    }
+    return;
+  }
   if (message.type === "seated") {
+    try {
+      window.sessionStorage.removeItem(RELOADED_KEY);
+    } catch {
+      // Nothing to clear.
+    }
     you = message.seat;
     seat = { ...seat, token: message.token };
     write(SAVE_KEY, JSON.stringify(seat));
@@ -201,6 +260,8 @@ function forget() {
   socket = null;
   ws?.close();
   clearInterval(pinger);
+  clearTimeout(retryTimer);
+  clearTimeout(wakeTimer);
   showStatus();
   renderLobby();
 }
@@ -351,6 +412,9 @@ export function installOnline(next) {
     join(code, $("#room-name").value.trim());
   });
   $("#room-share").addEventListener("click", () => void share());
+  document.addEventListener("visibilitychange", wake);
+  window.addEventListener("online", wake);
+  window.addEventListener("pageshow", wake);
   $("#room-start").addEventListener("click", () => {
     send({ type: "configure", settings: { houseRules: houseRules() } });
     send({ type: "start" });

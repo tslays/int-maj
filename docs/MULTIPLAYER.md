@@ -116,7 +116,12 @@ connection indicator, and a turn timer shown on the table. Smoke test: two
 headless pages join one room on `npm run dev` and play a hand. Review on the
 PR preview by the owner on their phone.
 
-**M4 - Hardening (mixed).** Reconnect after the phone locks or switches
+**M4 - Hardening (mixed). Done (2026-11-18):** a phone that wakes, comes back
+to the tab or back online pings the room and reconnects at once if the socket
+is dead; with nobody connected the bots stop and the room is deleted after a
+day (`EXPIRE_MS`); a phone on another protocol version (`PROTOCOL`, checked by
+`test/app/online-protocol.test.ts`) reloads once to the current build; the
+house rules are the dealer's at Deal. The plan as written: Reconnect after the phone locks or switches
 network, room expiry (rooms with no one connected for a day are deleted),
 version mismatch (a phone on an older build is told to reload), and the
 house rules chosen by the room's creator. Settle on the timer defaults after
