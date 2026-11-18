@@ -16,6 +16,7 @@ import { pace } from "./pace.js";
 import { MAX_PHOTOS, preparePhoto } from "./photo.js";
 import { $, state, toast } from "./shared.js";
 import { sound } from "./sound.js";
+import { sortPref } from "./sort-pref.js";
 import { tipsOn } from "./tips.js";
 
 const SEND_TIMEOUT_MS = 15000;
@@ -84,6 +85,7 @@ function settingsNow() {
     discards: discardLayout.id,
     hints: closestHandsOn(),
     tips: tipsOn(),
+    sort: sortPref.on,
     pinned: pinnedHands(),
     rules: houseRules(),
   };
