@@ -188,3 +188,32 @@ describe("a concealed kong on the table", () => {
   });
 });
 
+
+describe("a hand that needs several copies of the same tile", () => {
+  // Apple Blossom with the three chows done: three White Dragons and two Green
+  // Dragons are still wanted, none held, all four copies of each unseen.
+  const CHOWS = "o2 b2 c4 c6 o5 b7 b3 o4 c5 wE wN b9 o9";
+  const WANT = "o2 b2 c4 c6 o5 b7 b3 o4 c5 dW dW dW dG dG";
+
+  /** P(at least 3 of 4 White and 2 of 4 Green among `draws` of `pool` tiles). */
+  function exact(pool: number, draws: number): number {
+    const choose = (n: number, k: number): number => {
+      if (k < 0 || k > n) return 0;
+      let out = 1;
+      for (let i = 0; i < k; i++) out = (out * (n - i)) / (i + 1);
+      return out;
+    };
+    let p = 0;
+    for (let w = 3; w <= 4; w++) for (let g = 2; g <= 4; g++) p += choose(4, w) * choose(4, g) * choose(pool - 8, draws - w - g);
+    return p / choose(pool, draws);
+  }
+
+  it("is near the closed form when nothing may be claimed, and well under 2 % with the last tile claimable", () => {
+    const t = table(CHOWS);
+    const pool = poolOf(t.unseen);
+    const own = Math.ceil((pool - 39) / 4);
+    const selfDrawn = chance(t, WANT, "none");
+    close(selfDrawn, exact(pool, own), "self-drawn only");
+    assert.ok(chance(t, WANT, "win") < 0.02, "a claim on the last tile stays under the 2 % cut");
+  });
+});

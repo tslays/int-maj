@@ -15,12 +15,12 @@
   --blue-2: #2d7fd2;
   --silver-1: #f3f6f8;
   --silver-2: #a6b2bb;
-  /* The five bands of a hand's likelihood: one warm colour, dim to bright, never right or wrong. */
-  --chance-very-likely: #ffe08a;
-  --chance-likely: #ecc56f;
-  --chance-possible: #cfa863;
-  --chance-unlikely: #a8916a;
-  --chance-long-shot: #968a77;
+  /* The five bands of a hand's likelihood (remote to likely): one warm colour, dim to bright, never right or wrong. */
+  --chance-likely: #ffe08a;
+  --chance-possible: #ecc56f;
+  --chance-unlikely: #cfa863;
+  --chance-long-shot: #a8916a;
+  --chance-remote: #968a77;
   --chance-trend: rgba(233, 228, 214, 0.6);
   --font: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
   --safe-l: max(12px, env(safe-area-inset-left));
@@ -1014,9 +1014,6 @@ html.pond-zoom .act-claim {
 .chance-fill {
   stroke-linecap: round;
 }
-.chance-very-likely .chance-fill {
-  stroke: var(--chance-very-likely);
-}
 .chance-likely .chance-fill {
   stroke: var(--chance-likely);
 }
@@ -1028,6 +1025,9 @@ html.pond-zoom .act-claim {
 }
 .chance-long-shot .chance-fill {
   stroke: var(--chance-long-shot);
+}
+.chance-remote .chance-fill {
+  stroke: var(--chance-remote);
 }
 /* In the panel the ring leads the hand's name. */
 .closest-name .chance {
@@ -1418,6 +1418,14 @@ button.detail-rule {
   flex-direction: column;
   align-items: center;
   gap: 1px;
+}
+/* Copies of one tile the hand needs more than once, overlapping like a fan of tiles in the hand. */
+.need-fan {
+  display: inline-flex;
+}
+.detail-yours .detail-need .need-fan .chip + .chip {
+  margin-left: -7px;
+  box-shadow: -2px 0 3px rgba(0, 0, 0, 0.35);
 }
 .need-left {
   color: var(--muted);

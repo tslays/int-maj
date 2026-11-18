@@ -49,6 +49,10 @@ const MIN_TRIALS = 200;
  * trials would only make the same figure slower.
  */
 const PRECISION = 0.025;
+/** Under this chance an estimate must also be precise relative to itself... */
+const SMALL = 0.1;
+/** ...with a standard error under this share of the figure. */
+const SMALL_SHARE = 1 / 3;
 
 /** Which discards the target lets the seat claim. */
 export type ClaimRule = "any" | "win" | "none";
@@ -603,7 +607,10 @@ export function handChance(table: Table, target: OddsTarget, options: OddsOption
     count += 1;
     if (count >= MIN_TRIALS && count % 100 === 0 && options.trials === undefined) {
       const p = (wins + 1) / (count + 2);
-      if (Math.sqrt((p * (1 - p)) / count) < PRECISION) break;
+      const error = Math.sqrt((p * (1 - p)) / count);
+      // Below 10 % the band cuts are close together (2 %, 10 %), so the error
+      // must also be a third of the figure, or 0.7 % and 3 % could swap bands.
+      if (error < PRECISION && (p >= SMALL || error < p * SMALL_SHARE)) break;
     }
   }
   return wins / count;

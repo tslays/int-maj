@@ -128,12 +128,12 @@ if (!isMainThread) {
   const mean = [...distinct.values()].reduce((sum, set) => sum + set.size, 0) / Math.max(1, distinct.size);
   console.log(`Distinct hands one game's panels show (mean): ${mean.toFixed(1)}`);
 
-  const buckets = [0, 0.2, 0.4, 0.6, 0.8, 1.0001];
+  const buckets = [0, 0.02, 0.1, 0.25, 0.5, 1.0001];
   console.log("\nChance of the eight likeliest hands (share of listed hands)");
   const chances = all.flatMap((d) => d.eight.map(([, c]) => c));
   for (let at = 0; at + 1 < buckets.length; at++) {
     const n = chances.filter((c) => c >= buckets[at]! && c < buckets[at + 1]!).length;
-    console.log(`  ${Math.round(buckets[at]! * 100)}-${Math.min(100, Math.round(buckets[at + 1]! * 100))} %  ${pct(n, chances.length)}`);
+    console.log(`  ${+(buckets[at]! * 100).toFixed(1)}-${Math.min(100, Math.round(buckets[at + 1]! * 100))} %  ${pct(n, chances.length)}`);
   }
   console.log(`\nDiscovery places: ${pct(all.reduce((sum, d) => sum + d.discoveries, 0), all.length * 3)} of places; panels with at least one: ${pct(all.filter((d) => d.discoveries > 0).length, all.length)}`);
   for (const floor of [0.03, 0.05, 0.1, 0.2]) console.log(`  decisions with a hand ranked 4-8 at ${Math.round(floor * 100)} % or more: ${pct(all.filter((d) => d.below.some((c) => c >= floor)).length, all.length)}`);

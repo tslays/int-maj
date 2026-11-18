@@ -644,7 +644,7 @@ export interface HintOptions {
 
 /**
  * The least chance a hand needs to be offered as a discovery: 5 %, inside the
- * "Long shot" band, which the ring still labels as such. A discovery is a
+ * "Long shot" band (2-10 %), so a discovery is never "Remote". A discovery is a
  * possibility the tiles really hold, not a fantasy; a higher floor (the
  * census, `docs/HINT-ODDS.md` §13, put 20 % at under 2 % of decisions with the
  * Rare hand set) would leave the discovery places empty.
