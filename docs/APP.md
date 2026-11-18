@@ -267,9 +267,9 @@ or Exposed), and last what it pays. The chance is never a number: a small
 ring that fills clockwise and brightens in one warm colour, dim to bright -
 in the panel the ring alone, before the name (the band's name does not fit a
 phone's panel; the sheet, the index and a screen reader say it) - in five
-bands: Very likely (80 % and up), Likely (60), Possible (40), Unlikely (20)
-and Long shot; or "Complete". The words describe the tiles, never the
-choice: no red or green, no grade, since a long shot at a limit hand is a
+bands: Likely (50 % and up), Possible (25), Unlikely (10), Long shot (2) and
+Remote (under 2 %, less than 1 in 50); or "Complete". The words describe the tiles, never the
+choice: no red or green, no grade, since a long shot, even a remote one, at a limit hand is a
 fair play and what is likely changes from one turn to the next. A small
 arrow in the same quiet tone marks a hand that moved a band since your
 previous decision. The panel is worked out once per
