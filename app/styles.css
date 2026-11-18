@@ -2857,3 +2857,116 @@ button.detail-rule {
   padding-right: 0;
   border-right: none;
 }
+
+/* --------------------------------------------------------- rooms (playing with friends) */
+.room-card {
+  width: min(400px, 100%);
+}
+.room-card [hidden] {
+  display: none !important;
+}
+.room-field {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.room-field input,
+.room-join input {
+  box-sizing: border-box;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid rgba(233, 228, 214, 0.18);
+  border-radius: 10px;
+  background: rgba(5, 9, 11, 0.5);
+  color: var(--ink);
+  font: inherit;
+  /* 16px keeps iOS from zooming into the field. */
+  font-size: 16px;
+}
+.room-wide {
+  width: 100%;
+  justify-content: center;
+}
+.room-join {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0 8px;
+}
+.room-join input {
+  flex: 1;
+  min-width: 0;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+.room-note {
+  font-size: 12px;
+}
+.room-code-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.room-code b {
+  color: var(--gold-1);
+  font-size: 22px;
+  letter-spacing: 0.18em;
+}
+.room-seats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 8px 0 10px;
+  padding: 0;
+  list-style: none;
+}
+.room-seat {
+  display: grid;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(233, 228, 214, 0.07);
+}
+.room-seat small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.room-bot b,
+.room-away b {
+  color: var(--muted);
+  font-weight: 500;
+}
+#room-leave {
+  display: block;
+  margin: 6px auto 0;
+}
+#room-back,
+#room-start {
+  margin-top: 8px;
+}
+/* Under the menu on the left, clear of the tips and toasts at the top. */
+.room-status {
+  position: fixed;
+  z-index: 20;
+  top: calc(var(--safe-t) + 168px);
+  left: var(--safe-l);
+  max-width: 130px;
+  margin: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.room-status[hidden] {
+  display: none;
+}
+.room-status.room-hurry {
+  color: #f39a88;
+}

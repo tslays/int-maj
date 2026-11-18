@@ -174,7 +174,7 @@ describe("room object", () => {
     await say(object, sockets[0]!, { type: "start" });
     const waiting = latest(sockets[0]!).room.waitingOn!;
     assert.equal(waiting.human, true);
-    assert.equal(state.alarm, clock.clock + 30_000);
+    assert.equal(state.alarm, clock.clock + 15_000);
     const timer = state.data.get("timer") as { stamp: number };
     const steps = () => (state.data.get("room") as { game: { steps: unknown[] } }).game.steps.length;
     assert.equal(steps(), timer.stamp);

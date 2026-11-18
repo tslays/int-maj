@@ -635,8 +635,22 @@ export function closestPayload(
   pins: readonly string[] = [],
   options: HintOptions = {},
 ): { readonly game: string; readonly hands: readonly ClosestHand[]; readonly pinned: readonly PinnedHand[] } {
-  if (session.state.phase === "finished") return { game: session.id, hands: [], pinned: [] };
-  return { game: session.id, ...closestWithPins(viewFor(session.state, session.seat), pins, limit, options) };
+  return closestForView(session.id, viewFor(session.state, session.seat), limit, pins, options);
+}
+
+/**
+ * The same from a seat's projection alone: an online room's phone has its
+ * view but no game of its own to look the hands up in.
+ */
+export function closestForView(
+  game: string,
+  view: GameView,
+  limit?: number,
+  pins: readonly string[] = [],
+  options: HintOptions = {},
+): { readonly game: string; readonly hands: readonly ClosestHand[]; readonly pinned: readonly PinnedHand[] } {
+  if (view.phase === "finished") return { game, hands: [], pinned: [] };
+  return { game, ...closestWithPins(view, pins, limit, options) };
 }
 
 export interface GameStoreOptions {

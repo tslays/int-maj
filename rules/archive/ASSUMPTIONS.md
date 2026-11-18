@@ -507,7 +507,7 @@ arises at a real table; at an online room (`docs/MULTIPLAYER.md`) a phone that
 stops answering would stall the other three.
 
 **Assumption (table setting, not a rule):** a room may give each decision a
-time limit (30 seconds by default, or none). When it runs out the room makes
+time limit (15 seconds by default; 10, 15 or 30 seconds, or none). When it runs out the room makes
 the move that changes least for that player (`fallbackAction` in
 `src/table/room.ts`): pass a claim or an announcement, draw when it is time
 to draw, throw the tile just drawn; any other decision (a throw after a

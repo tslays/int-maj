@@ -106,7 +106,10 @@ room -> client: `seated`, `state`, `events`, `left`, `error`). It adds
 per-IP rate limit on room creation like the report limit. Tests drive the
 handler with a fake socket and storage.
 
-**M3 - Lobby and online play in the app (visual).** A "Play with friends"
+**M3 - Lobby and online play in the app (visual). Built (2026-11-18):**
+`app/src/online.js` (Options › Play with friends, the room sheet, the turn
+pill, rejoin after a reload); the time to move is 10, 15 (default) or 30
+seconds, or off. The plan as written: A "Play with friends"
 entry in the menu, the lobby screen, a share link
 (`https://.../?room=K7QX`), the socket transport beside `local.ts`, a
 connection indicator, and a turn timer shown on the table. Smoke test: two
