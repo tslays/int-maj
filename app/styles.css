@@ -20,7 +20,7 @@
   --chance-likely: #ecc56f;
   --chance-possible: #cfa863;
   --chance-unlikely: #a8916a;
-  --chance-long-shot: #847a6c;
+  --chance-long-shot: #968a77;
   --chance-trend: rgba(233, 228, 214, 0.6);
   --font: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
   --safe-l: max(12px, env(safe-area-inset-left));
