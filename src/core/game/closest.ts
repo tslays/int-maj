@@ -92,6 +92,35 @@ export interface ClosestHand {
    * (`HintStyle`). The chance is the same honest figure either way.
    */
   readonly pick: "likely" | "discover";
+  /**
+   * For a card with more than one scoring (Big Robert), when the version
+   * found scores (`HandPattern.scoringWhen`); null for a hand with one scoring.
+   */
+  readonly scoringWhen: string | null;
+  /**
+   * A version of this card nearer than `away` that the seat cannot play, so
+   * the panel never passes the hand shown off as that one: null when the
+   * hand shown is the nearest there is.
+   */
+  readonly nearer: Nearer | null;
+}
+
+/**
+ * A nearer version of a card that is not open to the seat: every copy of a
+ * tile it needs is already in sight (`dead`), or it scores at a tier a house
+ * rule bars (`barred`: the Goulash half-limit bar, C p. 55).
+ */
+export interface Nearer {
+  /** Tiles that version still lacks; fewer than the hand shown. */
+  readonly away: number;
+  /** Its missing tiles, one key per copy, in canonical order. */
+  readonly need: readonly string[];
+  /** The keys in `need` of which no copy is left unseen; empty for a barred version. */
+  readonly dead: readonly string[];
+  /** The tier the bar leaves out, or null when the version is only out of tiles. */
+  readonly barred: Tier | null;
+  /** When that version scores, for a card with more than one scoring. */
+  readonly scoringWhen: string | null;
 }
 
 /** Hands shown by default: enough to compare, few enough for a phone. */
@@ -255,8 +284,69 @@ function exactVersion(
       chance: Math.round(chance * 1000) / 1000,
       unseen: unseenOf([...need, ...instead.flatMap((entry) => entry.or)], situation.unseen),
       pick: "likely",
+      scoringWhen: pattern.scoringWhen ?? null,
+      nearer: null,
     },
   };
+}
+
+/** True when `excluded` bars this pattern only by its tier: a hand set that leaves it out names its id. */
+function barredByTier(excluded: readonly string[], id: string): boolean {
+  return !excluded.includes(id);
+}
+
+/** A version's missing tiles, one key per copy, in canonical order. */
+function needOf(want: ArrayLike<number>, held: ArrayLike<number>): string[] {
+  const need: string[] = [];
+  for (let key = 0; key < KEYS.length; key++) {
+    for (let copy = want[key]! - held[key]!; copy > 0; copy--) need.push(KEYS[key]!);
+  }
+  return need;
+}
+
+/**
+ * The nearest version of a group-declared card closer than `away` that the
+ * seat cannot play: a reading the tier bar leaves out (`barred`), or one of
+ * the readings in play that lacks a tile whose every copy is in sight
+ * (searched as if no tile were in sight). Null when none is nearer.
+ */
+function nearerByGroups(
+  situation: Situation,
+  readings: readonly HandPattern[],
+  barred: readonly { pattern: HandPattern; tier: Tier }[],
+  away: number,
+  cache: ReachCache,
+): Nearer | null {
+  const melds = situation.melds.map((meld) => meld.tiles);
+  const wind = `w${situation.seatWind}`;
+  let found: Nearer | null = null;
+  for (const { pattern, tier } of barred) {
+    const budget = (found?.away ?? away) - 1;
+    if (budget < 0) break;
+    const reach = nearest({ alternatives: pattern.groups!(wind), held: situation.hand, spare: situation.unseen, melds, budget, keep: 1, cache });
+    if (reach === null) continue;
+    found = { away: reach.missing, need: needOf(reach.wants[0]!, situation.hand), dead: [], barred: tier, scoringWhen: pattern.scoringWhen ?? null };
+  }
+  // Every copy not in the seat's own hand or melds, as if nothing were in sight.
+  const ownMelds = new Int8Array(KEYS.length);
+  for (const meld of melds) for (const key of meld) {
+    const at = KEYS.indexOf(key);
+    if (at >= 0) ownMelds[at]! += 1;
+  }
+  const blind = Int8Array.from(KEYS, (_, at) => Math.max(0, 4 - situation.hand[at]! - ownMelds[at]!));
+  for (const pattern of readings) {
+    const budget = (found?.away ?? away) - 1;
+    if (budget < 0) break;
+    const reach = nearest({ alternatives: pattern.groups!(wind), held: situation.hand, spare: blind, melds, budget, keep: VERSIONS_KEPT, cache });
+    if (reach === null) continue;
+    for (const want of reach.wants) {
+      const dead = KEYS.filter((_, at) => want[at]! - situation.hand[at]! > situation.unseen[at]!);
+      if (dead.length === 0) continue; // open after all: the search found it, so it is not nearer
+      found = { away: reach.missing, need: needOf(want, situation.hand), dead, barred: null, scoringWhen: pattern.scoringWhen ?? null };
+      break;
+    }
+  }
+  return found;
 }
 
 /** Hands a player can pin so they stay in the panel: the panel shows `CLOSEST_SHOWN` in all. */
@@ -278,6 +368,8 @@ interface Found {
   readonly claims: ClaimRule;
   /** How many versions of the hand are open to the seat: a measure of how flexible it is. */
   readonly flex: number;
+  /** The nearer version the seat cannot play (`ClosestHand.nearer`), worked out only for the hands shown. */
+  readonly nearer?: () => Nearer | null;
 }
 
 /**
@@ -294,9 +386,18 @@ function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { f
 
   // Hands with a fixed value that are declared as groups: searched exactly below.
   const exact: { pattern: HandPattern; tier: Tier }[] = [];
+  /** Group-declared readings a tier bar leaves out, by card: only to say so when one is nearer (`Nearer`). */
+  const barredExact = new Map<string, { pattern: HandPattern; tier: Tier }[]>();
   for (const pattern of PATTERNS) {
     const tier = concealed ? pattern.tier : pattern.exposedTier;
-    if (tier !== null && isExcluded(situation.excluded ?? [], pattern.id, tier)) continue; // a house rule: never hinted
+    if (tier !== null && isExcluded(situation.excluded ?? [], pattern.id, tier)) {
+      // A house rule: never hinted. A tier bar (not a hand set leaving the hand out) is told when nearer.
+      if (pattern.groups !== undefined && barredByTier(situation.excluded ?? [], pattern.id)) {
+        const card = cardOf(pattern).id;
+        barredExact.set(card, [...(barredExact.get(card) ?? []), { pattern, tier }]);
+      }
+      continue;
+    }
     if (pattern.groups !== undefined && tier !== null && tier !== "calculate") exact.push({ pattern, tier });
   }
   const exactIds = new Set(exact.map((entry) => entry.pattern.id));
@@ -304,22 +405,40 @@ function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { f
   const best = new Map<string, Found>();
   /** Every version of a hand the planner offers, with how far it is: a hand's versions are those near its best. */
   const offered = new Map<string, { need: ArrayLike<number>; away: number }[]>();
+  /** Per card, the nearest planner version the seat cannot play: out of tiles, or barred by tier. */
+  const lost = new Map<string, Nearer>();
+  const keepLost = (pattern: HandPattern, nearer: Nearer): void => {
+    const card = cardOf(pattern).id;
+    const previous = lost.get(card);
+    if (previous === undefined || nearer.away < previous.away) lost.set(card, nearer);
+  };
   for (const goal of planGoals(situation)) {
     if (exactIds.has(goal.pattern)) continue;
     const pattern = PATTERN_BY_ID.get(goal.pattern);
     if (pattern === undefined) continue;
     const tier = concealed ? pattern.tier : pattern.exposedTier;
-    if (tier === null || isExcluded(situation.excluded ?? [], pattern.id, tier)) continue;
+    if (tier === null) continue;
+    const barred = isExcluded(situation.excluded ?? [], pattern.id, tier);
+    if (barred && !barredByTier(situation.excluded ?? [], pattern.id)) continue; // left out of the table's hands
 
     const need: string[] = [];
-    let live = true;
+    const dead: string[] = [];
     for (const key of goal.keys) {
       const want = goal.need[key]! - situation.hand[key]!;
       if (want <= 0) continue;
-      if (situation.unseen[key]! < want) live = false;
+      if (situation.unseen[key]! < want) dead.push(KEYS[key]!);
       for (let copy = 0; copy < want; copy++) need.push(KEYS[key]!);
     }
-    if (!live) continue;
+    if (barred || dead.length > 0) {
+      keepLost(pattern, {
+        away: need.length,
+        need,
+        dead: barred ? [] : dead,
+        barred: barred ? tier : null,
+        scoringWhen: pattern.scoringWhen ?? null,
+      });
+      continue;
+    }
     const list = offered.get(goal.pattern) ?? [];
     list.push({ need: goal.need, away: need.length });
     offered.set(goal.pattern, list);
@@ -353,6 +472,8 @@ function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { f
         chance: Math.round(chance * 1000) / 1000,
         unseen: unseenOf(need, situation.unseen),
         pick: "likely",
+        scoringWhen: pattern.scoringWhen ?? null,
+        nearer: null,
       },
     });
   }
@@ -380,6 +501,34 @@ function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { f
       if (found === null) return true;
       best.set(pattern.id, found);
       return false;
+    });
+  }
+
+  // Each hand learns, when shown, of a nearer version the seat cannot play.
+  const inPlay = new Map<string, HandPattern[]>();
+  for (const { pattern } of exact) {
+    const card = cardOf(pattern).id;
+    inPlay.set(card, [...(inPlay.get(card) ?? []), pattern]);
+  }
+  for (const [id, entry] of best) {
+    const card = cardIdOf(id);
+    best.set(id, {
+      ...entry,
+      nearer: () => {
+        const fromPlan = lost.get(card);
+        const fromGroups = nearerByGroups(
+          situation,
+          inPlay.get(card) ?? [],
+          barredExact.get(card) ?? [],
+          entry.hand.away,
+          cache,
+        );
+        const nearest = [fromPlan, fromGroups]
+          .filter((candidate): candidate is Nearer => candidate !== undefined && candidate !== null)
+          .filter((candidate) => candidate.away < entry.hand.away)
+          .sort((a, b) => a.away - b.away || (a.barred === null ? 1 : 0) - (b.barred === null ? 1 : 0));
+        return nearest[0] ?? null;
+      },
     });
   }
 
@@ -441,7 +590,7 @@ export function closestHands(view: GameView, limit = CLOSEST_SHOWN): ClosestHand
   const none = new Set<string>();
   return rated(view, asCards(search(view, Math.max(limit, SHORTLIST), none).found), none, limit)
     .slice(0, limit)
-    .map((entry) => entry.hand);
+    .map(shown);
 }
 
 /**
@@ -543,7 +692,7 @@ function choose(
   seed: string,
 ): ClosestHand[] {
   if (places <= 0) return [];
-  if (style === "likeliest") return cards.slice(0, places).map((entry) => entry.hand);
+  if (style === "likeliest") return cards.slice(0, places).map(shown);
   const discoveries = style === "discovery" ? places : places >= 2 ? places - Math.min(MIXED_LIKELY, places - 1) : 0;
   const likely = cards.slice(0, places - discoveries);
   const families = new Map<string, number>();
@@ -591,7 +740,12 @@ function choose(
       chosen.push(entry);
     }
   }
-  return chosen.map((entry) => (picked.includes(entry) ? { ...entry.hand, pick: "discover" as const } : entry.hand));
+  return chosen.map((entry) => (picked.includes(entry) ? { ...shown(entry), pick: "discover" as const } : shown(entry)));
+}
+
+/** A hand as the panel shows it, with its nearer version worked out now that it is shown. */
+function shown(entry: Found): ClosestHand {
+  return { ...entry.hand, nearer: entry.nearer?.() ?? null };
 }
 
 /**
@@ -614,12 +768,13 @@ export function closestWithPins(
   const pool = style === "likeliest" ? limit : Math.max(limit, DISCOVERY_POOL);
   const { found, excluded } = search(view, Math.max(pool, SHORTLIST), chosen);
   const cards = rated(view, asCards(found), chosen, pool);
-  const byId = new Map(cards.map((entry) => [entry.hand.pattern, entry.hand]));
+  const byId = new Map(cards.map((entry) => [entry.hand.pattern, entry]));
   const pinned: PinnedHand[] = [];
   for (const id of ids) {
     const pattern = PATTERN_BY_ID.get(id);
     if (pattern === undefined || excluded.includes(id)) continue;
-    pinned.push({ pattern: id, name: pattern.name, hand: byId.get(id) ?? null });
+    const entry = byId.get(id);
+    pinned.push({ pattern: id, name: pattern.name, hand: entry === undefined ? null : shown(entry) });
   }
   const others = cards.filter((entry) => !chosen.has(entry.hand.pattern));
   const seed = `${view.seat}/${view.handNumber}/${view.phase}/${view.turn}/${view.wallRemaining}/${view.player.hand.join("")}`;

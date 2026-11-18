@@ -7,6 +7,8 @@
  */
 
 import { familiar } from "./familiar.js";
+import { readingBarred } from "./goulash-bar.js";
+import { nearerNote, versionNote } from "./nearer.js";
 import { hintStyle } from "./hint-style.js";
 import { bookPages, visibleSamples } from "./pages.js";
 import { createPins, MAX_PINS } from "./pins.js";
@@ -301,7 +303,7 @@ function hintRow(hand, { name: label, pinned }) {
     `${pinned ? "Pinned: " : ""}${label}${
       away
         ? ", out of reach: more than six tiles away, or no longer possible with the tiles in sight or your exposed melds"
-        : `, ${hand.pick === "discover" ? "an idea that may be new to you, " : ""}${hand.away === 0 ? "complete" : chanceWords(hand.chance)}${moved}, ${hand.concealedOnly ? "concealed, no exposed melds" : "exposed melds allowed"}${hand.requiresSelfDrawn ? ", self-drawn only" : ""}`
+        : `, ${hand.pick === "discover" ? "an idea that may be new to you, " : ""}${hand.away === 0 ? "complete" : chanceWords(hand.chance)}${moved}, ${hand.concealedOnly ? "concealed, no exposed melds" : "exposed melds allowed"}${hand.requiresSelfDrawn ? ", self-drawn only" : ""}${hand.nearer ? (hand.nearer.barred !== null ? ", a nearer version is barred" : ", a nearer version is out of tiles") : ""}`
     }. Tap for details.`,
   );
   // The chance leads the row as a ring alone, in its band's colour and filled
@@ -715,8 +717,9 @@ export async function openHandDetail(pattern, progress = null) {
       chanceNote.id = "hand-chance-note";
       chanceNote.hidden = true;
       chanceNote.textContent =
-        "How likely you are to complete this hand, worked out from your tiles and what you can see, " +
-        "if you play only for it from now on. It is a building chance, not a winning chance: another " +
+        "How likely you are to complete this hand if you play only for it from now on. It is worked out " +
+        "from what you can see: the rest of the hand is played out up to two thousand times, the tiles " +
+        "you cannot see dealt at random, so every discard and exposed meld counts. It is a building chance, not a winning chance: another " +
         "player going out first is not counted. An arrow means it moved a band since your last move. " +
         "You can turn hints off from the menu's Hints button, and change which hands they suggest " +
         "under Options, Game, Hint style.";
@@ -724,13 +727,19 @@ export async function openHandDetail(pattern, progress = null) {
       facts.append(far);
     }
   }
-  const concealedWorth = worth(detail.concealedTier, detail.concealedPoints);
-  const exposedWorth = detail.concealedOnly ? null : worth(detail.exposedTier, detail.exposedPoints);
+  // In a Goulash with the half-limit bar a scoring the bar leaves out is not offered (C p. 55): Big Robert pays only its limit.
+  const excluded = state.payload?.view?.excludedHands ?? [];
+  const inPlay = detail.readings.filter((reading) => !readingBarred(reading, excluded));
+  const readings = inPlay.length > 0 ? inPlay : detail.readings;
+  const barred = detail.readings.filter((reading) => !readings.includes(reading));
+  const one = readings[0] ?? detail;
+  const concealedWorth = worth(one.concealedTier, one.concealedPoints);
+  const exposedWorth = detail.concealedOnly || one.exposedTier === null ? null : worth(one.exposedTier, one.exposedPoints);
   // A hand with more than one scoring gets a "Pays" chip over the range; it opens each scoring and when it applies.
-  const scorings = detail.readings.length > 1;
+  const scorings = readings.length > 1;
   let paysNote = null;
   if (scorings) {
-    const values = detail.readings.map((reading) => reading.concealedPoints);
+    const values = readings.map((reading) => reading.concealedPoints);
     const range = values.some((value) => value === null)
       ? "Varies"
       : `${Math.min(...values).toLocaleString("en")}\u2013${Math.max(...values).toLocaleString("en")}`;
@@ -749,7 +758,7 @@ export async function openHandDetail(pattern, progress = null) {
     paysNote.className = "detail-note";
     paysNote.id = "hand-pays-note";
     paysNote.hidden = true;
-    paysNote.append(readingList(detail.readings));
+    paysNote.append(readingList(readings));
     wireNote(pays, paysNote);
     facts.append(pays);
   } else {
@@ -773,6 +782,14 @@ export async function openHandDetail(pattern, progress = null) {
   // Companion-only table sees the Companion's pictures and pages alone.
   const samples = visibleSamples(detail.samples, companionRules());
   card.append(sampleSection(samples, detail.pages, detail.example), lede);
+  if (barred.length > 0) {
+    const bar = document.createElement("p");
+    bar.className = "detail-muted detail-barred";
+    bar.textContent =
+      `Not in this Goulash: ${barred.map((reading) => `${worth(reading.concealedTier, reading.concealedPoints)} ${reading.scoringWhen ?? ""}`.trim()).join("; ")}. ` +
+      "Half-limit hands are barred in a Goulash at this table (Companion p. 55).";
+    card.append(bar);
+  }
 
   // Then, clearly apart, your own hand: the tiles still needed to complete it.
   if (progress !== null) {
@@ -815,6 +832,14 @@ export async function openHandDetail(pattern, progress = null) {
       yours.append(left);
       const note = anotherNote(progress);
       if (note !== null) yours.append(note);
+      // Which scoring these tiles are for, and a nearer version that is barred or out of tiles.
+      for (const words of [versionNote(progress), nearerNote(progress, tileWords)]) {
+        if (words === null) continue;
+        const line = document.createElement("p");
+        line.className = "detail-muted need-note need-version";
+        line.textContent = words;
+        yours.append(line);
+      }
     }
     card.append(yours);
   }

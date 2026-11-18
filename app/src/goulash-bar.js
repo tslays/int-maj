@@ -21,7 +21,18 @@ export function barredInGoulash(hand, excludedHands) {
   if (!halfLimitBarred(excludedHands)) return false;
   const readings = Array.isArray(hand.readings) && hand.readings.length > 0 ? hand.readings : null;
   if (readings === null) return hand.concealedTier === "half";
-  return readings.every(
-    (reading) => reading.concealedTier === "half" && (reading.exposedTier === null || reading.exposedTier === "half"),
+  return readings.every((reading) => readingBarred(reading, excludedHands));
+}
+
+/**
+ * True when the bar leaves out this one scoring of a hand (a `readings`
+ * entry): Big Robert's mixed-numbers half limit goes, its same-numbers
+ * limit stays, so the hand's sheet lists only the scorings in play.
+ */
+export function readingBarred(reading, excludedHands) {
+  return (
+    halfLimitBarred(excludedHands) &&
+    reading.concealedTier === "half" &&
+    (reading.exposedTier === null || reading.exposedTier === "half")
   );
 }

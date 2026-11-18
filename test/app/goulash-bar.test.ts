@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 // @ts-expect-error - a plain browser module without type declarations
-const { barredInGoulash, halfLimitBarred } = await import("../../app/src/goulash-bar.js");
+const { barredInGoulash, halfLimitBarred, readingBarred } = await import("../../app/src/goulash-bar.js");
 
 const BAR = ["tier:half"];
 const reading = (concealedTier: string, exposedTier: string | null) => ({ concealedTier, exposedTier });
@@ -42,5 +42,14 @@ describe("the Goulash bar in All hands", () => {
   it("falls back to the hand's own tier when it has no readings list", () => {
     assert.equal(barredInGoulash({ concealedTier: "half", readings: [] }, BAR), true);
     assert.equal(barredInGoulash({ concealedTier: "limit", readings: [] }, BAR), false);
+  });
+
+  it("leaves out one scoring of a hand on its sheet: Big Robert keeps only its limit (#209)", () => {
+    const same = reading("limit", null);
+    const mixed = reading("half", null);
+    assert.equal(readingBarred(mixed, BAR), true);
+    assert.equal(readingBarred(same, BAR), false);
+    assert.equal(readingBarred(reading("limit", "half"), BAR), false, "half only exposed: the concealed limit stays");
+    assert.equal(readingBarred(mixed, []), false, "a normal round keeps both");
   });
 });
