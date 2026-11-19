@@ -2634,6 +2634,23 @@ button.start-card:active,
   gap: 8px 14px;
   width: 100%;
 }
+.practice-back {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.32);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+  color: var(--gold-1);
+  cursor: pointer;
+}
+.practice-back:active {
+  background: rgba(255, 255, 255, 0.12);
+}
 .practice-title {
   margin: 0;
   font-style: italic;
