@@ -19,7 +19,7 @@ import { familiar } from "./familiar.js";
 import { refreshHints } from "./hints.js";
 import { warmIndex } from "./handbook.js";
 import { installMenu } from "./menu.js";
-import { awaitingNextHand, installOnline, leaveRoom, sendAction } from "./online.js";
+import { awaitingNextHand, installOnline, leaveRoom, openRoomSheet, sendAction } from "./online.js";
 import { houseRules, installOptions } from "./options.js";
 import { level } from "./level.js";
 import { pace } from "./pace.js";
@@ -27,7 +27,9 @@ import "./report.js";
 import { installResult, showOutcome } from "./result.js";
 import { $, board, faceChip, request, scores, state, storage, toast } from "./shared.js";
 import { sound } from "./sound.js";
-import { hideTip, tipForChoices, welcome } from "./tips.js";
+import { firstVisit, hideTip, tipForChoices } from "./tips.js";
+import { hideStart, installStart, showStart, startOpen } from "./start.js";
+import { installPractice, openPractice, practiceOpen } from "./practice.js";
 import { ALL_FACES, initTiles, preloadFaces, tileOrder } from "./tiles.js";
 import { mountStage, renderer, requestRender, screenPoint, setConsoleShown, sleep, updateConsole, viewport } from "./stage.js";
 import { discardLayout } from "./discard-layout.js";
@@ -163,11 +165,12 @@ function runOnline() {
 /** Let the table run until it needs you, then show your choices. */
 async function run() {
   if (state.online) return runOnline();
-  if (state.busy || state.payload === null) return;
+  if (state.busy || state.payload === null || startOpen() || practiceOpen()) return;
   state.busy = true;
   try {
     for (;;) {
-      if (state.newGameWanted || state.online) return; // asked for while the bots played
+      // Asked for while the bots played; or the start screen or practice is up, and the bots wait for Continue.
+      if (state.newGameWanted || state.online || startOpen() || practiceOpen()) return;
       if (state.payload.outcome !== null) {
         await showOutcome();
         return;
@@ -405,6 +408,7 @@ async function newGame() {
 
 /** Clear the board for a different game: a room's, or your own again. */
 function clearTable() {
+  hideStart();
   $("#result").hidden = true;
   $("#result").dataset.hand = "";
   board.handId = null;
@@ -457,15 +461,24 @@ async function boot() {
   }
   // Back in a room after a reload: the room sends the table.
   if (installOnline({ apply, run, enterRoom: clearTable, leftRoom })) return;
+  // A game in progress is dealt under the start screen, to be continued from there.
   const resumed = state.api.resume();
   if (resumed !== null) {
     await apply(resumed, { animated: false });
     if (resumed.restartedHand) toast("The game was updated, so this hand starts again. Your scores are kept.");
-    void run();
+  }
+  // A pinned seed (a shared or test game) goes straight to the table.
+  if (pinnedSeed !== null) {
+    if (resumed === null) await newGame();
+    else void run();
     return;
   }
-  await welcome();
-  await newGame();
+  showStart({ game: resumed !== null, first: firstVisit() });
+}
+
+/** Main menu in Options: the start screen over your table; the bots wait under it. */
+function mainMenu() {
+  showStart({ game: state.payload !== null });
 }
 
 // A handle for automated play-throughs and debugging: the current answer and
@@ -487,6 +500,13 @@ window.mahjong = {
 installInput({ act });
 installResult({ callOut, apply, run, hideChoices, newGame });
 installMenu({ run, newGame });
-installOptions({ newGame });
+installOptions({ newGame, mainMenu });
+installStart({
+  onContinue: () => void run(),
+  onNewGame: () => void newGame(),
+  onFriends: () => openRoomSheet(),
+  onPractice: () => openPractice(),
+});
+installPractice({ back: () => showStart({ game: state.payload !== null }) });
 
 void boot();

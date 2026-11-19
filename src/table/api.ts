@@ -34,6 +34,7 @@
 
 import { handDetail, handIndex, HINT_STYLES, type HintStyle } from "../core/game/closest.ts";
 import { HAND_SET_EXCLUDED, HAND_SETS } from "../core/patterns/table.ts";
+import { isPracticeKind, practiceQuestion, PRACTICE_KINDS } from "./practice.ts";
 import { describeEventFor } from "../core/game/describe.ts";
 import { BOT_LEVELS, DEFAULT_BOT_LEVEL, isBotLevel } from "../core/game/bot.ts";
 import type { Action } from "../core/game/actions.ts";
@@ -211,6 +212,18 @@ function routeGet(context: ApiContext, request: ApiRequest): ApiResponse | null 
     const set = request.query.get("set") ?? "all";
     if (!isHandSet(set)) return fail(400, `set must be one of ${HAND_SETS.join(", ")}`);
     return ok(handIndex(HAND_SET_EXCLUDED[set]), request.query.has("pretty"));
+  }
+
+  if (request.path === "/api/practice") {
+    const kind = request.query.get("kind") ?? "name";
+    if (!isPracticeKind(kind)) return fail(400, `kind must be one of ${PRACTICE_KINDS.join(", ")}`);
+    const set = request.query.get("set") ?? "all";
+    if (!isHandSet(set)) return fail(400, `set must be one of ${HAND_SETS.join(", ")}`);
+    const seed = request.query.get("seed") ?? "";
+    if (seed.length === 0) return fail(400, "seed is required");
+    // Hands the player missed, to ask again sooner (at most a handful are honoured).
+    const focus = (request.query.get("focus") ?? "").split(",").filter((id) => id.length > 0).slice(0, 8);
+    return ok(practiceQuestion(seed, kind, HAND_SET_EXCLUDED[set], focus), request.query.has("pretty"));
   }
 
   if (request.path === "/api/hand") {

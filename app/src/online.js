@@ -276,6 +276,11 @@ export function leaveRoom() {
 
 /* --------------------------------------------------------- the sheet */
 
+/** Play with friends: the start screen opens it too. */
+export function openRoomSheet() {
+  openSheet();
+}
+
 function openSheet(prefill = "") {
   $("#room-name").value = read(NAME_KEY) ?? "";
   $("#room-code").value = prefill;

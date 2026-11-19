@@ -3,8 +3,6 @@
  * something new happens (your first throw, the first call offered, the first
  * result...). Each shows once on this device; "No more tips" stops them and
  * the guide's "Show tips again" brings them back. Review boards show none.
- *
- * Before the very first deal on a device a welcome card offers the guide.
  */
 
 import { openGuide } from "./guide.js";
@@ -175,71 +173,15 @@ export function tipForChoices(legal, { callsOff }) {
   }
 }
 
-/* --------------------------------------------------------- welcome */
-
-/** A phone held upright: the turn-your-phone screen (styles.css) covers the table. */
-const UPRIGHT_PHONE = "(orientation: portrait) and (pointer: coarse)";
+/* --------------------------------------------------------- first visit */
 
 /**
- * The first time the game opens on this device (not on a review board or a
- * link with a pinned `?seed=`): a card offering the guide before the first
- * deal. It waits until a phone is turned sideways, so it never covers the
- * turn-your-phone screen and its install steps. Resolves when the player
- * chooses to play, or closes the guide.
+ * The first visit on this device: the start screen marks How to play as the
+ * place to begin. Counted once, when it is asked.
  */
-export function welcome() {
-  // A friend's room link goes straight to the room sheet.
-  if (REVIEW || PARAMS.has("seed") || PARAMS.has("room") || memory.seen.includes("welcome")) return Promise.resolve();
-  return new Promise((resolve) => {
-    const upright = window.matchMedia(UPRIGHT_PHONE);
-    if (!upright.matches) {
-      showWelcome(resolve);
-      return;
-    }
-    const turned = () => {
-      if (upright.matches) return;
-      upright.removeEventListener("change", turned);
-      showWelcome(resolve);
-    };
-    upright.addEventListener("change", turned);
-  });
-}
-
-/** Shows the card now and counts it as seen; `resolve` runs when it is closed. */
-function showWelcome(resolve) {
+export function firstVisit() {
+  if (memory.seen.includes("welcome")) return false;
   memory.seen.push("welcome");
   save();
-  const box = document.createElement("div");
-  box.className = "welcome";
-  box.innerHTML = `
-    <div class="welcome-card" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
-      <p class="welcome-kicker">International mahjong · by the book</p>
-      <h2 id="welcome-title">Welcome to the table</h2>
-      <p>You play against three bots, on this device. New to mahjong, or to this app? A one-minute guide shows the aim, the taps and the buttons.</p>
-      <div class="welcome-buttons">
-        <button class="act act-win" id="welcome-guide" type="button"><span>Show me how</span></button>
-        <button class="act act-pass" id="welcome-play" type="button"><span>Just play</span></button>
-      </div>
-      <p class="welcome-fine">Help in Options opens the guide at any time.</p>
-    </div>`;
-  document.body.append(box);
-  const done = () => {
-    box.remove();
-    resolve();
-  };
-  box.querySelector("#welcome-play").addEventListener("click", done);
-  box.querySelector("#welcome-guide").addEventListener("click", () => {
-    box.remove();
-    openGuide();
-    // The game deals when the guide is closed.
-    const sheet = $("#help-sheet");
-    const watch = new MutationObserver(() => {
-      if (sheet.hidden) {
-        watch.disconnect();
-        resolve();
-      }
-    });
-    watch.observe(sheet, { attributes: true, attributeFilter: ["hidden"] });
-  });
-  box.querySelector("#welcome-guide").focus();
+  return true;
 }
