@@ -214,10 +214,24 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   or a small sketch), `tips.js` (first-game tips: a note at the top of the
   table the first time each kind of decision comes up, and after the first
   result; each shows once per device, "No more tips" stops them, the guide's
-  "Show tips again" brings them back, review boards show none; and the
-  welcome card before the first deal on a device, offering the guide, which
-  a review board or a `?seed=` link skips), `options.js` (the
-  Options sheet in three tabs: Game (Bot level, Pace, Table animations), Table (Sound, Large discards on phones, Discards Rows or Pile) and Rules (the house rules), with New game, Help and Report
+  "Show tips again" brings them back, review boards show none), `start.js`
+  (the start screen over the dimmed table on every visit: Continue when a
+  game of your own is saved, Play vs bots or New game with the bot level
+  beside it, Play with friends, Practice, and How to play, All hands, Settings and
+  Install; shown upright on phones too, in one column (the table alone needs
+  landscape); marked How to play on a first visit; a review board or a
+  `?seed=` link skips it, a room link opens the room sheet over it; the bots
+  wait while it is up), `practice.js` (Practice, from the start screen: Name
+  the hand (fourteen tiles, four names), Winning tile (thirteen tiles, four
+  tiles) and Best aim (a real deal, four hands, graded by the hint panel's own
+  ranking), under the hand set chosen in Rules; after an answer the tiles
+  grouped as the hand reads, every winning tile, or how near each aim is; a
+  streak and the best streak, and the hands you missed (asked again sooner),
+  kept on the device; the next question fetched while you read; See this hand
+  opens the hand's sheet; Menu, Escape or the phone's back return to the start
+  screen. Like the start screen it works upright), `start-note.js` (the
+  Continue card's words, pure for Node tests), `options.js` (the
+  Options sheet in three tabs: Game (Bot level, Pace, Table animations), Table (Sound, Large discards on phones, Discards Rows or Pile) and Rules (the house rules), with New game, Main menu (Room while in a room), Help and Report
   under every tab) and `report.js` (report a problem). Modules that need the loop (`input`,
   `result`, `menu`) get its functions from `main.js` through an `installX`
   call, so imports never run in a circle.
@@ -460,6 +474,7 @@ tests and bug reports. Presentation only: the engine's draws do not depend on it
 | `GET /api/closest` | `game=<id>` | the catalogue hands your tiles are nearest to (`closestHands`), at most three; `limit=<n>` raises that to at most 100 |
 | `GET /api/hand` | `pattern=<id>` | one catalogue hand's conditions: composition, concealed-only, self-drawn, concealed and open value, its example, book headings and the page in each book (`handDetail`) |
 | `GET /api/hands` | - | the whole catalogue for the index: every hand as above, and the book's headings with their hands in book order (`handIndex`) |
+| `GET /api/practice` | `seed=<s>&kind=name\|wait\|aim&set=<hand set>&focus=<ids>` | one practice question (`src/table/practice.ts`): fourteen tiles of a hand (its example, often with the suits swapped) and four hand names; or thirteen of them and four tiles; or thirteen dealt tiles and four hands to aim for. Gives the one right choice, the hand and its grouping, any other hands the tiles make, every winning tile, and for `aim` how the hint panel rates each choice. Built and graded by `checkHand` and `closestHands`; `focus` hands (ones the player missed) are asked about half the time |
 | `GET /api/scenario` | `state=<name>` | one fixed review board and its events |
 | `POST /api/new` | `{ "seed": "..." }` | a new game and its first state |
 | `POST /api/move` | `{ "game": "...", "action": {...} }` | the new state plus `events` as text lines |

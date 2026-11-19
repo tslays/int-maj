@@ -141,7 +141,8 @@ function showHintStyle() {
 }
 
 function showLevel() {
-  for (const button of document.querySelectorAll("#level [data-level]")) {
+  // The same choice sits on the start screen beside Play vs bots.
+  for (const button of document.querySelectorAll("#level [data-level], #start-level [data-level]")) {
     button.setAttribute("aria-checked", String(button.dataset.level === level.id));
   }
 }
@@ -176,8 +177,8 @@ function closeOptions() {
   askNewGame(false);
 }
 
-/** `hooks.newGame` starts a fresh game. */
-export function installOptions({ newGame }) {
+/** `hooks.newGame` starts a fresh game; `hooks.mainMenu` opens the start screen. */
+export function installOptions({ newGame, mainMenu }) {
   showSound();
   showLargeDiscards();
   showDiscardLayout();
@@ -191,8 +192,12 @@ export function installOptions({ newGame }) {
     showSound();
     showLargeDiscards();
     showRules();
+    showLevel();
     void nameHands();
     showTab(tab);
+    // In a room the link opens the room (to leave it); at your own table, the start screen.
+    $("#main-menu").hidden = state.online === true;
+    $("#room-open").hidden = state.online !== true;
     $("#options-sheet").hidden = false;
     $("#options-close").focus();
   });
@@ -215,6 +220,10 @@ export function installOptions({ newGame }) {
   $("#new-game-keep").addEventListener("click", () => {
     askNewGame(false);
     $("#new-game").focus();
+  });
+  $("#main-menu").addEventListener("click", () => {
+    closeOptions();
+    mainMenu();
   });
   $("#new-game-go").addEventListener("click", () => {
     closeOptions();
@@ -275,12 +284,14 @@ export function installOptions({ newGame }) {
   });
 
   /* Bot level: sent with every bot move, so the next one already plays at it. */
-  $("#level").addEventListener("click", (event) => {
+  const pickLevel = (event) => {
     const button = event.target.closest("[data-level]");
     if (button === null) return;
     level.set(button.dataset.level);
     showLevel();
-  });
+  };
+  $("#level").addEventListener("click", pickLevel);
+  $("#start-level").addEventListener("click", pickLevel);
 
   $("#hand-set").addEventListener("click", (event) => {
     const button = event.target.closest("[data-set]");
