@@ -1832,6 +1832,27 @@ button.detail-rule {
   color: #cfeaf8;
   font-weight: 700;
 }
+/* Heads the rail and stays in view as the choices scroll under it; dimmed while the filters are at their start. */
+.index-reset {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  justify-content: center;
+  margin: 2px 0 0;
+  border: 1px solid rgba(140, 203, 234, 0.45);
+  background: #162126;
+  color: #cfeaf8;
+  font-weight: 700;
+}
+.index-reset:hover {
+  background: #1f313a;
+}
+.index-reset:disabled {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: #162126;
+  color: var(--muted);
+  font-weight: 400;
+}
 .index-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(212px, 100%), 1fr));
