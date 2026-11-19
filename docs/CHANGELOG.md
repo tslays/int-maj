@@ -4,7 +4,27 @@ Newest first. Written for players: what you will see, what was fixed, and
 what now works differently. Each version is a `v0.1.0-alpha.N` tag on `main`;
 testers get it at https://int.mah-jong.workers.dev.
 
-## alpha.16
+## alpha.17
+
+**New**
+
+- **Start screen and Practice.** Every visit opens a start screen: Continue, Play vs bots (with the bot level), Play with friends, Practice, and links to the guide, all hands, settings and install. Practice asks you to name the hand, the winning tile and the best aim, and grades you with the game's own check, with a grouped reveal, a streak, and missed hands coming back sooner. (#234)
+
+**Changed**
+
+- **The turn pill sits under the round badge.** (#229)
+
+**Fixed**
+
+- **With Sort off, the opening deal keeps its order.** It was sorted in pieces of four; now it stays in table order. (#230 → #231)
+- **A Goulash bars a chow in Ordinary and Purity.** A chow can no longer make a win, wait or fishing announcement there, and a chow claimed to win follows the fish rule. (#233 → #235)
+- **The result sheet shows the full hand.** A win with a claimed chow keeps every tile on the sheet. (#232 → #235)
+
+**What works differently now**
+
+- **Every visit opens the start screen.** Options › Main menu brings it back.
+
+## alpha.16 (18 November 2026)
 
 **New**
 
