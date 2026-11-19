@@ -1671,13 +1671,17 @@ button.detail-rule {
   justify-content: center;
   gap: 2px 4px;
 }
+/* Five doors on one line: a little less padding than a lone link. */
+.option-links .option-link {
+  padding: 0 8px;
+}
 .option-links[hidden],
 .option-links [hidden],
 .option-confirm[hidden] {
   display: none;
 }
 /* Over the start screen the doors are already there: only the reset stays. */
-.option-links.from-start .option-link:not(#reset-settings) {
+.option-links.from-start .option-link:not(#reset-settings, #support-open) {
   display: none;
 }
 .start-confirm {
@@ -2243,6 +2247,38 @@ button.detail-rule {
 .install[hidden],
 .install [hidden] {
   display: none;
+}
+/* Support: one quiet door in Settings; Ko-fi's own panel sits in a light well. */
+/* Support: a small centred card, one button out to Ko-fi's own page,
+   where every way to pay works. */
+.support-card {
+  width: min(340px, 100%);
+  padding: 18px 22px 14px;
+  text-align: center;
+}
+.support-card h2 {
+  margin: 0 28px; /* clear of the close button on both sides, so it stays centred */
+}
+.support-card .support-lede {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+  text-wrap: balance;
+}
+.support-go {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: fit-content;
+  margin: 16px auto 0;
+  padding: 0 2em;
+  text-decoration: none;
+}
+.support-card .support-fine {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  opacity: 0.8;
 }
 .install-card {
   width: min(360px, 100%);
