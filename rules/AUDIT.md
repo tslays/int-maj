@@ -292,8 +292,9 @@ are the contradictions found while writing Part III of `rules/RULES.md`.
 
 - `dragonette` (C p. 24): the paired honour may be **a Wind or a Dragon**
   ("Any Wind or Dragon paired"; the synopsis says "ESWN + GRW (one paired)",
-  C p. 58). The table's `singleGroup(isDragon)` is too narrow; change it to
-  accept a wind or a dragon.
+  C p. 58). The table's `singleGroup(isDragon)` was too narrow; it accepts a
+  wind or a dragon now (applied after tester report #244, where a paired North
+  was refused).
 - `down-you-go` (C p. 57): the note text says the "8888" kong, but the printed
   hand is 2222 (the predicate already uses 2222). Text-only fix.
 - `moon-at-bottom-of-well` (C pp. 15, 47): four Circle chows, three in
