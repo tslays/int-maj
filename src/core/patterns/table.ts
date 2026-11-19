@@ -1267,14 +1267,13 @@ const BASE_PATTERNS: readonly HandPattern[] = Object.freeze([
     exposedTier: null,
     requiresSelfDrawn: false,
     description:
-      "Three pairs in one suit (no 1s or 9s), one of each wind, and one of " +
-      "each dragon with one dragon paired.",
-    source: "Illustration p. 24.",
+      "Three pairs in one suit (no 1s or 9s), one of each wind, one of each " +
+      "dragon, and any one wind or dragon paired.",
+    source: "Illustration p. 24; synopsis p. 58.",
     notes:
-      "The sidebar's tail is cut after 'Three Pairs same suit-no 1s or 9s'; " +
-      "the visible tiles show ESWN and a Green Dragon. The most conservative " +
-      "14-tile reading pairs one of the three dragons (the cut tiles), not an " +
-      "arbitrary tile.",
+      "p. 24 prints the fourteenth tile as 'Any Wind or Dragon paired' " +
+      "(synopsis: 'ESWN + GRW (one paired)'). Tester report #244: a paired " +
+      "wind was refused when the spare was read as a dragon only.",
     ...groupPattern(() =>
       SUITS.map((suit) => {
         const suitPair = (key: string) =>
@@ -1283,7 +1282,7 @@ const BASE_PATTERNS: readonly HandPattern[] = Object.freeze([
           distinctPairsGroup(3, suitPair),
           exactGroup(WIND_KEYS),
           exactGroup(DRAGON_KEYS),
-          singleGroup(isDragon),
+          singleGroup((key) => isWind(key) || isDragon(key)),
         ];
       }),
     ),
