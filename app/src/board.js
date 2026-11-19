@@ -239,7 +239,7 @@ export class Board {
     return work;
   }
 
-  /** The layout changed in Options: lay every discard again, without animation. */
+  /** The layout changed in Settings: lay every discard again, without animation. */
   relayDiscards() {
     const payload = this.lastPayload;
     if (payload === null || this.handId === null) return;

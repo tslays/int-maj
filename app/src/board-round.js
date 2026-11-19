@@ -8,7 +8,7 @@
  * briefly out of the tile. The tile the player on your left throws has no next
  * throw to replace it, so it clears by itself after as long as the two before
  * it stayed up (measured, so it keeps the table's rhythm at any pace); your
- * own throw clears it too. A claimed tile takes its large face with it. Options has a switch
+ * own throw clears it too. A claimed tile takes its large face with it. Settings has a switch
  * for it (on by default, `large-discards.js`). It has the latest discard's
  * cyan edge (it covers that plate).
  *
@@ -39,7 +39,7 @@ function setLayerScale(item, scale, order) {
 }
 
 export const roundMethods = {
-  /** Whether the layers show: on a phone-sized screen, with Large discards on (Options). */
+  /** Whether the layers show: on a phone-sized screen, with Large discards on (Settings). */
   roundShown() {
     return largeDiscards.on && roundLayersWanted(viewport.width, viewport.height);
   },

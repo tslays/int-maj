@@ -290,7 +290,7 @@ function renderOutcome(outcome) {
   panel.hidden = false;
 
   // The counters are thrown across the table, over the card, from each payer
-  // to the receiver; a tap anywhere skips to the end, and Options › Table
+  // to the receiver; a tap anywhere skips to the end, and Settings › Table
   // animations › Skip leaves them out.
   const before = Object.fromEntries(
     state.payload.table.map((entry) => [entry.seat, totals[entry.seat] - (outcome.totals[entry.seat] ?? 0)]),

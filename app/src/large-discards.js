@@ -25,6 +25,10 @@ export function createLargeDiscards({ storage = browserStorage } = {}) {
       stored.write(on ? "on" : "off");
       for (const listener of listeners) listener(on);
     },
+    /** Back to on, the default. */
+    reset() {
+      this.set(true);
+    },
     onChange(listener) {
       listeners.push(listener);
     },

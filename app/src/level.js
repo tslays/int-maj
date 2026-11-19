@@ -37,6 +37,10 @@ export function createLevel({ storage = browserStorage } = {}) {
       stored.write(next.id);
       return true;
     },
+    /** Back to Medium, the default. */
+    reset() {
+      return this.set("medium");
+    },
   };
 }
 

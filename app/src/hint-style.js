@@ -40,6 +40,10 @@ export function createHintStyle({ storage = browserStorage } = {}) {
       stored.write(next.id);
       return true;
     },
+    /** Back to Mixed, the default. */
+    reset() {
+      return this.set("mixed");
+    },
   };
 }
 

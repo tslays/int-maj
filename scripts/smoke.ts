@@ -534,14 +534,29 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   assert.equal(await page.evaluate(() => window.mahjong!.pile()), true, "the table lays its discards in the pile");
   await page.click('#discard-layout [data-layout="rows"]');
   assert.equal(await page.evaluate(() => window.mahjong!.pile()), false, "and back in rows");
-  // New game asks first; Keep playing leaves the game as it was.
-  await page.click("#new-game");
-  await page.waitForSelector("#new-game-confirm:not([hidden])", { timeout: 5000 });
-  await page.click("#new-game-keep");
-  await page.waitForSelector("#new-game-confirm", { state: "hidden", timeout: 5000 });
+  // Reset settings asks first; Keep leaves them, Reset puts every one back to its default.
+  await page.click("#tab-game");
+  await page.click('#pace [data-pace="faster"]');
+  await page.click('#level [data-level="hard"]');
+  await page.click("#reset-settings");
+  await page.waitForSelector("#reset-confirm:not([hidden])", { timeout: 5000 });
+  await page.click("#reset-keep");
+  await page.waitForSelector("#reset-confirm", { state: "hidden", timeout: 5000 });
+  assert.equal(await page.getAttribute('#pace [data-pace="faster"]', "aria-checked"), "true", "keeping the settings changes nothing");
+  await page.click("#tab-rules");
+  await page.click('#hand-set [data-set="companion"]');
+  await page.click("#reset-settings");
+  await page.click("#reset-go");
+  await page.waitForSelector("#reset-confirm", { state: "hidden", timeout: 5000 });
+  assert.equal(await page.getAttribute('#hand-set [data-set="all"]', "aria-checked"), "true", "reset: the hand set is All again");
+  await page.waitForSelector("#hand-set-pending", { state: "hidden", timeout: 5000 });
+  await page.click("#tab-game");
+  assert.equal(await page.getAttribute('#pace [data-pace="normal"]', "aria-checked"), "true", "reset: the pace is Normal again");
+  assert.equal(await page.getAttribute('#level [data-level="medium"]', "aria-checked"), "true", "reset: the level is Medium again");
+  assert.equal(await page.getAttribute('#start-level [data-level="medium"]', "aria-checked"), "true", "reset: the start screen's level follows");
   await page.click("#options-close");
   await page.waitForSelector("#options-sheet", { state: "hidden", timeout: 5000 });
-  console.log("  ok  hints toggle, options sheet and its tabs, help sheet, hand set choice with Rare, Goulash and fishing rule switches, discard layout, new game asks first");
+  console.log("  ok  hints toggle, settings sheet and its tabs, help sheet, hand set choice with Rare, Goulash and fishing rule switches, discard layout, reset settings asks first");
 
 
   // The index of all hands: opens, filters by a book heading, searches, opens a hand's sheet.
@@ -793,9 +808,9 @@ async function startScreen(browser: Browser, origin: string, shots: string | nul
   assert.equal(await page.locator("#start").isVisible(), true, "start: stays when turned sideways");
   if (shots !== null) await page.screenshot({ path: join(shots, "start-first.png") });
 
-  // The level chosen here is the level in Options.
+  // The level chosen here is the level in Settings.
   await page.click('#start-level [data-level="easy"]');
-  assert.equal(await page.getAttribute('#level [data-level="easy"]', "aria-checked"), "true", "start: the level is the Options level");
+  assert.equal(await page.getAttribute('#level [data-level="easy"]', "aria-checked"), "true", "start: the level is the Settings level");
   await page.click('#start-level [data-level="medium"]');
 
   await page.click("#start-play");
@@ -807,6 +822,18 @@ async function startScreen(browser: Browser, origin: string, shots: string | nul
   await page.waitForSelector("#start", { state: "visible", timeout: READY_MS });
   await page.waitForSelector("#start-continue", { state: "visible", timeout: READY_MS });
   assert.match((await page.textContent("#start-continue-note")) ?? "", /round · hand \d+ · [\d,]+ points/, "start: Continue names the game");
+  // Settings over the start screen offers only the reset; New game asks before ending the game.
+  await page.click("#start-settings");
+  await page.waitForSelector("#options-sheet:not([hidden])", { timeout: READY_MS });
+  assert.equal(await page.locator("#main-menu").isVisible(), false, "start: Settings has no Main menu over the main menu");
+  assert.equal(await page.locator("#help").isVisible(), false, "start: Settings has no Help over the main menu");
+  assert.equal(await page.locator("#reset-settings").isVisible(), true, "start: Settings can still be reset");
+  await page.click("#options-close");
+  await page.click("#start-play");
+  await page.waitForSelector("#start-new-confirm:not([hidden])", { timeout: READY_MS });
+  assert.equal(await page.locator("#start").isVisible(), true, "start: New game waits for the answer");
+  await page.click("#start-new-keep");
+  await page.waitForSelector("#start-new-confirm", { state: "hidden", timeout: READY_MS });
   await page.click("#start-continue");
   await page.waitForSelector("#start", { state: "hidden", timeout: READY_MS });
 
