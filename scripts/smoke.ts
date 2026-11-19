@@ -479,6 +479,11 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.click(".guide-tab:nth-child(3)");
   const callsTab = await page.textContent("#guide-body");
   if (!callsTab?.includes("Mah Jong")) throw new Error("the guide's Calls tab did not open");
+  // Next opens the next topic at its top, even when this one was scrolled down.
+  await page.$eval("#guide-body", (el) => { el.scrollTop = el.scrollHeight; });
+  await page.click(".guide-next");
+  const nextTop = await page.$eval("#guide-body", (el) => el.scrollTop);
+  if (nextTop !== 0) throw new Error(`the guide's Next topic opened scrolled to ${nextTop}, not the top`);
   await page.click("#help-close");
   await page.waitForSelector("#help-sheet", { state: "hidden", timeout: 5000 });
   // Pace is a device preference that takes effect at once.
