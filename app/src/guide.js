@@ -388,11 +388,12 @@ function showTab(index) {
     next.textContent = `Next: ${TABS[index + 1].name} ›`;
     next.addEventListener("click", () => {
       showTab(index + 1);
-      tabs.children[index + 1].focus();
+      tabs.children[index + 1].focus({ preventScroll: true });
     });
     body.append(next);
   }
-  $("#help-sheet .guide-card").scrollTop = 0;
+  // .guide-body is the element that scrolls; .guide-card is not.
+  $("#guide-body").scrollTop = 0;
 }
 
 function build() {
