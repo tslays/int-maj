@@ -761,10 +761,11 @@ async function opening(browser: Browser, origin: string, shots: string | null): 
 
 /**
  * A first visit on an iPhone, held upright: the turn-your-phone screen with
- * its install steps shows, and the welcome card waits. Turned sideways, the
- * card appears; turned back, it steps aside, and the turn screen returns.
+ * its install steps shows, and the start screen waits. Turned sideways, it
+ * appears with How to play marked; turned back, it steps aside. Play vs bots
+ * deals; Main menu brings it back with Continue, and so does a reload.
  */
-async function welcomeCard(browser: Browser, origin: string, shots: string | null): Promise<void> {
+async function startScreen(browser: Browser, origin: string, shots: string | null): Promise<void> {
   const errors: string[] = [];
   const page = await openPage(browser, errors, {
     viewport: { width: VIEWPORT.height, height: VIEWPORT.width },
@@ -774,26 +775,50 @@ async function welcomeCard(browser: Browser, origin: string, shots: string | nul
   });
   await page.goto(`${origin}/`);
   await page.waitForSelector('.rotate [data-guide="ios"]', { state: "visible", timeout: READY_MS });
-  assert.equal(await page.locator(".welcome").count(), 0, "welcome: no card while the phone is upright");
-  if (shots !== null) await page.screenshot({ path: join(shots, "welcome-upright.png") });
+  assert.equal(await page.locator("#start").isVisible(), false, "start: hidden while the phone is upright");
+  if (shots !== null) await page.screenshot({ path: join(shots, "start-upright.png") });
 
   await page.setViewportSize(VIEWPORT);
-  await page.waitForSelector(".welcome", { state: "visible", timeout: READY_MS });
+  await page.waitForSelector("#start", { state: "visible", timeout: READY_MS });
   await page.waitForSelector(".rotate", { state: "hidden", timeout: READY_MS });
-  if (shots !== null) await page.screenshot({ path: join(shots, "welcome-landscape.png") });
+  assert.equal(await page.locator("#start-continue").isVisible(), false, "start: nothing to continue on a first visit");
+  assert.equal(await page.locator("#start-guide.start-first").count(), 1, "start: How to play is marked on a first visit");
+  if (shots !== null) await page.screenshot({ path: join(shots, "start-first.png") });
 
   await page.setViewportSize({ width: VIEWPORT.height, height: VIEWPORT.width });
-  await page.waitForSelector(".welcome", { state: "hidden", timeout: READY_MS });
-  await page.waitForSelector('.rotate [data-guide="ios"]', { state: "visible", timeout: READY_MS });
-
+  await page.waitForSelector("#start", { state: "hidden", timeout: READY_MS });
   await page.setViewportSize(VIEWPORT);
-  await page.waitForSelector(".welcome", { state: "visible", timeout: READY_MS });
-  await page.click("#welcome-play");
-  await page.waitForSelector(".welcome", { state: "detached", timeout: READY_MS });
+  await page.waitForSelector("#start", { state: "visible", timeout: READY_MS });
+
+  // The level chosen here is the level in Options.
+  await page.click('#start-level [data-level="easy"]');
+  assert.equal(await page.getAttribute('#level [data-level="easy"]', "aria-checked"), "true", "start: the level is the Options level");
+  await page.click('#start-level [data-level="medium"]');
+
+  await page.click("#start-play");
+  await page.waitForSelector("#start", { state: "hidden", timeout: READY_MS });
   await yourMove(page);
-  assert.deepEqual(errors, [], "welcome: no errors");
+
+  await page.click("#options");
+  await page.click("#main-menu");
+  await page.waitForSelector("#start", { state: "visible", timeout: READY_MS });
+  await page.waitForSelector("#start-continue", { state: "visible", timeout: READY_MS });
+  assert.match((await page.textContent("#start-continue-note")) ?? "", /round · hand \d+ · [\d,]+ points/, "start: Continue names the game");
+  await page.click("#start-continue");
+  await page.waitForSelector("#start", { state: "hidden", timeout: READY_MS });
+
+  await page.reload();
+  await page.waitForSelector("#start-continue", { state: "visible", timeout: READY_MS });
+  assert.equal(await page.locator("#start-guide.start-first").count(), 0, "start: How to play is marked only once");
+  if (shots !== null) await page.screenshot({ path: join(shots, "start-continue.png") });
+  await page.click("#start-friends");
+  await page.waitForSelector("#room-sheet", { state: "visible", timeout: READY_MS });
+  await page.click("#room-close");
+  await page.click("#start-continue");
+  await yourMove(page);
+  assert.deepEqual(errors, [], "start: no errors");
   await page.context().close();
-  console.log("  ok  the welcome card waits for landscape, and never covers the turn-your-phone screen");
+  console.log("  ok  the start screen waits for landscape, deals, continues, and comes back from Main menu");
 }
 
 function option(argv: readonly string[], name: string): string | undefined {
@@ -827,7 +852,7 @@ try {
   console.log("The opening of a hand");
   await opening(browser, origin, shots);
   console.log("The first visit on a phone");
-  await welcomeCard(browser, origin, shots);
+  await startScreen(browser, origin, shots);
   console.log("Smoke test passed.");
 } catch (error) {
   failed = true;

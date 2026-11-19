@@ -3,7 +3,7 @@
 What testers get with each test version: the **tester guide** (sent as a PDF,
 built from this file and `CHANGELOG.md` by `npm run tester-guide`) and a
 short **WhatsApp message**. How to play is not here: the app teaches itself
-(Help, the first-game tips and the welcome card). This file only says what
+(Help, the first-game tips and the start screen). This file only says what
 is new, what to try, how to report and what the app cannot do yet.
 
 <!-- guide:start -->

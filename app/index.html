@@ -219,7 +219,8 @@
         <footer class="options-foot">
           <nav class="option-links" id="option-links" aria-label="More">
             <button class="option-link" id="new-game" type="button">New game</button>
-            <button class="option-link" id="room-open" type="button">Play with friends</button>
+            <button class="option-link" id="main-menu" type="button">Main menu</button>
+            <button class="option-link" id="room-open" type="button" hidden>Room</button>
             <button class="option-link" id="install-open" type="button" hidden>Install app</button>
             <button class="option-link" id="help" type="button">Help</button>
             <button class="option-link" id="report" type="button" aria-label="Report a problem">Report a problem</button>
@@ -314,6 +315,46 @@
         </p>
       </div>
     </div>
+    <section class="start" id="start" aria-labelledby="start-title" hidden>
+      <div class="start-inner">
+        <header class="start-head">
+          <div class="start-tiles" aria-hidden="true">
+            <span class="chip"><img src="assets/faces/wE.svg" alt="" /></span>
+            <span class="chip"><img src="assets/faces/dR.svg" alt="" /></span>
+            <span class="chip"><img src="assets/faces/o1.svg" alt="" /></span>
+            <span class="chip"><img src="assets/faces/dG.svg" alt="" /></span>
+            <span class="chip"><img src="assets/faces/b1.svg" alt="" /></span>
+          </div>
+          <p class="start-kicker">International mahjong · by the book</p>
+          <h1 id="start-title">Mah Jong</h1>
+          <p class="start-lede">Build a hand of fourteen tiles before the others do.</p>
+          <nav class="start-links" aria-label="Learn and settings">
+            <button class="option-link" id="start-guide" type="button">How to play</button>
+            <button class="option-link" id="start-hands" type="button">All hands</button>
+            <button class="option-link" id="start-settings" type="button">Settings</button>
+            <button class="option-link" id="start-install" type="button" hidden>Install app</button>
+          </nav>
+        </header>
+        <div class="start-choices">
+          <button class="start-card start-lead" id="start-continue" type="button" hidden>
+            <b>Continue</b><small id="start-continue-note"></small>
+          </button>
+          <div class="start-card start-bots">
+            <button class="start-go" id="start-play" type="button">
+              <b id="start-play-label">Play vs bots</b><small id="start-play-note">Three bots, on this device</small>
+            </button>
+            <div class="seg start-level" id="start-level" role="radiogroup" aria-label="Bot level">
+              <button type="button" role="radio" aria-checked="false" data-level="easy">Easy</button>
+              <button type="button" role="radio" aria-checked="true" data-level="medium">Medium</button>
+              <button type="button" role="radio" aria-checked="false" data-level="hard">Hard</button>
+            </div>
+          </div>
+          <button class="start-card" id="start-friends" type="button">
+            <b>Play with friends</b><small>A room code, each on their own phone</small>
+          </button>
+        </div>
+      </div>
+    </section>
     <section class="result" id="result" hidden></section>
     <p class="toast" id="toast" role="status" hidden></p>
     <script type="module" src="src/install.js"></script>

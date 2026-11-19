@@ -214,10 +214,14 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   or a small sketch), `tips.js` (first-game tips: a note at the top of the
   table the first time each kind of decision comes up, and after the first
   result; each shows once per device, "No more tips" stops them, the guide's
-  "Show tips again" brings them back, review boards show none; and the
-  welcome card before the first deal on a device, offering the guide, which
-  a review board or a `?seed=` link skips), `options.js` (the
-  Options sheet in three tabs: Game (Bot level, Pace, Table animations), Table (Sound, Large discards on phones, Discards Rows or Pile) and Rules (the house rules), with New game, Help and Report
+  "Show tips again" brings them back, review boards show none), `start.js`
+  (the start screen over the dimmed table on every visit: Continue when a
+  game of your own is saved, Play vs bots or New game with the bot level
+  beside it, Play with friends, and How to play, All hands, Settings and
+  Install; marked How to play on a first visit; a review board or a
+  `?seed=` link skips it, a room link opens the room sheet over it; the bots
+  wait while it is up), `options.js` (the
+  Options sheet in three tabs: Game (Bot level, Pace, Table animations), Table (Sound, Large discards on phones, Discards Rows or Pile) and Rules (the house rules), with New game, Main menu (Room while in a room), Help and Report
   under every tab) and `report.js` (report a problem). Modules that need the loop (`input`,
   `result`, `menu`) get its functions from `main.js` through an `installX`
   call, so imports never run in a circle.
