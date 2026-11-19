@@ -1677,7 +1677,7 @@ button.detail-rule {
   display: none;
 }
 /* Over the start screen the doors are already there: only the reset stays. */
-.option-links.from-start .option-link:not(#reset-settings) {
+.option-links.from-start .option-link:not(#reset-settings, #support-open) {
   display: none;
 }
 .start-confirm {
@@ -2243,6 +2243,38 @@ button.detail-rule {
 .install[hidden],
 .install [hidden] {
   display: none;
+}
+/* Support: one quiet door in Settings; Ko-fi's own panel sits in a light well. */
+.support-card {
+  width: min(440px, 100%);
+}
+.support-lede {
+  margin: 4px 0 10px;
+  line-height: 1.4;
+}
+.support-well {
+  overflow: hidden;
+  border-radius: 12px;
+  background: #f9f9f9;
+}
+.support-well:empty {
+  display: none;
+}
+.support-well iframe {
+  display: block;
+  width: 100%;
+  height: min(600px, 70vh);
+  border: 0;
+}
+.support-fallback {
+  margin: 4px 0 0;
+}
+.support-fallback[hidden] {
+  display: none;
+}
+.support-fallback a {
+  color: #8ccbea;
+  font-weight: 600;
 }
 .install-card {
   width: min(360px, 100%);

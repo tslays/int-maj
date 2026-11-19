@@ -223,6 +223,7 @@
             <button class="option-link" id="room-open" type="button" hidden>Room</button>
             <button class="option-link" id="install-open" type="button" hidden>Install app</button>
             <button class="option-link" id="help" type="button">Help</button>
+            <button class="option-link" id="support-open" type="button">Support int-maj</button>
             <button class="option-link" id="report" type="button" aria-label="Report a problem">Report a problem</button>
           </nav>
           <div class="option-confirm" id="reset-confirm" role="alertdialog" aria-labelledby="reset-ask" hidden>
@@ -313,6 +314,22 @@
           Goes straight to the developers, with the build, your device and every move of this game. Photos
           (up to three) are kept privately for them and never shown publicly. No name or account.
         </p>
+      </div>
+    </div>
+    <div class="hand-detail" id="support-sheet" hidden>
+      <div class="detail-card support-card" role="dialog" aria-modal="true" aria-labelledby="support-title">
+        <button class="detail-close" id="support-close" type="button" aria-label="Close">&times;</button>
+        <h2 id="support-title">Support int-maj</h2>
+        <p class="support-lede">
+          int-maj is free, with no ads and no accounts, and it stays that way. If you enjoy it and want to
+          help keep it going, you can buy it a coffee.
+        </p>
+        <div class="support-well" id="support-frame"></div>
+        <p class="support-fallback" id="support-fallback" hidden>
+          Ko-fi could not be shown here.
+          <a id="support-link" href="https://ko-fi.com/int_maj" target="_blank" rel="noopener">Open Ko-fi</a>
+        </p>
+        <p class="report-fine">Payment is handled by Ko-fi, by card or PayPal. Nothing in the game changes either way. Thank you.</p>
       </div>
     </div>
     <section class="start" id="start" aria-labelledby="start-title" hidden>
