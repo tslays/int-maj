@@ -2249,25 +2249,36 @@ button.detail-rule {
   display: none;
 }
 /* Support: one quiet door in Settings; Ko-fi's own panel sits in a light well. */
+/* Support: a small centred card, one button out to Ko-fi's own page,
+   where every way to pay works. */
 .support-card {
-  width: min(440px, 100%);
+  width: min(340px, 100%);
+  padding: 18px 22px 14px;
+  text-align: center;
 }
-.support-lede {
-  margin: 4px 0 10px;
-  line-height: 1.4;
+.support-card h2 {
+  margin: 0 28px; /* clear of the close button on both sides, so it stays centred */
 }
-/* The one door out: Ko-fi's own page, where every way to pay works. */
+.support-card .support-lede {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+  text-wrap: balance;
+}
 .support-go {
   display: flex;
   justify-content: center;
   align-items: center;
   width: fit-content;
-  margin: 12px auto 6px;
-  padding: 0 1.8em;
+  margin: 16px auto 0;
+  padding: 0 2em;
   text-decoration: none;
 }
-.support-card .report-fine {
-  text-align: center;
+.support-card .support-fine {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  opacity: 0.8;
 }
 .install-card {
   width: min(360px, 100%);
