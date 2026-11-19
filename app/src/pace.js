@@ -38,6 +38,10 @@ export function createPace({ storage = browserStorage } = {}) {
       stored.write(next.id);
       return true;
     },
+    /** Back to Normal, the default. */
+    reset() {
+      return this.set("normal");
+    },
     scale(value) {
       return value * current.factor;
     },

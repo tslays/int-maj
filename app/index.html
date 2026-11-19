@@ -79,7 +79,7 @@
       <button class="ghost on" id="calls" type="button" aria-pressed="true"><span>Calls</span></button>
       <button class="ghost on" id="sort" type="button" aria-pressed="true"><span>Sort</span></button>
       <button class="ghost on" id="hints" type="button" aria-pressed="true"><span>Hints</span></button>
-      <button class="ghost" id="options" type="button"><span>Options</span></button>
+      <button class="ghost" id="options" type="button"><span>Settings</span></button>
       <div class="wall-badge" id="wall-badge" hidden></div>
       <p class="room-status" id="room-status" role="status" aria-live="polite" hidden></p>
       <small class="build-label" id="build-label"></small>
@@ -123,9 +123,9 @@
     </div>
     <div class="hand-detail" id="hand-detail" hidden></div>
     <div class="hand-detail" id="options-sheet" hidden>
-      <div class="detail-card options-card" role="dialog" aria-modal="true" aria-label="Options">
+      <div class="detail-card options-card" role="dialog" aria-modal="true" aria-label="Settings">
         <header class="options-head">
-          <h2>Options</h2>
+          <h2>Settings</h2>
           <nav class="options-tabs" id="options-tabs" role="tablist" aria-label="Option groups">
             <button class="options-tab" id="tab-game" type="button" role="tab" aria-controls="panel-game" aria-selected="true" data-tab="game">Game</button>
             <button class="options-tab" id="tab-table" type="button" role="tab" aria-controls="panel-table" aria-selected="false" tabindex="-1" data-tab="table">Table</button>
@@ -218,18 +218,18 @@
         </div>
         <footer class="options-foot">
           <nav class="option-links" id="option-links" aria-label="More">
-            <button class="option-link" id="new-game" type="button">New game</button>
+            <button class="option-link" id="reset-settings" type="button">Reset settings</button>
             <button class="option-link" id="main-menu" type="button">Main menu</button>
             <button class="option-link" id="room-open" type="button" hidden>Room</button>
             <button class="option-link" id="install-open" type="button" hidden>Install app</button>
             <button class="option-link" id="help" type="button">Help</button>
             <button class="option-link" id="report" type="button" aria-label="Report a problem">Report a problem</button>
           </nav>
-          <div class="option-confirm" id="new-game-confirm" role="alertdialog" aria-labelledby="new-game-ask" hidden>
-            <p id="new-game-ask"><b>Start a new game?</b> This game and its scores end.</p>
+          <div class="option-confirm" id="reset-confirm" role="alertdialog" aria-labelledby="reset-ask" hidden>
+            <p id="reset-ask"><b>Reset all settings?</b> Bot level, pace, sound, table and house rules go back to their defaults.</p>
             <div class="option-confirm-buttons">
-              <button class="option-link" id="new-game-keep" type="button">Keep playing</button>
-              <button class="option-link option-danger" id="new-game-go" type="button">Start over</button>
+              <button class="option-link" id="reset-keep" type="button">Keep them</button>
+              <button class="option-link option-danger" id="reset-go" type="button">Reset</button>
             </div>
           </div>
         </footer>
@@ -347,6 +347,13 @@
               <button type="button" role="radio" aria-checked="false" data-level="easy">Easy</button>
               <button type="button" role="radio" aria-checked="true" data-level="medium">Medium</button>
               <button type="button" role="radio" aria-checked="false" data-level="hard">Hard</button>
+            </div>
+          </div>
+          <div class="option-confirm start-confirm" id="start-new-confirm" role="alertdialog" aria-labelledby="start-new-ask" hidden>
+            <p id="start-new-ask"><b>Start a new game?</b> This game and its scores end.</p>
+            <div class="option-confirm-buttons">
+              <button class="option-link" id="start-new-keep" type="button">Keep playing</button>
+              <button class="option-link option-danger" id="start-new-go" type="button">Start over</button>
             </div>
           </div>
           <button class="start-card" id="start-friends" type="button">

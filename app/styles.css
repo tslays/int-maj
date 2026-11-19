@@ -1676,6 +1676,13 @@ button.detail-rule {
 .option-confirm[hidden] {
   display: none;
 }
+/* Over the start screen the doors are already there: only the reset stays. */
+.option-links.from-start .option-link:not(#reset-settings) {
+  display: none;
+}
+.start-confirm {
+  grid-column: 1 / -1;
+}
 .option-confirm {
   padding: 8px 12px 6px;
   border-radius: 12px;

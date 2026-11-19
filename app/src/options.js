@@ -1,8 +1,9 @@
 /**
- * The Options sheet, in three tabs: Game (bot level, pace, dice and dealing),
+ * The Settings sheet, in three tabs: Game (bot level, pace, dice and dealing),
  * Table (sound, large discards on phones, the discard layout) and Rules (the
- * house rules), with the doors to New game, Help and Report a problem under
- * every tab.
+ * house rules), with Reset settings and, at the table, the doors to the main
+ * menu, Help and Report a problem under every tab. Opened from the start
+ * screen it offers only the reset: the rest is already there.
  *
  * A house rule is a preference kept on the device. The table fixes a hand's
  * rules at its deal, so `houseRules()` is sent with every new game and every
@@ -18,7 +19,9 @@ import { level } from "./level.js";
 import { openingPref } from "./opening.js";
 import { pace } from "./pace.js";
 import { sound } from "./sound.js";
-import { $, request, state, storage } from "./shared.js";
+import { sortPref } from "./sort-pref.js";
+import { startOpen } from "./start.js";
+import { $, board, request, state, storage, toast } from "./shared.js";
 import { viewport } from "./stage.js";
 
 const RULES_KEY = "int-maj:house-rules";
@@ -38,8 +41,10 @@ const HAND_SET_TEXT = {
 
 const TABS = ["game", "table", "rules"];
 
+const DEFAULT_RULES = { handSet: "all", goulashNoHalfLimit: true, winNeedsFish: false };
+
 function savedRules() {
-  const rules = { handSet: "all", goulashNoHalfLimit: true, winNeedsFish: false };
+  const rules = { ...DEFAULT_RULES };
   try {
     const saved = JSON.parse(storage()?.getItem(RULES_KEY) ?? "{}");
     if (HAND_SETS.includes(saved?.handSet)) rules.handSet = saved.handSet;
@@ -166,19 +171,45 @@ async function nameHands() {
   }
 }
 
-/* New game ends the game in progress, so it asks first, in place of the links. */
-function askNewGame(asking) {
-  $("#new-game-confirm").hidden = !asking;
+/* Reset settings changes everything at once, so it asks first, in place of the links. */
+function askReset(asking) {
+  $("#reset-confirm").hidden = !asking;
   $("#option-links").hidden = asking;
 }
 
 function closeOptions() {
   $("#options-sheet").hidden = true;
-  askNewGame(false);
+  askReset(false);
 }
 
-/** `hooks.newGame` starts a fresh game; `hooks.mainMenu` opens the start screen. */
-export function installOptions({ newGame, mainMenu }) {
+/** Every setting back to its default, on the device and on screen. */
+function resetSettings() {
+  level.reset();
+  pace.reset();
+  hintStyle.reset();
+  openingPref.reset();
+  largeDiscards.reset();
+  discardLayout.reset();
+  sound.setMuted(false);
+  const sortWasOff = !sortPref.on;
+  sortPref.reset();
+  if (sortWasOff) void board.autoSort();
+  Object.assign(rules, DEFAULT_RULES);
+  saveRules();
+  showSound();
+  showLargeDiscards();
+  showDiscardLayout();
+  showPace();
+  showHintStyle();
+  showLevel();
+  showOpening();
+  showRules();
+  void refreshHints(true);
+  toast("Settings reset");
+}
+
+/** `hooks.mainMenu` opens the start screen over your table. */
+export function installOptions({ mainMenu }) {
   showSound();
   showLargeDiscards();
   showDiscardLayout();
@@ -195,9 +226,12 @@ export function installOptions({ newGame, mainMenu }) {
     showLevel();
     void nameHands();
     showTab(tab);
-    // In a room the link opens the room (to leave it); at your own table, the start screen.
-    $("#main-menu").hidden = state.online === true;
-    $("#room-open").hidden = state.online !== true;
+    // Over the start screen only the reset applies. At a table, in a room the link opens the
+    // room (to leave it); at your own table, the start screen.
+    const fromStart = startOpen();
+    $("#main-menu").hidden = fromStart || state.online === true;
+    $("#room-open").hidden = fromStart || state.online !== true;
+    $("#option-links").classList.toggle("from-start", fromStart);
     $("#options-sheet").hidden = false;
     $("#options-close").focus();
   });
@@ -213,21 +247,22 @@ export function installOptions({ newGame, mainMenu }) {
     $(`#tab-${next}`).focus();
   });
   $("#options-close").addEventListener("click", closeOptions);
-  $("#new-game").addEventListener("click", () => {
-    askNewGame(true);
-    $("#new-game-keep").focus();
+  $("#reset-settings").addEventListener("click", () => {
+    askReset(true);
+    $("#reset-keep").focus();
   });
-  $("#new-game-keep").addEventListener("click", () => {
-    askNewGame(false);
-    $("#new-game").focus();
+  $("#reset-keep").addEventListener("click", () => {
+    askReset(false);
+    $("#reset-settings").focus();
   });
   $("#main-menu").addEventListener("click", () => {
     closeOptions();
     mainMenu();
   });
-  $("#new-game-go").addEventListener("click", () => {
-    closeOptions();
-    void newGame();
+  $("#reset-go").addEventListener("click", () => {
+    askReset(false);
+    resetSettings();
+    $("#reset-settings").focus();
   });
   $("#options-sheet").addEventListener("click", (event) => {
     if (event.target === event.currentTarget) closeOptions();

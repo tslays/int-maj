@@ -7,7 +7,7 @@
  *
  * It is meant to be quick (about two seconds a hand at Faster, three at Normal and four at
  * Slower, a little more for the first throw), and a tap, Escape or Enter skips whatever is left. Players who
- * never want it turn it off in Options (`openingPref`, `opening.js`).
+ * never want it turn it off in Settings (`openingPref`, `opening.js`).
  */
 
 import { PIPS, dealStages, openingMs } from "./opening.js";
