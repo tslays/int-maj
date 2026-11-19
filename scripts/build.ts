@@ -46,7 +46,7 @@ const APP_DIRS = [
 /** Licence and notes travel with the files they cover, but are not cached. */
 const isNote = (name: string) => name.endsWith(".md") || name === "LICENSE";
 
-const APP_NAME = "International Mahjong";
+const APP_NAME = "int-maj";
 // The home-screen name. The Worker writes each site's own name over it
 // (APP_SHORT_NAME in wrangler.jsonc); this is what a build served without it shows.
 const SHORT_NAME = "int-maj";
