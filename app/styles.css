@@ -1671,6 +1671,10 @@ button.detail-rule {
   justify-content: center;
   gap: 2px 4px;
 }
+/* Five doors on one line: a little less padding than a lone link. */
+.option-links .option-link {
+  padding: 0 8px;
+}
 .option-links[hidden],
 .option-links [hidden],
 .option-confirm[hidden] {
@@ -2254,8 +2258,9 @@ button.detail-rule {
 }
 .support-well {
   overflow: hidden;
+  border: 1px solid rgba(233, 228, 214, 0.1);
   border-radius: 12px;
-  background: #f9f9f9;
+  background: #1a1a1a;
 }
 .support-well:empty {
   display: none;
@@ -2265,6 +2270,10 @@ button.detail-rule {
   width: 100%;
   height: min(600px, 70vh);
   border: 0;
+  /* Ko-fi's panel is always white and cannot be styled from here (another
+     site's page), so it is shown inverted: white turns near-black, and the
+     hue turn keeps its colours (blue buttons, the orange cup) their own. */
+  filter: invert(0.9) hue-rotate(180deg);
 }
 .support-fallback {
   margin: 4px 0 0;
