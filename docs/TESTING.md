@@ -7,7 +7,7 @@ short **WhatsApp message**. How to play is not here: the app teaches itself
 is new, what to try, how to report and what the app cannot do yet.
 
 <!-- guide:start -->
-# Mah Jong — test version alpha.16
+# Mah Jong — test version alpha.17
 
 **Play here:** https://int.mah-jong.workers.dev
 
@@ -17,7 +17,7 @@ International mahjong in your browser, against three bots, by the rules of
 ## Getting the new version
 
 Open the link (or the app on your home screen) and reload it once. The
-small label under the menu, top left, should read **alpha.16**. A game in
+small label under the menu, top left, should read **alpha.17**. A game in
 progress carries on. If an update changes the game, the hand you were playing
 starts again with the scores kept.
 
@@ -25,31 +25,35 @@ starts again with the scores kept.
 *Add to Home Screen*, and play it from the home-screen icon with the phone
 turned sideways. Everything else, the app shows you: Options › **Help**.
 
-## New in alpha.16
+## New in alpha.17
 
-- **Play with friends.** Options › **Play with friends**: create a room, or
-  join one by its code or link, deal, and fill any empty seats with bots. A
-  turn timer (15, 30 or 60 seconds, or off) sits in a pill on the table. The
-  game reconnects when your phone wakes, and an empty room stops and expires
-  on its own.
+- **A start screen, and Practice.** Every visit opens a start screen:
+  Continue, Play vs bots (with the bot level), Play with friends, Practice,
+  and links to the guide, all hands, settings and install. In Practice you
+  name the hand, the winning tile and the best aim, and the game grades you.
+  Missed hands come back sooner, and a streak builds as you get them right.
+
+## Fixed thanks to your reports
+
+Thank you to the testers whose reports these fix:
+
+- With Sort off, the opening deal is no longer sorted in pieces of four.
+- A Goulash no longer lets a chow win, wait or announce fishing in an
+  Ordinary or Purity hand.
+- After a win with a claimed chow, the result sheet shows the full hand.
 
 ## What works differently now
 
-- **The odds bands are re-cut.** *Very likely* is gone, and the new lowest
-  band, *Remote* (under 1 in 50), sits under *Long shot*. The hand's sheet
-  says what the band means in plain odds.
-- **A tile you need several times** shows as a small fan of overlapping chips
-  over one count of the copies still unseen, so "three of these four" is
-  plain at a glance.
+- Every visit opens the start screen. Options › **Main menu** brings it back.
+- The turn pill sits under the round badge.
 
 ## What to try, and tell us
 
-- Open Options › **Play with friends**, start a room, and send the code or
-  link to a friend, or open it on a second phone or browser. Deal a hand. Does
-  the table stay in step on both? Does it pick up again after the phone has
-  been asleep?
-- Find a hand with a tile you need several times and look at the fan of
-  chips. Does the band in the chance note make sense for what is still unseen?
+- Tap **Practice** and name a few hands. Does the grading match the hand you
+  see? Does the streak count right?
+- Start a Goulash and look for a chow in an Ordinary or Purity hand. Is it
+  barred? After a win with a claimed chow, is every tile on the result sheet?
+- With Sort off, deal a hand. Is the first deal in the table's order?
 - Anything that broke, looked wrong or surprised you.
 
 ## How to report
@@ -82,12 +86,12 @@ connection it offers to share the report as a message instead.
 ## WhatsApp message
 
 <!-- whatsapp:start -->
-🀄 **Mah Jong test version alpha.16 is out!**
+🀄 **Mah Jong test version alpha.17 is out!**
 
 Play: https://int.mah-jong.workers.dev (reload once to update)
 
-New: play with friends. Options › Play with friends makes a room you join by code or link, with bots in any empty seats. Changed: the odds bands on the hand sheet are re-cut, with a new Remote band for the longest shots.
+New: a start screen, and Practice to name hands, winning tiles and best aims. Fixed: a Goulash no longer lets a chow win in an Ordinary or Purity hand, the result sheet shows the full hand after a chow win, and with Sort off the opening deal stays in table order.
 
-Found something odd? Options › Report a problem.
+Thank you to everyone who sent a report. Found something odd? Options › Report a problem.
 
 <!-- whatsapp:end -->
