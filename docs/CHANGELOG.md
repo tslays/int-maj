@@ -16,6 +16,7 @@ testers get it at https://int.mah-jong.workers.dev.
 
 **Fixed**
 
+- **Dragonette takes a paired wind.** The book prints the spare tile as "Any Wind or Dragon paired"; a paired wind was refused, so no wait or fishing announcement was offered. (#244)
 - **With Sort off, the opening deal keeps its order.** It was sorted in pieces of four; now it stays in table order. (#230 → #231)
 - **A Goulash bars a chow in Ordinary and Purity.** A chow can no longer make a win, wait or fishing announcement there, and a chow claimed to win follows the fish rule. (#233 → #235)
 - **The result sheet shows the full hand.** A win with a claimed chow keeps every tile on the sheet. (#232 → #235)

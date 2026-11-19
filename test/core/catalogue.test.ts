@@ -278,7 +278,7 @@ export const FIXTURES: Readonly<Record<string, Fixture>> = {
       concealed: "c4 c4 c6 c6 c8 c8 wE wS wW wN dR dG dG dW",
     },
     negative: {
-      concealed: "c4 c4 c6 c6 c8 c8 wE wE wS wW wN dR dG dW",
+      concealed: "c4 c4 c6 c6 c8 c8 wE wS wW wN dR dG dW c5",
     },
   },
   "windy-ones": {
