@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 // @ts-expect-error - a plain browser module without type declarations
-const { nearerNote, versionNote, listWords } = await import("../../app/src/nearer.js");
+const { barredNote, nearerNote, versionNote, listWords } = await import("../../app/src/nearer.js");
 
 const name = (key: string): string => ({ c2: "2 character", o6: "6 circle", o1: "1 circle" })[key] ?? key;
 
@@ -63,5 +63,11 @@ describe("the version note", () => {
   it("joins words as a sentence does", () => {
     assert.equal(listWords(["a"]), "a");
     assert.equal(listWords(["a", "b", "c"]), "a, b and c");
+  });
+});
+
+describe("the barred-hand note (#246)", () => {
+  it("says half-limit hands cannot win or fish in this Goulash", () => {
+    assert.match(barredNote(), /Barred in this Goulash: half-limit hands can't win or fish here \(Companion p\. 55\)/);
   });
 });

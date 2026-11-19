@@ -11,7 +11,7 @@ import { ledgerTotals, type GameState } from "../../src/core/game/index.ts";
 import { fixture, play } from "../helpers/game-fixture.ts";
 
 // @ts-expect-error - a plain browser module without type declarations
-const { explainSettlement } = await import("../../app/src/settlement.js");
+const { explainSettlement, paidSummary } = await import("../../app/src/settlement.js");
 
 const NAMES: Record<string, string> = { E: "East", S: "South", W: "West", N: "North" };
 const FILLER = {
@@ -202,5 +202,24 @@ describe("the result card's account of the points", () => {
     const seats = account(won, "S");
     assert.ok(seats.E!.every((line) => line.text.startsWith("Receives ") && line.why.includes("East receives double")));
     assert.ok(seats.S!.every((line) => line.text.startsWith("Pays East ") && line.why.includes("East receives double")));
+  });
+});
+
+describe("the Paid line (#245)", () => {
+  const win = (from: string, to: string, points: number) => ({ from, to, points, kind: "win" });
+  const name = (seat: string) => NAMES[seat];
+
+  it("says each loser paid, East receiving double", () => {
+    const ledger = ["S", "W", "N"].map((from) => win(from, "E", 1200));
+    assert.equal(paidSummary({ outcome: { ledger }, dealer: "E", name }), "1,200 each (East receives double)");
+  });
+
+  it("gives East's larger share when East pays", () => {
+    const ledger = [win("E", "S", 1200), win("W", "S", 600), win("N", "S", 600)];
+    assert.equal(paidSummary({ outcome: { ledger }, dealer: "E", name }), `600 each, ${NAMES.E} 1,200`);
+  });
+
+  it("is null with no win payments", () => {
+    assert.equal(paidSummary({ outcome: { ledger: [] }, dealer: "E", name }), null);
   });
 });

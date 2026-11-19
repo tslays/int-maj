@@ -55,3 +55,8 @@ export function nearerNote(hand, name) {
     "so it can no longer be built. The tiles above are for the nearest version still open."
   );
 }
+
+/** The one line a hand's sheet carries when the Goulash bar leaves the whole hand out. */
+export function barredNote() {
+  return "Barred in this Goulash: half-limit hands can't win or fish here (Companion p. 55).";
+}

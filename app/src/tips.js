@@ -6,7 +6,8 @@
  */
 
 import { openGuide } from "./guide.js";
-import { $, storage } from "./shared.js";
+import { halfLimitBarred } from "./goulash-bar.js";
+import { $, state, storage } from "./shared.js";
 
 const KEY = "int-maj.tips";
 const PARAMS = new URLSearchParams(window.location.search);
@@ -134,7 +135,8 @@ export function tipForChoices(legal, { callsOff }) {
   if (has((a) => a.type === "GoulashExchange")) {
     candidates.push([
       "goulash",
-      "The last hand was drawn, so before play everyone passes three tiles to a neighbour, three times. Tap three tiles, then Pass 3 tiles. The tiles you receive are marked in teal. No chows this hand, except in a special hand.",
+      "The last hand was drawn, so before play everyone passes three tiles to a neighbour, three times. Tap three tiles, then Pass 3 tiles. The tiles you receive are marked in teal. No chows this hand, except in a special hand." +
+        (halfLimitBarred(state.payload?.view?.excludedHands) ? " Half-limit hands, such as Crazy Chows, are barred this hand." : ""),
       "Goulash",
       { guide: true },
     ]);

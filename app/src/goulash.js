@@ -39,6 +39,7 @@ export function refreshGoulash(view = state.payload?.view) {
   }
   shownStage = goulash.stage;
 
+  const last = goulash.stage === 2;
   const steps = document.createElement("div");
   steps.className = "goulash-steps";
   for (let index = 0; index < 3; index++) {
@@ -47,7 +48,7 @@ export function refreshGoulash(view = state.payload?.view) {
     if (index === goulash.stage) dot.className = "now";
     steps.append(dot);
   }
-  steps.append(`Exchange ${goulash.stage + 1} of 3`);
+  steps.append(`Exchange ${goulash.stage + 1} of 3${last ? " · last" : ""}`);
 
   const partner = `${seatName(goulash.partner)}, ${SIDE[board.rel(goulash.partner)]}`;
   const count = line("goulash-count", "");
@@ -68,6 +69,7 @@ export function showGoulashPicked(picked) {
   const count = $("#goulash-count");
   if (!count) return;
   const sent = picked === 0 && state.payload?.legalActions.length === 0;
-  count.textContent = sent ? "Passed. Waiting for the others." : `${picked} of 3 picked`;
+  const last = state.payload?.view?.goulash?.stage === 2;
+  count.textContent = sent ? (last ? "Passed. That was the last exchange." : "Passed. Waiting for the others.") : `${picked} of 3 picked`;
   count.classList.toggle("ready", picked === 3);
 }
