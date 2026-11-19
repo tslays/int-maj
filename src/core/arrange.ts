@@ -109,7 +109,7 @@ function setKeys(set: StandardSet): string[] {
  */
 export function arrangeConcealed(hand: Hand, pattern: Pick<HandPattern, "groups" | "arrangement">): string[][] | null {
   const shape = normalizeHand(hand);
-  const melds = hand.melds.map((meld) => signature(meld.tiles.map(tileKey)));
+  const melds = hand.melds.map((meld) => meld.tiles.slice(0, 3).map(tileKey));
 
   // A kong's fourth tile sits outside the fourteen the groups describe.
   const pool: Record<string, number> = {};
@@ -118,16 +118,27 @@ export function arrangeConcealed(hand: Hand, pattern: Pick<HandPattern, "groups"
     if (meld.kind === "kong") pool[tileKey(meld.tiles[0]!)]! -= 1;
   }
 
-  /** The partition's groups without the melds, or null when a meld is not one of its groups. */
+  /**
+   * The partition's groups without the melds, or null when a meld is not in
+   * them. A meld is a whole three-tile group, or three tiles of a longer one
+   * (a run of nine holds a claimed chow 1-2-3): only those three leave it.
+   */
   const without = (groups: readonly (readonly string[])[]): string[][] | null => {
     const open = melds.slice();
     const rest: string[][] = [];
     for (const group of groups) {
-      const at = open.indexOf(signature(group));
-      if (at >= 0 && group.length >= 3) open.splice(at, 1);
-      else rest.push(inReadingOrder(group));
+      const at = group.length === 3 ? open.findIndex((meld) => signature(meld) === signature(group)) : -1;
+      if (at >= 0) open.splice(at, 1);
+      else rest.push([...group]);
     }
-    return open.length === 0 ? settled(rest) : null;
+    for (const meld of open) {
+      const home = rest.findIndex((group) => group.length > 3 && meld.every((key) => group.includes(key)));
+      if (home < 0) return null;
+      const left = rest[home]!.slice();
+      for (const key of meld) left.splice(left.indexOf(key), 1);
+      rest[home] = left;
+    }
+    return settled(rest.map(inReadingOrder));
   };
 
   const readings = pattern.arrangement ?? pattern.groups;
