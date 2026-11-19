@@ -603,6 +603,26 @@ html.pond-zoom .act-claim {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+.result-score-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.result-chevron {
+  display: inline-block;
+  color: var(--gold-1);
+  transition: transform 0.15s;
+}
+.result-score-open[aria-expanded="true"] .result-chevron {
+  transform: rotate(90deg);
+}
 .result-breakdown {
   margin: 0 0 10px;
   font-size: 13px;
@@ -3423,4 +3443,17 @@ button.start-card:active,
 }
 .room-status.room-hurry {
   color: #f39a88;
+}
+
+.index-card.is-barred {
+  opacity: 0.5;
+}
+.index-barred {
+  margin-left: auto;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--muted);
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
 }

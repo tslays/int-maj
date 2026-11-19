@@ -9,7 +9,7 @@
 import { bandOdds, bandRank, chanceBand, chanceWords, needGroups } from "./chance.js";
 import { familiar } from "./familiar.js";
 import { readingBarred } from "./goulash-bar.js";
-import { nearerNote, versionNote } from "./nearer.js";
+import { barredNote, nearerNote, versionNote } from "./nearer.js";
 import { hintStyle } from "./hint-style.js";
 import { bookPages, visibleSamples } from "./pages.js";
 import { createPins, MAX_PINS } from "./pins.js";
@@ -757,6 +757,13 @@ export async function openHandDetail(pattern, progress = null) {
   // Companion-only table sees the Companion's pictures and pages alone.
   const samples = visibleSamples(detail.samples, companionRules());
   card.append(sampleSection(samples, detail.pages, detail.example), lede);
+  if (inPlay.length === 0 && detail.readings.length > 0) {
+    // Every scoring of this hand is half limit: the bar leaves the whole hand out.
+    const bar = document.createElement("p");
+    bar.className = "detail-muted detail-barred";
+    bar.textContent = barredNote();
+    card.append(bar);
+  }
   if (barred.length > 0) {
     const bar = document.createElement("p");
     bar.className = "detail-muted detail-barred";

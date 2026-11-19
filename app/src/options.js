@@ -87,10 +87,12 @@ function showRules() {
   const step = HAND_SETS.indexOf(rules.handSet);
   const before = new Set(step > 0 ? (leftOut?.[HAND_SETS[step - 1]] ?? []) : []);
   const names = (leftOut?.[rules.handSet] ?? []).filter((name) => !before.has(name));
-  $("#hand-set-note").textContent =
+  const setNote =
     rules.handSet === "all" || names.length === 0
       ? HAND_SET_TEXT[rules.handSet].replace(/ (Also left|Left) out:$/, "").replace(/:$/, ".")
       : `${HAND_SET_TEXT[rules.handSet]} ${names.join(", ")}.`;
+  $("#hand-set-note").textContent =
+    rules.handSet === "all" && rules.goulashNoHalfLimit ? `${setNote} A Goulash may still bar half-limit hands (below).` : setNote;
   $("#hand-count").textContent = inPlay === null ? "" : `${inPlay[rules.handSet]} of ${total} hands`;
   // Pending: the hand on the table was dealt under other rules.
   const inForce = state.payload?.houseRules;
