@@ -2664,6 +2664,9 @@ button.start-card:active,
   width: min(560px, 100%);
 }
 .practice-option {
+  display: grid;
+  place-items: center;
+  gap: 1px;
   min-height: 44px;
   padding: 6px 12px;
   border: 1.5px solid rgba(233, 228, 214, 0.16);
@@ -2681,10 +2684,6 @@ button.start-card:active,
 .practice-option:disabled {
   cursor: default;
   opacity: 0.6;
-}
-.practice-option.practice-tile {
-  display: grid;
-  place-items: center;
 }
 .practice-option.practice-tile .chip {
   width: 30px;
@@ -2731,10 +2730,96 @@ button.start-card:active,
   gap: 14px;
   margin-top: 6px;
 }
-/* Upright, the turn-your-phone screen and its install steps stay visible. */
+.practice-option small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+.practice-reveal {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  margin: 4px 0 2px;
+}
+.practice-reveal:empty {
+  display: none;
+}
+.practice-groups,
+.practice-wins,
+.practice-needs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px 10px;
+}
+.practice-group {
+  display: inline-flex;
+  gap: 1px;
+}
+.practice-wins > small,
+.practice-needs > small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.practice-win {
+  display: inline-grid;
+  justify-items: center;
+  gap: 1px;
+}
+.practice-win small {
+  max-width: 90px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.15;
+  text-align: center;
+}
+.practice-needs {
+  gap: 2px;
+}
+.practice-needs > small {
+  margin-right: 6px;
+}
+.practice-streak.practice-record {
+  color: var(--gold-1);
+  animation: practice-record 700ms ease-out both;
+}
+@keyframes practice-record {
+  30% {
+    scale: 1.25;
+  }
+}
+/* Upright on a phone: the start screen and practice need no table, so they
+   stay, in one column; the turn-your-phone screen waits under them for play. */
 @media (orientation: portrait) and (pointer: coarse) {
   .start {
-    display: none;
+    place-items: start center;
+    padding-top: max(24px, env(safe-area-inset-top));
+    background-color: rgba(5, 9, 11, 0.94);
+  }
+  .start-head {
+    text-align: center;
+  }
+  .start-tiles,
+  .start-links {
+    justify-content: center;
+  }
+  .start-links {
+    margin-left: 0;
+  }
+  .practice-bar {
+    justify-content: center;
+  }
+  .practice-streak {
+    margin-left: 0;
+  }
+  /* Two even rows of seven, larger than one cramped row. */
+  .practice-tiles {
+    max-width: 310px;
+  }
+  .practice-tiles .chip {
+    width: 40px;
+    height: 54px;
   }
 }
 @keyframes tip-in-center {

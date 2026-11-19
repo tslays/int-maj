@@ -13,7 +13,8 @@
  */
 
 import { openGuide } from "./guide.js";
-import { $, scores, state, WIND_NAME } from "./shared.js";
+import { $, scores, state } from "./shared.js";
+import { continueNote } from "./start-note.js";
 
 let hooks = { onContinue() {}, onNewGame() {}, onFriends() {}, onPractice() {} };
 
@@ -21,11 +22,13 @@ export function startOpen() {
   return !$("#start").hidden;
 }
 
-/** "East round · hand 3 · 16,400": where the saved game stands, for the Continue card. */
-export function continueNote(payload, totals) {
-  const view = payload.view;
-  const round = `${WIND_NAME[view.prevailingWind] ?? view.prevailingWind} round`;
-  return `${round} · hand ${view.handNumber} · ${totals[payload.seat].toLocaleString("en-US")} points`;
+/**
+ * Focus for keyboard play only: on a touch screen a focused button would
+ * open with its ring drawn round it.
+ */
+export function focusForKeys(element) {
+  if (element === null || window.matchMedia("(pointer: coarse)").matches) return;
+  element.focus();
 }
 
 /**
@@ -43,7 +46,7 @@ export function showStart({ game, first = false }) {
   $("#start-guide").classList.toggle("start-first", first);
   $("#start").hidden = false;
   document.body.classList.add("starting");
-  (resumable ? $("#start-continue") : $("#start-play")).focus();
+  focusForKeys(resumable ? $("#start-continue") : $("#start-play"));
 }
 
 export function hideStart() {

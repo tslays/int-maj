@@ -221,7 +221,9 @@ function routeGet(context: ApiContext, request: ApiRequest): ApiResponse | null 
     if (!isHandSet(set)) return fail(400, `set must be one of ${HAND_SETS.join(", ")}`);
     const seed = request.query.get("seed") ?? "";
     if (seed.length === 0) return fail(400, "seed is required");
-    return ok(practiceQuestion(seed, kind, HAND_SET_EXCLUDED[set]), request.query.has("pretty"));
+    // Hands the player missed, to ask again sooner (at most a handful are honoured).
+    const focus = (request.query.get("focus") ?? "").split(",").filter((id) => id.length > 0).slice(0, 8);
+    return ok(practiceQuestion(seed, kind, HAND_SET_EXCLUDED[set], focus), request.query.has("pretty"));
   }
 
   if (request.path === "/api/hand") {

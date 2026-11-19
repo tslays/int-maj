@@ -760,10 +760,10 @@ async function opening(browser: Browser, origin: string, shots: string | null): 
 }
 
 /**
- * A first visit on an iPhone, held upright: the turn-your-phone screen with
- * its install steps shows, and the start screen waits. Turned sideways, it
- * appears with How to play marked; turned back, it steps aside. Play vs bots
- * deals; Main menu brings it back with Continue, and so does a reload.
+ * A first visit on an iPhone, held upright: the start screen shows (it needs
+ * no table), How to play marked, and Practice works upright too. Turned
+ * sideways it stays. Play vs bots deals; Main menu brings it back with
+ * Continue, and so does a reload. Practice: all three drills, Escape back.
  */
 async function startScreen(browser: Browser, origin: string, shots: string | null): Promise<void> {
   const errors: string[] = [];
@@ -774,21 +774,24 @@ async function startScreen(browser: Browser, origin: string, shots: string | nul
     userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1",
   });
   await page.goto(`${origin}/`);
-  await page.waitForSelector('.rotate [data-guide="ios"]', { state: "visible", timeout: READY_MS });
-  assert.equal(await page.locator("#start").isVisible(), false, "start: hidden while the phone is upright");
-  if (shots !== null) await page.screenshot({ path: join(shots, "start-upright.png") });
-
-  await page.setViewportSize(VIEWPORT);
   await page.waitForSelector("#start", { state: "visible", timeout: READY_MS });
-  await page.waitForSelector(".rotate", { state: "hidden", timeout: READY_MS });
   assert.equal(await page.locator("#start-continue").isVisible(), false, "start: nothing to continue on a first visit");
   assert.equal(await page.locator("#start-guide.start-first").count(), 1, "start: How to play is marked on a first visit");
-  if (shots !== null) await page.screenshot({ path: join(shots, "start-first.png") });
+  if (shots !== null) await page.screenshot({ path: join(shots, "start-upright.png") });
 
-  await page.setViewportSize({ width: VIEWPORT.height, height: VIEWPORT.width });
-  await page.waitForSelector("#start", { state: "hidden", timeout: READY_MS });
-  await page.setViewportSize(VIEWPORT);
+  // Practice needs no table: it works upright, and the phone's back returns to the menu.
+  await page.click("#start-practice");
+  await page.waitForFunction(() => document.querySelectorAll("#practice-options .practice-option").length === 4);
+  assert.equal(await page.locator("#practice-tiles .chip").count(), 14, "practice: fourteen tiles to name");
+  if (shots !== null) await page.screenshot({ path: join(shots, "practice-upright.png") });
+  await page.goBack();
   await page.waitForSelector("#start", { state: "visible", timeout: READY_MS });
+  assert.equal(await page.locator("#practice").isVisible(), false, "practice: back closes it");
+
+  await page.setViewportSize(VIEWPORT);
+  await page.waitForSelector(".rotate", { state: "hidden", timeout: READY_MS });
+  assert.equal(await page.locator("#start").isVisible(), true, "start: stays when turned sideways");
+  if (shots !== null) await page.screenshot({ path: join(shots, "start-first.png") });
 
   // The level chosen here is the level in Options.
   await page.click('#start-level [data-level="easy"]');
@@ -829,17 +832,25 @@ async function startScreen(browser: Browser, origin: string, shots: string | nul
   assert.equal(await page.locator("#practice-tiles .chip").count(), 13, "practice: thirteen tiles to complete");
   await page.click("#practice-options .practice-option >> nth=1");
   await page.waitForSelector("#practice-result", { state: "visible", timeout: READY_MS });
+  assert.ok((await page.locator("#practice-reveal .chip").count()) > 0, "practice: the winning tiles are shown");
   if (shots !== null) await page.screenshot({ path: join(shots, "practice-wait.png") });
   await page.click("#practice-next");
   await page.waitForSelector("#practice-result", { state: "hidden", timeout: READY_MS });
-  await page.click("#practice-back");
+  await page.click('#practice-kind [data-kind="aim"]');
+  await page.waitForFunction(() => document.querySelectorAll("#practice-options .practice-option").length === 4, null, { timeout: READY_MS });
+  assert.equal(await page.locator("#practice-tiles .chip").count(), 13, "practice: thirteen tiles dealt");
+  await page.click("#practice-options .practice-option >> nth=2");
+  await page.waitForSelector("#practice-result", { state: "visible", timeout: READY_MS });
+  assert.equal(await page.locator("#practice-options .practice-option small").count(), 4, "practice: each aim says how near it is");
+  if (shots !== null) await page.screenshot({ path: join(shots, "practice-aim.png") });
+  await page.keyboard.press("Escape");
   await page.waitForSelector("#start", { state: "visible", timeout: READY_MS });
 
   await page.click("#start-continue");
   await yourMove(page);
   assert.deepEqual(errors, [], "start: no errors");
   await page.context().close();
-  console.log("  ok  the start screen waits for landscape, deals, continues, comes back from Main menu, and opens Practice");
+  console.log("  ok  the start screen and Practice work upright; it deals, continues, comes back from Main menu, and Practice runs all three drills");
 }
 
 function option(argv: readonly string[], name: string): string | undefined {
