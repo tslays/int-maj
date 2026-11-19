@@ -50,6 +50,8 @@ export interface MatchContext {
   readonly hand: Hand;
   readonly isConcealed: boolean;
   readonly isSelfDrawn: boolean;
+  /** A Goulash hand: Ordinary and Purity may not hold a chow (I p. 21). */
+  readonly noChows?: boolean;
 }
 
 export type PatternPredicate = (context: MatchContext) => boolean;

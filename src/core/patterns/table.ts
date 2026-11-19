@@ -209,15 +209,16 @@ const BASE_PATTERNS: readonly HandPattern[] = Object.freeze([
     notes:
       "The p. 42 hand page prints CALCULATE SCORE. An all-honour hand is " +
       "excluded here because it scores as All Honour Hand.",
-    match: ({ shape }) => {
+    match: ({ shape, noChows }) => {
       if (usedSuits(shape).length !== 1) return false;
       if (shape.suitedTotal === 0) return false;
       // One suit, with Winds and Dragons if wished (I p. 34): the suit may be
       // held in a set or only in the pair, so four honour sets and a pair of
-      // 2 Bamboos is a hand.
+      // 2 Bamboos is a hand. A Goulash allows no chow here (I p. 21).
+      const chows = noChows === true ? 0 : 1;
       return decomposeStandard(shape).some(
         (decomposition) =>
-          decomposition.sets.filter((set) => set.kind === "chow").length <= 1,
+          decomposition.sets.filter((set) => set.kind === "chow").length <= chows,
       );
     },
   },
@@ -1900,14 +1901,15 @@ const BASE_PATTERNS: readonly HandPattern[] = Object.freeze([
       "All one suit and no honours: four pungs/kongs, or three pungs/kongs " +
       "and one chow, plus a pair.",
     source: "Short list p. 6; illustration p. 48.",
-    match: ({ shape }) => {
+    match: ({ shape, noChows }) => {
       if (usedSuits(shape).length !== 1 || shape.honoursTotal !== 0) {
         return false;
       }
       if (shape.suitedTotal === 0) return false;
+      const chows = noChows === true ? 0 : 1;
       return decomposeStandard(shape).some(
         (decomposition) =>
-          decomposition.sets.filter((set) => set.kind === "chow").length <= 1,
+          decomposition.sets.filter((set) => set.kind === "chow").length <= chows,
       );
     },
   },

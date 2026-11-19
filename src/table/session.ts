@@ -548,7 +548,11 @@ function outcomeFor(session: WebSession, view: GameView): OutcomePayload | null 
     hand = winner === undefined ? null : [...winner.hand];
     const pattern = PATTERN_BY_ID.get(result.patternId ?? "");
     const winning = buildHand(state, result.winner, { selfDrawn: result.selfDrawn });
-    if (pattern !== undefined && winning !== null) arrangement = arrangeConcealed(winning, pattern);
+    if (pattern !== undefined && winning !== null) {
+      arrangement = arrangeConcealed(winning, pattern);
+      // Never show a grouping that has lost a tile: the sheet falls back to a sorted row.
+      if (arrangement !== null && arrangement.flat().length !== winning.concealed.length) arrangement = null;
+    }
     if (isWinner) {
       melds = view.player.melds;
       handCount = view.player.hand.length;

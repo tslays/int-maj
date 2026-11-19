@@ -86,3 +86,53 @@ describe("a winning hand's groups on the result card", () => {
     assert.deepEqual(failures, []);
   });
 });
+
+describe("a winning hand with a claimed meld on the result card", () => {
+  const dragonsTail = PATTERNS.find((entry) => entry.id === "dragons-tail")!;
+  const handWith = (concealed: string, meldTiles: string, kind: "chow" | "pung") =>
+    createHand({ concealed, melds: [{ kind, tiles: meldTiles, exposed: true }], winningTile: meldTiles.split(" ")[0]!, selfDrawn: false });
+
+  // Report #232: West won with a claimed chow 1-2-3 and the result sheet showed 8 of its 14 tiles.
+  it("keeps the rest of the run when a claimed chow is its first three tiles", () => {
+    const hand = handWith("c4 c5 c6 c7 c8 c9 wE wE wE dG dG", "c1 c2 c3", "chow");
+    assert.ok(dragonsTail.match({ shape: normalizeHand(hand), hand, isConcealed: false, isSelfDrawn: false }));
+    const arranged = arrangeConcealed(hand, dragonsTail)!;
+    assert.deepEqual(arranged.map((group) => [...group].sort().join(" ")).sort(), ["c4 c5 c6 c7 c8 c9", "dG dG", "wE wE wE"]);
+  });
+
+  it("keeps the run's ends when a claimed chow is in its middle, and with a claimed pung", () => {
+    const middle = handWith("c1 c2 c3 c7 c8 c9 wE wE wE dG dG", "c4 c5 c6", "chow");
+    assert.equal(arrangeConcealed(middle, dragonsTail)!.flat().length, 11);
+    const pung = handWith("c1 c2 c3 c4 c5 c6 c7 c8 c9 dG dG", "wE wE wE", "pung");
+    assert.equal(arrangeConcealed(pung, dragonsTail)!.flat().length, 11);
+  });
+
+  it("never loses a tile in any book hand when one of its sets is claimed", () => {
+    const lost: string[] = [];
+    for (const pattern of PATTERNS) {
+      for (const sample of SAMPLES[pattern.id] ?? []) {
+        const groups = fillings(sample)[0]!;
+        const tiles = groups.flat();
+        for (const group of groups) {
+          const [a, b, c] = group;
+          if (group.length < 3 || a === undefined || b === undefined || c === undefined) continue;
+          const kind = a === b && b === c ? "pung" : Number(b[1]) === Number(a[1]) + 1 && Number(c[1]) === Number(a[1]) + 2 ? "chow" : null;
+          if (kind === null) continue;
+          const rest = tiles.slice();
+          for (const key of [a, b, c]) rest.splice(rest.indexOf(key), 1);
+          let hand;
+          try {
+            hand = createHand({ concealed: rest.join(" "), melds: [{ kind, tiles: `${a} ${b} ${c}`, exposed: true }], winningTile: a, selfDrawn: false });
+          } catch {
+            continue;
+          }
+          const context = { shape: normalizeHand(hand), hand, isConcealed: false, isSelfDrawn: false };
+          if (!pattern.match(context)) continue;
+          const arranged = arrangeConcealed(hand, pattern);
+          if (arranged !== null && arranged.flat().length !== rest.length) lost.push(`${pattern.id}: ${a} ${b} ${c} claimed`);
+        }
+      }
+    }
+    assert.deepEqual(lost, []);
+  });
+});
