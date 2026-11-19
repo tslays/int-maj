@@ -476,7 +476,7 @@ async function boot() {
   showStart({ game: resumed !== null, first: firstVisit() });
 }
 
-/** Main menu in Options: the start screen over your table; the bots wait under it. */
+/** Main menu in Settings: the start screen over your table; the bots wait under it. */
 function mainMenu() {
   showStart({ game: state.payload !== null });
 }
@@ -500,7 +500,7 @@ window.mahjong = {
 installInput({ act });
 installResult({ callOut, apply, run, hideChoices, newGame });
 installMenu({ run, newGame });
-installOptions({ newGame, mainMenu });
+installOptions({ mainMenu });
 installStart({
   onContinue: () => void run(),
   onNewGame: () => void newGame(),

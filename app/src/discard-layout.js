@@ -31,6 +31,10 @@ export function createDiscardLayout({ storage = browserStorage } = {}) {
       stored.write(id);
       for (const listener of listeners) listener(id);
     },
+    /** Back to rows, the default. */
+    reset() {
+      this.set("rows");
+    },
     onChange(listener) {
       listeners.push(listener);
     },

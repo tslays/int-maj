@@ -1,7 +1,7 @@
 /**
  * The menu: the Calls and Sort buttons, and closing the help sheet (the
  * guide itself is `guide.js`). Sound, the house
- * rules, New game and the Help and Report buttons live in `options.js`.
+ * rules, Reset settings and the Help and Report buttons live in `options.js`.
  */
 
 import { openGuide } from "./guide.js";

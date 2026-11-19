@@ -2,7 +2,7 @@
  * Putting the game on the home screen, and getting a phone to turn.
  *
  * The install card shows on the turn-your-phone screen, where every phone
- * visitor lands first, and again behind Install app in Options, for those who
+ * visitor lands first, and again behind Install app in Settings, for those who
  * arrive already holding the phone sideways. It shows only in a phone's
  * browser; an installed copy (and a computer) never sees it.
  *
@@ -86,7 +86,7 @@ function mount() {
     "keydown",
     (event) => {
       if (event.key !== "Escape" || $("#install-sheet").hidden) return;
-      event.stopImmediatePropagation(); // the Options sheet under it stays open
+      event.stopImmediatePropagation(); // the Settings sheet under it stays open
       closeSheet();
     },
     true,

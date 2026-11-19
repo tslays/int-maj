@@ -5,7 +5,7 @@
  * Watching the dice, the break and the deal is a preference kept on the
  * device, never part of the game: the engine deals the same hand either way,
  * and a player who wants to get straight to the tiles turns it off. The same
- * choice (Options › Table animations) also covers the counter sticks thrown
+ * choice (Settings › Table animations) also covers the counter sticks thrown
  * over the result card (`exchange.js`): Skip shows the final numbers at once.
  */
 
@@ -25,6 +25,10 @@ export function createOpeningPref({ storage = browserStorage } = {}) {
     set(value) {
       on = Boolean(value);
       stored.write(on ? "on" : "off");
+    },
+    /** Back to showing the opening, the default. */
+    reset() {
+      this.set(true);
     },
   };
 }

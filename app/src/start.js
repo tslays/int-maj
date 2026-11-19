@@ -3,7 +3,7 @@
  *
  * It opens over the table on every visit (a review board or a pinned seed go
  * straight to the table; a room link opens the room sheet over it) and again
- * from Main menu in Options. A game in progress is dealt underneath and offered first as
+ * from Main menu in Settings. A game in progress is dealt underneath and offered first as
  * Continue; otherwise the first card plays against the bots, with their level
  * beside it. Play with friends opens the room sheet, Practice its drills
  * (`practice.js`; the bots wait meanwhile), and the row below opens
@@ -38,6 +38,7 @@ export function focusForKeys(element) {
 export function showStart({ game, first = false }) {
   const resumable = game && state.payload !== null && !state.online;
   $("#start-continue").hidden = !resumable;
+  $("#start-new-confirm").hidden = true;
   if (resumable) $("#start-continue-note").textContent = continueNote(state.payload, scores());
   $("#start-play-label").textContent = resumable ? "New game" : "Play vs bots";
   $("#start-play-note").textContent = resumable ? "Ends the game in progress" : "Three bots, on this device";
@@ -61,7 +62,25 @@ export function installStart(next) {
     hideStart();
     hooks.onContinue();
   });
+  // With a game to continue, a new one ends it, so it asks first.
+  const askNew = (asking) => {
+    $("#start-new-confirm").hidden = !asking;
+  };
   $("#start-play").addEventListener("click", () => {
+    if (!$("#start-continue").hidden) {
+      askNew(true);
+      $("#start-new-keep").focus();
+      return;
+    }
+    hideStart();
+    hooks.onNewGame();
+  });
+  $("#start-new-keep").addEventListener("click", () => {
+    askNew(false);
+    $("#start-play").focus();
+  });
+  $("#start-new-go").addEventListener("click", () => {
+    askNew(false);
     hideStart();
     hooks.onNewGame();
   });

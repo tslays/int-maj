@@ -643,7 +643,7 @@ export async function openHandDetail(pattern, progress = null) {
     newNote.textContent =
       "The hints offer this as an idea that may be new to you: a hand you have not met much yet, " +
       "so you can learn what else is out there. How often that happens is your choice, under " +
-      "Options, Game, Hint style: Likeliest never offers new hands, Mixed offers one, Discovery offers only new ones.";
+      "Settings, Game, Hint style: Likeliest never offers new hands, Mixed offers one, Discovery offers only new ones.";
     wireNote(fresh, newNote);
     facts.append(fresh);
   }
@@ -697,7 +697,7 @@ export async function openHandDetail(pattern, progress = null) {
         "you cannot see dealt at random, so every discard and exposed meld counts. It is a building chance, not a winning chance: another " +
         "player going out first is not counted. " + bandOdds(progress.chance) + " An arrow means it moved a band since your last move. " +
         "You can turn hints off from the menu's Hints button, and change which hands they suggest " +
-        "under Options, Game, Hint style.";
+        "under Settings, Game, Hint style.";
       wireNote(far, chanceNote);
       facts.append(far);
     }

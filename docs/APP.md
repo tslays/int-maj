@@ -51,7 +51,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   0.1 larger than fewer would. A group is never split across rows.
   `test/app/layout.test.ts` proves no meld
   touches a wall, a hand, a discard or another player's melds.
-- `app/src/pile.js` is the other discard layout, the **centre pile** (Options,
+- `app/src/pile.js` is the other discard layout, the **centre pile** (Settings,
   Discards: Rows or Pile, a device preference `int-maj.discard-layout`,
   `discard-layout.js`; #122). Every discard is thrown into one heap in the
   middle: it meets the felt in the lane just inside the thrower's wall
@@ -158,7 +158,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   under it. With `prefers-reduced-motion` a layer appears at full size. A
   screen whose short side is at most 500 CSS pixels is a phone (every
   iPhone held sideways; the smallest iPad is 744), so tablets and computers
-  keep the plain table. Options has a **Large discards** switch for them,
+  keep the plain table. Settings has a **Large discards** switch for them,
   shown only on a phone and on by default (`app/src/large-discards.js`, kept
   on the device; the players it helps most are the least likely to look for
   a setting); turning it off hides the layer at once.
@@ -216,7 +216,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   result; each shows once per device, "No more tips" stops them, the guide's
   "Show tips again" brings them back, review boards show none), `start.js`
   (the start screen over the dimmed table on every visit: Continue when a
-  game of your own is saved, Play vs bots or New game with the bot level
+  game of your own is saved, Play vs bots or New game (which asks first) with the bot level
   beside it, Play with friends, Practice, and How to play, All hands, Settings and
   Install; shown upright on phones too, in one column (the table alone needs
   landscape); marked How to play on a first visit; a review board or a
@@ -231,8 +231,8 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   opens the hand's sheet; Menu, Escape or the phone's back return to the start
   screen. Like the start screen it works upright), `start-note.js` (the
   Continue card's words, pure for Node tests), `options.js` (the
-  Options sheet in three tabs: Game (Bot level, Pace, Table animations), Table (Sound, Large discards on phones, Discards Rows or Pile) and Rules (the house rules), with New game, Main menu (Room while in a room), Help and Report
-  under every tab) and `report.js` (report a problem). Modules that need the loop (`input`,
+  Settings sheet in three tabs: Game (Bot level, Pace, Table animations), Table (Sound, Large discards on phones, Discards Rows or Pile) and Rules (the house rules), with Reset settings, Main menu (Room while in a room), Help and Report
+  under every tab; opened from the start screen only Reset settings shows) and `report.js` (report a problem). Modules that need the loop (`input`,
   `result`, `menu`) get its functions from `main.js` through an `installX`
   call, so imports never run in a circle.
 - `app/src/standings.js` ranks the seats by total score for the final standings
@@ -257,7 +257,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   lands (a light wooden `stick` sound), tags what each seat won or lost once
   the sticks lie still, and fades them after a few seconds. The rows always
   end on the table's totals; a tap, a key or a reduced-motion setting skips
-  straight there, and Options › Table animations › Skip leaves the throw out. Each payment line under a seat also carries its sticks.
+  straight there, and Settings › Table animations › Skip leaves the throw out. Each payment line under a seat also carries its sticks.
 - `app/src/settlement.js` words the result card's account of the points from
   the ledger (every entry is tagged with its kind in `src/core/game/state.ts`).
   The card shows only the result: each seat's change in green or red and its
@@ -297,7 +297,7 @@ would not have tried; the guide and the hand's sheet say so. It is asked for at
 each of your decisions, and hides on the result card. The menu's Hints button
 turns it off (remembered on the device).
 
-**Hint style.** Options > Game > Hint style (`app/src/hint-style.js`, kept on
+**Hint style.** Settings > Game > Hint style (`app/src/hint-style.js`, kept on
 the device) says which hands the panel picks: *Likeliest* (the hands most
 likely to be built), *Mixed* (the default: the two likeliest and one idea the
 player may not have thought of) or *Discovery* (only such ideas). An idea
@@ -419,7 +419,7 @@ speaker symbol in the Dynamic Island (issue #49); the price is that the phone's
 silent switch mutes the game. After 5 seconds with no cue the audio context is
 suspended (so iOS sees no audio activity) and the next cue resumes it; that cue
 is scheduled at once and starts when the clock runs again. The Sound
-switch in Options turns all of it off (remembered on the device), and is the control for
+switch in Settings turns all of it off (remembered on the device), and is the control for
 desktop and Android, which have no silent switch. A hidden page is silent. `test/app/sound.test.ts`
 checks the scheduling with a fake audio context; to hear a cue, render it with an
 `OfflineAudioContext` through `createVoices` (it takes any context).
@@ -462,7 +462,7 @@ throw in `seatSelection`); then East throws two dice for the wall to break
 the two dice), the break stack lifts, and the tiles are dealt in rounds of four.
 Every later hand repeats the last two steps. It follows the Pace setting (the dice's tumbling and their sound too): about two seconds a hand at Faster, three at Normal and four at Slower (`OPENING_SPEED` in `opening.js`),
 and a tap, Escape or Enter skips what is left; the hand it ends on is always the
-engine's. **Options, Table animations: Show / Skip** turns all of it off for
+engine's. **Settings, Table animations: Show / Skip** turns all of it off for
 players who want to go straight to play (kept on the device), and the counter
 sticks thrown over the result card with it; a resumed game and
 the review boards never show it. `?seed=<text>` pins the first game's seed, for
@@ -521,9 +521,12 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   in CI) or else the content hash. `src/build-info.js` exports `BUILD`
   (`version`, `stage`, `id`) and `BUILD_LABEL`; import it to put the build in
   a problem report. Unbuilt, the label reads `dev · local`.
-- **Options and house rules.** The menu's Options button opens a sheet with
-  three tabs, Game, Table and Rules, and the New game, Help and Report buttons
-  under every tab (their sheets open on top of it). It reopens on the last
+- **Settings and house rules.** The menu's Settings button opens a sheet with
+  three tabs, Game, Table and Rules, and the Reset settings, Main menu, Help and Report buttons
+  under every tab (their sheets open on top of it). Reset settings asks first, then puts every
+  stored preference (level, pace, hint style, animations, sound, large discards, discard layout,
+  Sort) and the house rules back to their defaults. New game is on the start screen, which asks
+  "Start over?" when a game is in progress. It reopens on the last
   tab used while the page is open, and keeps one height so a tab never jumps. The Bot level is a device preference too (`int-maj.level`, `app/src/level.js`, Medium by default): it is sent as `level` with every `/api/step`, so it takes effect with the bots' next move; the decision is recorded as a step, so undo, Play again and a saved game never depend on it. Pace is a device preference (`int-maj.pace`, `app/src/pace.js`): `pace.scale(ms)` multiplies every bot beat, call-out hold, tile animation and animation-timed sound delay (Normal 1, Slower 1.5, Faster 0.6); ambient and camera animations stay fixed, and the engine never sees it. A house rule is a preference kept on the device
   (`int-maj:house-rules`); `houseRules()` in `options.js` is sent with every
   `/api/new` and `/api/next`, and the table fixes a hand's rules at its deal
@@ -546,7 +549,7 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   in the three Companion sets (Companion, Pictured, Rare) the hand sheet and result card name only Companion
   pages (`pages.js`) and the payment explanations drop their Illustrated page
   citations (`explainSettlement({ cite: false })`).
-- **Report a problem.** The Report button in Options (accessible name "Report a
+- **Report a problem.** The Report button in Settings (accessible name "Report a
   problem") opens a sheet of that title with an optional one-line note and a
   Send button (accessible name "Send report"; the keyboard's return key sends
   too). `app/src/report.js` posts the text to `api/report` on its own site,
