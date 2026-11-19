@@ -2256,34 +2256,18 @@ button.detail-rule {
   margin: 4px 0 10px;
   line-height: 1.4;
 }
-.support-well {
-  overflow: hidden;
-  border: 1px solid rgba(233, 228, 214, 0.1);
-  border-radius: 12px;
-  background: #1a1a1a;
+/* The one door out: Ko-fi's own page, where every way to pay works. */
+.support-go {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: fit-content;
+  margin: 12px auto 6px;
+  padding: 0 1.8em;
+  text-decoration: none;
 }
-.support-well:empty {
-  display: none;
-}
-.support-well iframe {
-  display: block;
-  width: 100%;
-  height: min(600px, 70vh);
-  border: 0;
-  /* Ko-fi's panel is always white and cannot be styled from here (another
-     site's page), so it is shown inverted: white turns near-black, and the
-     hue turn keeps its colours (blue buttons, the orange cup) their own. */
-  filter: invert(0.9) hue-rotate(180deg);
-}
-.support-fallback {
-  margin: 4px 0 0;
-}
-.support-fallback[hidden] {
-  display: none;
-}
-.support-fallback a {
-  color: #8ccbea;
-  font-weight: 600;
+.support-card .report-fine {
+  text-align: center;
 }
 .install-card {
   width: min(360px, 100%);

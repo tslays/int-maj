@@ -32,19 +32,16 @@ describe("Support int-maj", () => {
     assert.match(css, /\.option-links\.from-start \.option-link:not\([^)]*#support-open[^)]*\)/);
   });
 
-  it("loads Ko-fi only when opened: no frame in the page itself", () => {
+  it("loads nothing from Ko-fi: no frame, the page opens only from its button", () => {
     assert.doesNotMatch(html, /<iframe/);
-    assert.match(section('id="support-sheet"', '<section class="start"'), /id="support-frame"><\/div>/);
+    assert.doesNotMatch(code, /iframe/);
   });
 
-  it("embeds the int_maj panel, with payments allowed and no title tooltip", () => {
+  it("opens int-maj's own Ko-fi page on top of the game, where every way to pay works", () => {
+    assert.match(
+      section('id="support-sheet"', '<section class="start"'),
+      /<a [^>]*id="support-go"[^>]*href="https:\/\/ko-fi\.com\/int_maj" target="_blank" rel="noopener"/,
+    );
     assert.match(code, /"https:\/\/ko-fi\.com\/int_maj"/);
-    assert.match(code, /hidefeed=true&widget=true&embed=true&preview=true/);
-    assert.match(code, /setAttribute\("allow", "payment"\)/);
-    assert.match(code, /setAttribute\("aria-label"/);
-  });
-
-  it("offers the plain Ko-fi link when the panel cannot load", () => {
-    assert.match(section('id="support-sheet"', '<section class="start"'), /id="support-fallback" hidden>[\s\S]*href="https:\/\/ko-fi\.com\/int_maj" target="_blank" rel="noopener"/);
   });
 });
