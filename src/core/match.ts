@@ -25,6 +25,19 @@ export function tierExclusion(tier: Tier): string {
   return `tier:${tier}`;
 }
 
+/**
+ * An `excluded` entry the engine adds to a Goulash hand: no Chows are
+ * permitted unless part of a specialty hand (I p. 21, no. 27). Only the
+ * ordinary-style hands (Ordinary, Purity) read it; a specialty hand with chows
+ * is untouched. It is not a hand id and not a tier.
+ */
+export const NO_CHOWS = "goulash:no-chows";
+
+/** True when `excluded` carries the Goulash no-chows bar. */
+export function barsChows(excluded: readonly string[]): boolean {
+  return excluded.includes(NO_CHOWS);
+}
+
 /** True when `excluded` leaves out this pattern, by id or by the tier it scores at. */
 export function isExcluded(excluded: readonly string[], patternId: string, tier: Tier): boolean {
   return excluded.includes(patternId) || excluded.includes(tierExclusion(tier));
@@ -45,6 +58,7 @@ export function matchHand(
     hand,
     isConcealed: concealed,
     isSelfDrawn: hand.selfDrawn,
+    noChows: barsChows(excluded),
   };
 
   const matches: PatternMatch[] = [];
@@ -71,9 +85,10 @@ export function matchesAny(
   hand: Hand,
   accept: (pattern: HandPattern, tier: Tier) => boolean,
   shape: HandShape = normalizeHand(hand),
+  excluded: readonly string[] = [],
 ): boolean {
   const concealed = isConcealed(hand);
-  const context = { shape, hand, isConcealed: concealed, isSelfDrawn: hand.selfDrawn };
+  const context = { shape, hand, isConcealed: concealed, isSelfDrawn: hand.selfDrawn, noChows: barsChows(excluded) };
   for (const pattern of PATTERNS) {
     if (pattern.requiresSelfDrawn && !hand.selfDrawn) continue;
     const tier = concealed ? pattern.tier : pattern.exposedTier;
