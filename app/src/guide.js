@@ -130,6 +130,13 @@ function closestPicture() {
   return box;
 }
 
+/** The five chance bands, best to lowest. */
+function bandsPicture() {
+  const box = el("div", "guide-bands");
+  for (const chance of [0.6, 0.3, 0.1, 0.04, 0.01]) box.append(chanceBadge(chance));
+  return box;
+}
+
 /* --------------------------------------------------------- the content */
 
 /** Each tab: its name and cards; each card: a title, its text, and a picture. */
@@ -234,8 +241,13 @@ const TABS = [
         picture: () => act("Mah Jong", "win"),
       },
       {
+        title: "A Goulash",
+        text: "A redeal with a pass: the table shows GOULASH, and NO HALF LIMIT while those hands are barred. A chow cannot win there in Ordinary or Purity.",
+        picture: () => act("Pass 3 tiles", "claim"),
+      },
+      {
         title: "Now and then",
-        text: "Reshuffle: on your first turn, ask for a new deal when it gives you nothing to build on. Pass 3 tiles: in a Goulash, tap three tiles to pass on, then confirm; drag sideways to arrange the hand meanwhile. The tiles you receive are marked in teal.",
+        text: "Reshuffle: on your first turn, ask for a new deal when it gives you nothing to build on. Pass 3 tiles: in a Goulash (above), tap three tiles to pass on, then confirm; drag sideways to arrange the hand meanwhile. The tiles you receive are marked in teal.",
         picture: () => row(act("Reshuffle", "pass"), act("Pass 3 tiles", "claim")),
       },
     ],
@@ -245,17 +257,37 @@ const TABS = [
     cards: [
       {
         title: "Closest hands",
-        text: "Top right: the hands your tiles could build, likeliest first, often ones you would never have thought of. The ring fills and brightens with how likely you are to build each if you play only for it until the wall runs out, from remote to likely. It is worked out only from what you can see: the table plays the rest of the hand out up to two thousand times, dealing the tiles you cannot see at random, so every discard and exposed meld counts. A tile whose every copy is in sight is gone, so a hand waiting only on it shows its nearest version still open, and its sheet says why. An arrow shows a hand that moved since your last move. It is a building chance, not a winning chance: another player going out first is not counted. A guide for trying new hands, not advice: a long shot, or even a remote hand, may pay far more. Then how it is played and what it pays. Tap one for its sheet; the pin keeps it there. Out of reach means more than six tiles away, or no longer possible with the tiles in sight or your exposed melds. Hints in the menu shows or hides it. Settings has the Hint style: Likeliest shows the hands you are most likely to build; Mixed adds one idea you may not have thought of, marked with a small spark; Discovery shows only such ideas, and leans away from hands it has shown you or you have built. The ring tells the truth in every style.",
+        text: "Top right: the hands your tiles could build, likeliest first, often ones you would not have thought of. Tap one for its sheet; the pin keeps it in the panel. Hints in the menu shows or hides it.",
         picture: closestPicture,
       },
       {
+        title: "The ring",
+        text: "How likely you are to build that hand by playing only for it until the wall runs out. Worked out from what you can see, by playing the hand out up to two thousand times. Another player going out first is not counted.",
+        picture: bandsPicture,
+      },
+      {
+        title: "Arrows and gone tiles",
+        text: "An arrow: the hand moved a band since your last move. If every copy of a tile it needs is in sight, the panel shows its nearest version still open; the sheet says why. Out of reach: more than six tiles away, or no longer possible.",
+        picture: () => row(el("span", "guide-arrow guide-up", "\u25b2"), el("span", "guide-arrow guide-down", "\u25bc")),
+      },
+      {
+        title: "Hint style",
+        text: "In Settings. Likeliest: the hands you are most likely to build. Mixed: adds one idea you may not have thought of, marked with a spark. Discovery: only such ideas. The ring is truthful in every style.",
+        picture: () => row(ghost("Likeliest"), ghost("Mixed", true), ghost("Discovery")),
+      },
+      {
         title: "All hands",
-        text: "Every hand in play, with the book's sample. Search by name or tiles (\"dragon pairs\", \"1-9\") and filter; during a hand each card says how likely your tiles are to build it, so you can explore hands you would not normally try.",
+        text: "Start screen or Settings. Every hand in play, with the book's sample. Search by name or tiles (\"dragon pairs\", \"1-9\") and filter; during a hand each card says how likely your tiles are to build it, so you can explore hands you would not normally try.",
         picture: () =>
           row(
             el("span", "guide-search", "All hands"),
             icon('<circle cx="21" cy="21" r="11"/><path d="M29 29l11 11"/>'),
           ),
+      },
+      {
+        title: "Practice",
+        text: "On the start screen: name the hand, find the winning tile, or pick the best aim for a dealt hand. Your streak and the hands you missed are kept on this device; missed ones come back sooner.",
+        picture: () => row(ghost("Name the hand", true), ghost("Winning tile"), ghost("Best aim")),
       },
       {
         title: "After a hand",
@@ -268,8 +300,28 @@ const TABS = [
     name: "More",
     cards: [
       {
+        title: "Start screen",
+        text: "Every visit opens it: Continue a saved game, Play vs bots at a level of your choice, Play with friends, Practice, and links to this guide, all hands and Settings. Menu, then Main menu, brings it back.",
+        picture: () => row(act("Continue", "win"), act("Play", "claim")),
+      },
+      {
+        title: "Play with friends",
+        text: "Start a room and share its four-letter code or link; up to four people, each on their own phone. Empty seats, and seats of anyone who drops out, are played by bots. A timer pill shows the time left to move.",
+        picture: () => row(act("New room", "win"), el("span", "guide-search", "Code")),
+      },
+      {
+        title: "Hands in play",
+        text: "Settings, Rules: All hands, the Companion's only, only the pictured ones, or Rare, which drops the easy hands. Two switches: no half-limit hands in a Goulash, and Announce fishing to win. Changes apply from the next deal.",
+        picture: () => row(ghost("All", true), ghost("Companion"), ghost("Rare")),
+      },
+      {
+        title: "Table settings",
+        text: "Settings, Table: sound, large discards (the latest at twice the size), and discards in Rows, which show who threw what, or a Pile like a real table. Game has pace, table animations and the bots' level.",
+        picture: () => row(ghost("Rows", true), ghost("Pile")),
+      },
+      {
         title: "The menu",
-        text: "Calls, Sort and Hints switch on and off; a green light is on. Settings has the bots' level, pace, hint style, sound, table animations and the house rules, with a button to reset them all. New game and the main menu are on the start screen.",
+        text: "Calls, Sort and Hints switch on and off; a green light is on. Settings has everything else, with a button to reset it all.",
         picture: () => row(ghost("Calls", true), ghost("Hints", true), ghost("Settings")),
       },
       {

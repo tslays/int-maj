@@ -2437,6 +2437,21 @@ button.detail-rule {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+.guide-bands {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+.guide-arrow {
+  font-size: 22px;
+}
+.guide-up {
+  color: #7ee0a0;
+}
+.guide-down {
+  color: #f0907a;
+}
 .guide-tips {
   min-width: 0;
 }
