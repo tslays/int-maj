@@ -29,6 +29,7 @@ import { $, board, faceChip, request, scores, state, storage, toast } from "./sh
 import { sound } from "./sound.js";
 import { firstVisit, hideTip, tipForChoices } from "./tips.js";
 import { hideStart, installStart, showStart, startOpen } from "./start.js";
+import { installPractice, openPractice, practiceOpen } from "./practice.js";
 import { ALL_FACES, initTiles, preloadFaces, tileOrder } from "./tiles.js";
 import { mountStage, renderer, requestRender, screenPoint, setConsoleShown, sleep, updateConsole, viewport } from "./stage.js";
 import { discardLayout } from "./discard-layout.js";
@@ -164,12 +165,12 @@ function runOnline() {
 /** Let the table run until it needs you, then show your choices. */
 async function run() {
   if (state.online) return runOnline();
-  if (state.busy || state.payload === null || startOpen()) return;
+  if (state.busy || state.payload === null || startOpen() || practiceOpen()) return;
   state.busy = true;
   try {
     for (;;) {
-      // Asked for while the bots played; or the start screen is up, and the bots wait for Continue.
-      if (state.newGameWanted || state.online || startOpen()) return;
+      // Asked for while the bots played; or the start screen or practice is up, and the bots wait for Continue.
+      if (state.newGameWanted || state.online || startOpen() || practiceOpen()) return;
       if (state.payload.outcome !== null) {
         await showOutcome();
         return;
@@ -504,6 +505,8 @@ installStart({
   onContinue: () => void run(),
   onNewGame: () => void newGame(),
   onFriends: () => openRoomSheet(),
+  onPractice: () => openPractice(),
 });
+installPractice({ back: () => showStart({ game: state.payload !== null }) });
 
 void boot();

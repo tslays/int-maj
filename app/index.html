@@ -352,6 +352,33 @@
           <button class="start-card" id="start-friends" type="button">
             <b>Play with friends</b><small>A room code, each on their own phone</small>
           </button>
+          <button class="start-card" id="start-practice" type="button">
+            <b>Practice</b><small>Spot the hands and their winning tiles</small>
+          </button>
+        </div>
+      </div>
+    </section>
+    <section class="start practice" id="practice" aria-labelledby="practice-title" hidden>
+      <div class="practice-inner">
+        <header class="practice-bar">
+          <button class="option-link" id="practice-back" type="button">&lsaquo; Menu</button>
+          <h2 class="practice-title" id="practice-title">Practice</h2>
+          <div class="seg" id="practice-kind" role="radiogroup" aria-label="Drill">
+            <button type="button" role="radio" aria-checked="true" data-kind="name">Name the hand</button>
+            <button type="button" role="radio" aria-checked="false" data-kind="wait">Winning tile</button>
+          </div>
+          <span class="practice-streak" id="practice-streak" aria-live="polite"></span>
+        </header>
+        <p class="practice-prompt" id="practice-prompt"></p>
+        <div class="practice-tiles" id="practice-tiles"></div>
+        <div class="practice-options" id="practice-options"></div>
+        <div class="practice-result" id="practice-result" role="status" hidden>
+          <p><b class="practice-verdict" id="practice-verdict"></b> <span id="practice-hand"></span></p>
+          <p class="practice-note" id="practice-note" hidden></p>
+          <div class="practice-buttons">
+            <button class="option-link" id="practice-see" type="button">See this hand</button>
+            <button class="act act-win" id="practice-next" type="button"><span>Next</span></button>
+          </div>
         </div>
       </div>
     </section>

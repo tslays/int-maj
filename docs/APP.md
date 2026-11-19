@@ -217,10 +217,13 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   "Show tips again" brings them back, review boards show none), `start.js`
   (the start screen over the dimmed table on every visit: Continue when a
   game of your own is saved, Play vs bots or New game with the bot level
-  beside it, Play with friends, and How to play, All hands, Settings and
+  beside it, Play with friends, Practice, and How to play, All hands, Settings and
   Install; marked How to play on a first visit; a review board or a
   `?seed=` link skips it, a room link opens the room sheet over it; the bots
-  wait while it is up), `options.js` (the
+  wait while it is up), `practice.js` (Practice, from the start screen: Name
+  the hand (fourteen tiles, four names) and Winning tile (thirteen tiles, four
+  tiles), under the hand set chosen in Rules, with a streak and the best
+  streak kept on the device; See this hand opens the hand's sheet), `options.js` (the
   Options sheet in three tabs: Game (Bot level, Pace, Table animations), Table (Sound, Large discards on phones, Discards Rows or Pile) and Rules (the house rules), with New game, Main menu (Room while in a room), Help and Report
   under every tab) and `report.js` (report a problem). Modules that need the loop (`input`,
   `result`, `menu`) get its functions from `main.js` through an `installX`
@@ -464,6 +467,7 @@ tests and bug reports. Presentation only: the engine's draws do not depend on it
 | `GET /api/closest` | `game=<id>` | the catalogue hands your tiles are nearest to (`closestHands`), at most three; `limit=<n>` raises that to at most 100 |
 | `GET /api/hand` | `pattern=<id>` | one catalogue hand's conditions: composition, concealed-only, self-drawn, concealed and open value, its example, book headings and the page in each book (`handDetail`) |
 | `GET /api/hands` | - | the whole catalogue for the index: every hand as above, and the book's headings with their hands in book order (`handIndex`) |
+| `GET /api/practice` | `seed=<s>&kind=name\|wait&set=<hand set>` | one practice question (`src/table/practice.ts`): fourteen tiles of a hand's example and four hand names, or thirteen of them and four tiles; the one right choice, the hand, any other hands the tiles make, and every winning tile; built and graded by `checkHand` |
 | `GET /api/scenario` | `state=<name>` | one fixed review board and its events |
 | `POST /api/new` | `{ "seed": "..." }` | a new game and its first state |
 | `POST /api/move` | `{ "game": "...", "action": {...} }` | the new state plus `events` as text lines |

@@ -814,11 +814,32 @@ async function startScreen(browser: Browser, origin: string, shots: string | nul
   await page.click("#start-friends");
   await page.waitForSelector("#room-sheet", { state: "visible", timeout: READY_MS });
   await page.click("#room-close");
+
+  // Practice: answer, see what the tiles make, switch drills, back to the menu.
+  await page.click("#start-practice");
+  await page.waitForSelector("#practice", { state: "visible", timeout: READY_MS });
+  await page.waitForFunction(() => document.querySelectorAll("#practice-options .practice-option").length === 4);
+  assert.equal(await page.locator("#practice-tiles .chip").count(), 14, "practice: fourteen tiles to name");
+  await page.click("#practice-options .practice-option >> nth=0");
+  await page.waitForSelector("#practice-result", { state: "visible", timeout: READY_MS });
+  assert.equal(await page.locator("#practice-options .practice-right").count(), 1, "practice: the answer is shown");
+  if (shots !== null) await page.screenshot({ path: join(shots, "practice-name.png") });
+  await page.click('#practice-kind [data-kind="wait"]');
+  await page.waitForFunction(() => document.querySelectorAll("#practice-options .practice-tile").length === 4);
+  assert.equal(await page.locator("#practice-tiles .chip").count(), 13, "practice: thirteen tiles to complete");
+  await page.click("#practice-options .practice-option >> nth=1");
+  await page.waitForSelector("#practice-result", { state: "visible", timeout: READY_MS });
+  if (shots !== null) await page.screenshot({ path: join(shots, "practice-wait.png") });
+  await page.click("#practice-next");
+  await page.waitForSelector("#practice-result", { state: "hidden", timeout: READY_MS });
+  await page.click("#practice-back");
+  await page.waitForSelector("#start", { state: "visible", timeout: READY_MS });
+
   await page.click("#start-continue");
   await yourMove(page);
   assert.deepEqual(errors, [], "start: no errors");
   await page.context().close();
-  console.log("  ok  the start screen waits for landscape, deals, continues, and comes back from Main menu");
+  console.log("  ok  the start screen waits for landscape, deals, continues, comes back from Main menu, and opens Practice");
 }
 
 function option(argv: readonly string[], name: string): string | undefined {

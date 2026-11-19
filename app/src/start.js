@@ -5,7 +5,8 @@
  * straight to the table; a room link opens the room sheet over it) and again
  * from Main menu in Options. A game in progress is dealt underneath and offered first as
  * Continue; otherwise the first card plays against the bots, with their level
- * beside it. Play with friends opens the room sheet, and the row below opens
+ * beside it. Play with friends opens the room sheet, Practice its drills
+ * (`practice.js`; the bots wait meanwhile), and the row below opens
  * the guide, the index of all hands and the settings, as the table does.
  * On the first visit to a device How to play is marked as the place to begin.
  * While it is open the bots wait: the turn loop stops at its next step.
@@ -14,7 +15,7 @@
 import { openGuide } from "./guide.js";
 import { $, scores, state, WIND_NAME } from "./shared.js";
 
-let hooks = { onContinue() {}, onNewGame() {}, onFriends() {} };
+let hooks = { onContinue() {}, onNewGame() {}, onFriends() {}, onPractice() {} };
 
 export function startOpen() {
   return !$("#start").hidden;
@@ -50,7 +51,7 @@ export function hideStart() {
   document.body.classList.remove("starting");
 }
 
-/** `next.onContinue`, `next.onNewGame` and `next.onFriends` act on the choice. */
+/** `next.onContinue`, `onNewGame`, `onFriends` and `onPractice` act on the choice. */
 export function installStart(next) {
   hooks = next;
   $("#start-continue").addEventListener("click", () => {
@@ -62,6 +63,10 @@ export function installStart(next) {
     hooks.onNewGame();
   });
   $("#start-friends").addEventListener("click", () => hooks.onFriends());
+  $("#start-practice").addEventListener("click", () => {
+    hideStart();
+    hooks.onPractice();
+  });
   $("#start-guide").addEventListener("click", openGuide);
   $("#start-hands").addEventListener("click", () => $("#index-open").click());
   $("#start-settings").addEventListener("click", () => $("#options").click());
