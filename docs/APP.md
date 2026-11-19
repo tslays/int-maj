@@ -374,6 +374,9 @@ applies. The rail on the left filters by:
 - **Value** (the concealed tier), **Play** (Concealed or Exposed)
   and **Book** (printed in the Illustrated book, or only in the Companion).
 
+**Reset filters**, at the top of the rail, puts every choice, the order and
+the search back to the start; it is dimmed while they are already there.
+
 The search box matches every typed word against the name, composition,
 headings, value and book of a hand ("dragon pairs", "1-9 wind"). While a hand
 is being played, cards within reach of your tiles carry your chance of

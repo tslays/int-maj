@@ -17,7 +17,8 @@ import { $, companionRules, faceChip, handSetInForce, request, state } from "./s
 let catalogue = null; // { set, groups, hands }: the hands in play, fetched again when the hand set changes
 let progress = new Map(); // pattern -> closest-hands entry, for the hand in play
 const cards = new Map(); // pattern -> its card, built once per catalogue and reused by every list
-const filter = { text: "", group: "all", tier: "all", play: "all", book: "all", sort: "book" };
+const FILTER_START = { text: "", group: "all", tier: "all", play: "all", book: "all", sort: "book" };
+const filter = { ...FILTER_START };
 
 const TIERS = ["half", "limit", "middle", "double", "calculate"];
 const TIER_SHORT = { half: "Half limit", limit: "Limit", middle: "Middle limit", double: "Double limit", calculate: "Calculated" };
@@ -168,6 +169,19 @@ function applyProgress() {
   }
 }
 
+/** Back to the start: every heading, value, play and book choice, the order and the search. */
+function resetFilters() {
+  Object.assign(filter, FILTER_START);
+  $("#index-search").value = "";
+  renderFilters();
+  renderList();
+}
+
+/** The reset is off while the filters are already at their start. */
+function syncReset() {
+  resetButton.disabled = Object.keys(FILTER_START).every((key) => filter[key] === FILTER_START[key]);
+}
+
 function renderList() {
   // In a Goulash with the half-limit rule on, the hands the bar leaves out are not listed (as in the hints).
   const excluded = state.payload?.view?.excludedHands ?? [];
@@ -179,22 +193,24 @@ function renderList() {
     const empty = document.createElement("p");
     empty.className = "index-empty";
     empty.textContent = "No hand matches. Try fewer words or another filter.";
-    const reset = document.createElement("button");
-    reset.type = "button";
-    reset.className = "index-chip";
-    reset.textContent = "Show all hands";
-    reset.addEventListener("click", () => {
-      Object.assign(filter, { text: "", group: "all", tier: "all", play: "all", book: "all" });
-      $("#index-search").value = "";
-      renderFilters();
-      renderList();
-    });
-    list.replaceChildren(empty, reset);
+    const showAll = document.createElement("button");
+    showAll.type = "button";
+    showAll.className = "index-chip";
+    showAll.textContent = "Show all hands";
+    showAll.addEventListener("click", resetFilters);
+    list.replaceChildren(empty, showAll);
   } else {
     list.replaceChildren(...hands.map(card));
   }
   list.scrollTop = 0;
+  syncReset();
 }
+
+const resetButton = document.createElement("button");
+resetButton.type = "button";
+resetButton.className = "index-chip index-reset";
+resetButton.textContent = "Reset filters";
+resetButton.addEventListener("click", resetFilters);
 
 /** One titled set of choices; exactly one is on. */
 function choices(title, key, options) {
@@ -265,8 +281,9 @@ function renderFilters() {
   );
   const rail = $("#index-filters");
   const scroll = rail.scrollTop;
-  rail.replaceChildren(...sections);
+  rail.replaceChildren(resetButton, ...sections);
   rail.scrollTop = scroll;
+  syncReset();
 }
 
 /** How far your tiles are from each hand in reach; empty when no hand is being played. */

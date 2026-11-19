@@ -596,7 +596,13 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.waitForSelector('.pin-button[aria-label="Unpin from hints"]', { timeout: 5000 });
   await closeSheet();
   await page.waitForFunction(() => /knitting/i.test(document.querySelector("#closest .closest-name")?.textContent ?? ""));
-  await page.click('.index-chip:has-text("All hands")'); // the Two Suits heading is still chosen
+  // Reset puts the heading and the search back to the start, and is off again while they are there.
+  assert.equal(await page.isEnabled(".index-reset"), true, "the reset is on while a heading and a search are set");
+  await page.click(".index-reset");
+  assert.equal(await page.inputValue("#index-search"), "", "reset clears the search");
+  assert.equal(await page.locator(".index-card").count(), 88, "reset lists every hand again");
+  assert.equal(await page.getAttribute('.index-chip:has-text("All hands")', "aria-pressed"), "true", "reset chooses All hands");
+  assert.equal(await page.isDisabled(".index-reset"), true, "the reset is off at the start");
   await page.fill("#index-search", "wriggly");
   await page.click(".index-card");
   await page.waitForSelector("#hand-detail:not([hidden])", { timeout: 5000 });
