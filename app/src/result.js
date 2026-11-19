@@ -9,7 +9,7 @@ import { bookPages } from "./pages.js";
 import { playExchange } from "./exchange.js";
 import { openingPref } from "./opening.js";
 import { pace } from "./pace.js";
-import { explainSettlement } from "./settlement.js";
+import { explainSettlement, paidSummary } from "./settlement.js";
 import { sound } from "./sound.js";
 import { stickColor, sticksFor } from "./sticks.js";
 import { showTip } from "./tips.js";
@@ -128,11 +128,13 @@ function renderOutcome(outcome) {
       const detail = document.createElement("dd");
       detail.textContent = value;
       sums.append(term, detail);
+      return detail;
     };
+    let scoreDetail = null;
     const power = (n) => String(n).replace(/\d/g, (digit) => "⁰¹²³⁴⁵⁶⁷⁸⁹"[digit]);
     if (outcome.ground !== null) {
       const raw = outcome.raw ?? outcome.ground;
-      line(
+      scoreDetail = line(
         "Score",
         outcome.doubles
           ? `${outcome.ground} × 2${power(outcome.doubles)} = ${raw.toLocaleString("en")}`
@@ -142,7 +144,8 @@ function renderOutcome(outcome) {
     if (outcome.tier && outcome.tier !== "calculate") line("Hand", `${outcome.tier} limit`);
     if (outcome.points !== null) {
       const capped = outcome.raw !== null && outcome.raw > outcome.points;
-      line("Paid", `${outcome.points.toLocaleString("en")}${capped ? ` (limit ${outcome.limit.toLocaleString("en")})` : ""}`);
+      const each = paidSummary({ outcome, dealer: state.payload.view.dealer, name: seatName });
+      line("Paid", `${each ?? outcome.points.toLocaleString("en")}${capped ? ` (limit ${outcome.limit.toLocaleString("en")})` : ""}`);
     }
     main.append(sums);
     const sheet = outcome.ground !== null ? breakdownRows(outcome.items, { cite: !companionRules() }) : null;
@@ -150,7 +153,7 @@ function renderOutcome(outcome) {
       const details = document.createElement("details");
       details.className = "result-breakdown";
       const summary = document.createElement("summary");
-      summary.textContent = "How the score was found";
+      summary.textContent = "Ground score and doubles";
       details.append(summary);
       const part = (heading, rows, total) => {
         if (rows.length === 0) return;
@@ -184,6 +187,21 @@ function renderOutcome(outcome) {
       }
       details.append(notes);
       main.append(details);
+      // The Score figure opens the breakdown: the question "how is that found?" arises right there.
+      if (scoreDetail !== null) {
+        const open = document.createElement("button");
+        open.type = "button";
+        open.className = "result-score-open";
+        open.setAttribute("aria-expanded", "false");
+        open.textContent = scoreDetail.textContent;
+        open.append(Object.assign(document.createElement("span"), { className: "result-chevron", textContent: "›" }));
+        open.addEventListener("click", () => {
+          details.open = !details.open;
+          if (details.open) details.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+        });
+        details.addEventListener("toggle", () => open.setAttribute("aria-expanded", String(details.open)));
+        scoreDetail.replaceChildren(open);
+      }
     }
   }
 

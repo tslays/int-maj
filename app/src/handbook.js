@@ -185,11 +185,14 @@ function syncReset() {
 function renderList() {
   // In a Goulash with the half-limit rule on, the hands the bar leaves out are not listed (as in the hints).
   const excluded = state.payload?.view?.excludedHands ?? [];
-  const hands = ordered(catalogue.hands.filter(matches).filter((hand) => !barredInGoulash(hand, excluded)));
+  const matching = ordered(catalogue.hands.filter(matches));
+  const hands = matching.filter((hand) => !barredInGoulash(hand, excluded));
+  // The barred hands stay in the list, last and marked, so a player looking for one learns why it is no wait.
+  const barred = matching.filter((hand) => barredInGoulash(hand, excluded));
   const list = $("#index-list");
   const listed = catalogue.hands.filter((hand) => !barredInGoulash(hand, excluded)).length;
   $("#index-count").textContent = `${hands.length} of ${listed}`;
-  if (hands.length === 0) {
+  if (hands.length === 0 && barred.length === 0) {
     const empty = document.createElement("p");
     empty.className = "index-empty";
     empty.textContent = "No hand matches. Try fewer words or another filter.";
@@ -200,7 +203,22 @@ function renderList() {
     showAll.addEventListener("click", resetFilters);
     list.replaceChildren(empty, showAll);
   } else {
-    list.replaceChildren(...hands.map(card));
+    const cardOf = (hand, isBarred) => {
+      const item = card(hand);
+      item.classList.toggle("is-barred", isBarred);
+      const foot = item.querySelector(".index-foot");
+      let tag = item.querySelector(".index-barred");
+      if (isBarred && tag === null) {
+        tag = document.createElement("span");
+        tag.className = "index-barred";
+        tag.textContent = "Barred in this Goulash";
+        foot?.append(tag);
+      } else if (!isBarred) {
+        tag?.remove();
+      }
+      return item;
+    };
+    list.replaceChildren(...hands.map((hand) => cardOf(hand, false)), ...barred.map((hand) => cardOf(hand, true)));
   }
   list.scrollTop = 0;
   syncReset();

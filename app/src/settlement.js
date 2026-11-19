@@ -108,3 +108,25 @@ export function explainSettlement({ outcome, you, dealer, name, fishing, cite = 
   }
   return seats;
 }
+
+/**
+ * The result card's "Paid" line: what each loser actually paid the winner,
+ * after East's double and the rounding to 100 (`outcome.points` is only the
+ * single-payer base). Null when no payment is on the ledger.
+ *
+ * @param {object} input
+ * @param {object} input.outcome   the result payload (ledger)
+ * @param {string} input.dealer    the seat that was East this hand
+ * @param {(seat: string) => string} input.name  a seat's wind name, "East"
+ */
+export function paidSummary({ outcome, dealer, name }) {
+  const wins = (outcome.ledger ?? []).filter((entry) => entry.kind === "win" && entry.points !== null);
+  if (wins.length === 0) return null;
+  const amounts = wins.map((entry) => entry.points);
+  const lowest = Math.min(...amounts);
+  const highest = Math.max(...amounts);
+  if (lowest === highest) {
+    return wins.every((entry) => entry.to === dealer) ? `${fmt(highest)} each (East receives double)` : `${fmt(highest)} each`;
+  }
+  return `${fmt(lowest)} each, ${name(dealer)} ${fmt(highest)}`;
+}
