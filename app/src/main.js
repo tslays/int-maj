@@ -24,6 +24,7 @@ import { houseRules, installOptions } from "./options.js";
 import { level } from "./level.js";
 import { pace } from "./pace.js";
 import "./report.js";
+import "./support.js";
 import { installResult, showOutcome } from "./result.js";
 import { $, board, faceChip, request, scores, state, storage, toast } from "./shared.js";
 import { sound } from "./sound.js";

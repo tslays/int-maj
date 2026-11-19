@@ -486,6 +486,14 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   if (nextTop !== 0) throw new Error(`the guide's Next topic opened scrolled to ${nextTop}, not the top`);
   await page.click("#help-close");
   await page.waitForSelector("#help-sheet", { state: "hidden", timeout: 5000 });
+  // Support: a quiet footer link; its sheet's one button opens int-maj's Ko-fi page. Escape closes just the sheet.
+  await page.click("#support-open");
+  await page.waitForSelector("#support-sheet:not([hidden])", { timeout: 5000 });
+  assert.equal(await page.getAttribute("#support-go", "href"), "https://ko-fi.com/int_maj", "support: the int_maj page");
+  assert.equal(await page.getAttribute("#support-go", "target"), "_blank", "support: Ko-fi opens on top, the game stays");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#support-sheet", { state: "hidden", timeout: 5000 });
+  assert.equal(await page.locator("#options-sheet").isVisible(), true, "support: Settings stays open under it");
   // Pace is a device preference that takes effect at once.
   await page.click('#pace [data-pace="faster"]');
   await page.waitForSelector('#pace [data-pace="faster"][aria-checked=true]', { timeout: 5000 });
@@ -839,6 +847,7 @@ async function startScreen(browser: Browser, origin: string, shots: string | nul
   assert.equal(await page.locator("#main-menu").isVisible(), false, "start: Settings has no Main menu over the main menu");
   assert.equal(await page.locator("#help").isVisible(), false, "start: Settings has no Help over the main menu");
   assert.equal(await page.locator("#reset-settings").isVisible(), true, "start: Settings can still be reset");
+  assert.equal(await page.locator("#support-open").isVisible(), true, "start: Settings still has Support int-maj");
   await page.click("#options-close");
   await page.click("#start-play");
   await page.waitForSelector("#start-new-confirm:not([hidden])", { timeout: READY_MS });
