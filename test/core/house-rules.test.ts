@@ -25,7 +25,7 @@ import {
   GOULASH_NO_HALF_LIMIT,
   waitsOf,
 } from "../../src/core/game/index.ts";
-import { tierExclusion } from "../../src/core/match.ts";
+import { NO_CHOWS, tierExclusion } from "../../src/core/match.ts";
 import { planGoals } from "../../src/core/game/bot/plan.ts";
 import { createHand } from "../../src/core/hand.ts";
 import {
@@ -323,7 +323,7 @@ describe("no half-limit hands in a Goulash (C p. 55)", () => {
     const outside = viewFor(fixture({ ...waiting, excludedHands: RULE }), "E");
     assert.deepEqual(outside.excludedHands, []);
     const inside = viewFor(fixture({ ...waiting, goulash: true, excludedHands: RULE }), "E");
-    assert.deepEqual(inside.excludedHands, [tierExclusion("half")]);
+    assert.deepEqual(inside.excludedHands, [NO_CHOWS, tierExclusion("half")]);
     assert.ok(closestHands(inside, 50).every((hand) => hand.tier !== "half"));
     assert.ok(closestHands(outside, 50).some((hand) => hand.tier === "half"));
     const goals = planGoals(situationFor(inside, "E"));
@@ -337,7 +337,7 @@ describe("no half-limit hands in a Goulash (C p. 55)", () => {
     const finished = fixture({ excludedHands: RULE, phase: "finished", result: { ...drawnResult(), nextDealer: "S" } });
     const next = nextHand(finished);
     assert.deepEqual(next.state.excludedHands, RULE);
-    const barred = next.state.goulash === true ? [tierExclusion("half")] : [];
+    const barred = next.state.goulash === true ? [NO_CHOWS, tierExclusion("half")] : [];
     assert.deepEqual(viewFor(next.state, "E").excludedHands, barred);
   });
 });

@@ -8,7 +8,7 @@
  */
 
 import { createHand, type Hand, type Meld } from "../hand.ts";
-import { isExcluded, matchesAny, tierExclusion } from "../match.ts";
+import { isExcluded, matchesAny, NO_CHOWS, tierExclusion } from "../match.ts";
 import { DEFAULT_LIMIT, scoreHand, type ScoreResult } from "../score.ts";
 import { TIER_FISHING, TIER_POINTS, type Tier } from "../patterns/types.ts";
 import { isSuited, parseTile, PLAY_TILE_KEYS, suitTileKey, type PlayTile } from "../tiles.ts";
@@ -117,9 +117,12 @@ export function isRuleToken(entry: string): boolean {
  */
 export function exclusionsOf(state: GameState): readonly string[] {
   const listed = state.excludedHands ?? [];
-  if (!listed.some(isRuleToken)) return listed;
+  const goulash = state.goulash === true;
+  if (!goulash && !listed.some(isRuleToken)) return listed;
   const hands = listed.filter((entry) => !isRuleToken(entry));
-  if (state.goulash === true && listed.includes(GOULASH_NO_HALF_LIMIT)) hands.push(tierExclusion("half"));
+  // A Goulash allows no chow outside a specialty hand (I p. 21, no. 27).
+  if (goulash) hands.push(NO_CHOWS);
+  if (goulash && listed.includes(GOULASH_NO_HALF_LIMIT)) hands.push(tierExclusion("half"));
   return hands;
 }
 
@@ -160,7 +163,7 @@ function completesFromDiscard(state: GameState, seat: Seat, tile: string): boole
   const hand = buildHand(state, seat, { extra: tile, winningTile: tile, selfDrawn: false });
   return (
     hand !== null &&
-    matchesAny(hand, (pattern, tier) => allowedPattern(state, pattern.id, tier))
+    matchesAny(hand, (pattern, tier) => allowedPattern(state, pattern.id, tier), undefined, exclusionsOf(state))
   );
 }
 
@@ -188,6 +191,7 @@ export function handIsComplete(state: GameState, seat: Seat, winningTile: string
   if (hand === null) return null;
   const score = scoreHand(hand, {
     limit: state.limit ?? DEFAULT_LIMIT,
+    goulash: state.goulash === true,
     excluded: exclusionsOf(state),
   });
   if (score.winning === null || !allowedPattern(state, score.winning.pattern.id, score.winning.tier)) return null;
@@ -213,7 +217,7 @@ export function waitsOf(state: GameState, seat: Seat): string[] {
     const hand = buildHand(state, seat, { extra: key, selfDrawn: true });
     if (
       hand !== null &&
-      matchesAny(hand, (pattern, tier) => allowedPattern(state, pattern.id, tier))
+      matchesAny(hand, (pattern, tier) => allowedPattern(state, pattern.id, tier), undefined, exclusionsOf(state))
     ) {
       waits.push(key);
     }
@@ -254,6 +258,7 @@ export function fishingValueFor(
     const score = scoreHand(hand, {
       withoutMahJongBonus: true,
       firstDiscardByEast: state.firstDiscardClaimedBy === seat,
+      goulash: state.goulash === true,
       excluded: exclusionsOf(state),
     });
     const winning = score.winning;
@@ -315,7 +320,13 @@ export function completesAsChow(
     { kind: "chow", tiles: toPlayTiles(chow), exposed: true },
   ];
   const hand = buildHand(state, seat, { concealedOverride: concealed, meldOverride: melds });
-  return hand !== null && matchesAny(hand, () => true);
+  // A chow claimed to win is a win like any other: the table's hand set and a
+  // house rule that bars going out (the fish not yet shown) apply to it too.
+  return (
+    hand !== null &&
+    mayGoOut(state, seat) &&
+    matchesAny(hand, (pattern, tier) => allowedPattern(state, pattern.id, tier), undefined, exclusionsOf(state))
+  );
 }
 
 /**
