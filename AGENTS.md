@@ -137,7 +137,7 @@ The full workflow is `docs/WORKFLOW.md`. The rules every session follows:
     leave the PR open; the owner checks it on their phone and sends
     corrections into the same session. Merge only when the owner says so.
   - *Release to testers:* sessions cannot push tags (the push gets a 403).
-    Tell the owner the next `v0.1.0-alpha.N` and the `main` commit to tag;
+    Tell the owner the next `v0.1.0-<stage>.N` (alpha; beta after the owner runs `/release beta`) and the `main` commit to tag;
     the owner pushes the tag. It is the only way testers get a new build.
     The build takes its version from the tag, so there is nothing to bump:
     `package.json` stays at `0.1.0-dev`. The owner starts a release with

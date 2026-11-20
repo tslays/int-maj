@@ -1,13 +1,14 @@
 /**
  * Everything a release needs to know from git, in one short block.
  *
- *   npm run release-prep
+ *   npm run release-prep [-- beta]
  *
- * It fetches `main` and the tags, then prints: the last tester tag and its
+ * `-- beta` asks for the first beta tag, which moves the project on from alpha
+ * for good (a stage only moves forward). It fetches `main` and the tags, then prints: the last tester tag and its
  * date (the date that version gets in the CHANGELOG), the next version, the
  * `main` commit to tag, whether this checkout is clean and level with `main`,
- * whether `docs/CHANGELOG.md` and `docs/TESTING.md` on `main` already name the next
- * version, and every commit since the last tag with its pull request number.
+ * whether `docs/CHANGELOG.md` and `docs/TESTING.md` on `main` already name the
+ * next version, and every commit since the last tag with its pull request number.
  * CI and open report issues are not here: sessions read them with the GitHub
  * tools (see `.claude/skills/release/SKILL.md`). A dev tool: nothing the game
  * runs imports it.
@@ -22,11 +23,24 @@ function git(...args: string[]): string {
   return execFileSync("git", args, { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
 }
 
-/** `v0.1.0-alpha.8` -> `v0.1.0-alpha.9`. */
-export function nextTag(tag: string): string {
-  const match = /^(v\d+\.\d+\.\d+-alpha\.)(\d+)$/.exec(tag);
-  if (!match) throw new Error(`not an alpha tag: ${tag}`);
-  return `${match[1]}${Number(match[2]) + 1}`;
+const STAGES = ["alpha", "beta", "rc"] as const;
+type Stage = (typeof STAGES)[number];
+
+/**
+ * The tag after `tag`: `v0.1.0-alpha.8` -> `v0.1.0-alpha.9`. With `to` it
+ * moves to the first of that stage (`v0.1.0-alpha.20`, "beta" ->
+ * `v0.1.0-beta.1`); a stage never goes backwards, and `to` may not name the
+ * stage the tag is already in.
+ */
+export function nextTag(tag: string, to?: Stage): string {
+  const match = /^(v\d+\.\d+\.\d+-)(alpha|beta|rc)\.(\d+)$/.exec(tag);
+  if (!match) throw new Error(`not a tester tag (v0.1.0-alpha.N, -beta.N): ${tag}`);
+  const stage = match[2] as Stage;
+  if (to === undefined) return `${match[1]}${stage}.${Number(match[3]) + 1}`;
+  if (STAGES.indexOf(to) <= STAGES.indexOf(stage)) {
+    throw new Error(`cannot move from ${stage} to ${to}: a stage only moves forward (to start the next ${stage}.N, leave out the stage)`);
+  }
+  return `${match[1]}${to}.1`;
 }
 
 /** `<hash> <subject>` lines -> hash, subject without its `(#N)`, and N. */
@@ -44,13 +58,15 @@ export function parseLog(log: string): { hash: string; subject: string; pr: numb
 }
 
 function main(): void {
+  const to = process.argv[2] as Stage | undefined;
+  if (to !== undefined && !STAGES.includes(to)) throw new Error(`unknown stage ${to}; use ${STAGES.join(", ")}`);
   try {
     git("fetch", "--quiet", "--tags", "origin", "main");
   } catch {
     console.log("warning: git fetch failed; using what this clone already has");
   }
-  const last = git("describe", "--tags", "--abbrev=0", "--match", "v*-alpha.*", "origin/main");
-  const next = nextTag(last);
+  const last = git("describe", "--tags", "--abbrev=0", "--match", "v*-*.*", "origin/main");
+  const next = nextTag(last, to);
   const stage = next.replace(/^v[\d.]+-/, "");
   const head = git("rev-parse", "--short", "origin/main");
   const dirty = git("status", "--porcelain") !== "";

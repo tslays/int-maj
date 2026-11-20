@@ -31,6 +31,9 @@ import { join, resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..");
 
+/** A version label as the guide and CHANGELOG write it: `alpha.20`, `beta.1`. */
+const VERSION = "(?:alpha|beta|rc)\\.\\d+";
+
 function between(text: string, name: string): string {
   const start = text.indexOf(`<!-- ${name}:start -->`);
   const end = text.indexOf(`<!-- ${name}:end -->`);
@@ -108,10 +111,10 @@ export function markdown(source: string): string {
 /** The newest version section of the CHANGELOG: its version and its lines. */
 export function newestSection(changelog: string): { version: string; body: string } {
   const lines = changelog.split("\n");
-  const start = lines.findIndex((line) => /^## alpha\.\d+/.test(line));
-  if (start < 0) throw new Error("docs/CHANGELOG.md has no ## alpha.N section");
+  const start = lines.findIndex((line) => new RegExp(`^## ${VERSION}`).test(line));
+  if (start < 0) throw new Error("docs/CHANGELOG.md has no ## <stage>.N section (alpha.N, beta.N)");
   const next = lines.findIndex((line, i) => i > start && /^## /.test(line));
-  const version = /alpha\.\d+/.exec(lines[start]!)![0];
+  const version = new RegExp(VERSION).exec(lines[start]!)![0];
   return { version, body: lines.slice(start + 1, next < 0 ? undefined : next).join("\n").trim() };
 }
 
@@ -139,10 +142,10 @@ export function releaseNotes(changelog: string): string {
 /** What is wrong with a release's texts and rendered guide; empty when all is well. */
 export function releaseProblems(parts: { guide: string; changelog: string; whatsapp: string; html: string }): string[] {
   const problems: string[] = [];
-  const guide = /alpha\.\d+/.exec(parts.guide)?.[0];
+  const guide = new RegExp(VERSION).exec(parts.guide)?.[0];
   const { version } = newestSection(parts.changelog);
   if (guide !== version) problems.push(`guide is ${guide ?? "unversioned"} but the newest CHANGELOG section is ${version}`);
-  const label = /should read \*\*(alpha\.\d+)\*\*/.exec(parts.guide)?.[1];
+  const label = new RegExp(`should read \\*\\*(${VERSION})\\*\\*`).exec(parts.guide)?.[1];
   if (label !== undefined && label !== version) problems.push(`guide says the label reads ${label}, not ${version}`);
   if (!parts.whatsapp.includes(version)) problems.push(`WhatsApp message does not name ${version}`);
   const text = parts.html.replace(/<[^>]*>/g, " ");
@@ -192,7 +195,7 @@ async function main(): Promise<void> {
   const testing = await readFile(join(ROOT, "docs/TESTING.md"), "utf8");
   const changelog = await readFile(join(ROOT, "docs/CHANGELOG.md"), "utf8");
   const guide = between(testing, "guide");
-  const stage = /alpha\.\d+/.exec(guide)?.[0] ?? "alpha";
+  const stage = new RegExp(VERSION).exec(guide)?.[0] ?? "alpha";
   const out = resolve(process.argv[2] ?? `int-maj-${stage}-testers.pdf`);
   const html = `<!doctype html><html><head><meta charset="utf-8"><style>${STYLE}</style></head><body>
     <main>${markdown(await embedImages(guide))}</main>

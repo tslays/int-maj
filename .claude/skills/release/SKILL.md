@@ -1,7 +1,7 @@
 ---
 name: release
-description: Prepare the next tester release (v0.1.0-alpha.N) - check main, write the CHANGELOG entry, the tester guide and WhatsApp message, build the PDF and the GitHub release notes, and hand the owner everything ready to copy. Only when the owner asks for a release.
-argument-hint: "[alpha.N]"
+description: Prepare the next tester release (v0.1.0-alpha.N, or v0.1.0-beta.N once the project is in beta) - check main, write the CHANGELOG entry, the tester guide and WhatsApp message, build the PDF and the GitHub release notes, and hand the owner everything ready to copy. Only when the owner asks for a release.
+argument-hint: "[alpha.N | beta.N | beta]"
 disable-model-invocation: true
 ---
 
@@ -10,15 +10,19 @@ disable-model-invocation: true
 The owner tags; sessions cannot (a tag push gets a 403). This skill gets
 everything ready on `main` and hands it over in pieces the owner can copy
 one by one. The version being released has no tag yet; that is normal.
-`$ARGUMENTS` names it (`alpha.9`); if empty, use the "next tag" that
-`npm run release-prep` prints.
+`$ARGUMENTS` names it (`alpha.9`, `beta.2`); if empty, use the "next tag" that
+`npm run release-prep` prints. The stage (`alpha`, then `beta`) only moves
+forward and only when the owner says so: `beta` means the first beta,
+`v0.1.0-beta.1`, and the skill then runs `npm run release-prep -- beta`. Without
+it, the count continues in the stage of the last tag. Below, `<stage>.N` is
+that version (`alpha.21`, `beta.1`).
 
 ## Keep it small
 
 - Never open a PDF, old or new. The guide is built from `docs/TESTING.md` and
   `docs/CHANGELOG.md`; `npm run tester-guide` checks its own output.
 - Read only the newest CHANGELOG section and the guide in `docs/TESTING.md`
-  (for example `awk '/^## alpha/{n++} n==1' docs/CHANGELOG.md`), never the
+  (for example `awk '/^## /{n++} n==1' docs/CHANGELOG.md`), never the
   whole history.
 - GitHub calls: the smallest `perPage` that answers the question, and only
   the `fields` you need (or `minimal_output`). Never fetch a PR's diff or
@@ -27,7 +31,7 @@ one by one. The version being released has no tag yet; that is normal.
 
 ## 1. Check
 
-1. `npm run release-prep`. It prints the last tag and its date, the next tag,
+1. `npm run release-prep` (`npm run release-prep -- beta` for the first beta). It prints the last tag and its date, the next tag,
    the `main` commit, the commits since the last tag with their PR numbers,
    and whether the CHANGELOG and TESTING on `main` already name the version.
 2. Open pull requests (`list_pull_requests`, state open, `perPage` 10): ask
@@ -45,7 +49,7 @@ one by one. The version being released has no tag yet; that is normal.
    pull requests: stop and report it; never paste the matched text anywhere.
 
 If the docs already have the version (a release-notes PR was merged before),
-skip to step 3.
+still do checks 1 to 5 (they cover what has merged since), then skip to step 3.
 
 ## 2. Write the release notes
 
@@ -53,7 +57,7 @@ On the session's `claude/...` branch, restarted from `main`. Read the PR
 subjects and bodies (`pull_request_read`, `fields` limited to title and body)
 only where a subject does not say enough for a player.
 
-- **`docs/CHANGELOG.md`:** a new `## alpha.N` section at the top, no date.
+- **`docs/CHANGELOG.md`:** a new `## <stage>.N` section at the top, no date.
   Give the previous section the last tag's date, as `## alpha.8 (14 November
   2026)`. Copy the previous section's shape: `**New**`, `**Changed**`,
   `**Fixed**`, `**What works differently now**`, dropping an empty one. Each
@@ -62,16 +66,16 @@ only where a subject does not say enough for a player.
   the GitHub release notes.
 - **`docs/TESTING.md`:** replace the guide between `<!-- guide:start -->` and
   `<!-- guide:end -->` with the new version's, keeping the previous guide's
-  headings: Getting the new version (the label reads **alpha.N**), New in,
+  headings: Getting the new version (the label reads **<stage>.N**), New in,
   Fixed thanks to your reports (only when a report was fixed), What works
   differently now, What to try, How to report, Known limits (update only what
   changed). Replace the WhatsApp message between its markers: version, link,
   three or four highlights in one paragraph, a thank-you for any report,
   "Options › Report a problem".
-- `npm run tester-guide`: the line must read `check: alpha.N OK`. Fix and
+- `npm run tester-guide`: the line must read `check: <stage>.N OK`. Fix and
   rerun until it does.
 - `npm test`, `npm run typecheck`, commit, push, open the pull request:
-  title `Release notes: alpha.N covers <three highlights>`, body two or three
+  title `Release notes: <stage>.N covers <three highlights>`, body two or three
   lines. Docs only, so enable auto-merge (squash). Subscribe to its activity
   and wait for the merge; do not poll.
 
@@ -80,18 +84,18 @@ only where a subject does not say enough for a player.
 After the merge: `git pull`, `npm run release-prep` (the "to tag" commit is
 the release-notes merge), `npm run tester-guide` again from `main`, and check
 CI on that commit as in step 1.4. Then send the owner
-`int-maj-alpha.N-testers.pdf`, `int-maj-alpha.N-release.md` and
-`int-maj-alpha.N-whatsapp.txt` with `SendUserFile`, and reply in exactly this
+`int-maj-<stage>.N-testers.pdf`, `int-maj-<stage>.N-release.md` and
+`int-maj-<stage>.N-whatsapp.txt` with `SendUserFile`, and reply in exactly this
 shape, every value in its own code block so each copies with one tap:
 
 ````
-**alpha.N is ready to tag.** CI is green on `<short sha>` (<one-line summary>).
+**<stage>.N is ready to tag.** CI is green on `<short sha>` (<one-line summary>).
 
 **1. Create the release** on GitHub › Releases › Draft a new release.
 
 Tag (choose "Create new tag on publish"):
 ```text
-v0.1.0-alpha.N
+v0.1.0-<stage>.N
 ```
 Target (Target › Recent commits, this one):
 ```text
@@ -99,21 +103,31 @@ Target (Target › Recent commits, this one):
 ```
 Release title:
 ```text
-v0.1.0-alpha.N
+v0.1.0-<stage>.N
 ```
 Release notes:
 ```markdown
-<contents of int-maj-alpha.N-release.md>
+<contents of int-maj-<stage>.N-release.md>
 ```
 Tick **Set as a pre-release**, then Publish. The tag starts
 `Deploy testers (int)`; when it is green, https://int.mah-jong.workers.dev
-shows alpha.N.
+shows <stage>.N.
 
 **2. Send the testers** the PDF (attached above) and this message:
 ```text
-<contents of int-maj-alpha.N-whatsapp.txt>
+<contents of int-maj-<stage>.N-whatsapp.txt>
 ```
 ````
+
+## The first beta
+
+Only when `$ARGUMENTS` is `beta`. Besides the steps above, in the same
+release-notes pull request: retitle `docs/TESTING.md` ("Testing the beta"),
+change the `docs/CHANGELOG.md` intro to name `-beta.N` tags as well, and have
+the guide and the WhatsApp message say that this is the first beta and what
+that means for testers (the owner tells you; ask if unsure). Tick **Set as a
+pre-release** as usual: beta is still a pre-release on GitHub. Never tag beta
+on your own, and never mix it into a plain `/release` run.
 
 Always give the release-notes PR's number and full URL. Use the full SHA for
 the target, never a branch name: `main` can move before the owner tags.
