@@ -13,6 +13,7 @@ import {
   MAX_PINS,
   newGame,
   viewFor,
+  waitsOf,
 } from "../../src/core/game/index.ts";
 import { fixture } from "../helpers/game-fixture.ts";
 
@@ -88,6 +89,93 @@ describe("closest hands", () => {
       assert.deepEqual(snake?.instead, []);
       assert.deepEqual(snake?.another, []);
     });
+  });
+
+  describe("a hand that waits on several tiles (tester report #259)", () => {
+    // Ordinary, 5 6 7 7 7 8 8 of circles with a Green Dragon kong and a pung of 1s of
+    // circles out: 4, 7 and 8 of circles each finish it (456+777+88, 567+777+88, 567+77+888).
+    const tenpai = (discards: { S?: readonly string[] } = {}): ReturnType<typeof fixture> =>
+      fixture({
+        hands: { E: "o5 o6 o7 o7 o7 o8 o8", ...OTHERS },
+        melds: {
+          E: [
+            { kind: "kong", tiles: ["dG", "dG", "dG", "dG"], exposed: true },
+            { kind: "pung", tiles: ["o1", "o1", "o1"], exposed: true },
+          ],
+        },
+        discards,
+        wall: LONG_WALL,
+        phase: "draw",
+        turn: "E",
+      });
+
+    it("names every tile the engine itself waits on, not only the first", () => {
+      const state = tenpai();
+      const waits = waitsOf(state, "E");
+      assert.deepEqual(waits, ["o4", "o7", "o8"], "the engine's own wait");
+      const hand = closestHands(viewFor(state, "E"), 100).find((entry) => entry.pattern === "ordinary-mahjong");
+      assert.ok(hand, "Ordinary is in reach");
+      assert.equal(hand.away, 1);
+      const shown = [...hand.need, ...hand.instead.flatMap((entry) => entry.or)].sort();
+      assert.deepEqual(shown, waits, "the hand sheet and the fishing announcement agree");
+      for (const key of waits) assert.ok((hand.unseen[key] ?? 0) > 0, `unseen copies of ${key} are given`);
+    });
+
+    it("leaves out a stand-in whose every copy is already in sight", () => {
+      const state = tenpai({ S: ["o8", "o8"] });
+      const hand = closestHands(viewFor(state, "E"), 100).find((entry) => entry.pattern === "ordinary-mahjong");
+      assert.ok(hand);
+      const shown = [...hand.need, ...hand.instead.flatMap((entry) => entry.or)];
+      assert.ok(!shown.includes("o8"), "all four 8s are in sight");
+      assert.ok(shown.includes("o4") && shown.includes("o7"));
+    });
+  });
+
+  it("never hides a tile the engine would announce fishing on (tester report #259)", () => {
+    // Property: for random one-suit hands a tile from winning, with two melds out, every tile in
+    // `waitsOf` (what a fishing announcement fixes) appears among the tiles the hand sheet lists.
+    let seed = 259;
+    const next = (bound: number): number => {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return (seed >>> 8) % bound;
+    };
+    const meld = (): string[] => {
+      const low = 1 + next(7);
+      if (next(2) === 0) return [`o${low}`, `o${low + 1}`, `o${low + 2}`];
+      const key = `o${1 + next(9)}`;
+      return [key, key, key];
+    };
+    let checked = 0;
+    for (let round = 0; round < 300; round++) {
+      const out = [meld(), meld()];
+      const hidden = [...meld(), ...meld()];
+      const pair = `o${1 + next(9)}`;
+      hidden.push(pair, pair);
+      hidden.splice(next(hidden.length), 1);
+      const copies = new Map<string, number>();
+      for (const key of [...out.flat(), ...hidden]) copies.set(key, (copies.get(key) ?? 0) + 1);
+      if ([...copies.values()].some((count) => count > 4)) continue;
+      const state = fixture({
+        hands: { E: hidden, ...OTHERS },
+        melds: {
+          E: out.map((tiles) => ({ kind: tiles[0] === tiles[1] ? "pung" : "chow", tiles, exposed: true })) as never,
+        },
+        wall: LONG_WALL,
+        phase: "draw",
+        turn: "E",
+      });
+      const waits = waitsOf(state, "E");
+      if (waits.length === 0) continue;
+      checked++;
+      const listed = new Set(
+        closestHands(viewFor(state, "E"), 100)
+          .filter((hand) => hand.away === 1)
+          .flatMap((hand) => [...hand.need, ...hand.instead.flatMap((entry) => entry.or)]),
+      );
+      const hidden259 = waits.filter((key) => !listed.has(key));
+      assert.deepEqual(hidden259, [], `hand ${hidden.join(" ")} with ${JSON.stringify(out)} waits on ${waits.join(" ")}`);
+    }
+    assert.ok(checked >= 30, `only ${checked} usable hands`);
   });
 
   it("drops a hand whose missing tile is all in sight", () => {
