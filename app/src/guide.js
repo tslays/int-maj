@@ -370,7 +370,7 @@ const TABS = [
       },
       {
         title: "Report a problem",
-        text: "Settings, then Report a problem: add a line if you like and Send. It goes to the developers with the build, your device and this game's moves; no name or account.",
+        text: "Settings, More, then Report a problem: add a line if you like and Send. It goes to the developers with the build, your device and this game's moves; no name or account.",
         picture: () => icon('<path d="M10 10h28v20H22l-8 7v-7h-4z"/><path d="M24 15v7M24 26v.5"/>'),
       },
       {

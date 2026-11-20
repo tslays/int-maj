@@ -5,8 +5,8 @@
  * Two rows lead on, inside the same sheet: Licence shows the repository's
  * LICENSE word for word, and Credits names every piece of third-party material
  * with its licence, the full OFL and MIT texts a tap away. Everything is part
- * of the app, so it reads offline and nothing links to the repository. The
- * guide has no card for it and the Settings footer no link, so neither grows.
+ * of the app, so it reads offline and nothing links to the repository. It
+ * also opens from a row in Settings' More tab; the guide has no card for it.
  */
 
 import { LICENCE_TEXTS } from "./notices-text.js";

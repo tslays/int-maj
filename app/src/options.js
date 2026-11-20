@@ -1,9 +1,13 @@
 /**
- * The Settings sheet, in four tabs: Game (bot level, pace, dice and dealing),
- * Table (sound, large discards on phones, the discard layout), Style (the
- * look: `style-options.js`) and Rules (the house rules), with Reset settings and, at the table, the doors to the main
- * menu, Help and Report a problem under every tab. Opened from the start
- * screen it offers only the reset: the rest is already there.
+ * The Settings sheet. Four tabs of settings: Game (bot level, pace, hints,
+ * animations), Table (sound, tile numbers, large discards on phones, the
+ * discard layout), Style (the look: `style-options.js`) and Rules (the house
+ * rules). Each ends the same way, with a quiet reset for that tab alone,
+ * greyed out while the tab already shows its defaults. A fifth tab, More,
+ * holds everything that is not a setting: the guide, Report a problem,
+ * Support, Install app, Licence and notices, and Reset all settings. The
+ * header holds the way out: Main menu at your own table, Room in an online
+ * one, nothing over the start screen.
  *
  * A house rule is a preference kept on the device. The table fixes a hand's
  * rules at its deal, so `houseRules()` is sent with every new game and every
@@ -22,6 +26,7 @@ import { pace } from "./pace.js";
 import { sound } from "./sound.js";
 import { sortPref } from "./sort-pref.js";
 import { startOpen } from "./start.js";
+import { openLegal } from "./legal.js";
 import { appearance } from "./appearance.js";
 import { installStyleOptions } from "./style-options.js";
 import { $, board, request, state, storage, toast } from "./shared.js";
@@ -42,7 +47,7 @@ const HAND_SET_TEXT = {
   rare: "Our own house rule: also drops the easy hands nearly any deal is halfway to, so the rarer ones are worth chasing. Left out:",
 };
 
-const TABS = ["game", "table", "style", "rules"];
+const TABS = ["game", "table", "style", "rules", "more"];
 
 const DEFAULT_RULES = { handSet: "all", goulashNoHalfLimit: true, winNeedsFish: false };
 
@@ -108,6 +113,61 @@ function showRules() {
   $("#rules-dot").hidden = !pending;
   $("#goulash-rule").setAttribute("aria-checked", String(rules.goulashNoHalfLimit));
   $("#fish-rule").setAttribute("aria-checked", String(rules.winNeedsFish));
+  showResets();
+}
+
+/**
+ * Each settings tab's own reset: what its defaults are and how to go back to
+ * them. Style keeps its own in `style-options.js`, as the look has themes.
+ */
+const TAB_RESETS = {
+  game: {
+    label: "Game settings reset",
+    isDefault: () => level.id === "medium" && pace.id === "normal" && hintStyle.id === "mixed" && openingPref.enabled,
+    reset() {
+      level.reset();
+      pace.reset();
+      hintStyle.reset();
+      openingPref.reset();
+      void refreshHints(true);
+    },
+  },
+  table: {
+    label: "Table settings reset",
+    isDefault: () => !sound.muted && tileNumbers.on && largeDiscards.on && discardLayout.id === "rows",
+    reset() {
+      sound.setMuted(false);
+      tileNumbers.reset();
+      largeDiscards.reset();
+      discardLayout.reset();
+    },
+  },
+  rules: {
+    label: "House rules reset",
+    isDefault: () => Object.entries(DEFAULT_RULES).every(([key, value]) => rules[key] === value),
+    reset() {
+      Object.assign(rules, DEFAULT_RULES);
+      saveRules();
+    },
+  },
+};
+
+/** Grey each tab's reset while that tab already shows its defaults. */
+function showResets() {
+  for (const [name, entry] of Object.entries(TAB_RESETS)) $(`#${name}-reset`).disabled = entry.isDefault();
+}
+
+/** Every control as the settings stand. */
+function showAll() {
+  showSound();
+  showLargeDiscards();
+  showTileNumbers();
+  showDiscardLayout();
+  showPace();
+  showHintStyle();
+  showLevel();
+  showOpening();
+  showRules();
 }
 
 function showTab(name) {
@@ -123,28 +183,33 @@ function showTab(name) {
 
 function showSound() {
   $("#sound").setAttribute("aria-checked", String(!sound.muted));
+  showResets();
 }
 
 /* Large discards: only a phone shows them, so only a phone offers the switch. */
 function showTileNumbers() {
   $("#tile-numbers").setAttribute("aria-checked", String(tileNumbers.on));
+  showResets();
 }
 
 function showLargeDiscards() {
   $("#large-discards-row").hidden = !roundLayersWanted(viewport.width, viewport.height);
   $("#large-discards").setAttribute("aria-checked", String(largeDiscards.on));
+  showResets();
 }
 
 function showDiscardLayout() {
   for (const button of document.querySelectorAll("#discard-layout [data-layout]")) {
     button.setAttribute("aria-checked", String(button.dataset.layout === discardLayout.id));
   }
+  showResets();
 }
 
 function showPace() {
   for (const button of document.querySelectorAll("#pace [data-pace]")) {
     button.setAttribute("aria-checked", String(button.dataset.pace === pace.id));
   }
+  showResets();
 }
 
 function showHintStyle() {
@@ -152,6 +217,7 @@ function showHintStyle() {
     button.setAttribute("aria-checked", String(button.dataset.hintStyle === hintStyle.id));
   }
   $("#hint-style-note").textContent = HINT_STYLES.find((entry) => entry.id === hintStyle.id)?.about ?? "";
+  showResets();
 }
 
 function showLevel() {
@@ -159,12 +225,14 @@ function showLevel() {
   for (const button of document.querySelectorAll("#level [data-level], #start-level [data-level]")) {
     button.setAttribute("aria-checked", String(button.dataset.level === level.id));
   }
+  showResets();
 }
 
 function showOpening() {
   for (const button of document.querySelectorAll("#opening-pref [data-opening]")) {
     button.setAttribute("aria-checked", String((button.dataset.opening === "on") === openingPref.enabled));
   }
+  showResets();
 }
 
 /* The left-out hands are named by the table, never by a list kept here. */
@@ -180,10 +248,10 @@ async function nameHands() {
   }
 }
 
-/* Reset settings changes everything at once, so it asks first, in place of the links. */
+/* Reset all settings changes everything at once, so it asks first, in its place. */
 function askReset(asking) {
   $("#reset-confirm").hidden = !asking;
-  $("#option-links").hidden = asking;
+  $("#reset-all").hidden = asking;
 }
 
 function closeOptions() {
@@ -193,60 +261,29 @@ function closeOptions() {
 
 /** Every setting back to its default, on the device and on screen. */
 function resetSettings() {
-  level.reset();
-  pace.reset();
-  hintStyle.reset();
-  openingPref.reset();
-  largeDiscards.reset();
-  tileNumbers.reset();
-  discardLayout.reset();
+  for (const entry of Object.values(TAB_RESETS)) entry.reset();
   appearance.reset();
-  sound.setMuted(false);
   const sortWasOff = !sortPref.on;
   sortPref.reset();
   if (sortWasOff) void board.autoSort();
-  Object.assign(rules, DEFAULT_RULES);
-  saveRules();
-  showSound();
-  showLargeDiscards();
-  showTileNumbers();
-  showDiscardLayout();
-  showPace();
-  showHintStyle();
-  showLevel();
-  showOpening();
-  showRules();
-  void refreshHints(true);
+  showAll();
   toast("Settings reset");
 }
 
 /** `hooks.mainMenu` opens the start screen over your table. */
 export function installOptions({ mainMenu }) {
   installStyleOptions();
-  showSound();
-  showLargeDiscards();
-  showTileNumbers();
-  showDiscardLayout();
-  showPace();
-  showHintStyle();
-  showLevel();
-  showOpening();
-  showRules();
+  showAll();
 
   $("#options").addEventListener("click", () => {
-    showSound();
-    showLargeDiscards();
-    showTileNumbers();
-    showRules();
-    showLevel();
+    showAll();
     void nameHands();
     showTab(tab);
-    // Over the start screen only the reset applies. At a table, in a room the link opens the
-    // room (to leave it); at your own table, the start screen.
+    // The way out: over the start screen there is none to take. At a table, in a room it
+    // opens the room (to leave it); at your own table, the start screen.
     const fromStart = startOpen();
     $("#main-menu").hidden = fromStart || state.online === true;
     $("#room-open").hidden = fromStart || state.online !== true;
-    $("#option-links").classList.toggle("from-start", fromStart);
     $("#options-sheet").hidden = false;
     $("#options-close").focus();
   });
@@ -274,6 +311,16 @@ export function installOptions({ mainMenu }) {
     closeOptions();
     mainMenu();
   });
+  $("#legal-open").addEventListener("click", openLegal);
+  for (const [name, entry] of Object.entries(TAB_RESETS)) {
+    $(`#${name}-reset`).addEventListener("click", () => {
+      entry.reset();
+      showAll();
+      toast(entry.label);
+      // The reset greys out at once, so focus moves up to the tab's first control.
+      $(`#panel-${name} button:not(:disabled)`)?.focus();
+    });
+  }
   $("#reset-go").addEventListener("click", () => {
     askReset(false);
     resetSettings();
@@ -283,8 +330,8 @@ export function installOptions({ mainMenu }) {
     if (event.target === event.currentTarget) closeOptions();
   });
   window.addEventListener("keydown", (event) => {
-    // Help, Report and Install open on top of this sheet; Escape closes the top one first.
-    const onTop = ["#help-sheet", "#report-sheet", "#install-sheet"].some((sheet) => !$(sheet).hidden);
+    // The More rows open sheets on top of this one; Escape closes the top one first.
+    const onTop = ["#help-sheet", "#report-sheet", "#install-sheet", "#support-sheet", "#legal-sheet"].some((sheet) => !$(sheet).hidden);
     if (event.key === "Escape" && !onTop) closeOptions();
   }, true);
 

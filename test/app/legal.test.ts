@@ -45,7 +45,7 @@ const flat = (text: string): string =>
     .trim();
 
 describe("Licence and notices", () => {
-  it("opens from a quiet link in the start screen's lower-left corner, and nowhere else", () => {
+  it("opens from a quiet link in the start screen's lower-left corner, and from Settings' More tab", () => {
     assert.match(
       section('<section class="start" id="start"', "</section>"),
       /<\/div>\s*<p class="start-fine"><button class="start-fine-link" id="start-notice" type="button">Licence and notices<\/button><\/p>/,
@@ -53,7 +53,7 @@ describe("Licence and notices", () => {
     assert.match(start, /import \{ openLegal \} from "\.\/legal\.js"/);
     assert.match(start, /\$\("#start-notice"\)\.addEventListener\("click", openLegal\)/);
     assert.doesNotMatch(guide, /openLegal|Licence and notices/, "the guide has no card for it");
-    assert.doesNotMatch(section('id="option-links"', "</nav>"), /legal|licen[cs]e/i, "the Settings footer stays short");
+    assert.match(section('id="panel-more"', "</section>"), /id="legal-open"[^>]*><span>Licence and notices<\/span>/);
   });
 
   it("stays small and muted in the lower-left corner: the build label's grey, a fine size, no button look", () => {

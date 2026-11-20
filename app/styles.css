@@ -1479,14 +1479,16 @@ button.detail-rule {
 .help-card {
   width: min(520px, 100%);
 }
-/* Options: three tabs (Game, Table, Rules), one setting per row - what it is
-   on the left, its control on the right - with the doors out (New game, Help,
-   Report) in a row under every tab. The card keeps one height, so switching
-   tabs never makes it jump; a tab taller than the screen scrolls inside. */
+/* Settings: four tabs of settings, one per row - what it is on the left, its
+   control on the right - each ending in the same quiet reset, and a fifth tab,
+   More, for everything that is not a setting. The way out (Main menu, or Room)
+   sits in the header beside the close. The card keeps one height, so
+   switching tabs never makes it jump; a tab taller than the screen scrolls
+   inside. */
 .options-card {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  width: min(560px, 100%);
+  width: min(620px, 100%);
   height: min(400px, 100%);
   padding: 0;
   display: flex;
@@ -1505,7 +1507,47 @@ button.detail-rule {
 }
 .options-tabs {
   display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
   gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.options-tabs::-webkit-scrollbar {
+  display: none;
+}
+/* The way out of the sheet: a quiet pill beside the close, never a tab. */
+.options-exit {
+  flex: none;
+  align-self: center;
+  min-height: 30px;
+  margin-top: -2px;
+  padding: 0 12px;
+  border: 1px solid rgba(140, 203, 234, 0.35);
+  border-radius: 999px;
+  background: none;
+  color: #8ccbea;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.options-exit:active {
+  background: rgba(140, 203, 234, 0.12);
+}
+.options-exit[hidden] {
+  display: none;
+}
+/* Narrow screens: the dialog keeps its name for screen readers, the tabs get the room. */
+@media (max-width: 600px) {
+  .options-head h2 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
 }
 .options-tab {
   position: relative;
@@ -1552,10 +1594,6 @@ button.detail-rule {
 .options-panel[hidden] {
   display: none;
 }
-.options-foot {
-  padding: 0 14px 3px;
-  border-top: 1px solid rgba(233, 228, 214, 0.1);
-}
 .group-head {
   display: flex;
   align-items: baseline;
@@ -1575,20 +1613,14 @@ button.detail-rule {
 .seg-steps button {
   flex: 1 1 0;
 }
-/* A rule chosen mid-hand: said once, in the header, beside the amber light. */
-.head-pending {
-  flex: 1 1 0;
-  min-width: 0;
-  margin: 0 0 12px !important;
-  overflow: hidden;
+/* A rule chosen mid-hand: the amber light on the Rules tab, and this line atop it. */
+.rules-pending {
+  margin: 2px 4px 0 !important;
   color: #f0c36a;
   font-size: 12px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  line-height: 1.25;
-  text-align: right;
+  font-weight: 600;
 }
-.head-pending[hidden] {
+.rules-pending[hidden] {
   display: none;
 }
 .option-group {
@@ -1778,24 +1810,8 @@ button.detail-rule {
 .option-note + .option-note {
   margin-top: -6px !important;
 }
-/* The doors out of Options, quiet under the settings. */
-.option-links {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 2px 4px;
-}
-/* Five doors on one line: a little less padding than a lone link. */
-.option-links .option-link {
-  padding: 0 8px;
-}
-.option-links[hidden],
-.option-links [hidden],
-.option-confirm[hidden] {
-  display: none;
-}
-/* Over the start screen the doors are already there: only the reset stays. */
-.option-links.from-start .option-link:not(#reset-settings, #support-open) {
+.option-confirm[hidden],
+.tab-reset[hidden] {
   display: none;
 }
 .start-confirm {
@@ -1834,10 +1850,12 @@ button.detail-rule {
 .option-link:active {
   background: rgba(140, 203, 234, 0.12);
 }
-/* Reset style: the look alone back to Classic; quiet when it already is. */
-.style-reset {
+/* Every tab ends the same way: its own reset, centred and quiet, greyed while
+   the tab already shows its defaults. */
+.tab-reset {
   display: flex;
   justify-content: center;
+  padding-bottom: 4px;
 }
 .option-link:disabled {
   color: var(--muted);
@@ -2485,7 +2503,16 @@ button.detail-rule {
   gap: 8px;
   margin-top: 16px;
 }
-.legal-row {
+/* More: the places that are not settings, as rows like the Licence sheet's. */
+.more-rows {
+  display: grid;
+  gap: 6px;
+}
+.more-row[hidden] {
+  display: none;
+}
+.legal-row,
+.more-row {
   display: flex;
   align-items: baseline;
   gap: 10px;
@@ -2502,18 +2529,22 @@ button.detail-rule {
   align-content: center;
   flex-wrap: wrap;
 }
-.legal-row small {
+.legal-row small,
+.more-row small {
   flex: 1;
   color: var(--muted);
   font-size: 12px;
 }
-.legal-row::after {
+.legal-row::after,
+.more-row::after {
   content: "\203A";
   color: var(--muted);
   font-size: 20px;
 }
 .legal-row:hover,
-.legal-row:focus-visible {
+.legal-row:focus-visible,
+.more-row:hover,
+.more-row:focus-visible {
   background: rgba(255, 255, 255, 0.08);
 }
 .legal-text ul {
