@@ -1,10 +1,10 @@
 /**
- * Licence and notices: the last card of Help's "More" tab opens a short sheet
- * on top of the guide. It says what the code is licensed under, whose books
- * the game follows, and that the project is independent of them. Its two
+ * Licence and notices: a small, quiet link at the foot of the start screen
+ * opens a short sheet over it. It says what the code is licensed under, whose
+ * books the game follows, and that the project is independent of them. Its two
  * links open the full LICENSE and NOTICE.md on GitHub in a new tab; nothing is
- * loaded until one is tapped. It has no link of its own in the Settings
- * footer, which stays short.
+ * loaded until one is tapped. The guide has no card for it and the Settings
+ * footer no link, so neither grows.
  */
 
 import { $ } from "./shared.js";
@@ -12,7 +12,7 @@ import { $ } from "./shared.js";
 /** The element that opened the sheet, so focus goes back to it on close. */
 let opener = null;
 
-/** Open the sheet over whatever is showing (the guide). */
+/** Open the sheet over whatever is showing (the start screen). */
 export function openLegal() {
   opener = document.activeElement;
   $("#legal-sheet").hidden = false;

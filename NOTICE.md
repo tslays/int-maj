@@ -9,16 +9,17 @@ The code, the app and the documentation in this repository are licensed under
 the [MIT licence](LICENSE), except for the material listed below, which keeps
 its own terms.
 
-## Not covered by the MIT licence
+## The books
 
-**The printed books.** `rules/pages/` holds page images of two books, both
-© Patricia A. Thompson and Betty Maloney, first published by Kangaroo Press:
+The game follows the rules of two books, both © Patricia A. Thompson and
+Betty Maloney, first published by Kangaroo Press:
 
 - *The Game of Mah Jong Illustrated* (1990)
 - *The Mah Jong Player's Companion* (1997)
 
-The images are the copyright of the authors and publisher. They are not
-licensed for reuse, copying or distribution outside this repository.
+This repository and the app contain none of their text or pages. The code and
+the app cite them by title and page number so a player can look a rule up in
+their own copy.
 
 ## Third-party material
 

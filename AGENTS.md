@@ -19,11 +19,22 @@ Two printed sources form the rules framework, in this order:
    is silent. A table can also play with the Companion's hands only
    (`rules/RULES.md` Part III §5), and then shows nothing from the Illustrated.
 
-The pages of both books are in the repository: `rules/pages/illustrated/pNN.jpg`
-and `rules/pages/companion/pNN.jpg` (open-book spreads, see
-`rules/pages/README.md`), with OCR text beside them, so any session can read
-them. The PDF masters are the owner's offline backup, not on any machine
-that works on the code; `scans/` paths in older documents name them.
+**The rule documents and book pages are not in this repository.** This
+repository is public; everything that quotes or reproduces the books lives in
+the private repository **`tslays/int-maj-rules`**, under the same `rules/`
+layout, so every `rules/...` path in this repository's code, tests and docs
+names a file there. It holds `rules/RULES.md`, `rules/SOURCE.md`,
+`rules/AUDIT.md`, `rules/archive/` (with `ASSUMPTIONS.md`), `rules/tools/`,
+and the page images and OCR text in `rules/pages/` (open-book spreads, see
+`rules/pages/README.md` there). For day-to-day work the engine
+(`src/core/`), its tests and `docs/ENGINE.md` hold the rules as built. When a
+task turns on what a rule says, attach the private repository (`add_repo`
+`tslays/int-maj-rules`) and clone it beside this one. A change to the rule
+documents is a pull request there; the code change is a pull request here.
+**Never copy book text, page images, OCR text or long quotations into this
+repository**, its issues or its pull requests: cite by `[I p.N]`/`[C p.N]`
+and the rule's `R-` number, and say it in your own words. The PDF masters are
+the owner's offline backup; `scans/` paths in older documents name them.
 
 `rules/RULES.md` is the single normative framework that records both, with a
 provenance tag on every rule (`[I p.N]` primary, `[C p.N]` supplement,
@@ -39,9 +50,11 @@ normalize an odd rule to another mahjong convention. If the source is unclear
 or silent, record the exact page, evidence, uncertainty and the narrowest
 assumption in `rules/archive/ASSUMPTIONS.md`; never quietly invent a rule.
 
-**The book pages are the owner's copies of copyrighted books.** They live in
-this repository only because it is private: never make it public, never copy
-them into the app, never share them elsewhere.
+**The book pages are the owner's copies of copyrighted books.** They live
+only in the private `tslays/int-maj-rules`: never make that repository public,
+never copy its pages or text into this one or into the app, never share them
+elsewhere. This repository's code is MIT-licensed; `NOTICE.md` lists what is
+not (third-party art, the font, the sounds) and the names it uses.
 
 ## Existing rules and code
 
@@ -50,9 +63,8 @@ the normative framework, `rules/AUDIT.md` records the closed rows and the few
 deliberately deferred table rulings, and the engine follows the framework.
 Everything under `rules/archive/` is historical audit material, not
 authority. The archive still holds the recorded assumptions for questions
-both books leave open; read it for provenance, never as a rule source.
-`.ignore` keeps the archive (except `ASSUMPTIONS.md`) out of searches; open a
-file there by path when its provenance is needed.
+both books leave open; read it for provenance, never as a rule source. All of
+these are in `tslays/int-maj-rules`.
 
 ## Project structure
 
@@ -76,7 +88,6 @@ bin/          command-line entry points: check, play, replay
 scripts/      build, preview, smoke test, release tools (release-prep,
               tester-guide) and art generators (scripts/art/)
 test/         core/, table/, cli/, app/, scripts/, helpers/ - mirroring the source
-rules/        the rule framework, its evidence and the book pages
 docs/         PLAN, APP and ENGINE references
 ```
 

@@ -644,5 +644,7 @@ The token, its renewal and the rest of the workflow: `docs/WORKFLOW.md`.
 npm run deploy       # npm test, npm run build, then upload dist/
 ```
 
-Only `dist/` is uploaded; the rule documents and book pages in `rules/` stay
-in the private repository (`test/table/offline.test.ts` checks this).
+Only `dist/` is uploaded; the rule documents and book pages are not in this
+repository at all (they are in the private `tslays/int-maj-rules`), and
+`test/table/offline.test.ts` checks that no rule document or page image is
+ever shipped.

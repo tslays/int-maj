@@ -1,5 +1,5 @@
 /**
- * Licence and notices: the last card of Help's "More" tab opens a sheet that names
+ * Licence and notices: a quiet link at the foot of the start screen opens a sheet that names
  * the MIT licence, the books the game follows and the publisher's independence
  * from the project. The repository's LICENSE and NOTICE.md must exist, and the
  * sheet's links must point at them.
@@ -12,6 +12,7 @@ import { describe, it } from "node:test";
 const html = readFileSync(new URL("../../app/index.html", import.meta.url), "utf8");
 const code = readFileSync(new URL("../../app/src/legal.js", import.meta.url), "utf8");
 const guide = readFileSync(new URL("../../app/src/guide.js", import.meta.url), "utf8");
+const start = readFileSync(new URL("../../app/src/start.js", import.meta.url), "utf8");
 const css = readFileSync(new URL("../../app/styles.css", import.meta.url), "utf8");
 const readme = readFileSync(new URL("../../README.md", import.meta.url), "utf8");
 const pkg = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8"));
@@ -25,10 +26,23 @@ const section = (open: string, close: string): string => {
 const REPO = "https://github.com/tslays/int-maj/blob/main";
 
 describe("Licence and notices", () => {
-  it("opens from Help's last card, not from the Settings footer, which stays short", () => {
-    assert.doesNotMatch(section('id="option-links"', "</nav>"), /legal|licen[cs]e/i);
-    assert.match(guide, /import \{ openLegal \} from "\.\/legal\.js"/);
-    assert.match(guide, /title: "Licence and notices"[\s\S]*?addEventListener\("click", openLegal\)/);
+  it("opens from a quiet link at the foot of the start screen, and nowhere else", () => {
+    assert.match(
+      section('<section class="start" id="start"', "</section>"),
+      /<p class="start-fine"><button class="start-fine-link" id="start-notice" type="button">Licence and notices<\/button><\/p>/,
+    );
+    assert.match(start, /import \{ openLegal \} from "\.\/legal\.js"/);
+    assert.match(start, /\$\("#start-notice"\)\.addEventListener\("click", openLegal\)/);
+    assert.doesNotMatch(guide, /openLegal|Licence and notices/, "the guide has no card for it");
+    assert.doesNotMatch(section('id="option-links"', "</nav>"), /legal|licen[cs]e/i, "the Settings footer stays short");
+  });
+
+  it("stays small and muted: the build label's grey, a fine size, no button look", () => {
+    const rule = /\.start-fine-link \{([^}]*)\}/.exec(css)?.[1] ?? "";
+    assert.match(rule, /font-size: 11px/);
+    assert.match(rule, /color: rgba\(255, 255, 255, 0\.38\)/);
+    assert.match(rule, /background: none/);
+    assert.match(rule, /min-height: 32px/, "still easy to tap");
   });
 
   it("names the licence, the books, the publisher and that the project is independent", () => {
@@ -47,8 +61,7 @@ describe("Licence and notices", () => {
     assert.match(links, new RegExp(`href="${REPO}/NOTICE\\.md" target="_blank" rel="noopener"`));
   });
 
-  it("sits over the guide and closes before it: later in the page, Escape caught first", () => {
-    assert.ok(html.indexOf('id="legal-sheet"') > html.indexOf('id="help-sheet"'), "drawn above Help");
+  it("opens over the start screen and Escape closes it first", () => {
     assert.match(code, /\$\("#legal-close"\)\.addEventListener\("click", closeLegal\)/);
     assert.match(code, /event\.key !== "Escape"/);
     assert.match(code, /stopImmediatePropagation/);
@@ -59,10 +72,9 @@ describe("Licence and notices", () => {
     assert.doesNotMatch(code, /fetch\(|<iframe|XMLHttpRequest/);
   });
 
-  it("is styled in the sheet's own card, not the start screen's", () => {
+  it("is styled in the sheet's own card", () => {
     assert.match(css, /\.legal-card \{/);
     assert.match(css, /\.legal-links a \{/);
-    assert.doesNotMatch(section('id="start"', "</section>"), /legal/i);
   });
 
   it("has the repository licence and notice files the sheet links to", () => {

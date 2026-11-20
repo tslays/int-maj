@@ -13,6 +13,7 @@
  */
 
 import { openGuide } from "./guide.js";
+import { openLegal } from "./legal.js";
 import { $, scores, state } from "./shared.js";
 import { continueNote } from "./start-note.js";
 
@@ -93,4 +94,5 @@ export function installStart(next) {
   $("#start-hands").addEventListener("click", () => $("#index-open").click());
   $("#start-settings").addEventListener("click", () => $("#options").click());
   $("#start-install").addEventListener("click", () => $("#install-open").click());
+  $("#start-notice").addEventListener("click", openLegal);
 }

@@ -25,9 +25,11 @@ Two sites: **int-dev** is the development site (every green push to `main`,
 plus a preview link per pull request); **int** is the tester site, which
 changes only when a release tag is pushed.
 
-Everything a session needs is in the repository: the code, the rules
-(`rules/RULES.md`), the book pages and their OCR text to check them against
-(`rules/pages/`) and the deploy (`.github/workflows/test.yml`).
+Everything a session needs for the code is in this repository: the code, the
+tests and the deploy (`.github/workflows/test.yml`). The rule framework
+(`rules/RULES.md` and its audit), the book pages and their OCR text are in the
+private repository `tslays/int-maj-rules`, under the same `rules/` paths; a
+session attaches it (`add_repo`) only when a task turns on what a rule says.
 
 The `int-maj` cloud environment (personal, linked to this repository) allows
 the package registries and the live sites, so a session can confirm a deploy.
@@ -147,7 +149,8 @@ deleting branches or history, changing the Cloudflare token or secrets).
 
 | What | Where | Why |
 | --- | --- | --- |
-| The book PDFs | the owner's own offline backup | masters; sessions read the page images and OCR text in `rules/pages/` |
+| The book PDFs | the owner's own offline backup | masters; sessions read the page images and OCR text in `tslays/int-maj-rules` |
+| The rule framework, page images, OCR text | private `tslays/int-maj-rules` (`rules/...`) | they quote and reproduce copyrighted books; this repository is public |
 | Saved games | each device's browser | a game belongs to the device it is played on |
 | Anything a session must remember | `AGENTS.md`, not Claude's memory | memory notes stay on one machine; a cloud session never sees them |
 | `dist/`, `.wrangler/` | wherever they are built | generated; never committed |
@@ -245,5 +248,9 @@ the photo is missing.
 
 ## Private material
 
-`rules/pages/` holds the owner's copies of copyrighted books. The repository
-stays private, and the build never ships those files (a test checks it).
+This repository is public (2026-11). The owner's copies of the copyrighted
+books, and the rule documents that quote them, live only in the private
+`tslays/int-maj-rules`; they were moved there and removed from this
+repository's history. Never copy book text, page images or OCR text back into
+this repository, its issues or its pull requests. The build never ships rule
+documents or images of pages (`test/table/offline.test.ts` checks it).

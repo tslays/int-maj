@@ -8,7 +8,6 @@
  */
 
 import { tipsReset } from "./tips.js";
-import { openLegal } from "./legal.js";
 import { $, faceChip } from "./shared.js";
 import { chanceBadge } from "./hints.js";
 
@@ -352,17 +351,6 @@ const TABS = [
             button.firstElementChild.textContent = "Tips are back";
             button.disabled = true;
           });
-          return button;
-        },
-      },
-      {
-        title: "Licence and notices",
-        text: "The code is free under the MIT licence. The rules come from two books by Patricia A. Thompson and Betty Maloney; int-maj is independent of them and their publisher.",
-        picture: () => {
-          const button = el("button", "ghost guide-legal", undefined);
-          button.type = "button";
-          button.append(el("span", "", "Read the notices"));
-          button.addEventListener("click", openLegal);
           return button;
         },
       },

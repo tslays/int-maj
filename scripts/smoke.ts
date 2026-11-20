@@ -849,6 +849,13 @@ async function startScreen(browser: Browser, origin: string, shots: string | nul
   assert.equal(await page.locator("#reset-settings").isVisible(), true, "start: Settings can still be reset");
   assert.equal(await page.locator("#support-open").isVisible(), true, "start: Settings still has Support int-maj");
   await page.click("#options-close");
+  // The licence link at the foot of the start screen opens the notice over it; Escape closes only the notice.
+  await page.click("#start-notice");
+  await page.waitForSelector("#legal-sheet:not([hidden])", { timeout: READY_MS });
+  assert.match((await page.textContent("#legal-sheet")) ?? "", /MIT licence/, "start: the licence notice names the licence");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#legal-sheet", { state: "hidden", timeout: READY_MS });
+  assert.equal(await page.locator("#start").isVisible(), true, "start: closing the notice leaves the start screen");
   await page.click("#start-play");
   await page.waitForSelector("#start-new-confirm:not([hidden])", { timeout: READY_MS });
   assert.equal(await page.locator("#start").isVisible(), true, "start: New game waits for the answer");
