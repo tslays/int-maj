@@ -240,7 +240,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   opens the hand's sheet; Menu, Escape or the phone's back return to the start
   screen. Like the start screen it works upright), `start-note.js` (the
   Continue card's words, pure for Node tests), `options.js` (the
-  Settings sheet in three tabs: Game (Bot level, Pace, Table animations), Table (Sound, Large discards on phones, Discards Rows or Pile) and Rules (the house rules), with Reset settings, Main menu (Room while in a room), Help and Report
+  Settings sheet in four tabs: Game (Bot level, Pace, Table animations), Table (Sound, Large discards on phones, Discards Rows or Pile), Style (the look, `style-options.js`) and Rules (the house rules), with Reset settings, Main menu (Room while in a room), Help and Report
   under every tab; opened from the start screen only Reset settings shows) and `report.js` (report a problem). Modules that need the loop (`input`,
   `result`, `menu`) get its functions from `main.js` through an `installX`
   call, so imports never run in a circle.
@@ -534,10 +534,10 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   (`version`, `stage`, `id`) and `BUILD_LABEL`; import it to put the build in
   a problem report. Unbuilt, the label reads `dev · local`.
 - **Settings and house rules.** The menu's Settings button opens a sheet with
-  three tabs, Game, Table and Rules, and the Reset settings, Main menu, Help and Report buttons
+  four tabs, Game, Table, Style and Rules, and the Reset settings, Main menu, Help and Report buttons
   under every tab (their sheets open on top of it). Reset settings asks first, then puts every
   stored preference (level, pace, hint style, animations, sound, tile numbers, large discards, discard layout,
-  Sort) and the house rules back to their defaults. New game is on the start screen, which asks
+  Sort, the look) and the house rules back to their defaults. New game is on the start screen, which asks
   "Start over?" when a game is in progress. It reopens on the last
   tab used while the page is open, and keeps one height so a tab never jumps. The Bot level is a device preference too (`int-maj.level`, `app/src/level.js`, Medium by default): it is sent as `level` with every `/api/step`, so it takes effect with the bots' next move; the decision is recorded as a step, so undo, Play again and a saved game never depend on it. Pace is a device preference (`int-maj.pace`, `app/src/pace.js`): `pace.scale(ms)` multiplies every bot beat, call-out hold, tile animation and animation-timed sound delay (Normal 1, Slower 1.5, Faster 0.6); ambient and camera animations stay fixed, and the engine never sees it. A house rule is a preference kept on the device
   (`int-maj:house-rules`); `houseRules()` in `options.js` is sent with every
@@ -561,6 +561,21 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   in the three Companion sets (Companion, Pictured, Rare) the hand sheet and result card name only Companion
   pages (`pages.js`) and the payment explanations drop their Illustrated page
   citations (`explainSettlement({ cite: false })`).
+- **Style.** Settings › Style changes only the look, never the game. Five
+  curated swatch rows each make a device preference (`app/src/appearance.js`):
+  the felt (`int-maj.felt`), the tile backs (`int-maj.tile-back`) and fronts
+  (`int-maj.tile-front`, all light so the faces stay legible), the room's rail,
+  floor and page background (`int-maj.room`), and the buttons' accent colours
+  (`int-maj.accent`). The themes Classic (the defaults), Midnight, Sakura and
+  Casino set all five at once; any single change afterwards reads as Custom.
+  **Reset style**, at the foot of the tab, puts the look alone back to Classic
+  and leaves every other setting (it rests, disabled, while the look is
+  Classic); the global Reset settings resets the look along with the rest.
+  `appearance-apply.js` paints them: the felt canvas, rail, floor and bounce
+  light through `setTableLook` in `stage.js`, every tile through the shared
+  materials (`setTileLook` in `tiles.js`), and the CSS tokens `--tile-back`,
+  `--tile-front`, `--page-bg`, `--rail`, `--felt-1..3`, `--gold-*`, `--blue-*`
+  and `--silver-*`, which the 2D chips, buttons and the tab's preview read.
 - **Report a problem.** The Report button in Settings (accessible name "Report a
   problem") opens a sheet of that title with an optional one-line note and a
   Send button (accessible name "Send report"; the keyboard's return key sends
@@ -606,7 +621,7 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   Goulash: <no (this hand is not a Goulash) | yes, half-limit hands barred|allowed in this hand>
   House rules: hand set <set>, half-limit hands in a Goulash <barred|allowed>, a win <needs the fish shown|needs no announcement>
   Decisions: <all steps> (yours: <human steps>)
-  Settings: bot level <easy|medium|hard>, pace <slower|normal|faster>, hint style <likeliest|mixed|discovery>, animations <on|off>, sound <on|off>, large discards <on|off>, discards <rows|pile>, hints <on|off>, tips <on|off>, sort <on|off>
+  Settings: bot level <easy|medium|hard>, pace <slower|normal|faster>, hint style <likeliest|mixed|discovery>, animations <on|off>, sound <on|off>, large discards <on|off>, tile numbers <on|off>, discards <rows|pile>, hints <on|off>, tips <on|off>, sort <on|off>, look <theme | felt <id>, backs <id>, fronts <id>, room <id>, buttons <id>>
   Pinned hands: <none | the pinned hands, at most three>
   Rules chosen: hand set <set>, half-limit hands in a Goulash <barred|allowed>, a win <needs the fish shown|needs no announcement> (<in force in this hand|change starts next hand>)
   Note: <one line, 280 characters at most, or (none)>

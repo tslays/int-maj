@@ -12,6 +12,7 @@ import * as THREE from "three";
 import { RoomEnvironment } from "../vendor/three/RoomEnvironment.js";
 import { HAND_FOV, fitHandCamera, fitPondCamera, fitTableCamera, handLeftAtLane } from "./camera.js";
 import { WALL_INNER, pondExtent } from "./layout.js";
+import { FELTS, ROOMS } from "./appearance.js";
 import { pace } from "./pace.js";
 import { D, H, TABLE } from "./tiles.js";
 
@@ -49,23 +50,39 @@ const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
 
 /* --------------------------------------------------------- table */
 
-function feltTexture() {
-  const size = 1024;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
+/* The look chosen in Settings, Style (`appearance.js`): the felt's colours, the rail and the room. */
+let tableLook = { felt: FELTS[0], room: ROOMS[0] };
+const FELT_SIZE = 1024;
+const feltCanvas = document.createElement("canvas");
+// Sized before the texture is made: a texture keeps the size of its first upload.
+feltCanvas.width = FELT_SIZE;
+feltCanvas.height = FELT_SIZE;
+let feltPainted = null;
+const feltMap = new THREE.CanvasTexture(feltCanvas);
+feltMap.colorSpace = THREE.SRGBColorSpace;
+feltMap.anisotropy = maxAnisotropy;
+const railMaterial = new THREE.MeshPhysicalMaterial({ color: 0x2a3236, roughness: 0.35, clearcoat: 0.7, clearcoatRoughness: 0.3 });
+const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x11191c, roughness: 1 });
+const tableBounce = new THREE.HemisphereLight(0xf4fbff, 0x10292a, 0.28);
+
+function paintFelt(felt) {
+  if (felt === feltPainted) return;
+  feltPainted = felt;
+  const { stops, guide } = felt;
+  const size = FELT_SIZE;
+  const canvas = feltCanvas;
   const context = canvas.getContext("2d");
   const gradient = context.createRadialGradient(size / 2, size / 2, size * 0.05, size / 2, size / 2, size * 0.72);
-  gradient.addColorStop(0, "#1f716d");
-  gradient.addColorStop(0.62, "#185a59");
-  gradient.addColorStop(1, "#0b3334");
+  gradient.addColorStop(0, stops[0]);
+  gradient.addColorStop(0.62, stops[1]);
+  gradient.addColorStop(1, stops[2]);
   context.fillStyle = gradient;
   context.fillRect(0, 0, size, size);
   // Engraved guides: the play square inside the walls, and its diagonals.
   const unit = size / (TABLE_HALF * 2);
   const inner = (WALL_R - H / 2 - 0.35) * unit;
   const centre = size / 2;
-  context.strokeStyle = "rgba(4, 26, 26, 0.45)";
+  context.strokeStyle = guide;
   context.lineWidth = 3;
   context.strokeRect(centre - inner, centre - inner, inner * 2, inner * 2);
   context.beginPath();
@@ -85,22 +102,34 @@ function feltTexture() {
     noise.data[index + 2] += grain;
   }
   context.putImageData(noise, 0, 0);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = maxAnisotropy;
-  return texture;
+  feltMap.needsUpdate = true;
+}
+
+/**
+ * Dress the table in a look from `appearance.js`: `felt` a swatch of FELTS,
+ * `room` one of ROOMS. Works before the table is built and at any moment after.
+ */
+export function setTableLook({ felt = tableLook.felt, room = tableLook.room } = {}) {
+  paintFelt(felt);
+  tableLook = { felt, room };
+  railMaterial.color.set(room.rail);
+  floorMaterial.color.set(room.floor);
+  tableScene.background.set(room.floor);
+  tableBounce.groundColor.set(felt.bounce);
+  requestRender();
 }
 
 function buildTable() {
   const felt = new THREE.Mesh(
     new THREE.PlaneGeometry(TABLE_HALF * 2, TABLE_HALF * 2),
-    new THREE.MeshStandardMaterial({ map: feltTexture(), roughness: 0.96, metalness: 0 }),
+    new THREE.MeshStandardMaterial({ map: feltMap, roughness: 0.96, metalness: 0 }),
   );
   felt.rotation.x = -Math.PI / 2;
   felt.receiveShadow = true;
   tableScene.add(felt);
 
-  const rail = new THREE.MeshPhysicalMaterial({ color: 0x2a3236, roughness: 0.35, clearcoat: 0.7, clearcoatRoughness: 0.3 });
+  paintFelt(tableLook.felt);
+  const rail = railMaterial;
   for (let side = 0; side < 4; side++) {
     const piece = new THREE.Mesh(new THREE.BoxGeometry(TABLE_HALF * 2 + RAIL * 2, 0.7, RAIL), rail);
     piece.position.set(0, 0.35, TABLE_HALF + RAIL / 2);
@@ -113,7 +142,7 @@ function buildTable() {
   }
   const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(160, 160),
-    new THREE.MeshStandardMaterial({ color: 0x11191c, roughness: 1 }),
+    floorMaterial,
   );
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = -0.02;
@@ -121,7 +150,7 @@ function buildTable() {
 }
 
 function buildLights() {
-  tableScene.add(new THREE.HemisphereLight(0xf4fbff, 0x10292a, 0.28));
+  tableScene.add(tableBounce);
   const key = new THREE.DirectionalLight(0xfff1dc, 2.3);
   key.position.set(-7, 22, 9);
   key.castShadow = true;

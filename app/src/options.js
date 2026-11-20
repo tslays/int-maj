@@ -1,7 +1,7 @@
 /**
- * The Settings sheet, in three tabs: Game (bot level, pace, dice and dealing),
- * Table (sound, large discards on phones, the discard layout) and Rules (the
- * house rules), with Reset settings and, at the table, the doors to the main
+ * The Settings sheet, in four tabs: Game (bot level, pace, dice and dealing),
+ * Table (sound, large discards on phones, the discard layout), Style (the
+ * look: `style-options.js`) and Rules (the house rules), with Reset settings and, at the table, the doors to the main
  * menu, Help and Report a problem under every tab. Opened from the start
  * screen it offers only the reset: the rest is already there.
  *
@@ -22,6 +22,8 @@ import { pace } from "./pace.js";
 import { sound } from "./sound.js";
 import { sortPref } from "./sort-pref.js";
 import { startOpen } from "./start.js";
+import { appearance } from "./appearance.js";
+import { installStyleOptions } from "./style-options.js";
 import { $, board, request, state, storage, toast } from "./shared.js";
 import { viewport } from "./stage.js";
 
@@ -40,7 +42,7 @@ const HAND_SET_TEXT = {
   rare: "Our own house rule: also drops the easy hands nearly any deal is halfway to, so the rarer ones are worth chasing. Left out:",
 };
 
-const TABS = ["game", "table", "rules"];
+const TABS = ["game", "table", "style", "rules"];
 
 const DEFAULT_RULES = { handSet: "all", goulashNoHalfLimit: true, winNeedsFish: false };
 
@@ -198,6 +200,7 @@ function resetSettings() {
   largeDiscards.reset();
   tileNumbers.reset();
   discardLayout.reset();
+  appearance.reset();
   sound.setMuted(false);
   const sortWasOff = !sortPref.on;
   sortPref.reset();
@@ -219,6 +222,7 @@ function resetSettings() {
 
 /** `hooks.mainMenu` opens the start screen over your table. */
 export function installOptions({ mainMenu }) {
+  installStyleOptions();
   showSound();
   showLargeDiscards();
   showTileNumbers();

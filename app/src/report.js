@@ -19,6 +19,7 @@ import { $, state, toast } from "./shared.js";
 import { sound } from "./sound.js";
 import { sortPref } from "./sort-pref.js";
 import { tipsOn } from "./tips.js";
+import { appearance } from "./appearance.js";
 
 const SEND_TIMEOUT_MS = 15000;
 /** Below this much visible height (a landscape phone with its keyboard up) the sheet drops its small print. */
@@ -73,6 +74,13 @@ function closeReport() {
   sheet.hidden = true;
 }
 
+/* The look: a theme by name, or the five swatches of a mix of one's own. */
+function lookNow() {
+  const theme = appearance.matchingBundle();
+  if (theme !== null) return theme;
+  return `felt ${appearance.felt.id}, backs ${appearance.back.id}, fronts ${appearance.front.id}, room ${appearance.room.id}, buttons ${appearance.accent.id}`;
+}
+
 /* Every choice the player has stored on this device, so a report shows the
    settings a bug happened under. The table prints them; it cannot see them. */
 function settingsNow() {
@@ -88,6 +96,7 @@ function settingsNow() {
     hints: closestHandsOn(),
     tips: tipsOn(),
     sort: sortPref.on,
+    look: lookNow(),
     pinned: pinnedHands(),
     rules: houseRules(),
   };

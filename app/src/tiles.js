@@ -29,6 +29,15 @@ const lacquer = new THREE.MeshPhysicalMaterial({
   clearcoatRoughness: 0.18,
 });
 
+/**
+ * Colour every tile at once (Settings, Style): `back` and `front` are hex
+ * colours for the lacquered back and the face; the face art lies over the front.
+ */
+export function setTileLook({ back, front }) {
+  if (back !== undefined) lacquer.color.set(back);
+  if (front !== undefined) ivory.color.set(front);
+}
+
 export function roundedRect(width, height, radius) {
   const shape = new THREE.Shape();
   const x = -width / 2;
