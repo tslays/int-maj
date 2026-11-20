@@ -7,7 +7,7 @@ short **WhatsApp message**. How to play is not here: the app teaches itself
 is new, what to try, how to report and what the app cannot do yet.
 
 <!-- guide:start -->
-# Mah Jong — test version alpha.18
+# Mah Jong — test version alpha.19
 
 **Play here:** https://int.mah-jong.workers.dev
 
@@ -16,51 +16,42 @@ International mahjong in your browser, against three bots, by the rules of
 
 ## Getting the new version
 
-Open the link (or the app on your home screen) and reload it once. The
-small label under the menu, top left, should read **alpha.18**. A game in
-progress carries on. If an update changes the game, the hand you were playing
-starts again with the scores kept.
+**This version has a new icon, so delete the app from your home screen and
+add it again.** The icon on your home screen keeps the logo it was made with,
+so the new one only appears once you add the app again. Press and hold its
+icon, choose to remove or delete the app, then add it again as described
+below. A game in progress may not survive the delete, so finish it first if
+you can.
+
+This is the new icon, a gold *i* on dark teal. When it is on your home screen,
+the update has worked:
+
+![The new int-maj icon: a gold italic i on dark teal](app/assets/icons/icon-512.png)
+
+Then open the link and reload it once. The small label under the menu, top
+left, should read **alpha.19**. If an update changes the game, the hand you
+were playing starts again with the scores kept.
 
 **New to the app?** On an iPhone open the link in Safari, tap Share, then
 *Add to Home Screen*, and play it from the home-screen icon with the phone
-turned sideways. Everything else, the app shows you: Options › **Help**.
+turned sideways. On Android, open the link in Chrome and tap *Install*, or
+*Add to Home screen* in the menu. Everything else, the app shows you: Options
+› **Help**.
 
-## New in alpha.18
+## New in alpha.19
 
-- **Reset buttons, and a Support link.** Settings has a Reset settings
-  button, and All hands has a Reset filters button. Settings also has a
-  quiet *Support int-maj* link: it opens a small sheet with one button to
-  Ko-fi, and nothing loads from Ko-fi until you tap it.
-- **More guide cards.** The guide now covers Practice, the start screen,
-  Play with friends, the hands in play, Table settings and the Goulash.
-
-## Fixed thanks to your reports
-
-Thank you to the testers whose reports these fix:
-
-- Dragonette takes a paired wind or dragon as the spare tile. Alpha.17 said
-  this was fixed, but the fix missed that build.
+- **A new icon.** The title's italic *i*, gold on felt teal, its dot a
+  mahjong tile. Delete the app and add it again to see it (above).
 
 ## What works differently now
 
-- Scoring explains itself: the paid line shows what each loser paid, and
-  Score opens the breakdown. The last Goulash exchange is labelled.
-- Barred hands stay in All hands, marked as barred.
-- The game is called int-maj, and its title glints every five seconds.
-- Practice's back button is a round chevron.
-- In the guide, Next opens the next topic at its top.
+- The title screen uses the same font as the icon, so the two match.
 
 ## What to try, and tell us
 
-- Finish a hand with a win. Is the paid line right, and does Score show the
-  breakdown?
-- Play a Goulash to its last exchange. Is it labelled? Does the Goulash bar
-  make sense to you?
-- Open All hands, set some filters, and tap Reset filters. Do they clear?
-- In Settings, tap Reset settings. Then tap Support int-maj: does the sheet
-  open, and does Ko-fi load only after you tap?
-- Look for a Dragonette whose spare tile is a paired wind. Is a wait or a
-  fishing offer given?
+- Delete the app from your home screen and add it again. Does the icon match
+  the picture above?
+- Open the app. Does the title look like the icon's *i*, in the same font?
 - Anything that broke, looked wrong or surprised you.
 
 ## How to report
@@ -93,12 +84,12 @@ connection it offers to share the report as a message instead.
 ## WhatsApp message
 
 <!-- whatsapp:start -->
-🀄 **Mah Jong test version alpha.18 is out!**
+🀄 **Mah Jong test version alpha.19 is out!**
 
-Play: https://int.mah-jong.workers.dev (reload once to update)
+Play: https://int.mah-jong.workers.dev
 
-New: a Support int-maj link in Settings (Ko-fi, opens only when you tap it), Reset buttons in Settings and All hands, and guide cards for Practice, the start screen and the Goulash. Fixed: Dragonette takes a paired wind as the spare tile, a fix that missed alpha.17.
+**New icon: delete the app from your home screen and add it again.** The new icon is the picture sent with this message: a gold *i* on dark teal. When it is on your home screen, the update has worked. A game in progress may not survive the delete, so finish it first if you can.
 
-Thank you to everyone who sent a report. Found something odd? Options › Report a problem.
+New: the title uses the icon's font, so the two match. Thank you to everyone who sent a report. Found something odd? Options › Report a problem.
 
 <!-- whatsapp:end -->
