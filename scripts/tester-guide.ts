@@ -7,8 +7,8 @@
  * and `<!-- guide:end -->`), adds the full `docs/CHANGELOG.md`, renders the
  * little Markdown they use (headings, paragraphs, lists, bold, italics,
  * links, pictures) to a styled page and prints it to A4 with Playwright's
- * Chromium. A picture line, `![alt](app/assets/icons/icon-512.png)`, is
- * embedded in the PDF itself.
+ * Chromium. A picture line, `![alt](../app/assets/icons/icon-512.png)`, is
+ * embedded in the PDF itself; its path is relative to `docs/`, as on GitHub.
  * The default output is `int-maj-<stage>-testers.pdf` in the working
  * directory, named after the guide's version; it is not committed.
  *
@@ -163,7 +163,7 @@ export function releaseProblems(parts: { guide: string; changelog: string; whats
 export async function embedImages(text: string): Promise<string> {
   let out = text;
   for (const [whole, alt, file] of text.matchAll(/!\[([^\]]*)\]\(([^)\s]+\.png)\)/g)) {
-    const picture = await readFile(join(ROOT, file!), "base64");
+    const picture = await readFile(join(ROOT, "docs", file!), "base64");
     out = out.replace(whole, `![${alt}](data:image/png;base64,${picture})`);
   }
   return out;

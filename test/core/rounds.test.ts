@@ -45,8 +45,8 @@ function finished(
 }
 
 describe("rounds and the Wind of the Round", () => {
-  // R-032 [I p. 23]: "A round is finished when each player has completed a
-  // turn as East Wind." The wind stays while the deal travels round the table.
+  // R-032 [I p. 23]: a round ends once every seat has dealt as East
+  // Wind. The wind stays while the deal travels round the table.
   it("keeps the round wind until every seat has dealt", () => {
     for (const [dealer, next] of [["E", "S"], ["S", "W"], ["W", "N"]] as const) {
       const state = nextHand(finished(dealer, "E", next)).state;
@@ -122,8 +122,8 @@ describe("drawn hands", () => {
     assert.equal(play(second, { type: "Draw", seat: "S" }).state.result?.nextDealer, "S");
   });
 
-  // R-074 [I p. 21]: the hand is drawn only "before all tiles have been drawn
-  // from the wall" - the loose pair is drawn down too, nothing is left over.
+  // R-074 [I p. 21]: a hand cannot be drawn while any tile is left to
+  // draw - the loose pair is drawn down too, nothing is left over.
   it("draws the loose pair down before a Western hand is drawn", () => {
     let state = fixture({
       dealer: "E",

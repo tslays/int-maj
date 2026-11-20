@@ -152,8 +152,8 @@ export interface GameState {
   /** The game ends after the North round; no further hand may be dealt. */
   readonly gameOver?: boolean;
   /**
-   * The seat that dealt the first hand of the current round. R-032: "A round
-   * is finished when each player has completed a turn as East Wind", so the
+   * The seat that dealt the first hand of the current round. R-032: a round
+   * ends once every seat has dealt as East Wind, so the
    * Wind of the Round advances when the deal passes back to this seat.
    * Absent on states saved before it existed; those read it as "E".
    */

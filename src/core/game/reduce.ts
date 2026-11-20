@@ -354,9 +354,9 @@ function applyFalseMahJong(draft: Draft, seat: Seat, emit: Emit): ApplyError | n
 }
 
 /**
- * R-100 [I p. 21, 63]: "three tiles are exchanged with the player opposite.
- * Then East exchanges three tiles with South, West exchanges with North.
- * Lastly East exchanges three tiles with North while West and South exchange."
+ * R-100 [I p. 21, 63]: three exchanges of three tiles each. First across the
+ * table (East-West, South-North), then East-South and West-North, and last
+ * East-North and West-South.
  */
 export const GOULASH_PAIRS: readonly (readonly (readonly [Seat, Seat])[])[] = [
   [["E", "W"], ["S", "N"]],

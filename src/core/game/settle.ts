@@ -176,8 +176,8 @@ function ledgerFor(
     }
   }
 
-  // The winner is paid first and pays nobody; "the other players expose their
-  // hands, total their scores and settle the differences" (I p. 21 #24). Which
+  // The winner is paid first and pays nobody; then the losers show their
+  // hands, score them and pay one another the differences (I p. 21 #24). Which
   // losing hands are scored is the settlement level (I p. 24, R94): beginners
   // none, intermediate the fishing hands, advanced all of them.
   const settlement = draft.settlement ?? "intermediate";

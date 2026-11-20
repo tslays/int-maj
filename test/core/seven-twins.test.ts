@@ -1,6 +1,6 @@
 /**
- * Seven Twins at the table (Companion p. 13: "Seven Pairs of anything. All
- * tiles from wall - INCLUDING LAST"). The last tile must be self-drawn, so the
+ * Seven Twins at the table (Companion p. 13: any seven pairs, every tile
+ * self-drawn, the last one too). The last tile must be self-drawn, so the
  * hand can never be completed by a claim: not on a discard, not by robbing a
  * kong. A four-of-a-kind counts as two pairs.
  */

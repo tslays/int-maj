@@ -31,8 +31,8 @@ const FILLER = {
 };
 
 describe("A7 fishing payer", () => {
-  // I p. 21 #24: the winner "does not pay anyone"; the other players "total
-  // their scores and settle the differences". I p. 24: intermediate scores and
+  // I p. 21 #24: the winner pays nobody; the other players score their
+  // hands and pay one another the differences. I p. 24: intermediate scores and
   // pays the winning and the fishing hands. I p. 32: the fishing figures, East
   // paying or receiving double.
   const FISH_WINNER_HAND = "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 b5";
