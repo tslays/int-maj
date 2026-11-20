@@ -864,7 +864,7 @@ async function startScreen(browser: Browser, origin: string, shots: string | nul
   assert.deepEqual(noticeOverlaps, [], "start: the licence link overlaps nothing");
   await page.click("#start-notice");
   await page.waitForSelector("#legal-sheet:not([hidden])", { timeout: READY_MS });
-  assert.match((await page.textContent("#legal-sheet")) ?? "", /MIT licence/, "start: the licence notice names the licence");
+  assert.match((await page.textContent("#legal-sheet")) ?? "", /All rights reserved/, "start: the licence notice names the licence");
   await page.keyboard.press("Escape");
   await page.waitForSelector("#legal-sheet", { state: "hidden", timeout: READY_MS });
   assert.equal(await page.locator("#start").isVisible(), true, "start: closing the notice leaves the start screen");

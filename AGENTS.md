@@ -53,8 +53,9 @@ assumption in `rules/archive/ASSUMPTIONS.md`; never quietly invent a rule.
 **The book pages are the owner's copies of copyrighted books.** They live
 only in the private `tslays/int-maj-rules`: never make that repository public,
 never copy its pages or text into this one or into the app, never share them
-elsewhere. This repository's code is MIT-licensed; `NOTICE.md` lists what is
-not (third-party art, the font, the sounds) and the names it uses.
+elsewhere. This repository's code is all rights reserved (proprietary,
+source-visible: public to be read, not reused); `NOTICE.md` lists what is not
+covered (third-party art, the font, the sounds) and the names it uses.
 
 ## Existing rules and code
 

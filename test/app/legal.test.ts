@@ -1,6 +1,6 @@
 /**
  * Licence and notices: a quiet link in the start screen's lower-left corner opens a sheet that names
- * the MIT licence, the books the game follows and the publisher's independence
+ * the licence (all rights reserved), the books the game follows and the publisher's independence
  * from the project. The repository's LICENSE and NOTICE.md must exist, and the
  * sheet's links must point at them.
  */
@@ -51,7 +51,7 @@ describe("Licence and notices", () => {
 
   it("names the licence, the books, the publisher and that the project is independent", () => {
     const sheet = section('id="legal-sheet"', '<section class="start"');
-    assert.match(sheet, /MIT licence/);
+    assert.match(sheet, /All rights reserved/);
     assert.match(sheet, /<i>The Game of Mah Jong Illustrated<\/i>/);
     assert.match(sheet, /<i>The Mah Jong Player's Companion<\/i>/);
     assert.match(sheet, /Patricia A\. Thompson and Betty Maloney/);
@@ -84,12 +84,12 @@ describe("Licence and notices", () => {
   it("has the repository licence and notice files the sheet links to", () => {
     assert.ok(existsSync(new URL("../../LICENSE", import.meta.url)), "LICENSE is missing");
     assert.ok(existsSync(new URL("../../NOTICE.md", import.meta.url)), "NOTICE.md is missing");
-    assert.match(readFileSync(new URL("../../LICENSE", import.meta.url), "utf8"), /^MIT License/);
-    assert.equal(pkg.license, "MIT", "package.json names the licence");
+    assert.match(readFileSync(new URL("../../LICENSE", import.meta.url), "utf8"), /All rights reserved/);
+    assert.equal(pkg.license, "UNLICENSED", "package.json names the licence");
   });
 
   it("the README points to the licence and the notices", () => {
-    assert.match(readme, /\[MIT licence\]\(LICENSE\)/);
+    assert.match(readme, /all rights reserved[\s\S]*\[LICENSE\]\(LICENSE\)/);
     assert.match(readme, /\[NOTICE\.md\]\(NOTICE\.md\)/);
   });
 });
