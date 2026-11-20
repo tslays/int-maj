@@ -4,7 +4,17 @@ Newest first. Written for players: what you will see, what was fixed, and
 what now works differently. Each version is a `v0.1.0-alpha.N` tag on `main`;
 testers get it at https://int.mah-jong.workers.dev.
 
-## alpha.18
+## alpha.19
+
+**New**
+
+- **A new app icon.** The title's italic *i*, gold on felt teal, its dot a mahjong tile. To see it on your home screen, delete the app and add it again. (#251)
+
+**Changed**
+
+- **The title uses the icon's font,** so the icon and the title match on every device. (#251)
+
+## alpha.18 (20 November 2026)
 
 **New**
 

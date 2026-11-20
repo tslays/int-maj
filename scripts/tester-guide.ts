@@ -6,7 +6,9 @@
  * It takes the guide from `docs/TESTING.md` (between `<!-- guide:start -->`
  * and `<!-- guide:end -->`), adds the full `docs/CHANGELOG.md`, renders the
  * little Markdown they use (headings, paragraphs, lists, bold, italics,
- * links) to a styled page and prints it to A4 with Playwright's Chromium.
+ * links, pictures) to a styled page and prints it to A4 with Playwright's
+ * Chromium. A picture line, `![alt](app/assets/icons/icon-512.png)`, is
+ * embedded in the PDF itself.
  * The default output is `int-maj-<stage>-testers.pdf` in the working
  * directory, named after the guide's version; it is not committed.
  *
@@ -45,9 +47,10 @@ function escape(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-/** Bold, italics, links and code inside one line. */
+/** Bold, italics, links, code and pictures inside one line. */
 function inline(text: string): string {
   return escape(text)
+    .replace(/!\[([^\]]*)\]\((data:[^)]+)\)/g, '<img alt="$1" src="$2">')
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\*([^*]+)\*/g, "<em>$1</em>")
     .replace(/`([^`]+)`/g, "<code>$1</code>")
@@ -153,6 +156,19 @@ export function releaseProblems(parts: { guide: string; changelog: string; whats
   return problems;
 }
 
+/**
+ * Each `![alt](file.png)` line becomes the picture itself, as a data address,
+ * so the PDF is complete on its own.
+ */
+export async function embedImages(text: string): Promise<string> {
+  let out = text;
+  for (const [whole, alt, file] of text.matchAll(/!\[([^\]]*)\]\(([^)\s]+\.png)\)/g)) {
+    const picture = await readFile(join(ROOT, file!), "base64");
+    out = out.replace(whole, `![${alt}](data:image/png;base64,${picture})`);
+  }
+  return out;
+}
+
 const STYLE = `
   @page { size: A4; margin: 18mm 17mm 18mm 17mm; }
   body { font: 10.5pt/1.45 -apple-system, "Helvetica Neue", Arial, sans-serif; color: #1d2a2a; }
@@ -168,6 +184,7 @@ const STYLE = `
   .changelog h1 { font-size: 17pt; }
   .changelog h2 { font-size: 12pt; }
   .changelog p, .changelog li { font-size: 9.5pt; }
+  img { width: 56pt; height: 56pt; border-radius: 12pt; display: block; margin: 2pt 0 8pt; }
   footer { margin-top: 18pt; font-size: 8.5pt; color: #6b7b7b; }
 `;
 
@@ -178,7 +195,7 @@ async function main(): Promise<void> {
   const stage = /alpha\.\d+/.exec(guide)?.[0] ?? "alpha";
   const out = resolve(process.argv[2] ?? `int-maj-${stage}-testers.pdf`);
   const html = `<!doctype html><html><head><meta charset="utf-8"><style>${STYLE}</style></head><body>
-    <main>${markdown(guide)}</main>
+    <main>${markdown(await embedImages(guide))}</main>
     <section class="changelog">${markdown(changelog.replace(/^# .*$/m, "# Every version so far"))}</section>
     <footer>Made for the Mah Jong test group. Please don't share this guide outside it.</footer>
   </body></html>`;
