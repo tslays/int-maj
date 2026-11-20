@@ -112,8 +112,9 @@ and resuming, the offline build, and the table geometry (nothing overlaps).
 
 ## Licence and notices
 
-The code is under the [MIT licence](LICENSE). [NOTICE.md](NOTICE.md) lists what
-is not (the third-party tile faces, font and sounds) and the names and
+The code is © Tobias Niendorf, all rights reserved: it is public to be read,
+not to be reused (see [LICENSE](LICENSE)). [NOTICE.md](NOTICE.md) lists what
+is not covered (the third-party tile faces, font and sounds) and the names and
 trademarks it uses. The books the game follows are © Patricia A. Thompson and
 Betty Maloney, published by Kangaroo Press; int-maj is an independent project,
 not made or endorsed by their authors or publisher, and contains none of their

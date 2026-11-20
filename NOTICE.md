@@ -5,9 +5,10 @@ the authors or the publisher of the books it follows.
 
 ## Licence
 
-The code, the app and the documentation in this repository are licensed under
-the [MIT licence](LICENSE), except for the material listed below, which keeps
-its own terms.
+The code, the app and the documentation in this repository are © Tobias
+Niendorf, all rights reserved. They are published to be read, not reused; see
+[LICENSE](LICENSE). The material listed below is not covered by that notice and
+keeps its own terms.
 
 ## The books
 
