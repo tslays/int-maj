@@ -88,7 +88,7 @@ it is given (`claude/...`), so delivery is a pull request:
      and sends corrections into the same session; merge only when the owner
      says so.
    - **Release to testers:** sessions cannot push tags (the push gets a 403).
-     Tell the owner the next `v0.1.0-<stage>.N` (alpha; beta after the owner runs `/release beta`) and the `main` commit to tag;
+     Tell the owner the next tag (`/release` counts on in the current stage; `/release beta.1`, `rc.1` or `v0.1.0` moves it) and the `main` commit to tag;
      the owner pushes the tag. This is the only way testers get a new build.
      Nothing is bumped first: the build reads its version from the tag
      (`scripts/build.ts`), and `package.json` stays at `0.1.0-dev`.

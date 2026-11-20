@@ -1,7 +1,7 @@
 ---
 name: release
-description: Prepare the next tester release (v0.1.0-alpha.N, or v0.1.0-beta.N once the project is in beta) - check main, write the CHANGELOG entry, the tester guide and WhatsApp message, build the PDF and the GitHub release notes, and hand the owner everything ready to copy. Only when the owner asks for a release.
-argument-hint: "[alpha.N | beta.N | beta]"
+description: Prepare the next tester release (alpha, beta, rc or the final v0.1.0) - check main, write the CHANGELOG entry, the tester guide and WhatsApp message, build the PDF and the GitHub release notes, and hand the owner everything ready to copy. Only when the owner asks for a release.
+argument-hint: "[beta.1 | rc.2 | v0.1.0]"
 disable-model-invocation: true
 ---
 
@@ -10,12 +10,20 @@ disable-model-invocation: true
 The owner tags; sessions cannot (a tag push gets a 403). This skill gets
 everything ready on `main` and hands it over in pieces the owner can copy
 one by one. The version being released has no tag yet; that is normal.
-`$ARGUMENTS` names it (`alpha.9`, `beta.2`); if empty, use the "next tag" that
-`npm run release-prep` prints. The stage (`alpha`, then `beta`) only moves
-forward and only when the owner says so: `beta` means the first beta,
-`v0.1.0-beta.1`, and the skill then runs `npm run release-prep -- beta`. Without
-it, the count continues in the stage of the last tag. Below, `<stage>.N` is
-that version (`alpha.21`, `beta.1`).
+`$ARGUMENTS` names it; pass it straight to `npm run release-prep -- <arg>`,
+which resolves it and prints the "next tag":
+
+- empty: the next count in the stage of the last tag (`alpha.20` gives
+  `alpha.21`, `beta.1` gives `beta.2`);
+- `beta.1`, `rc.2`: that version of the current base (`v0.1.0-beta.1`);
+- `v0.1.0` (or `0.1.0`): the final release, no suffix;
+- a whole tag such as `v0.2.0-alpha.1` to start a new base version. After a
+  final the owner must name the next version.
+
+A release must be later than the last tag (alpha, beta, rc, final); the tool
+refuses anything else, so do not work around it. Below, `<stage>.N` is the
+version's label as the app shows it (`alpha.21`, `beta.1`, `rc.2`, `0.1.0`)
+and `<tag>` its tag.
 
 ## Keep it small
 
@@ -31,7 +39,7 @@ that version (`alpha.21`, `beta.1`).
 
 ## 1. Check
 
-1. `npm run release-prep` (`npm run release-prep -- beta` for the first beta). It prints the last tag and its date, the next tag,
+1. `npm run release-prep -- <arg>` (no `--` when `$ARGUMENTS` is empty). It prints the last tag and its date, the next tag,
    the `main` commit, the commits since the last tag with their PR numbers,
    and whether the CHANGELOG and TESTING on `main` already name the version.
 2. Open pull requests (`list_pull_requests`, state open, `perPage` 10): ask
@@ -95,7 +103,7 @@ shape, every value in its own code block so each copies with one tap:
 
 Tag (choose "Create new tag on publish"):
 ```text
-v0.1.0-<stage>.N
+<tag>
 ```
 Target (Target › Recent commits, this one):
 ```text
@@ -103,13 +111,13 @@ Target (Target › Recent commits, this one):
 ```
 Release title:
 ```text
-v0.1.0-<stage>.N
+<tag>
 ```
 Release notes:
 ```markdown
 <contents of int-maj-<stage>.N-release.md>
 ```
-Tick **Set as a pre-release**, then Publish. The tag starts
+Tick **Set as a pre-release** (not for a final), then Publish. The tag starts
 `Deploy testers (int)`; when it is green, https://int.mah-jong.workers.dev
 shows <stage>.N.
 
@@ -119,15 +127,20 @@ shows <stage>.N.
 ```
 ````
 
-## The first beta
+## Moving to a new stage
 
-Only when `$ARGUMENTS` is `beta`. Besides the steps above, in the same
-release-notes pull request: retitle `docs/TESTING.md` ("Testing the beta"),
-change the `docs/CHANGELOG.md` intro to name `-beta.N` tags as well, and have
-the guide and the WhatsApp message say that this is the first beta and what
-that means for testers (the owner tells you; ask if unsure). Tick **Set as a
-pre-release** as usual: beta is still a pre-release on GitHub. Never tag beta
-on your own, and never mix it into a plain `/release` run.
+When the release is the first of a new stage (`beta.1`, `rc.1`, or the final),
+do this in the same release-notes pull request, besides the steps above:
+retitle `docs/TESTING.md` for the stage ("Testing the beta"), keep the
+`docs/CHANGELOG.md` intro naming every tag kind in use, and have the guide
+and the WhatsApp message say what the new stage means for testers (the owner
+tells you; ask if unsure). Never move a stage on your own: only when
+`$ARGUMENTS` asks for it.
+
+- **alpha, beta, rc:** tick **Set as a pre-release** on the GitHub release.
+- **Final (`v0.1.0`):** the label is `0.1.0`, the CHANGELOG section is
+  `## 0.1.0`, and the release is **not** a pre-release: leave the box
+  unticked, and say so in the hand-over.
 
 Always give the release-notes PR's number and full URL. Use the full SHA for
 the target, never a branch name: `main` can move before the owner tags.
