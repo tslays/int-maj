@@ -86,7 +86,7 @@ export function takeDiscard(draft: Draft, discarder: Seat, tile: string): void {
 }
 
 /**
- * Ground bonus (d), I p. 24: "Claiming first discard made by East Wind". The
+ * Ground bonus (d), I p. 24: a claim of East's very first discard. The
  * first discard of a hand is East's, and nothing else has been discarded or
  * claimed before the window on it resolves.
  */

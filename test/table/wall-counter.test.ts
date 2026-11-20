@@ -1,7 +1,7 @@
 /**
  * The Wall counter (#204): the number on the table must count every tile
- * still to be drawn, the loose pair included. A hand is drawn only once "all
- * tiles have been drawn from the wall" (I p. 21, item 26), so with the live
+ * still to be drawn, the loose pair included. A hand is drawn only once the
+ * wall is used up entirely (I p. 21, item 26), so with the live
  * wall empty and two loose tiles left the counter reads 2, never 0.
  */
 import assert from "node:assert/strict";

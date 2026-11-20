@@ -264,8 +264,7 @@ export function nextHand(state: GameState, options: NextHandOptions = {}): Apply
 }
 
 /**
- * R-032: a round is finished when each player has completed a turn as East
- * Wind. The deal passes one seat at a time (R-030), so the round ends with the
+ * R-032: a round ends once every seat has dealt as East Wind. The deal passes one seat at a time (R-030), so the round ends with the
  * finished hand whose next dealer is the seat that opened the round.
  */
 export function endsRound(state: GameState): boolean {
@@ -275,8 +274,8 @@ export function endsRound(state: GameState): boolean {
 }
 
 /**
- * R-032: "A game ends ... when East, South, West and North have all been the
- * Wind of the Round" - the hand that finishes the North round finishes the
+ * R-032: the game is over once each of the four winds has had its round as
+ * Wind of the Round - the hand that finishes the North round finishes the
  * game, and no further hand is dealt.
  */
 export function endsGame(state: GameState): boolean {

@@ -2,9 +2,8 @@
  * The final standings: the four seats ranked by their total score at the end
  * of the game. Pure, so it needs no browser and is tested on real engine hands.
  *
- * The book says only that "the player with the highest score after a
- * predetermined number of hands has been played wins the game" (Illustrated
- * p. 16). It gives no tie-break, so none is invented: seats with equal totals
+ * The book says only that the top score wins once the agreed number of
+ * hands is over (Illustrated p. 16). It gives no tie-break, so none is invented: seats with equal totals
  * share a rank ("1, 1, 3, 4"), and a tie for first names every tied seat a
  * winner. Equal seats keep seat order (E, S, W, N) only so the list is stable.
  */

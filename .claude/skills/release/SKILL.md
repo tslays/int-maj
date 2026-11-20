@@ -38,6 +38,11 @@ one by one. The version being released has no tag yet; that is normal.
    branch `main`, `perPage` 3): `Tests and build`, `Smoke (browser)` and
    `Deploy dev (int-dev)` must be green for that commit. Smoke runs in CI, so
    do not run it again here. Anything red: stop and report it.
+5. No book text: attach `tslays/int-maj-rules` (`add_repo`), clone it beside
+   this checkout and run
+   `python3 ../int-maj-rules/rules/tools/check-quotes.py . --github tslays/int-maj`.
+   It must print no match. A match is book text in the code, docs, issues or
+   pull requests: stop and report it; never paste the matched text anywhere.
 
 If the docs already have the version (a release-notes PR was merged before),
 skip to step 3.

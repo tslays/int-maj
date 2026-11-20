@@ -2,7 +2,7 @@
 
 The 34 play-tile faces in this directory are vendored from
 **riichi-mahjong-tiles** by FluffyStuff. They are the faces of the 3D table
-table (`app/src/tiles.js`), which models the tile body itself and prints each
+(`app/src/tiles.js`), which models the tile body itself and prints each
 face, with a corner index, onto it. The app icon (`app/assets/icons/`) is drawn from
 `dR.svg` too:
 

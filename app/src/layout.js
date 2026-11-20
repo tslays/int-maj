@@ -425,16 +425,15 @@ export function breakFor(key) {
  *
  * The wall is a closed ring of 72 stacks. `tiles` is that ring with the
  * break stack lifted out, read from the open end: the stack just left of the
- * break first (its top tile, then the one beneath, p. 19 "the next tile from
- * the top row"), then on to the left, round the corner into the wall at the
- * builder's left, and so on right round to the stack just right of the break,
+ * break first (its top tile, then the one beneath, p. 19), then on to the
+ * left, round the corner into the wall at the builder's left, and so on right round to the stack just right of the break,
  * the last of the list. Both ends of the list are used and nothing moves:
  *
- * - ordinary draws leave the HEAD of the list (the open end, "from the left
- *   side of the opening");
+ * - ordinary draws leave the HEAD of the list (the open end, on the opening's
+ *   left, p. 19);
  * - replacements leave the TAIL: the dead wall's column that touches the
  *   break, then the next away from it, along the wall, round the corner and
- *   on (owner's reading of "the end of the wall to the right of the break",
+ *   on (the owner's reading of where p. 62 takes the replacement pair from,
  *   issue #60).
  *
  * `lifted` is the break stack ("10" in the book's detail), taken off the wall.
@@ -461,7 +460,7 @@ export function wallPlan(builderRel, count) {
  * What the wall shows at one moment, from the engine's counts: `front` tiles
  * drawn from the open end, `used` loose tiles consumed by replacements, and
  * `held` loose tiles currently lying on top of the dead wall (two, as the book
- * has it: "as the two loose tiles are used they are replaced", p. 62).
+ * has it: each used pair is made good again, p. 62).
  *
  * Ordinary draws take the head of `plan.tiles`; replacements, and the pair
  * that refills the loose tiles for each two used, take whole columns off its

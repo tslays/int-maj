@@ -26,7 +26,7 @@ you can.
 This is the new icon, a gold *i* on dark teal. When it is on your home screen,
 the update has worked:
 
-![The new int-maj icon: a gold italic i on dark teal](app/assets/icons/icon-512.png)
+![The new int-maj icon: a gold italic i on dark teal](../app/assets/icons/icon-512.png)
 
 Then open the link and reload it once. The small label under the menu, top
 left, should read **alpha.19**. If an update changes the game, the hand you

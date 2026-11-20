@@ -355,8 +355,8 @@ export interface StatePayload {
     readonly size: number;
     /**
      * Tiles still to be drawn by anyone: the live wall plus, in the Western
-     * game, the loose pair (I p. 21: a hand is drawn only once "all tiles have
-     * been drawn from the wall"). The table's Wall counter shows this figure.
+     * game, the loose pair (I p. 21: a hand is drawn only once the wall is
+     * used up, loose pair and all). The table's Wall counter shows this figure.
      */
     readonly draws: number;
   };

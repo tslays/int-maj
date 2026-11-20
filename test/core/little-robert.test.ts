@@ -1,6 +1,6 @@
 /**
- * Little Robert (Companion p. 16): "Chow in each suit", "Pung/K in any suit",
- * "Pair any suit". A suit is Bamboo, Characters or Circles only; Winds and
+ * Little Robert (Companion p. 16): a chow in each of the three suits, plus a
+ * pung or kong and a pair, each in any suit. A suit is Bamboo, Characters or Circles only; Winds and
  * Dragons are honours, so neither the pung nor the pair may be one.
  */
 

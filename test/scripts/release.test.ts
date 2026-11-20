@@ -98,7 +98,7 @@ describe("release self-check", () => {
 
 describe("tester guide pictures", () => {
   it("embed the app icon as a picture in the PDF", async () => {
-    const guide = await embedImages("![The icon](app/assets/icons/icon-512.png)");
+    const guide = await embedImages("![The icon](../app/assets/icons/icon-512.png)");
     assert.match(guide, /^!\[The icon\]\(data:image\/png;base64,[A-Za-z0-9+/=]{100,}\)$/);
     assert.match(markdown(guide), /^<p><img alt="The icon" src="data:image\/png;base64,[A-Za-z0-9+/=]+"><\/p>$/);
   });
