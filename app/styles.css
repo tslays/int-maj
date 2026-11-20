@@ -25,6 +25,14 @@
   --blue-2: #2d7fd2;
   --silver-1: #f3f6f8;
   --silver-2: #a6b2bb;
+  /* The look chosen in Settings, Style (appearance-apply.js sets these): tile backs and fronts, the room, the felt. */
+  --tile-back: #8ccbea;
+  --tile-front: #f8f6f0;
+  --page-bg: #11191c;
+  --rail: #2a3236;
+  --felt-1: #1f716d;
+  --felt-2: #185a59;
+  --felt-3: #0b3334;
   /* The five bands of a hand's likelihood (remote to likely): one warm colour, dim to bright, never right or wrong. */
   --chance-likely: #ffe08a;
   --chance-possible: #ecc56f;
@@ -41,7 +49,7 @@ html,
 body {
   margin: 0;
   height: 100%;
-  background: #11191c;
+  background: var(--page-bg);
   color: var(--ink);
   font-family: var(--font);
   overflow: hidden;
@@ -359,8 +367,8 @@ html.pond-zoom .act-claim {
   width: 22px;
   height: 30px;
   border-radius: 4px;
-  background: #f8f6f0;
-  box-shadow: inset 0 -2px 0 #8ccbea, 0 1px 2px rgba(0, 0, 0, 0.3);
+  background: var(--tile-front);
+  box-shadow: inset 0 -2px 0 var(--tile-back), 0 1px 2px rgba(0, 0, 0, 0.3);
   overflow: hidden;
 }
 .chip img {
@@ -376,7 +384,7 @@ html.pond-zoom .act-claim {
   outline-offset: -6px;
 }
 .chip-back {
-  background: #8ccbea;
+  background: var(--tile-back);
 }
 
 .callout {
@@ -1369,7 +1377,7 @@ button.detail-rule {
   box-sizing: border-box;
   width: 36px;
   padding: 1px;
-  background: #f8f6f0;
+  background: var(--tile-front);
   color: #1c2a30;
   font-size: 7px;
   font-weight: 700;
@@ -1656,6 +1664,77 @@ button.detail-rule {
   color: #26323a;
   font-style: italic;
   font-weight: 800;
+}
+/* Settings, Style: themes that may wrap, and round swatches with a gold ring on the chosen one. */
+.seg-wrap {
+  flex-wrap: wrap;
+  flex-shrink: 1;
+  justify-content: flex-end;
+}
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  flex: 0 1 auto;
+}
+.swatch {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 2px solid rgba(0, 0, 0, 0.35);
+  border-radius: 50%;
+  background: var(--swatch);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.25), 0 1px 3px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+.swatch-back,
+.swatch-front {
+  border-radius: 6px;
+  width: 24px;
+  height: 32px;
+}
+.swatch[aria-checked="true"] {
+  outline: 2px solid var(--gold-1);
+  outline-offset: 2px;
+}
+.swatch:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.style-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 14px;
+  border: 5px solid var(--rail);
+  border-radius: 12px;
+  background: radial-gradient(ellipse at 50% 45%, var(--felt-1), var(--felt-2) 60%, var(--felt-3));
+  box-shadow: 0 0 0 6px var(--page-bg), inset 0 2px 6px rgba(0, 0, 0, 0.35);
+  margin: 4px 6px 2px;
+}
+.style-preview-tiles {
+  display: flex;
+  gap: 3px;
+}
+.style-preview-tiles .chip {
+  width: 26px;
+  height: 35px;
+}
+.style-preview-key {
+  padding: 7px 12px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--gold-1), var(--gold-2));
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  color: #2b2210;
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 /* On or off: a switch, lit green when on, like the status lights. */
 .switch {
@@ -1945,7 +2024,7 @@ button.detail-rule {
   width: 13px;
   height: 18px;
   border-radius: 2px;
-  box-shadow: inset 0 -1px 0 #8ccbea;
+  box-shadow: inset 0 -1px 0 var(--tile-back);
 }
 .index-tiles .chip-white {
   outline-width: 1px;
@@ -2169,7 +2248,7 @@ button.detail-rule {
     align-items: center;
     justify-content: center;
     gap: 18px;
-    background: #11191c;
+    background: var(--page-bg);
     font-size: 17px;
     font-weight: 500;
     text-align: center;
@@ -2677,7 +2756,7 @@ button.detail-rule {
 }
 .guide-lifted {
   translate: 0 -8px;
-  box-shadow: inset 0 -2px 0 #8ccbea, 0 6px 10px rgba(0, 0, 0, 0.45), 0 0 0 2px var(--gold-1);
+  box-shadow: inset 0 -2px 0 var(--tile-back), 0 6px 10px rgba(0, 0, 0, 0.45), 0 0 0 2px var(--gold-1);
 }
 .guide-act {
   animation: none;

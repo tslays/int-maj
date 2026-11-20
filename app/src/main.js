@@ -35,6 +35,7 @@ import { installPractice, openPractice, practiceOpen } from "./practice.js";
 import { ALL_FACES, initTiles, preloadFaces, tileOrder } from "./tiles.js";
 import { mountStage, renderer, requestRender, screenPoint, setConsoleShown, sleep, updateConsole, viewport } from "./stage.js";
 import { discardLayout } from "./discard-layout.js";
+import { installAppearance } from "./appearance-apply.js";
 import { openClaims, refreshClaims } from "./claims.js";
 import { halfLimitBarred, isGoulashView } from "./goulash-bar.js";
 import { hideRoundBadge, showRoundBadge } from "./round-badge.js";
@@ -448,6 +449,7 @@ async function boot() {
     },
     true,
   );
+  installAppearance();
   mountStage(document.body);
   initTiles(renderer, requestRender);
   preloadFaces(ALL_FACES);

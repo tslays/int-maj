@@ -349,6 +349,11 @@ const TABS = [
         picture: () => row(ghost("Rows", true), ghost("Pile")),
       },
       {
+        title: "Style",
+        text: "Settings, Style: pick a theme, Classic, Midnight, Sakura or Casino, or mix your own table felt, tile backs and fronts, room and button colours. The table changes at once.",
+        picture: () => row(ghost("Classic", true), ghost("Midnight"), ghost("Sakura")),
+      },
+      {
         title: "The menu",
         text: "Calls, Sort and Hints switch on and off; a green light is on. Settings has everything else, with a button to reset it all.",
         picture: () => row(ghost("Calls", true), ghost("Hints", true), ghost("Settings")),

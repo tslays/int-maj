@@ -129,6 +129,7 @@
           <nav class="options-tabs" id="options-tabs" role="tablist" aria-label="Option groups">
             <button class="options-tab" id="tab-game" type="button" role="tab" aria-controls="panel-game" aria-selected="true" data-tab="game">Game</button>
             <button class="options-tab" id="tab-table" type="button" role="tab" aria-controls="panel-table" aria-selected="false" tabindex="-1" data-tab="table">Table</button>
+            <button class="options-tab" id="tab-style" type="button" role="tab" aria-controls="panel-style" aria-selected="false" tabindex="-1" data-tab="style">Style</button>
             <button class="options-tab" id="tab-rules" type="button" role="tab" aria-controls="panel-rules" aria-selected="false" tabindex="-1" data-tab="rules">Rules<span class="tab-dot" id="rules-dot" hidden></span></button>
           </nav>
           <p class="head-pending" id="hand-set-pending" hidden>Changes start next hand</p>
@@ -189,6 +190,37 @@
               </div>
             </div>
           </section>
+          <section class="options-panel" id="panel-style" role="tabpanel" aria-labelledby="tab-style" hidden>
+            <div class="style-preview" id="style-preview" aria-hidden="true"></div>
+            <div class="option-group">
+              <div class="setting">
+                <div class="setting-text"><b id="style-bundle-label">Theme</b><small id="style-bundle-note">Sets everything below at once</small></div>
+                <div class="seg seg-wrap" id="style-bundle" role="radiogroup" aria-labelledby="style-bundle-label" aria-describedby="style-bundle-note"></div>
+              </div>
+            </div>
+            <div class="option-group">
+              <div class="setting">
+                <div class="setting-text"><b id="style-felt-label">Table</b><small id="style-felt-name"></small></div>
+                <div class="swatches" id="style-felt" role="radiogroup" aria-labelledby="style-felt-label" data-aspect="felt"></div>
+              </div>
+              <div class="setting">
+                <div class="setting-text"><b id="style-back-label">Tile backs</b><small id="style-back-name"></small></div>
+                <div class="swatches" id="style-back" role="radiogroup" aria-labelledby="style-back-label" data-aspect="back"></div>
+              </div>
+              <div class="setting">
+                <div class="setting-text"><b id="style-front-label">Tile fronts</b><small id="style-front-name"></small></div>
+                <div class="swatches" id="style-front" role="radiogroup" aria-labelledby="style-front-label" data-aspect="front"></div>
+              </div>
+              <div class="setting">
+                <div class="setting-text"><b id="style-room-label">Room</b><small id="style-room-name"></small></div>
+                <div class="swatches" id="style-room" role="radiogroup" aria-labelledby="style-room-label" data-aspect="room"></div>
+              </div>
+              <div class="setting">
+                <div class="setting-text"><b id="style-accent-label">Buttons</b><small id="style-accent-name"></small></div>
+                <div class="swatches" id="style-accent" role="radiogroup" aria-labelledby="style-accent-label" data-aspect="accent"></div>
+              </div>
+            </div>
+          </section>
           <section class="options-panel" id="panel-rules" role="tabpanel" aria-labelledby="tab-rules" hidden>
             <div class="option-group">
               <div class="group-head">
@@ -227,7 +259,7 @@
             <button class="option-link" id="report" type="button" aria-label="Report a problem">Report a problem</button>
           </nav>
           <div class="option-confirm" id="reset-confirm" role="alertdialog" aria-labelledby="reset-ask" hidden>
-            <p id="reset-ask"><b>Reset all settings?</b> Bot level, pace, sound, table and house rules go back to their defaults.</p>
+            <p id="reset-ask"><b>Reset all settings?</b> Bot level, pace, sound, table, style and house rules go back to their defaults.</p>
             <div class="option-confirm-buttons">
               <button class="option-link" id="reset-keep" type="button">Keep them</button>
               <button class="option-link option-danger" id="reset-go" type="button">Reset</button>
