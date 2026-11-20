@@ -4,11 +4,22 @@ Newest first. Written for players: what you will see, what was fixed, and
 what now works differently. Each version is a `v0.1.0-alpha.N` tag on `main`;
 testers get it at https://int.mah-jong.workers.dev.
 
-## alpha.19
+## alpha.20
 
 **New**
 
-- **Play from the keyboard.** On a computer, ← and → lift a tile and Enter throws it. ↑ moves up to the buttons (Pung, Chow, Mah Jong...), ← → choose one and Enter presses it; when a discard is offered the buttons are chosen already. Esc passes. Nothing on the table shows the keys: a new *With a keyboard* card in the guide's Your turn tab lists them, and a tip mentions it once, after your first throw.
+- **Play from the keyboard.** On a computer, ← and → lift a tile and Enter throws it. ↑ moves up to the buttons (Pung, Chow, Mah Jong...), ← → choose one and Enter presses it; when a discard is offered the buttons are chosen already. Esc passes. Nothing on the table shows the keys: a new *With a keyboard* card in the guide's Your turn tab lists them, and a tip mentions it once, after your first throw. (#255)
+- **A new app icon.** The title's italic *i*, gold on felt teal, its dot a mahjong tile. To see it on your home screen, delete the app and add it again. Alpha.19 was not sent to testers, so this is its first announcement. (#251)
+
+**Changed**
+
+- **The title uses the icon's font,** so the icon and the title match on every device. (#251)
+- **The licence is all rights reserved, not MIT.** The start screen's licence sheet says so. (#257)
+
+## alpha.19 (20 November 2026)
+
+**New**
+
 - **A new app icon.** The title's italic *i*, gold on felt teal, its dot a mahjong tile. To see it on your home screen, delete the app and add it again. (#251)
 
 **Changed**

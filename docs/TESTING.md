@@ -7,7 +7,7 @@ short **WhatsApp message**. How to play is not here: the app teaches itself
 is new, what to try, how to report and what the app cannot do yet.
 
 <!-- guide:start -->
-# Mah Jong — test version alpha.19
+# Mah Jong — test version alpha.20
 
 **Play here:** https://int.mah-jong.workers.dev
 
@@ -29,7 +29,7 @@ the update has worked:
 ![The new int-maj icon: a gold italic i on dark teal](../app/assets/icons/icon-512.png)
 
 Then open the link and reload it once. The small label under the menu, top
-left, should read **alpha.19**. If an update changes the game, the hand you
+left, should read **alpha.20**. If an update changes the game, the hand you
 were playing starts again with the scores kept.
 
 **New to the app?** On an iPhone open the link in Safari, tap Share, then
@@ -38,20 +38,28 @@ turned sideways. On Android, open the link in Chrome and tap *Install*, or
 *Add to Home screen* in the menu. Everything else, the app shows you: Options
 › **Help**.
 
-## New in alpha.19
+## New in alpha.20
 
-- **A new icon.** The title's italic *i*, gold on felt teal, its dot a
-  mahjong tile. Delete the app and add it again to see it (above).
+- **Play from the keyboard.** On a computer, ← and → lift a tile and Enter
+  throws it. ↑ moves up to the buttons (Pung, Chow, Mah Jong...), ← → choose
+  one and Enter presses it. Esc passes. The keys are listed in a *With a
+  keyboard* card in the guide's Your turn tab.
+- **A new icon.** The title's italic *i*, gold on felt teal, its dot a mahjong
+  tile. Delete the app and add it again to see it (above). Alpha.19 was not
+  sent to testers, so this is its first announcement.
 
 ## What works differently now
 
 - The title screen uses the same font as the icon, so the two match.
+- The licence sheet on the start screen says *all rights reserved*, not MIT.
 
 ## What to try, and tell us
 
 - Delete the app from your home screen and add it again. Does the icon match
   the picture above?
 - Open the app. Does the title look like the icon's *i*, in the same font?
+- On a computer, play a few turns with the keyboard only. Do ← and → lift a
+  tile, does Enter throw it, and does Esc pass?
 - Anything that broke, looked wrong or surprised you.
 
 ## How to report
@@ -84,12 +92,12 @@ connection it offers to share the report as a message instead.
 ## WhatsApp message
 
 <!-- whatsapp:start -->
-🀄 **Mah Jong test version alpha.19 is out!**
+🀄 **Mah Jong test version alpha.20 is out!**
 
 Play: https://int.mah-jong.workers.dev
 
 **New icon: delete the app from your home screen and add it again.** The new icon is the picture sent with this message: a gold *i* on dark teal. When it is on your home screen, the update has worked. A game in progress may not survive the delete, so finish it first if you can.
 
-New: the title uses the icon's font, so the two match. Thank you to everyone who sent a report. Found something odd? Options › Report a problem.
+This one also carries alpha.19, which we skipped on WhatsApp: the title uses the icon's font, so the two match. New on a computer: the arrow keys lift and throw a tile, and Esc passes. Found something odd? Options › Report a problem.
 
 <!-- whatsapp:end -->
