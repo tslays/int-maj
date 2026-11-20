@@ -272,6 +272,11 @@ html.phone-frame .actions {
 .act:disabled {
   opacity: 0.45;
 }
+/* Reached by keyboard (a second C picks the next Chow, keys.js): Enter takes it. */
+.act:focus-visible {
+  outline: 3px solid var(--gold-1);
+  outline-offset: 3px;
+}
 .act-win {
   background: linear-gradient(180deg, var(--gold-1), var(--gold-2));
   color: #4a2a05;
@@ -2435,6 +2440,39 @@ button.detail-rule {
 .guide-intro {
   margin: 0 0 10px !important;
   color: var(--muted);
+}
+/* The Keyboard tab: each key, then what it does. */
+.guide-keys {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 7px 16px;
+  margin: 0;
+  font-size: 13px;
+}
+.guide-keys dt {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.guide-keys dd {
+  margin: 0;
+  color: var(--ink);
+}
+.guide-keys kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  margin-right: 3px;
+  padding: 1px 6px;
+  border: 1px solid rgba(233, 228, 214, 0.25);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: rgba(233, 228, 214, 0.06);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  text-align: center;
+}
+.guide-keys-note {
+  margin-top: 12px !important;
 }
 .guide-grid {
   display: grid;

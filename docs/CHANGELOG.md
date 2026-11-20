@@ -8,6 +8,7 @@ testers get it at https://int.mah-jong.workers.dev.
 
 **New**
 
+- **Play from the keyboard.** On a computer, ← and → lift a tile, Enter throws it, and a letter takes a call: M Mah Jong, P Pung, C Chow, K Kong, F Fishing, X Pass. Nothing on the table shows the keys; press **?** for the full list, also in the guide's new Keyboard tab. A tip mentions it once, after your first throw.
 - **A new app icon.** The title's italic *i*, gold on felt teal, its dot a mahjong tile. To see it on your home screen, delete the app and add it again. (#251)
 
 **Changed**

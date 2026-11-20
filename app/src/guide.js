@@ -10,6 +10,7 @@
 import { tipsReset } from "./tips.js";
 import { $, faceChip } from "./shared.js";
 import { chanceBadge } from "./hints.js";
+import { GOULASH_LINE, SHORTCUTS } from "./keymap.js";
 
 /* --------------------------------------------------------- pictures */
 
@@ -136,6 +137,28 @@ function bandsPicture() {
   for (const chance of [0.6, 0.3, 0.1, 0.04, 0.01]) box.append(chanceBadge(chance));
   return box;
 }
+
+/** Every key, one row each (the Keyboard tab). */
+function keyTable() {
+  const list = el("dl", "guide-keys");
+  for (const [keys, does] of SHORTCUTS) {
+    const term = el("dt");
+    for (const key of keys.split(/ +/)) {
+      if (key === "or" || key === "–") term.append(` ${key} `);
+      else term.append(el("kbd", "", key));
+    }
+    list.append(term, el("dd", "", does));
+  }
+  const box = el("div");
+  box.append(list, el("p", "guide-intro guide-keys-note", GOULASH_LINE));
+  return box;
+}
+
+/**
+ * A device with a mouse or trackpad, where a keyboard is likely; a phone or
+ * tablet never sees the Keyboard tab.
+ */
+const hasKeyboard = () => window.matchMedia("(any-hover: hover) and (any-pointer: fine)").matches;
 
 /* --------------------------------------------------------- the content */
 
@@ -297,6 +320,14 @@ const TABS = [
     ],
   },
   {
+    id: "keyboard",
+    name: "Keyboard",
+    when: hasKeyboard,
+    intro: "Everything at the table works from the keyboard too. Nothing on screen shows the keys; they are all here.",
+    body: keyTable,
+    cards: [],
+  },
+  {
     name: "More",
     cards: [
       {
@@ -361,6 +392,8 @@ const TABS = [
 /* --------------------------------------------------------- the sheet */
 
 let current = 0;
+/** The tabs this device shows (Keyboard only where there is a mouse). */
+let tabsShown = TABS;
 
 function showTab(index) {
   current = index;
@@ -371,8 +404,9 @@ function showTab(index) {
   });
   const body = $("#guide-body");
   body.replaceChildren();
-  const tab = TABS[index];
+  const tab = tabsShown[index];
   if (tab.intro) body.append(el("p", "guide-intro", tab.intro));
+  if (tab.body) body.append(tab.body());
   const grid = el("div", "guide-grid");
   for (const card of tab.cards) {
     const box = el("section", `guide-card-item${card.wide ? " guide-wide" : ""}`);
@@ -382,10 +416,10 @@ function showTab(index) {
     grid.append(box);
   }
   body.append(grid);
-  if (index < TABS.length - 1) {
+  if (index < tabsShown.length - 1) {
     const next = el("button", "guide-next");
     next.type = "button";
-    next.textContent = `Next: ${TABS[index + 1].name} ›`;
+    next.textContent = `Next: ${tabsShown[index + 1].name} ›`;
     next.addEventListener("click", () => {
       showTab(index + 1);
       tabs.children[index + 1].focus({ preventScroll: true });
@@ -399,7 +433,8 @@ function showTab(index) {
 function build() {
   const tabs = $("#guide-tabs");
   if (tabs.childElementCount > 0) return;
-  TABS.forEach((tab, index) => {
+  tabsShown = TABS.filter((tab) => tab.when === undefined || tab.when());
+  tabsShown.forEach((tab, index) => {
     const button = el("button", "guide-tab", tab.name);
     button.type = "button";
     button.setAttribute("role", "tab");
@@ -409,16 +444,20 @@ function build() {
   tabs.addEventListener("keydown", (event) => {
     const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
     if (step === 0) return;
-    const index = (current + step + TABS.length) % TABS.length;
+    const index = (current + step + tabsShown.length) % tabsShown.length;
     showTab(index);
     tabs.children[index].focus();
   });
 }
 
-/** Open the guide, at its first tab. */
-export function openGuide() {
+/**
+ * Open the guide, at its first tab or at the tab whose `id` is given ("keyboard"
+ * for the `?` key). A click handler passes its event, which opens the first tab.
+ */
+export function openGuide(tabId) {
   build();
-  showTab(0);
+  const at = typeof tabId === "string" ? tabsShown.findIndex((tab) => tab.id === tabId) : -1;
+  showTab(Math.max(0, at));
   $("#help-sheet").hidden = false;
   $("#help-close").focus();
 }

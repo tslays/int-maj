@@ -13,6 +13,8 @@ import { createLocalApi } from "../engine/table/local.js";
 import { playOpening } from "./ceremony.js";
 import { openingPref } from "./opening.js";
 import { clearSelection, goulashKeys, installInput, resetGoulash } from "./input.js";
+import { ACTION_KEY } from "./keymap.js";
+import { resetKeyCursor } from "./keys.js";
 import { refreshGoulash } from "./goulash.js";
 import { receivedPlan } from "./received.js";
 import { familiar } from "./familiar.js";
@@ -257,10 +259,16 @@ function hideChoices() {
   hideTip();
 }
 
-function button(label, kind, onClick, tiles = [], drawOnly = [], hand = "") {
+/**
+ * An action button. `key` is its letter from `keymap.js`, kept in
+ * `aria-keyshortcuts` (screen readers announce it; nothing on screen shows it)
+ * and found there by `keys.js`.
+ */
+function button(label, kind, onClick, tiles = [], drawOnly = [], hand = "", key = "") {
   const element = document.createElement("button");
   element.type = "button";
   element.className = `act act-${kind}`;
+  if (key !== "") element.setAttribute("aria-keyshortcuts", key);
   // A wait that wins only from your own draw (Buried Treasure and kin) says so in a tab on the top edge,
   // so nobody fishes for it by accident: a discard of that tile is no win.
   const selfDrawTiles = tiles.filter((key) => drawOnly.includes(key));
@@ -327,6 +335,7 @@ function showChoices({ chime = true } = {}) {
   // A tile you pre-selected while the bots played stays up when your turn (and your new tile) comes;
   // only the goulash exchange, which lifts its own picks, starts clean.
   clearSelection(!legal.some((action) => action.type === "GoulashExchange"));
+  resetKeyCursor();
   void refreshHints(true);
   if (chime) alertFor(legal);
 
@@ -357,19 +366,22 @@ function showChoices({ chime = true } = {}) {
 
   // Under the house rule "Announce fishing to win" keeping quiet gives up the win (#118): say so.
   const quiet = state.payload.view.winNeedsFish ? "Stay quiet, no win" : "Don't announce";
-  if (pass) bar.append(button(fishing ? quiet : "Pass", "pass", () => void act(pass)));
-  if (reshuffle) bar.append(button("Reshuffle", "pass", () => void act(reshuffle)));
+  if (pass) bar.append(button(fishing ? quiet : "Pass", "pass", () => void act(pass), [], [], "", ACTION_KEY.pass));
+  if (reshuffle) bar.append(button("Reshuffle", "pass", () => void act(reshuffle), [], [], "", ACTION_KEY.reshuffle));
   const sortTiles = (tiles) => [...tiles].sort((a, b) => tileOrder(a) - tileOrder(b));
   const chows = claims.filter((claim) => claim.kind === "chow");
   // Every possible run gets its own Chow button, so one tap claims it.
-  for (const chow of chows) bar.append(button("Chow", "claim", () => void act(chow), sortTiles(chow.tiles)));
+  for (const chow of chows) bar.append(button("Chow", "claim", () => void act(chow), sortTiles(chow.tiles), [], "", ACTION_KEY.chow));
   for (const claim of claims.filter((item) => item.kind !== "chow")) {
-    bar.append(button(CALL_WORD[claim.kind], "claim", () => void act(claim), sortTiles(claim.tiles)));
+    bar.append(button(CALL_WORD[claim.kind], "claim", () => void act(claim), sortTiles(claim.tiles), [], "", ACTION_KEY[claim.kind]));
   }
-  for (const kong of kongs) bar.append(button("Kong", "claim", () => void act(kong), [kong.tile]));
-  if (fishing) bar.append(button("Fishing", "claim", () => void act(fishing), fishing.wait.slice(0, 4), state.payload.view.fishingDrawOnly ?? [], fishing.hand ?? ""));
+  for (const kong of kongs) bar.append(button("Kong", "claim", () => void act(kong), [kong.tile], [], "", ACTION_KEY.kong));
+  if (fishing) {
+    const wait = fishing.wait.slice(0, 4);
+    bar.append(button("Fishing", "claim", () => void act(fishing), wait, state.payload.view.fishingDrawOnly ?? [], fishing.hand ?? "", ACTION_KEY.fishing));
+  }
   const win = wins[0] ?? mahjongClaim;
-  if (win) bar.append(button("Mah Jong", "win", () => void act(win)));
+  if (win) bar.append(button("Mah Jong", "win", () => void act(win), [], [], "", ACTION_KEY.win));
   tipForChoices(legal, { callsOff: state.callsOff });
 }
 
