@@ -1834,6 +1834,16 @@ button.detail-rule {
 .option-link:active {
   background: rgba(140, 203, 234, 0.12);
 }
+/* Reset style: the look alone back to Classic; quiet when it already is. */
+.style-reset {
+  display: flex;
+  justify-content: center;
+}
+.option-link:disabled {
+  color: var(--muted);
+  opacity: 0.5;
+  cursor: default;
+}
 @media (prefers-reduced-motion: reduce) {
   .switch,
   .switch::after {

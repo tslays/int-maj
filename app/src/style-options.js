@@ -2,11 +2,12 @@
  * Settings, Style: the theme chips and a row of swatches for the felt, the
  * tile backs and fronts, the room and the buttons (`appearance.js`), over a
  * small preview of the table. The 3D table behind the sheet follows at once.
- * Swatches are named for screen readers only: no tooltips anywhere.
+ * Swatches are named for screen readers only: no tooltips anywhere. Reset
+ * style puts the look alone back to Classic, leaving every other setting.
  */
 
 import { appearance, ASPECTS, BUNDLES } from "./appearance.js";
-import { $, faceChip } from "./shared.js";
+import { $, faceChip, toast } from "./shared.js";
 
 /** What each swatch shows: the colour, or the colours, the choice makes. */
 const PAINT = {
@@ -78,6 +79,7 @@ export function showStyle() {
   $("#style-bundle-note").textContent = bundle === null ? "Custom: your own mix" : "Sets everything below at once";
   // With no theme matching, the first chip still takes the focus by Tab.
   if (bundle === null) $("#style-bundle [data-bundle]").tabIndex = 0;
+  $("#style-reset").disabled = bundle === BUNDLES[0].id;
 }
 
 /** Left and right (up and down) move the choice along a row, as in any radio group. */
@@ -115,4 +117,10 @@ export function installStyleOptions() {
     if (button !== null) pickBundle(button);
   });
   arrowKeys(bundles, pickBundle);
+  $("#style-reset").addEventListener("click", () => {
+    // Focus stays in the tab: the button is disabled once the look is Classic.
+    $(`#style-bundle [data-bundle="${BUNDLES[0].id}"]`).focus();
+    appearance.reset();
+    toast("Style reset");
+  });
 }

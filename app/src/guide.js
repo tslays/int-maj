@@ -350,7 +350,7 @@ const TABS = [
       },
       {
         title: "Style",
-        text: "Settings, Style: pick a theme, Classic, Midnight, Sakura or Casino, or mix your own table felt, tile backs and fronts, room and button colours. The table changes at once.",
+        text: "Settings, Style: pick a theme, Classic, Midnight, Sakura or Casino, or mix your own table felt, tile backs and fronts, room and button colours. The table changes at once; Reset style brings back Classic.",
         picture: () => row(ghost("Classic", true), ghost("Midnight"), ghost("Sakura")),
       },
       {

@@ -558,6 +558,16 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.waitForSelector('#style-back [data-swatch="jade"][aria-checked=true]', { timeout: 5000 });
   assert.equal(await page.locator("#style-bundle [aria-checked=true]").count(), 0, "a mix of one's own is Custom");
   assert.equal(await tileBack(), "#55b48e");
+  // Reset style: the look alone goes back to Classic; the pace chosen in Game stays.
+  await page.click("#tab-game");
+  await page.click('#pace [data-pace="slower"]');
+  await page.click("#tab-style");
+  await page.click("#style-reset");
+  await page.waitForSelector('#style-bundle [data-bundle="classic"][aria-checked=true]', { timeout: 5000 });
+  assert.equal(await tileBack(), "#8ccbea", "reset style: the tile backs are Sky again");
+  assert.equal(await page.getAttribute("#style-reset", "disabled"), "", "reset style rests once the look is Classic");
+  assert.equal(await page.getAttribute('#pace [data-pace="slower"]', "aria-checked"), "true", "reset style leaves the pace");
+  await page.click('#style-bundle [data-bundle="casino"]');
   // Reset settings asks first; Keep leaves them, Reset puts every one back to its default.
   await page.click("#tab-game");
   await page.click('#pace [data-pace="faster"]');

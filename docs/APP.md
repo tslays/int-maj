@@ -568,6 +568,9 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   floor and page background (`int-maj.room`), and the buttons' accent colours
   (`int-maj.accent`). The themes Classic (the defaults), Midnight, Sakura and
   Casino set all five at once; any single change afterwards reads as Custom.
+  **Reset style**, at the foot of the tab, puts the look alone back to Classic
+  and leaves every other setting (it rests, disabled, while the look is
+  Classic); the global Reset settings resets the look along with the rest.
   `appearance-apply.js` paints them: the felt canvas, rail, floor and bounce
   light through `setTableLook` in `stage.js`, every tile through the shared
   materials (`setTileLook` in `tiles.js`), and the CSS tokens `--tile-back`,
