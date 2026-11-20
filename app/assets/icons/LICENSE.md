@@ -14,5 +14,7 @@ of third-party material, each under its own terms:
   `app/assets/fonts/LICENSE.md`, which holds the licence text.
 
 `scripts/art/app-icon.py` draws `icon.svg`, and `scripts/art/app-icon-png.ts`
-renders the PNG sizes from it. The icon as a whole is licensed under the
-project's [MIT licence](../../../LICENSE), apart from the two pieces above.
+renders the PNG sizes from it. The icon as a whole is the
+project's own, © Tobias Niendorf, all rights reserved (see
+[LICENSE](../../../LICENSE)), apart from the two pieces above, which keep
+their own licences.
