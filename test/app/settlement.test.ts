@@ -8,6 +8,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { ledgerTotals, type GameState } from "../../src/core/game/index.ts";
+import { buildScenario } from "../../src/table/scenarios.ts";
+import { statePayload } from "../../src/table/session.ts";
 import { fixture, play } from "../helpers/game-fixture.ts";
 
 // @ts-expect-error - a plain browser module without type declarations
@@ -20,7 +22,7 @@ const FILLER = {
   N: "o1 o1 o1 o2 o2 o2 o3 o3 o3 o4 o4 o4 o5",
 };
 
-function account(state: GameState, you = "E", cite = true) {
+function account(state: GameState, you = "E", cite = true, fishGivenUp: readonly string[] = []) {
   const result = state.result!;
   return explainSettlement({
     outcome: {
@@ -29,6 +31,7 @@ function account(state: GameState, you = "E", cite = true) {
       from: result.from,
       selfDrawn: result.selfDrawn,
       ledger: state.ledger,
+      fishGivenUp,
     },
     you,
     dealer: state.dealer,
@@ -44,11 +47,41 @@ const shown = (seats: ReturnType<typeof account>, seat: string) => seats[seat]!.
 const reasons = (seats: ReturnType<typeof account>, seat: string) => seats[seat]!.map((line) => line.why);
 
 describe("the result card's account of the points", () => {
+  it("says why a fish shown and then given up scored nothing", () => {
+    const state = fixture({
+      hands: {
+        S: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 b5",
+        // East showed the fish, then broke the wait: these tiles wait on nothing.
+        E: "b1 b2 b3 b4 b5 b6 b7 c1 c2 c3 o1 o2 o3",
+        W: FILLER.W,
+        N: FILLER.N,
+      },
+      wall: ["o6"],
+      phase: "discard",
+      turn: "S",
+      lastDraw: { seat: "S", tile: "b5", end: "front" },
+      fishing: [
+        { seat: "E", wait: ["b7"], tier: "half" },
+        { seat: "W", wait: ["c5"], tier: "limit" },
+      ],
+    });
+    const won = play(state, { type: "Win", seat: "S", kind: "self-drawn" }).state;
+    const outcome = statePayload({ ...buildScenario("turn"), state: won, id: "fish-given-up" }).outcome!;
+    assert.deepEqual(outcome.fishGivenUp, ["E"], "West still waits; East does not");
+    const seats = account(won, "W", true, outcome.fishGivenUp);
+    assert.ok(shown(seats, "E").includes("Fishing scored nothing"));
+    assert.ok(
+      reasons(seats, "E").includes("East showed the fish but was no longer one tile short at the end (Illustrated p. 21)."),
+    );
+    // East pays West's fishing figure like any other loser (limit 400, East double).
+    assert.ok(shown(seats, "E").includes("Pays you 800"));
+  });
+
   it("explains a win, East's double, and a fishing hand paid by the losers", () => {
     const state = fixture({
       hands: {
         S: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 b5",
-        E: "b1 b2 b3 b4 b5 b6 b7 c1 c2 c3 o1 o2 o3",
+        E: "wE wE wS wS wN wN o6 o6 o7 o7 o8 o8 o9",
         W: FILLER.W,
         N: FILLER.N,
       },
@@ -104,7 +137,7 @@ describe("the result card's account of the points", () => {
     const state = fixture({
       hands: {
         S: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 b5",
-        E: "b1 b2 b3 b4 b5 b6 b7 c1 c2 c3 o1 o2 o3",
+        E: "wE wE wS wS wN wN o6 o6 o7 o7 o8 o8 o9",
         W: FILLER.W,
         N: FILLER.N,
       },

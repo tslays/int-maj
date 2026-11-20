@@ -7,7 +7,10 @@
  * p. 32); a drawn hand pays no fishing. The announcement does not
  * restrict what the player may claim: a player needing one tile may take any
  * discard to win and has precedence (I p. 62), and may still pung, chow or
- * kong. There is no dead-wait rule in the printed pages.
+ * kong. There is no dead-wait rule in the printed pages. The game settles a
+ * shown fish as the hand is held at the end (`fishingAtEnd` in
+ * `game/hands.ts`): a wait given up since scores nothing, and a changed wait
+ * scores the hand it now waits on.
  */
 
 import { TIER_FISHING, type Tier } from "./patterns/types.ts";

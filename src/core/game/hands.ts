@@ -300,6 +300,22 @@ export function fishingDeclarationFor(
   return { wait, tier: scored.tier, value: scored.value, hand: scored.hand };
 }
 
+/**
+ * A shown fish when the hand ends: what the seat is fishing for now, or null
+ * when it showed no fish or has given its wait up since (a claim, a kong or a
+ * discard that broke it). A fishing hand is a losing hand that is scored when
+ * the hands are exposed (I p. 21 #24, p. 24, p. 32), so the figure is that of
+ * the hand held at the end, not of the one first announced.
+ */
+export function fishingAtEnd(
+  state: GameState,
+  seat: Seat,
+): { readonly tier: Tier; readonly value: number | null; readonly hand: string } | null {
+  if (!state.fishing.some((declaration) => declaration.seat === seat)) return null;
+  const wait = waitsOf(state, seat);
+  return wait.length === 0 ? null : fishingValueFor(state, seat, wait);
+}
+
 /** One discard that would leave the seat fishing, and what for. */
 export interface FishingDiscard {
   readonly tile: string;

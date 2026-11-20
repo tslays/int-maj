@@ -389,7 +389,7 @@ describe("ledger entries say why", () => {
   it("tags every payment with its kind, East's double and the fishing tier", () => {
     const state = fixture({
       hands: {
-        E: "b1 b2 b3 b4 b5 b6 b7 c1 c2 c3 o1 o2 o3",
+        E: "wE wE wS wS wN wN o6 o6 o7 o7 o8 o8 o9",
         S: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 b5",
         W: "c1 c1 c1 c2 c2 c2 c3 c3 c3 c4 c4 c4 c5",
         N: "o1 o1 o1 o2 o2 o2 o3 o3 o3 o4 o4 o4 o5",
