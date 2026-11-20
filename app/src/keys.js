@@ -11,7 +11,7 @@
  * up, or while you type in a field: those have keys of their own.
  */
 
-import { commandFor } from "./keymap.js";
+import { commandFor, wrap } from "./keymap.js";
 import { claimsOpen } from "./claims.js";
 import { legalDiscard, throwTile, tickFor, toggleGoulashPick } from "./input.js";
 import { practiceOpen } from "./practice.js";
@@ -46,14 +46,14 @@ function chosen() {
   return active instanceof HTMLButtonElement && buttons().includes(active) ? active : null;
 }
 
-/** Lift the tile `step` along from the lifted one (or move the Goulash cursor). */
+/** Lift the tile `step` along from the lifted one (or move the Goulash cursor), round the ends. */
 function moveInHand(step) {
   const hand = board.hand;
   if (hand.length === 0 || pondZoomed()) return;
   const goulash = inGoulash();
   const from = goulash ? cursor : board.lifted;
   const at = from === null ? -1 : hand.indexOf(from);
-  const next = at < 0 ? (step > 0 ? 0 : hand.length - 1) : Math.max(0, Math.min(hand.length - 1, at + step));
+  const next = at < 0 ? (step > 0 ? 0 : hand.length - 1) : wrap(at + step, hand.length);
   const entry = hand[next];
   if (entry === from) return;
   if (goulash) {
@@ -84,7 +84,7 @@ function pressInHand() {
 function moveInButtons(step) {
   const all = buttons();
   const at = all.indexOf(chosen());
-  all[Math.max(0, Math.min(all.length - 1, at + step))]?.focus();
+  if (all.length > 0) all[wrap(at + step, all.length)].focus();
 }
 
 window.addEventListener("pointerdown", () => {

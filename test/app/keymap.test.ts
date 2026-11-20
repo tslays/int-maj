@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 // @ts-expect-error - a plain browser module without type declarations
-const { SHORTCUTS, commandFor } = await import("../../app/src/keymap.js");
+const { SHORTCUTS, commandFor, wrap } = await import("../../app/src/keymap.js");
 
 describe("the table's keys", () => {
   it("moves along the hand or the buttons with ← →", () => {
@@ -16,6 +16,13 @@ describe("the table's keys", () => {
       assert.deepEqual(commandFor({ key: "ArrowLeft" }, zone), { type: "move", step: -1 });
       assert.deepEqual(commandFor({ key: "ArrowRight" }, zone), { type: "move", step: 1 });
     }
+  });
+
+  it("goes round the ends: past the last comes back at the first, and back", () => {
+    assert.equal(wrap(14, 14), 0);
+    assert.equal(wrap(-1, 14), 13);
+    assert.equal(wrap(5, 14), 5);
+    assert.equal(wrap(-1, 1), 0);
   });
 
   it("presses with Enter and Space", () => {

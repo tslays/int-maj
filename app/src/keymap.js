@@ -25,9 +25,12 @@ export function commandFor({ key, shiftKey = false, ctrlKey = false, altKey = fa
   return null;
 }
 
+/** `index` brought into 0..length-1 round the ends: ← → past the last tile or button come back at the first, and back. */
+export const wrap = (index, length) => ((index % length) + length) % length;
+
 /** The guide's "With a keyboard" card: each row the keys, then what they do. */
 export const SHORTCUTS = [
-  ["← →", "Lift a tile; on the buttons, choose one"],
+  ["← →", "Lift a tile; on the buttons, choose one. Past the end, back to the other side"],
   ["Enter or Space", "Throw the lifted tile; on the buttons, press the one chosen"],
   ["↑ ↓", "Up to the buttons (Pung, Chow, Mah Jong...) and back down to your hand"],
   ["Esc", "Pass, when you are asked; otherwise it closes a sheet"],
