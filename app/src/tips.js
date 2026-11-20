@@ -165,7 +165,7 @@ export function tipForChoices(legal, { callsOff }) {
     if (!tipPending("throw") && window.matchMedia("(any-hover: hover) and (any-pointer: fine)").matches) {
       candidates.push([
         "keys",
-        "Keys work too: ← → lift a tile, Enter throws it, M is Mah Jong, X passes. Press ? for every key.",
+        "Keys work too: ← → lift a tile, Enter throws it. ↑ reaches the buttons, Esc passes.",
         "Keyboard",
         { guide: "keyboard" },
       ]);

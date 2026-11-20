@@ -10,7 +10,7 @@
 import { tipsReset } from "./tips.js";
 import { $, faceChip } from "./shared.js";
 import { chanceBadge } from "./hints.js";
-import { GOULASH_LINE, SHORTCUTS } from "./keymap.js";
+import { KEY_NOTES, SHORTCUTS } from "./keymap.js";
 
 /* --------------------------------------------------------- pictures */
 
@@ -150,7 +150,7 @@ function keyTable() {
     list.append(term, el("dd", "", does));
   }
   const box = el("div");
-  box.append(list, el("p", "guide-intro guide-keys-note", GOULASH_LINE));
+  box.append(list, ...KEY_NOTES.map((line) => el("p", "guide-intro guide-keys-note", line)));
   return box;
 }
 
@@ -323,7 +323,7 @@ const TABS = [
     id: "keyboard",
     name: "Keyboard",
     when: hasKeyboard,
-    intro: "Everything at the table works from the keyboard too. Nothing on screen shows the keys; they are all here.",
+    intro: "Play with a few keys; what they do follows what is on the table.",
     body: keyTable,
     cards: [],
   },

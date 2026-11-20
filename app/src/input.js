@@ -53,9 +53,6 @@ export function toggleGoulashPick(entry) {
   showGoulashPicked(goulashPicks.length);
 }
 
-/** How many tiles are picked for the goulash exchange so far. */
-export const goulashPickCount = () => goulashPicks.length;
-
 /** The keys of the tiles picked for the goulash exchange so far. */
 export function goulashKeys() {
   return goulashPicks.map((entry) => entry.key);

@@ -1,24 +1,28 @@
 /**
- * Playing from the keyboard: arrows choose a tile, Enter throws it, a letter
- * takes a call. The keys themselves live in `keymap.js`; nothing on the
- * table shows them. The guide's Keyboard card lists them (on a device with a
- * mouse), `?` opens it, and one first-game tip mentions it.
+ * Playing from the keyboard with a handful of keys whose meaning follows the
+ * situation (`keymap.js`): at your hand ← → lift a tile and Enter throws it;
+ * ↑ goes to the buttons above it, where ← → choose and Enter presses; Esc
+ * passes. When a discard is offered and there is nothing to throw, the
+ * buttons are chosen at once.
  *
- * Keys do nothing while a sheet, the start screen, practice or a result is
+ * Nothing on the table shows the keys: the guide's Keyboard tab lists them
+ * (on a device with a mouse) and one first-game tip (`tips.js`) points there.
+ * They do nothing while a sheet, the start screen, practice or a result is
  * up, or while you type in a field: those have keys of their own.
  */
 
 import { commandFor } from "./keymap.js";
 import { claimsOpen } from "./claims.js";
-import { openGuide } from "./guide.js";
-import { goulashPickCount, legalDiscard, throwTile, tickFor, toggleGoulashPick } from "./input.js";
+import { legalDiscard, throwTile, tickFor, toggleGoulashPick } from "./input.js";
 import { practiceOpen } from "./practice.js";
 import { $, board, state } from "./shared.js";
-import { pondZoomed, setPondZoom } from "./stage.js";
+import { pondZoomed } from "./stage.js";
 import { startOpen } from "./start.js";
 
 /** The tile the keys stand on in a Goulash (half raised), or null. */
 let cursor = null;
+/** Whether the last thing you used was the keyboard: only then do the buttons take focus by themselves. */
+let keyboard = false;
 
 /** Whether the table should leave this key press alone. */
 function blocked(event) {
@@ -36,16 +40,20 @@ function buttons() {
   return [...$("#actions").querySelectorAll("button")].filter((button) => !button.disabled && button.offsetParent !== null);
 }
 
-/** Lift the tile `step` along from the lifted one (or put the Goulash cursor there). */
-function move(step) {
+/** The button the keys stand on, or null when they stand on the hand. */
+function chosen() {
+  const active = document.activeElement;
+  return active instanceof HTMLButtonElement && buttons().includes(active) ? active : null;
+}
+
+/** Lift the tile `step` along from the lifted one (or move the Goulash cursor). */
+function moveInHand(step) {
   const hand = board.hand;
   if (hand.length === 0 || pondZoomed()) return;
   const goulash = inGoulash();
   const from = goulash ? cursor : board.lifted;
   const at = from === null ? -1 : hand.indexOf(from);
-  let next;
-  if (at < 0) next = step > 0 ? 0 : hand.length - 1;
-  else next = Math.max(0, Math.min(hand.length - 1, at + (Number.isFinite(step) ? step : step > 0 ? hand.length : -hand.length)));
+  const next = at < 0 ? (step > 0 ? 0 : hand.length - 1) : Math.max(0, Math.min(hand.length - 1, at + step));
   const entry = hand[next];
   if (entry === from) return;
   if (goulash) {
@@ -59,25 +67,10 @@ function move(step) {
   tickFor(entry);
 }
 
-/** Carry the lifted tile one place along the hand: your own order, so Sort goes off, as with a drag. */
-function shift(step) {
-  const entry = board.lifted;
-  if (entry === null || pondZoomed() || inGoulash()) return;
-  const at = board.hand.indexOf(entry);
-  const other = board.hand[at + step];
-  if (other === undefined) return;
-  board.swap(entry, other);
-  void board.layoutHand(new Set(), true);
-}
-
-/** Space or Enter on the table: throw the lifted tile, or work the Goulash pick. */
-function press(send) {
+/** Enter at the hand: throw the lifted tile, or pick in a Goulash. */
+function pressInHand() {
   if (pondZoomed()) return;
   if (inGoulash()) {
-    if (send && goulashPickCount() === 3) {
-      $("#goulash-confirm")?.click();
-      return;
-    }
     if (cursor === null || !board.hand.includes(cursor) || state.busy) return;
     toggleGoulashPick(cursor);
     // A tile put back drops to the row; the cursor still stands on it.
@@ -85,68 +78,59 @@ function press(send) {
     return;
   }
   const entry = board.lifted;
-  if (entry === null || legalDiscard(entry.key) === null) return;
-  throwTile(entry);
+  if (entry !== null && legalDiscard(entry.key) !== null) throwTile(entry);
 }
 
-/** A button by its letter; with several (two Chows) each press moves to the next, and Enter takes it. */
-function pressAction(key) {
-  const matches = buttons().filter((button) => button.getAttribute("aria-keyshortcuts") === key);
-  if (matches.length === 0) return;
-  if (matches.length === 1) {
-    matches[0].click();
-    return;
-  }
-  const at = matches.indexOf(document.activeElement);
-  matches[(at + 1) % matches.length].focus();
+function moveInButtons(step) {
+  const all = buttons();
+  const at = all.indexOf(chosen());
+  all[Math.max(0, Math.min(all.length - 1, at + step))]?.focus();
 }
 
-window.addEventListener("keydown", (event) => {
-  if (blocked(event)) return;
-  const command = commandFor(event);
-  if (command === null) return;
-  // Enter or Space on a button you reached by keyboard is that button's own.
-  const target = event.target;
-  if ((command.type === "throw" || command.type === "pick") && target instanceof HTMLElement && target.matches("button:focus-visible, a:focus-visible")) return;
-  if (event.repeat && command.type !== "move" && command.type !== "shift") {
+window.addEventListener("pointerdown", () => {
+  keyboard = false;
+}, true);
+
+// Capture: ahead of the sheets' own Escape, so an open sheet still closes first and nothing passes.
+window.addEventListener(
+  "keydown",
+  (event) => {
+    if (blocked(event)) return;
+    const button = chosen();
+    const command = commandFor(event, button === null ? "hand" : "buttons");
+    if (command === null) return;
     event.preventDefault();
-    return;
-  }
-  event.preventDefault();
-  switch (command.type) {
-    case "move":
-      move(command.step);
-      break;
-    case "shift":
-      shift(command.step);
-      break;
-    case "throw":
-    case "pick":
-      press(command.type === "throw");
-      break;
-    case "action":
-      pressAction(command.key);
-      break;
-    case "button":
-      buttons()[command.index]?.click();
-      break;
-    case "discards":
-      setPondZoom(!pondZoomed());
-      break;
-    case "sort":
-      $("#sort").click();
-      break;
-    case "hints":
-      $("#hints").click();
-      break;
-    case "guide":
-      openGuide("keyboard");
-      break;
-  }
-});
+    keyboard = true;
+    if (event.repeat && command.type !== "move") return;
+    switch (command.type) {
+      case "move":
+        if (button === null) moveInHand(command.step);
+        else moveInButtons(command.step);
+        break;
+      case "press":
+        if (button === null) pressInHand();
+        else button.click();
+        break;
+      case "zone":
+        if (command.to === "buttons") buttons()[0]?.focus();
+        else button?.blur();
+        break;
+      case "pass":
+        buttons().find((item) => item.classList.contains("act-pass") && item.dataset.pass === "true")?.click();
+        break;
+    }
+  },
+  true,
+);
 
-/** A new prompt or a new hand: the Goulash cursor starts again. */
-export function resetKeyCursor() {
+/**
+ * New choices are on screen (`showChoices` in main.js): the Goulash cursor
+ * starts again, and when a discard is offered and you cannot throw, the
+ * buttons are chosen for a keyboard player, starting at Pass.
+ */
+export function keysOnChoices() {
   if (cursor !== null && board.hand.includes(cursor)) void board.peek(cursor, false);
   cursor = null;
+  const canThrow = state.payload.legalActions.some((action) => action.type === "Discard");
+  if (keyboard && !canThrow && !inGoulash()) buttons()[0]?.focus();
 }

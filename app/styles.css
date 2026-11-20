@@ -272,7 +272,7 @@ html.phone-frame .actions {
 .act:disabled {
   opacity: 0.45;
 }
-/* Reached by keyboard (a second C picks the next Chow, keys.js): Enter takes it. */
+/* Chosen by keyboard (↑, then ← →, keys.js): Enter presses it. */
 .act:focus-visible {
   outline: 3px solid var(--gold-1);
   outline-offset: 3px;
@@ -2472,7 +2472,10 @@ button.detail-rule {
   text-align: center;
 }
 .guide-keys-note {
-  margin-top: 12px !important;
+  margin: 8px 0 0 !important;
+}
+.guide-keys + .guide-keys-note {
+  margin-top: 14px !important;
 }
 .guide-grid {
   display: grid;

@@ -202,11 +202,11 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   `shared.js` (the one mutable `state` - api, latest answer, busy, calls
   off - plus the board, storage, `request`, `toast`, `faceChip` and other
   small helpers), `input.js` (hand input: tap, lift, drag, swipe-to-throw,
-  the goulash picks), `keys.js` with `keymap.js` (playing from the keyboard:
-  arrows lift a tile, Enter throws, a letter takes a call; no key is shown on
-  the table, the action buttons carry theirs only in `aria-keyshortcuts`, and
-  the guide's Keyboard tab, `?` and one first-game tip are where players learn
-  them), `goulash.js` (the small Goulash banner over the middle of the
+  the goulash picks), `keys.js` with `keymap.js` (playing from the keyboard
+  with arrows, Enter or Space and Esc, read by where you are: ← → and Enter
+  on the hand or, after ↑, on the action buttons; Esc passes; no key is shown
+  on the table, and the guide's Keyboard tab and one first-game tip are where
+  players learn them), `goulash.js` (the small Goulash banner over the middle of the
   table during the three exchanges: which exchange, who your tiles go to, how
   many are picked; what a Goulash is lives in the first-game tip), `hints.js` (closest-hands panel, the hand
   sheet with the book's own sample hand, and the Hints toggle; `hint-style.js` and `familiar.js` are its style and memory), `handbook.js`
