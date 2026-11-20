@@ -1,8 +1,8 @@
 /**
  * The keyboard at the table: arrows, Enter or Space, and Esc, and what they
  * mean depends on where you are. Pure, so tests can check it without a
- * browser; `keys.js` carries it out, and the guide's Keyboard tab is built
- * from `SHORTCUTS`.
+ * browser; `keys.js` carries it out, and the guide's "With a keyboard" card
+ * (in Your turn) is built from `SHORTCUTS`.
  *
  * Two places: your hand (← → lift a tile, Enter throws it) and the buttons
  * above it (← → choose one, Enter presses it). ↑ and ↓ move between them,
@@ -25,7 +25,7 @@ export function commandFor({ key, shiftKey = false, ctrlKey = false, altKey = fa
   return null;
 }
 
-/** The guide's Keyboard tab: each row the keys, then what they do. */
+/** The guide's "With a keyboard" card: each row the keys, then what they do. */
 export const SHORTCUTS = [
   ["← →", "Lift a tile; on the buttons, choose one"],
   ["Enter or Space", "Throw the lifted tile; on the buttons, press the one chosen"],
@@ -33,7 +33,7 @@ export const SHORTCUTS = [
   ["Esc", "Pass, when you are asked; otherwise it closes a sheet"],
 ];
 
-/** The tab's closing lines. */
+/** The card's text, under the keys. */
 export const KEY_NOTES = [
   "When a discard is offered to you, the buttons are chosen already: ← → and Enter.",
   "In a Goulash, Enter picks a tile or puts it back; ↑ then Enter passes the three.",

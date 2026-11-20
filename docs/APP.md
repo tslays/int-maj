@@ -205,7 +205,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   the goulash picks), `keys.js` with `keymap.js` (playing from the keyboard
   with arrows, Enter or Space and Esc, read by where you are: ← → and Enter
   on the hand or, after ↑, on the action buttons; Esc passes; no key is shown
-  on the table, and the guide's Keyboard tab and one first-game tip are where
+  on the table, and the guide's With a keyboard card (Your turn tab) and one first-game tip are where
   players learn them), `goulash.js` (the small Goulash banner over the middle of the
   table during the three exchanges: which exchange, who your tiles go to, how
   many are picked; what a Goulash is lives in the first-game tip), `hints.js` (closest-hands panel, the hand
@@ -213,8 +213,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   (the index of all hands), `result.js` (the result card and the final
   standings), `menu.js`
   (the Calls and Sort buttons and closing the help sheet), `guide.js`
-  (Help: a guide in tabs - Basics, Your turn, Calls, Helpers, Keyboard (only on
-  a device with a mouse), More - of short
+  (Help: a guide in tabs - Basics, Your turn, Calls, Helpers, More - of short
   cards, each with a picture made of tile faces, copies of the game's buttons
   or a small sketch), `tips.js` (first-game tips: a note at the top of the
   table the first time each kind of decision comes up, and after the first

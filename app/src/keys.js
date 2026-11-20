@@ -5,7 +5,7 @@
  * passes. When a discard is offered and there is nothing to throw, the
  * buttons are chosen at once.
  *
- * Nothing on the table shows the keys: the guide's Keyboard tab lists them
+ * Nothing on the table shows the keys: the guide's "With a keyboard" card lists them
  * (on a device with a mouse) and one first-game tip (`tips.js`) points there.
  * They do nothing while a sheet, the start screen, practice or a result is
  * up, or while you type in a field: those have keys of their own.

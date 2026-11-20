@@ -8,7 +8,7 @@ testers get it at https://int.mah-jong.workers.dev.
 
 **New**
 
-- **Play from the keyboard.** On a computer, ← and → lift a tile and Enter throws it. ↑ moves up to the buttons (Pung, Chow, Mah Jong...), ← → choose one and Enter presses it; when a discard is offered the buttons are chosen already. Esc passes. Nothing on the table shows the keys: the guide's new Keyboard tab lists them, and a tip mentions it once, after your first throw.
+- **Play from the keyboard.** On a computer, ← and → lift a tile and Enter throws it. ↑ moves up to the buttons (Pung, Chow, Mah Jong...), ← → choose one and Enter presses it; when a discard is offered the buttons are chosen already. Esc passes. Nothing on the table shows the keys: a new *With a keyboard* card in the guide's Your turn tab lists them, and a tip mentions it once, after your first throw.
 - **A new app icon.** The title's italic *i*, gold on felt teal, its dot a mahjong tile. To see it on your home screen, delete the app and add it again. (#251)
 
 **Changed**

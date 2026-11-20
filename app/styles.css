@@ -2441,7 +2441,7 @@ button.detail-rule {
   margin: 0 0 10px !important;
   color: var(--muted);
 }
-/* The Keyboard tab: each key, then what it does. */
+/* The guide's With a keyboard card: each key, then what it does. */
 .guide-keys {
   display: grid;
   grid-template-columns: max-content 1fr;
@@ -2470,12 +2470,6 @@ button.detail-rule {
   font: inherit;
   font-weight: 700;
   text-align: center;
-}
-.guide-keys-note {
-  margin: 8px 0 0 !important;
-}
-.guide-keys + .guide-keys-note {
-  margin-top: 14px !important;
 }
 .guide-grid {
   display: grid;

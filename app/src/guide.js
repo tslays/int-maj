@@ -138,7 +138,7 @@ function bandsPicture() {
   return box;
 }
 
-/** Every key, one row each (the Keyboard tab). */
+/** Every key, one row each (the "With a keyboard" card). */
 function keyTable() {
   const list = el("dl", "guide-keys");
   for (const [keys, does] of SHORTCUTS) {
@@ -149,14 +149,12 @@ function keyTable() {
     }
     list.append(term, el("dd", "", does));
   }
-  const box = el("div");
-  box.append(list, ...KEY_NOTES.map((line) => el("p", "guide-intro guide-keys-note", line)));
-  return box;
+  return list;
 }
 
 /**
  * A device with a mouse or trackpad, where a keyboard is likely; a phone or
- * tablet never sees the Keyboard tab.
+ * tablet never sees the "With a keyboard" card.
  */
 const hasKeyboard = () => window.matchMedia("(any-hover: hover) and (any-pointer: fine)").matches;
 
@@ -231,6 +229,14 @@ const TABS = [
         title: "Study the discards",
         text: "Tap the middle of the table to see every seat's discards large, from above. Tap again to go back. The newest discard rests on a light plate.",
         picture: () => icon('<circle cx="21" cy="21" r="11"/><path d="M29 29l11 11"/><path d="M17 21h8M21 17v8"/>'),
+      },
+      {
+        id: "keyboard",
+        title: "With a keyboard",
+        text: KEY_NOTES.join(" "),
+        picture: keyTable,
+        wide: true,
+        when: hasKeyboard,
       },
     ],
   },
@@ -320,14 +326,6 @@ const TABS = [
     ],
   },
   {
-    id: "keyboard",
-    name: "Keyboard",
-    when: hasKeyboard,
-    intro: "Play with a few keys; what they do follows what is on the table.",
-    body: keyTable,
-    cards: [],
-  },
-  {
     name: "More",
     cards: [
       {
@@ -392,8 +390,6 @@ const TABS = [
 /* --------------------------------------------------------- the sheet */
 
 let current = 0;
-/** The tabs this device shows (Keyboard only where there is a mouse). */
-let tabsShown = TABS;
 
 function showTab(index) {
   current = index;
@@ -404,22 +400,23 @@ function showTab(index) {
   });
   const body = $("#guide-body");
   body.replaceChildren();
-  const tab = tabsShown[index];
+  const tab = TABS[index];
   if (tab.intro) body.append(el("p", "guide-intro", tab.intro));
-  if (tab.body) body.append(tab.body());
   const grid = el("div", "guide-grid");
-  for (const card of tab.cards) {
+  // A card with `when` shows only where it holds (the keyboard card: only with a mouse).
+  for (const card of tab.cards.filter((item) => item.when === undefined || item.when())) {
     const box = el("section", `guide-card-item${card.wide ? " guide-wide" : ""}`);
+    if (card.id) box.id = `guide-${card.id}`;
     const picture = el("div", "guide-picture");
     picture.append(card.picture());
     box.append(picture, el("h3", "", card.title), el("p", "", card.text));
     grid.append(box);
   }
   body.append(grid);
-  if (index < tabsShown.length - 1) {
+  if (index < TABS.length - 1) {
     const next = el("button", "guide-next");
     next.type = "button";
-    next.textContent = `Next: ${tabsShown[index + 1].name} ›`;
+    next.textContent = `Next: ${TABS[index + 1].name} ›`;
     next.addEventListener("click", () => {
       showTab(index + 1);
       tabs.children[index + 1].focus({ preventScroll: true });
@@ -433,8 +430,7 @@ function showTab(index) {
 function build() {
   const tabs = $("#guide-tabs");
   if (tabs.childElementCount > 0) return;
-  tabsShown = TABS.filter((tab) => tab.when === undefined || tab.when());
-  tabsShown.forEach((tab, index) => {
+  TABS.forEach((tab, index) => {
     const button = el("button", "guide-tab", tab.name);
     button.type = "button";
     button.setAttribute("role", "tab");
@@ -444,20 +440,23 @@ function build() {
   tabs.addEventListener("keydown", (event) => {
     const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
     if (step === 0) return;
-    const index = (current + step + tabsShown.length) % tabsShown.length;
+    const index = (current + step + TABS.length) % TABS.length;
     showTab(index);
     tabs.children[index].focus();
   });
 }
 
 /**
- * Open the guide, at its first tab or at the tab whose `id` is given ("keyboard"
- * for the `?` key). A click handler passes its event, which opens the first tab.
+ * Open the guide, at its first tab, or at the card whose `id` is given
+ * ("keyboard", from the keyboard tip), scrolled into view. A click handler
+ * passes its event, which opens the first tab.
  */
-export function openGuide(tabId) {
+export function openGuide(cardId) {
   build();
-  const at = typeof tabId === "string" ? tabsShown.findIndex((tab) => tab.id === tabId) : -1;
+  const id = typeof cardId === "string" ? cardId : null;
+  const at = id === null ? -1 : TABS.findIndex((tab) => tab.cards.some((card) => card.id === id));
   showTab(Math.max(0, at));
   $("#help-sheet").hidden = false;
   $("#help-close").focus();
+  if (at >= 0) $(`#guide-${id}`)?.scrollIntoView({ block: "nearest" });
 }
