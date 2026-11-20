@@ -19,3 +19,15 @@ export function fishingMarks(payload, hintsOn) {
 export function fishNoteText(hand) {
   return hand;
 }
+
+/**
+ * The seats whose fish came down between two answers of the same hand: a
+ * throw left their hand waiting on nothing. A new hand or another game clears
+ * every fish without a word, so those are never "down".
+ */
+export function fishDown(before, next) {
+  if (before === null || before === undefined) return [];
+  if (before.game !== next.game || before.view.handNumber !== next.view.handNumber) return [];
+  const now = new Set(next.view.fishing.map((entry) => entry.seat));
+  return before.view.fishing.map((entry) => entry.seat).filter((seat) => !now.has(seat));
+}

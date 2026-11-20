@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 // @ts-expect-error - a plain browser module without type declarations
-import { fishingMarks, fishNoteText } from "../../app/src/fishing-marks.js";
+import { fishDown, fishingMarks, fishNoteText } from "../../app/src/fishing-marks.js";
 
 const DISCARDS = [
   { tile: "b5", hand: "Wriggly Snake", tier: "limit" },
@@ -44,5 +44,26 @@ describe("fish on hand tiles", () => {
 
   it("names only the hand in the note", () => {
     assert.equal(fishNoteText("Wriggly Snake"), "Wriggly Snake");
+  });
+});
+
+describe("the Fish down call-out", () => {
+  const answer = (fishing: string[], handNumber = 1, game = "g1") => ({
+    game,
+    view: { handNumber, fishing: fishing.map((seat) => ({ seat })) },
+  });
+
+  it("names a seat whose fish came down in the same hand", () => {
+    assert.deepEqual(fishDown(answer(["S", "W"]), answer(["W"])), ["S"]);
+  });
+
+  it("says nothing when a fish goes up or stays", () => {
+    assert.deepEqual(fishDown(answer(["S"]), answer(["S", "W"])), []);
+    assert.deepEqual(fishDown(null, answer([])), []);
+  });
+
+  it("says nothing when a new hand or another game clears the fish", () => {
+    assert.deepEqual(fishDown(answer(["S"], 1), answer([], 2)), []);
+    assert.deepEqual(fishDown(answer(["S"], 1, "g1"), answer([], 1, "g2")), []);
   });
 });

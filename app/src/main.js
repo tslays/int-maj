@@ -18,7 +18,7 @@ import { refreshGoulash } from "./goulash.js";
 import { receivedPlan } from "./received.js";
 import { familiar } from "./familiar.js";
 import { closestHandsOn, onHintsChange, refreshHints } from "./hints.js";
-import { fishingMarks, fishNoteText } from "./fishing-marks.js";
+import { fishDown, fishingMarks, fishNoteText } from "./fishing-marks.js";
 import { warmIndex } from "./handbook.js";
 import { installMenu } from "./menu.js";
 import { awaitingNextHand, installOnline, leaveRoom, openRoomSheet, sendAction } from "./online.js";
@@ -147,6 +147,9 @@ async function apply(next, { animated = true, opening = false } = {}) {
       sound.cue("fishing", board.ear(seat));
     }
   }
+  // A throw that left a shown fish waiting on nothing takes it down. Only on
+  // a move as it plays: a hand dealt again or resumed clears the fish unseen.
+  if (animated) for (const seat of fishDown(before, next)) announcements.push(callOut(seat, "Fish down"));
   previousFishing = fishing;
   void refreshHints();
   if (announcements.length > 0) await sleep(pace.scale(650));
