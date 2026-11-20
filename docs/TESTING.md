@@ -7,7 +7,7 @@ short **WhatsApp message**. How to play is not here: the app teaches itself
 is new, what to try, how to report and what the app cannot do yet.
 
 <!-- guide:start -->
-# Mah Jong — test version alpha.17
+# Mah Jong — test version alpha.18
 
 **Play here:** https://int.mah-jong.workers.dev
 
@@ -17,7 +17,7 @@ International mahjong in your browser, against three bots, by the rules of
 ## Getting the new version
 
 Open the link (or the app on your home screen) and reload it once. The
-small label under the menu, top left, should read **alpha.17**. A game in
+small label under the menu, top left, should read **alpha.18**. A game in
 progress carries on. If an update changes the game, the hand you were playing
 starts again with the scores kept.
 
@@ -25,35 +25,42 @@ starts again with the scores kept.
 *Add to Home Screen*, and play it from the home-screen icon with the phone
 turned sideways. Everything else, the app shows you: Options › **Help**.
 
-## New in alpha.17
+## New in alpha.18
 
-- **A start screen, and Practice.** Every visit opens a start screen:
-  Continue, Play vs bots (with the bot level), Play with friends, Practice,
-  and links to the guide, all hands, settings and install. In Practice you
-  name the hand, the winning tile and the best aim, and the game grades you.
-  Missed hands come back sooner, and a streak builds as you get them right.
+- **Reset buttons, and a Support link.** Settings has a Reset settings
+  button, and All hands has a Reset filters button. Settings also has a
+  quiet *Support int-maj* link: it opens a small sheet with one button to
+  Ko-fi, and nothing loads from Ko-fi until you tap it.
+- **More guide cards.** The guide now covers Practice, the start screen,
+  Play with friends, the hands in play, Table settings and the Goulash.
 
 ## Fixed thanks to your reports
 
 Thank you to the testers whose reports these fix:
 
-- With Sort off, the opening deal is no longer sorted in pieces of four.
-- A Goulash no longer lets a chow win, wait or announce fishing in an
-  Ordinary or Purity hand.
-- After a win with a claimed chow, the result sheet shows the full hand.
+- Dragonette takes a paired wind or dragon as the spare tile. Alpha.17 said
+  this was fixed, but the fix missed that build.
 
 ## What works differently now
 
-- Every visit opens the start screen. Options › **Main menu** brings it back.
-- The turn pill sits under the round badge.
+- Scoring explains itself: the paid line shows what each loser paid, and
+  Score opens the breakdown. The last Goulash exchange is labelled.
+- Barred hands stay in All hands, marked as barred.
+- The game is called int-maj, and its title glints every five seconds.
+- Practice's back button is a round chevron.
+- In the guide, Next opens the next topic at its top.
 
 ## What to try, and tell us
 
-- Tap **Practice** and name a few hands. Does the grading match the hand you
-  see? Does the streak count right?
-- Start a Goulash and look for a chow in an Ordinary or Purity hand. Is it
-  barred? After a win with a claimed chow, is every tile on the result sheet?
-- With Sort off, deal a hand. Is the first deal in the table's order?
+- Finish a hand with a win. Is the paid line right, and does Score show the
+  breakdown?
+- Play a Goulash to its last exchange. Is it labelled? Does the Goulash bar
+  make sense to you?
+- Open All hands, set some filters, and tap Reset filters. Do they clear?
+- In Settings, tap Reset settings. Then tap Support int-maj: does the sheet
+  open, and does Ko-fi load only after you tap?
+- Look for a Dragonette whose spare tile is a paired wind. Is a wait or a
+  fishing offer given?
 - Anything that broke, looked wrong or surprised you.
 
 ## How to report
@@ -86,11 +93,11 @@ connection it offers to share the report as a message instead.
 ## WhatsApp message
 
 <!-- whatsapp:start -->
-🀄 **Mah Jong test version alpha.17 is out!**
+🀄 **Mah Jong test version alpha.18 is out!**
 
 Play: https://int.mah-jong.workers.dev (reload once to update)
 
-New: a start screen, and Practice to name hands, winning tiles and best aims. Fixed: a Goulash no longer lets a chow win in an Ordinary or Purity hand, the result sheet shows the full hand after a chow win, and with Sort off the opening deal stays in table order.
+New: a Support int-maj link in Settings (Ko-fi, opens only when you tap it), Reset buttons in Settings and All hands, and guide cards for Practice, the start screen and the Goulash. Fixed: Dragonette takes a paired wind as the spare tile, a fix that missed alpha.17.
 
 Thank you to everyone who sent a report. Found something odd? Options › Report a problem.
 
