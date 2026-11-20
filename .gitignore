@@ -1,9 +1,9 @@
 node_modules/
 .DS_Store
 
-# Generated evidence for the primary scan and the Companion: page renders, OCR
-# text and TSV dumps. Rebuild with rules/tools/*.swift; never commit them.
-rules/.generated/
+# The rule framework and the book pages live in the private tslays/int-maj-rules
+# (cloned beside this repository when needed); never commit them here.
+rules/
 scans/
 
 

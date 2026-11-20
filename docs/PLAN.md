@@ -37,9 +37,10 @@ client and its art were removed, and the repository was restructured into
 (2026-11-08).
 
 **Work from anywhere (2026-11-08).** Every green push to `main` deploys
-through GitHub Actions, and the book pages are in the private repository, so
-a Claude cloud session started from the owner's iPhone can do any task
-without the Mac (`docs/WORKFLOW.md`).
+through GitHub Actions, and the book pages are in a private repository a
+session can attach (`tslays/int-maj-rules` since the code went public,
+2026-11-20), so a Claude cloud session started from the owner's iPhone can do
+any task without the Mac (`docs/WORKFLOW.md`).
 
 **Bots that plan (2026-11-08).** The bots aim at concrete target hands
 (`src/core/game/bot/plan.ts`) and call only when it raises the hand's value.

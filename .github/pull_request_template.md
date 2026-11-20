@@ -12,7 +12,7 @@ Preview: https://pr-<number>-int-dev.mah-jong.workers.dev (live / not yet)
 
 ## Rules
 
-Pages read: [I p.N] / [C p.N]. RULES.md / ASSUMPTIONS.md entries changed:
+Pages read: [I p.N] / [C p.N]. Rule documents changed (a PR in tslays/int-maj-rules; no book text here):
 
 ## Checks
 

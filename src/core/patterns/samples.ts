@@ -2,7 +2,8 @@
  * The sample hand each book pictures for a catalogue hand.
  *
  * Every entry was read tile by tile from the page image
- * (`rules/pages/illustrated/pNN.jpg`, `rules/pages/companion/pNN.jpg`): the
+ * (`rules/pages/illustrated/pNN.jpg`, `rules/pages/companion/pNN.jpg`, in the
+ * private tslays/int-maj-rules): the
  * same tiles, in the printed order and the printed grouping. A bracketed
  * token is a card the book prints instead of a tile ("Any tile paired").
  *

@@ -76,7 +76,6 @@ src/
 bin/              command-line entry points: check, play, replay
 scripts/          build (into dist/), preview, smoke test, soaks and art generators
 test/             core/, table/, cli/, app/ and shared helpers/
-rules/            the rule framework, its audit and the book pages
 docs/             PLAN, WORKFLOW, APP and ENGINE references
 examples/         a recorded hand for the replay tool
 .github/          CI: type check, tests, build and smoke test on every push and
@@ -91,15 +90,15 @@ every game replays exactly from its seed.
 
 ## Rules
 
-[rules/RULES.md](rules/RULES.md) is the single normative rule set. Every rule
-carries its source: `[I p.N]` for the primary book, `[C p.N]` for the
-supplement (used only where the primary book is silent) and `[A]` for a
-recorded assumption where both are silent. [rules/SOURCE.md](rules/SOURCE.md) sets the precedence and
-how to read a page; [rules/AUDIT.md](rules/AUDIT.md) records every correction
-made to the engine against the books.
+The game follows *The Game of Mah Jong Illustrated* (primary) and *The Mah
+Jong Player's Companion* (supplement, for its larger hand catalogue). The
+engine in `src/core/` and its tests are the rules as built; code and docs
+cite the books by page (`[I p.N]`, `[C p.N]`) and rule number (`R-0xx`).
 
-The pages of both books are in `rules/pages/` so any session can check a rule
-against the page.
+The rule framework those numbers refer to (`rules/RULES.md`, its audit and
+recorded assumptions) quotes the books, so it is kept in a separate private
+repository together with the owner's page images; `rules/...` paths in this
+repository name files there. This repository holds no book text or pages.
 
 ## Testing
 
@@ -110,6 +109,15 @@ replay), the table service's API (no hidden tile reaches the app), saving
 and resuming, the offline build, and the table geometry (nothing overlaps).
 `npm run typecheck` checks the types, which Node itself only strips, and
 `npm run smoke` drives the built app in a real browser; CI runs all three.
+
+## Licence and notices
+
+The code is under the [MIT licence](LICENSE). [NOTICE.md](NOTICE.md) lists what
+is not (the third-party tile faces, font and sounds) and the names and
+trademarks it uses. The books the game follows are © Patricia A. Thompson and
+Betty Maloney, published by Kangaroo Press; int-maj is an independent project,
+not made or endorsed by their authors or publisher, and contains none of their
+text or pages.
 
 ## Documentation
 

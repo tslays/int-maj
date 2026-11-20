@@ -849,6 +849,25 @@ async function startScreen(browser: Browser, origin: string, shots: string | nul
   assert.equal(await page.locator("#reset-settings").isVisible(), true, "start: Settings can still be reset");
   assert.equal(await page.locator("#support-open").isVisible(), true, "start: Settings still has Support int-maj");
   await page.click("#options-close");
+  // The licence link in the start screen's lower-left corner overlaps nothing, opens the notice over the
+  // start screen, and Escape closes only the notice.
+  const noticeOverlaps = await page.evaluate(() => {
+    const f = document.querySelector("#start-notice")!.getBoundingClientRect();
+    return Array.from(document.querySelectorAll("#start .start-head, #start .start-links, #start .start-choices > *"))
+      .filter((el) => (el as HTMLElement).offsetParent !== null)
+      .filter((el) => {
+        const b = el.getBoundingClientRect();
+        return !(b.right <= f.left || b.left >= f.right || b.bottom <= f.top || b.top >= f.bottom);
+      })
+      .map((el) => el.id || el.className);
+  });
+  assert.deepEqual(noticeOverlaps, [], "start: the licence link overlaps nothing");
+  await page.click("#start-notice");
+  await page.waitForSelector("#legal-sheet:not([hidden])", { timeout: READY_MS });
+  assert.match((await page.textContent("#legal-sheet")) ?? "", /MIT licence/, "start: the licence notice names the licence");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#legal-sheet", { state: "hidden", timeout: READY_MS });
+  assert.equal(await page.locator("#start").isVisible(), true, "start: closing the notice leaves the start screen");
   await page.click("#start-play");
   await page.waitForSelector("#start-new-confirm:not([hidden])", { timeout: READY_MS });
   assert.equal(await page.locator("#start").isVisible(), true, "start: New game waits for the answer");
