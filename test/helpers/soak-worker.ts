@@ -77,6 +77,7 @@ const EVENT_TYPES = new Set<string>([
   "KongDeclared",
   "KongReplacementDrawn",
   "FishingDeclared",
+  "FishingWithdrawn",
   "WinDeclared",
   "HandScored",
   "Payments",

@@ -48,7 +48,7 @@ describe("the result card's account of the points", () => {
     const state = fixture({
       hands: {
         S: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 b5",
-        E: "b1 b2 b3 b4 b5 b6 b7 c1 c2 c3 o1 o2 o3",
+        E: "wE wE wS wS wN wN o6 o6 o7 o7 o8 o8 o9",
         W: FILLER.W,
         N: FILLER.N,
       },
@@ -104,7 +104,7 @@ describe("the result card's account of the points", () => {
     const state = fixture({
       hands: {
         S: "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 b5",
-        E: "b1 b2 b3 b4 b5 b6 b7 c1 c2 c3 o1 o2 o3",
+        E: "wE wE wS wS wN wN o6 o6 o7 o7 o8 o8 o9",
         W: FILLER.W,
         N: FILLER.N,
       },

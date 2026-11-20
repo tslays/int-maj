@@ -19,6 +19,7 @@
  *   KongDeclared          concealed or added kong
  *   KongReplacementDrawn  the loose (or Chinese dead-wall) tile
  *   FishingDeclared       the fish is shown; the wait is the fisher's alone
+ *   FishingWithdrawn      the fish comes down: a throw left the hand waiting on nothing
  *   WinDeclared           mah jong, self-drawn or on the discard
  *   HandScored            the winning pattern and its points
  *   Payments              ledger entries; each names both sides and a reason
@@ -101,6 +102,11 @@ export interface FishingDeclaredEvent extends EventBase {
   readonly tier: Tier;
 }
 
+export interface FishingWithdrawnEvent extends EventBase {
+  readonly type: "FishingWithdrawn";
+  readonly seat: Seat;
+}
+
 export interface WinDeclaredEvent extends EventBase {
   readonly type: "WinDeclared";
   readonly seat: Seat;
@@ -173,6 +179,7 @@ export type Event =
   | KongDeclaredEvent
   | KongReplacementDrawnEvent
   | FishingDeclaredEvent
+  | FishingWithdrawnEvent
   | WinDeclaredEvent
   | HandScoredEvent
   | PaymentsEvent

@@ -5,6 +5,8 @@
  *     rounded to 100; fishing is paid the same way (R69-R71, R76)
  *   - settlement levels: beginner winner only, intermediate winner plus
  *     fishing, advanced all hands with pairwise loser differences (R94)
+ *   - a shown fish scores only on a hand still fishing when the hands are
+ *     exposed, as the hand it waits on then (`fishingAtEnd`, R70)
  *   - a drawn hand pays nothing but its penalties, and a drawn Western hand
  *     makes the next one a Goulash
  */
@@ -23,7 +25,7 @@ import {
   type Seat,
 } from "./state.ts";
 import type { ApplyError, Draft, Emit } from "./draft.ts";
-import { ORDINARY_PATTERNS, allowedPattern, buildHand, exclusionsOf, waitsOf } from "./hands.ts";
+import { ORDINARY_PATTERNS, allowedPattern, buildHand, exclusionsOf, fishingAtEnd, waitsOf } from "./hands.ts";
 
 /** Payments are made to the nearest 100; over 50 rounds up, 50 or less down. */
 export function roundTo100(points: number): number {
@@ -154,8 +156,10 @@ function ledgerFor(
   // Careless discard: when the winner's exposed tiles indicated the tile
   // needed, the discarder pays the other two losers' debts too, unless the
   // discarder was fishing or held at least three doubles (I p. 22, R79).
+  // Fishing is the shown fish on a hand that still waits: one broken since
+  // is no longer fishing.
   if (from !== null && from !== winner) {
-    const discarderFishing = draft.fishing.some((entry) => entry.seat === from);
+    const discarderFishing = fishingAtEnd(draft as GameState, from) !== null;
     const visiblyNeeded = exposureIndicates(
       playerOf(draft as GameState, winner).melds,
       winningTile,
@@ -184,16 +188,17 @@ function ledgerFor(
   if (settlement !== "beginner") {
     const losers = others.filter((seat) => effectiveCount(playerOf(draft as GameState, seat)) <= 14);
     const scores = new Map<Seat, number>();
+    // A shown fish scores only on a hand still fishing when the hands are
+    // exposed, and as the hand it is fishing for then (`fishingAtEnd`).
+    const fishingNow = new Map<Seat, Tier>();
     for (const seat of losers) {
       if (settlement === "advanced") {
         scores.set(seat, losingHandPoints(draft, seat));
         continue;
       }
-      const declaration = draft.fishing.find((entry) => entry.seat === seat);
-      scores.set(
-        seat,
-        declaration === undefined ? 0 : (declaration.value ?? TIER_FISHING[declaration.tier] ?? 0),
-      );
+      const fish = fishingAtEnd(draft as GameState, seat);
+      if (fish !== null) fishingNow.set(seat, fish.tier);
+      scores.set(seat, fish === null ? 0 : (fish.value ?? TIER_FISHING[fish.tier] ?? 0));
     }
     const label = settlement === "advanced" ? "losing hand difference" : "fishing difference";
     for (let i = 0; i < losers.length; i++) {
@@ -218,7 +223,7 @@ function ledgerFor(
           doubled,
           ...(settlement === "advanced"
             ? {}
-            : { tier: draft.fishing.find((declaration) => declaration.seat === higher)?.tier }),
+            : { tier: fishingNow.get(higher) }),
         });
       }
     }

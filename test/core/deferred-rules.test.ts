@@ -18,6 +18,7 @@ import {
   type Action,
   type GameState,
 } from "../../src/core/game/index.ts";
+import { fishingAtEnd } from "../../src/core/game/hands.ts";
 import { fixture, handOf, play, playError } from "../helpers/game-fixture.ts";
 
 function zeroSum(state: GameState): void {
@@ -36,6 +37,13 @@ describe("A7 fishing payer", () => {
   // pays the winning and the fishing hands. I p. 32: the fishing figures, East
   // paying or receiving double.
   const FISH_WINNER_HAND = "dG dG dG dR dR dR dW dW dW b2 b2 b2 b5 b5";
+  // Hands that really wait when the hand ends: a fish is paid only then, as
+  // the hand held (I p. 21 #24, p. 32). FILLER.W and FILLER.N wait on Mixed
+  // Pung (limit, 400); these two on All Pair (half limit, 200) and on a
+  // calculated Buried Treasure.
+  const ALL_PAIR = "wE wE wS wS wN wN o6 o6 o7 o7 o8 o8 o9";
+  const CALCULATED_W = "c6 c7 c8 c7 c8 c9 c7 c8 c9 wN wN wS wS";
+  const CALCULATED_N = "o6 o7 o8 o7 o8 o9 o7 o8 o9 wN wN wS wS";
   const winBy = (seat: "E" | "S", fishing: GameState["fishing"], hands: Record<string, string>) => {
     const state = fixture({
       hands: { [seat]: FISH_WINNER_HAND, ...hands } as Record<"E" | "S" | "W" | "N", string>,
@@ -54,7 +62,7 @@ describe("A7 fishing payer", () => {
 
   it("settles a fishing hand against the other two losers, the winner paying nothing, East double", () => {
     const won = winBy("S", [{ seat: "E", wait: ["b7"], tier: "half" }], {
-      E: "b1 b2 b3 b4 b5 b6 b7 c1 c2 c3 o1 o2 o3",
+      E: "wE wE wS wS wN wN o6 o6 o7 o7 o8 o8 o9",
       W: FILLER.W,
       N: FILLER.N,
     });
@@ -68,7 +76,7 @@ describe("A7 fishing payer", () => {
   it("does not double a fishing hand when East is not involved", () => {
     const won = winBy("E", [{ seat: "W", wait: ["b7"], tier: "limit" }], {
       S: FILLER.S,
-      W: "b1 b2 b3 b4 b5 b6 b7 c1 c2 c3 o1 o2 o3",
+      W: FILLER.W,
       N: FILLER.N,
     });
     assert.deepEqual(fishingOf(won.state), [
@@ -82,10 +90,10 @@ describe("A7 fishing payer", () => {
     const won = winBy(
       "E",
       [
-        { seat: "W", wait: ["b7"], tier: "limit" },
-        { seat: "N", wait: ["b7"], tier: "half" },
+        { seat: "W", wait: ["c5"], tier: "limit" },
+        { seat: "N", wait: ["o9"], tier: "half" },
       ],
-      { S: FILLER.S, W: FILLER.W, N: FILLER.N },
+      { S: FILLER.S, W: FILLER.W, N: ALL_PAIR },
     );
     assert.deepEqual(fishingOf(won.state), [
       ["S", "W", 400],
@@ -102,10 +110,10 @@ describe("A7 fishing payer", () => {
     const won = winBy(
       "E",
       [
-        { seat: "W", wait: ["b7"], tier: "double", value: 100 },
-        { seat: "N", wait: ["b7"], tier: "double", value: 60 },
+        { seat: "W", wait: ["wN"], tier: "calculate" },
+        { seat: "N", wait: ["wN"], tier: "calculate" },
       ],
-      { S: FILLER.S, W: FILLER.W, N: FILLER.N },
+      { S: FILLER.S, W: CALCULATED_W, N: CALCULATED_N },
     );
     assert.deepEqual(fishingOf(won.state), [
       ["S", "W", 100],
@@ -115,16 +123,42 @@ describe("A7 fishing payer", () => {
     zeroSum(won.state);
   });
 
-  it("pays a fishing player a declared figure over the tier table", () => {
+  it("pays the figure of the hand held at the end, not the one announced", () => {
+    // Announced as a double limit; at the end West waits on Mixed Pung (limit).
     const won = winBy("E", [{ seat: "W", wait: ["b7"], tier: "double", value: 800 }], {
       S: FILLER.S,
       W: FILLER.W,
       N: FILLER.N,
     });
     assert.deepEqual(fishingOf(won.state), [
-      ["S", "W", 800],
-      ["N", "W", 800],
+      ["S", "W", 400],
+      ["N", "W", 400],
     ]);
+    assert.ok(won.state.ledger.filter((entry) => entry.kind === "fishing").every((entry) => entry.tier === "limit"));
+  });
+
+  it("pays nothing for a fish whose wait was given up, and that seat pays the other fisher", () => {
+    const won = winBy(
+      "E",
+      [
+        { seat: "W", wait: ["b7"], tier: "limit" },
+        { seat: "N", wait: ["o9"], tier: "half" },
+      ],
+      // West showed the fish, then broke the wait: these tiles wait on nothing.
+      { S: FILLER.S, W: "b1 b1 b1 c1 c2 c3 c7 c8 c9 wE wS wW o9", N: ALL_PAIR },
+    );
+    assert.equal(fishingAtEnd(won.state, "W"), null);
+    assert.deepEqual(fishingOf(won.state), [
+      ["S", "N", 200],
+      ["W", "N", 200],
+    ]);
+    zeroSum(won.state);
+  });
+
+  it("pays no fishing figure to a waiting hand that never showed the fish", () => {
+    const won = winBy("E", [], { S: FILLER.S, W: FILLER.W, N: FILLER.N });
+    assert.equal(fishingAtEnd(won.state, "W"), null);
+    assert.deepEqual(fishingOf(won.state), []);
   });
 });
 
@@ -370,11 +404,20 @@ describe("A16 careless discard", () => {
     { kind: "pung" as const, tiles: ["b9", "b9", "b9"], exposed: true },
   ];
 
-  function winOnB5(melds: typeof BAMBOO_SHOWN, fishing: { seat: "E"; wait: string[]; tier: "half" }[] = []) {
+  // After throwing the b5, East waits on All Pair (o9).
+  const EAST_FISHING = "wE wE wS wS wN wN o6 o6 o7 o7 o8 o8 o9 b5";
+  // After throwing the b5, East waits on nothing.
+  const EAST_PLAIN = "b1 b1 b1 c1 c2 c3 c7 c8 c9 wE wS wW b5 o9";
+
+  function winOnB5(
+    melds: typeof BAMBOO_SHOWN,
+    fishing: { seat: "E"; wait: string[]; tier: "half" }[] = [],
+    east = EAST_PLAIN,
+  ) {
     const state = fixture({
       hands: {
         ...FILLER,
-        E: "b1 b1 b1 c1 c2 c3 c7 c8 c9 wE wS wW b5 o9",
+        E: east,
         S: melds.length === 3 ? "b2 b2 b2 b5" : "b2 b2 b2 b6 b6 b6 b5",
       },
       melds: { S: melds },
@@ -403,9 +446,15 @@ describe("A16 careless discard", () => {
   });
 
   it("exempts a discarder who was fishing", () => {
-    const won = winOnB5(BAMBOO_SHOWN, [{ seat: "E", wait: ["o9"], tier: "half" }]);
+    const won = winOnB5(BAMBOO_SHOWN, [{ seat: "E", wait: ["o9"], tier: "half" }], EAST_FISHING);
     assert.equal(won.state.result?.winner, "S");
     assert.equal(won.state.ledger.some((entry) => entry.reason.startsWith("careless")), false);
+  });
+
+  it("does not exempt a discarder who showed the fish but no longer waits", () => {
+    const won = winOnB5(BAMBOO_SHOWN, [{ seat: "E", wait: ["o9"], tier: "half" }], EAST_PLAIN);
+    assert.equal(won.state.result?.winner, "S");
+    assert.equal(won.state.ledger.filter((entry) => entry.reason.startsWith("careless")).length, 2);
   });
 
   it("reads the indication from exposed sets, never from an announced wait", () => {

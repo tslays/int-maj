@@ -67,6 +67,7 @@ interface Payload {
     readonly player: { readonly hand: readonly string[] };
     readonly fishingDrawOnly: readonly string[];
   };
+  readonly fishingDiscards: readonly { readonly tile: string; readonly hand: string }[];
 }
 
 declare global {
@@ -77,6 +78,7 @@ declare global {
       lifted(): string | null;
       hand(): string[];
       received(): string[];
+      fishing(): string[];
       pile(): boolean;
       act(action: unknown): Promise<void>;
       sound: { readonly samplesLoaded: number };
@@ -106,6 +108,14 @@ const BOARD_CHECKS: Readonly<Record<ScenarioName, (payload: Payload, page: Page)
   },
   botfishing: async (payload) => {
     assert.equal(payload.view.phase, "discard");
+  },
+  fishthrow: async (payload, page) => {
+    assert.equal(payload.view.phase, "discard");
+    assert.ok(payload.fishingDiscards.length > 0, "a throw that leaves you fishing");
+    // Hints are on by default: every copy of each such tile carries a fish, and no other tile does.
+    const marked = new Set(payload.fishingDiscards.map((entry) => entry.tile));
+    const fish = await page.evaluate(() => window.mahjong!.fishing());
+    assert.deepEqual(fish, payload.view.player.hand.filter((key) => marked.has(key)));
   },
   announce: async (payload) => {
     assert.ok(payload.legalActions.some((action) => action.type === "DeclareFishing"), "you may declare fishing");

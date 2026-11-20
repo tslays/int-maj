@@ -261,7 +261,7 @@ const TABS = [
       },
       {
         title: "Fishing",
-        text: "One tile from winning: announce it, or keep it to yourself. The tiles shown are the ones you wait on. A seat that announced shows a small fish on the middle console. With the house rule Announce fishing to win, only an announced hand may go out.",
+        text: "One tile from winning: announce it, or keep it to yourself. The tiles shown are the ones you wait on. A seat that announced shows a small fish on the middle console; it comes down if a throw leaves the hand waiting on nothing. With the house rule Announce fishing to win, only an announced hand may go out. With Hints on, a small fish above a hand tile on your turn means throwing it leaves you fishing; lift it to see the hand's name.",
         picture: () => row(act("Fishing", "claim", ["c3", "c6"]), act("Don't announce", "pass")),
       },
       {
