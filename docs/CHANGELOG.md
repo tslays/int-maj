@@ -4,7 +4,27 @@ Newest first. Written for players: what you will see, what was fixed, and
 what now works differently. Each version is a `v0.1.0-alpha.N` tag on `main`;
 testers get it at https://int.mah-jong.workers.dev.
 
-## alpha.17
+## alpha.18
+
+**New**
+
+- **Support int-maj.** Settings has a quiet *Support int-maj* link. It opens a small sheet with one button to Ko-fi, so Apple Pay and PayNow work; nothing loads from Ko-fi until you tap it. (#243)
+- **Reset buttons.** Settings has a Reset settings button, and All hands has a Reset filters button. (#237, #241)
+- **Guide cards for more features.** The guide now covers Practice, the start screen, Play with friends, the hands in play, Table settings and the Goulash. (#239)
+
+**Changed**
+
+- **Scoring is explained where you look.** The paid line shows what each loser paid, and Score opens the breakdown. Barred hands stay in All hands, marked. The last Goulash exchange is labelled, and each house-rule subtitle says what its rule does. (#249)
+- **The game is called int-maj, and its title glints every five seconds.** (#242)
+- **Settings has a cleaner footer.** (#237)
+- **Practice's back button is a round chevron** in place of the text link. (pushed directly, no PR)
+- **In the guide, Next opens the next topic at its top,** and Closest hands is four short cards instead of one long paragraph. (#240, #239)
+
+**Fixed**
+
+- **Dragonette takes a paired wind or dragon as the spare tile.** Alpha.17 listed this as fixed, but the fix missed that build. (#244 → #248)
+
+## alpha.17 (19 November 2026)
 
 **New**
 
