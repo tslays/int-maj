@@ -108,8 +108,13 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   ends at the highest wall slot still standing; `test/app/layout.test.ts`
   pins the order and proves no meld touches a wall.
 - `app/src/tiles.js` models a tile: a rounded off-white front, a sky-blue
-  lacquered back, and the face printed on it with a small corner index
-  (suits and winds; flowers and seasons print their own number). The faces
+  lacquered back, and the face printed on it with a large corner index
+  (suits and winds; flowers and seasons print their own number) when the
+  **Tile numbers** setting is on (default; `app/src/tile-numbers.js`, key
+  `int-maj.tile-numbers`), or the plain art alone when it is off. The art
+  stays centred on the tile either way, shrinking about its centre to leave
+  the corner free; switching repaints every shared face texture in place. The
+  flat chips in the handbook and results never print numbers. The faces
   are the public-domain riichi set plus Cangjie6's traditional flowers and
   seasons (CC BY-SA 4.0) in `app/assets/faces/` (see its `LICENSE.md`).
 - `app/src/stage.js` holds the renderer, the felt, the centre console, the
@@ -274,7 +279,7 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
 - `app/src/sound.js` is the sound, synthesised live with Web Audio: no audio
   files, so nothing to license, ship or cache. See "Sound" below.
 
-Tap a tile to lift it and tap it again to discard; or hold it and swipe up (a mouse can drag it up the same way) and let go to throw it onto the table: it swells once the swipe is far enough, and sliding back down cancels. Tap a second tile while one is lifted and the lift moves to it (so touch can compare discard options like hovering with a mouse); drag a tile along the hand and it trades places with every tile it passes, so you can arrange the hand your own way (it stays arranged for the hand). Arranging, and lifting a tile to look at it, works at any time, the bots' turns included (issue #99); only a throw needs your turn, so a tile swiped up or clicked on the bots' turns just settles back into the hand. A mouse hover lifts a tile on the bots' turns too and gold-marks its copies in the ponds and melds, so you can weigh your discards early; the bots' moves (their throws, draws and claims) neither lower that tile nor wipe its marks (a new copy in the pond is marked as it lands), and a claim window leaves it up. It stays up when your own turn comes and your new tile arrives, ready to throw with a click or a second tap. It goes down only when you move off it, tap it again with nothing to throw (touch), throw something, or the Goulash exchange starts. In the exchange a tap picks a tile to pass (up to three are raised together) and a sideways drag still arranges the hand; when an exchange is done, the tiles it brought in carry a steady teal mark (`board.markReceived`, distinct from the breathing gold of a marked copy) until the next exchange replaces them or the first tile of the hand is thrown (#119). Claims, kongs, fishing,
+Tap a tile to lift it and tap it again to discard; or hold it and swipe up (a mouse can drag it up the same way) and let go to throw it onto the table: it swells once the swipe is far enough, and sliding back down cancels. Tap a second tile while one is lifted and the lift moves to it (so touch can compare discard options like hovering with a mouse); drag a tile along the hand and it trades places with every tile it passes, so you can arrange the hand your own way (it stays arranged for the hand). Arranging, and lifting a tile to look at it, works at any time, the bots' turns included (issue #99); only a throw needs your turn, so a tile swiped up or clicked on the bots' turns just settles back into the hand. A mouse hover lifts a tile on the bots' turns too and gold-marks its copies in the ponds and melds, so you can weigh your discards early; the bots' moves (their throws, draws and claims) neither lower that tile nor wipe its marks (a new copy in the pond is marked as it lands), and a claim window leaves it up. It stays up when your own turn comes and your new tile arrives, ready to throw with a click or a second tap. It goes down only when you move off it, tap it again with nothing to throw (touch), throw something, or the Goulash exchange starts. In the exchange a tap picks a tile to pass (up to three are raised together) and a sideways drag still arranges the hand; when an exchange is done, the tiles it brought in carry a steady teal mark (`board.markReceived`, distinct from the breathing gold of a marked copy): a slim ring on the tile's ivory border and a faint tint, so neither the art nor the corner number is covered until the next exchange replaces them or the first tile of the hand is thrown (#119). Claims, kongs, fishing,
 Mah Jong, reshuffle and the Goulash exchange appear as buttons when the engine
 offers them. The table is landscape only.
 
@@ -531,7 +536,7 @@ browser runs the same engine, bots and API routes as the tests. It copies the
 - **Settings and house rules.** The menu's Settings button opens a sheet with
   three tabs, Game, Table and Rules, and the Reset settings, Main menu, Help and Report buttons
   under every tab (their sheets open on top of it). Reset settings asks first, then puts every
-  stored preference (level, pace, hint style, animations, sound, large discards, discard layout,
+  stored preference (level, pace, hint style, animations, sound, tile numbers, large discards, discard layout,
   Sort) and the house rules back to their defaults. New game is on the start screen, which asks
   "Start over?" when a game is in progress. It reopens on the last
   tab used while the page is open, and keeps one height so a tab never jumps. The Bot level is a device preference too (`int-maj.level`, `app/src/level.js`, Medium by default): it is sent as `level` with every `/api/step`, so it takes effect with the bots' next move; the decision is recorded as a step, so undo, Play again and a saved game never depend on it. Pace is a device preference (`int-maj.pace`, `app/src/pace.js`): `pace.scale(ms)` multiplies every bot beat, call-out hold, tile animation and animation-timed sound delay (Normal 1, Slower 1.5, Faster 0.6); ambient and camera animations stay fixed, and the engine never sees it. A house rule is a preference kept on the device
