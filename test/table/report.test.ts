@@ -237,6 +237,7 @@ describe("the player's settings in a report", () => {
     animations: true,
     sound: true,
     largeDiscards: true,
+    tileNumbers: true,
     discards: "rows",
     hints: true,
     tips: true,
@@ -251,6 +252,7 @@ describe("the player's settings in a report", () => {
     animations: false,
     sound: false,
     largeDiscards: false,
+    tileNumbers: false,
     discards: "pile",
     hints: false,
     tips: false,
@@ -265,7 +267,7 @@ describe("the player's settings in a report", () => {
     const text = buildReport(session, { ...INFO, settings: CHOSEN });
     assert.match(
       text,
-      /^Settings: bot level hard, pace faster, hint style discovery, animations off, sound off, large discards off, discards pile, hints off, tips off, sort off$/m,
+      /^Settings: bot level hard, pace faster, hint style discovery, animations off, sound off, large discards off, tile numbers off, discards pile, hints off, tips off, sort off$/m,
     );
     assert.match(text, /^Pinned hands: a-hand, b-hand$/m);
     assert.match(

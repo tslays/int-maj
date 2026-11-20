@@ -9,6 +9,7 @@ import { closestHandsOn, pinnedHands } from "./hints.js";
 import { hintStyle } from "./hint-style.js";
 import { discardLayout } from "./discard-layout.js";
 import { largeDiscards } from "./large-discards.js";
+import { tileNumbers } from "./tile-numbers.js";
 import { level } from "./level.js";
 import { houseRules } from "./options.js";
 import { openingPref } from "./opening.js";
@@ -82,6 +83,7 @@ function settingsNow() {
     animations: openingPref.enabled,
     sound: !sound.muted,
     largeDiscards: largeDiscards.on,
+    tileNumbers: tileNumbers.on,
     discards: discardLayout.id,
     hints: closestHandsOn(),
     tips: tipsOn(),

@@ -18,6 +18,8 @@ const { createOpeningPref } = await import("../../app/src/opening.js");
 // @ts-expect-error - a plain browser module without type declarations
 const { createLargeDiscards } = await import("../../app/src/large-discards.js");
 // @ts-expect-error - a plain browser module without type declarations
+const { createTileNumbers } = await import("../../app/src/tile-numbers.js");
+// @ts-expect-error - a plain browser module without type declarations
 const { createDiscardLayout } = await import("../../app/src/discard-layout.js");
 // @ts-expect-error - a plain browser module without type declarations
 const { createSortPref } = await import("../../app/src/sort-pref.js");
@@ -39,6 +41,7 @@ describe("reset settings", () => {
       { make: createHintStyle, change: (p: any) => p.set("discovery"), read: (p: any) => p.id, fallback: "mixed" },
       { make: createOpeningPref, change: (p: any) => p.set(false), read: (p: any) => p.enabled, fallback: true },
       { make: createLargeDiscards, change: (p: any) => p.set(false), read: (p: any) => p.on, fallback: true },
+      { make: createTileNumbers, change: (p: any) => p.set(false), read: (p: any) => p.on, fallback: true },
       { make: createDiscardLayout, change: (p: any) => p.set("pile"), read: (p: any) => p.id, fallback: "rows" },
       { make: createSortPref, change: (p: any) => p.set(false), read: (p: any) => p.on, fallback: true },
     ];
