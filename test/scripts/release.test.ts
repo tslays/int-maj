@@ -40,6 +40,14 @@ describe("release-prep", () => {
     assert.throws(() => nextTag("v0.1.0"));
   });
 
+  it("moves on to beta only when asked, and never back", () => {
+    assert.equal(nextTag("v0.1.0-alpha.20", "beta"), "v0.1.0-beta.1");
+    assert.equal(nextTag("v0.1.0-beta.1"), "v0.1.0-beta.2");
+    assert.equal(nextTag("v0.1.0-beta.2", "rc"), "v0.1.0-rc.1");
+    assert.throws(() => nextTag("v0.1.0-beta.2", "alpha"));
+    assert.throws(() => nextTag("v0.1.0-beta.2", "beta"));
+  });
+
   it("splits the pull request number off a squash subject", () => {
     assert.deepEqual(parseLog("e5fdf93 Show real groups (#160)\nabc1234 A direct commit\n"), [
       { hash: "e5fdf93", subject: "Show real groups", pr: 160 },
@@ -89,6 +97,16 @@ describe("release self-check", () => {
 
   it("catches unrendered Markdown", () => {
     assert.equal(releaseProblems({ ...ok, html: "<p>**bold** and [a](b) and &lt;!-- x</p>" }).length, 3);
+  });
+
+  it("accepts a beta release above the alphas", () => {
+    const changelog = `# What changed\n\n## beta.1\n\n**New**\n\n- First beta. (#1)\n\n## alpha.20 (20 November 2026)\n\n**New**\n\n- Keys. (#255)\n`;
+    assert.equal(newestSection(changelog).version, "beta.1");
+    assert.ok(!releaseNotes(changelog).includes("Keys"));
+    const guide = "# Mah Jong — test version beta.1\n\nThe label should read **beta.1**.";
+    const beta = { guide, changelog, whatsapp: "beta.1 is out", html: markdown(guide) };
+    assert.deepEqual(releaseProblems(beta), []);
+    assert.equal(releaseProblems({ ...beta, whatsapp: "alpha.20 is out" }).length, 1);
   });
 
   it("keeps HTML comments out of the PDF", () => {
