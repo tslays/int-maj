@@ -31,8 +31,8 @@ import { join, resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..");
 
-/** A version label as the guide and CHANGELOG write it: `alpha.20`, `beta.1`. */
-const VERSION = "(?:alpha|beta|rc)\\.\\d+";
+/** A version label as the guide and CHANGELOG write it: `alpha.20`, `beta.1`, `rc.2`, or `0.1.0` for a final. */
+const VERSION = "(?:(?:alpha|beta|rc)\\.\\d+|\\d+\\.\\d+\\.\\d+)";
 
 function between(text: string, name: string): string {
   const start = text.indexOf(`<!-- ${name}:start -->`);
@@ -112,7 +112,7 @@ export function markdown(source: string): string {
 export function newestSection(changelog: string): { version: string; body: string } {
   const lines = changelog.split("\n");
   const start = lines.findIndex((line) => new RegExp(`^## ${VERSION}`).test(line));
-  if (start < 0) throw new Error("docs/CHANGELOG.md has no ## <stage>.N section (alpha.N, beta.N)");
+  if (start < 0) throw new Error("docs/CHANGELOG.md has no ## <stage>.N section (alpha.N, beta.N, rc.N, or 0.1.0)");
   const next = lines.findIndex((line, i) => i > start && /^## /.test(line));
   const version = new RegExp(VERSION).exec(lines[start]!)![0];
   return { version, body: lines.slice(start + 1, next < 0 ? undefined : next).join("\n").trim() };

@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
-import { nextTag, parseLog } from "../../scripts/release-prep.ts";
+import { parseLog, resolveTag, versionLabel } from "../../scripts/release-prep.ts";
 import { embedImages, markdown, newestSection, releaseNotes, releaseProblems } from "../../scripts/tester-guide.ts";
 
 const CHANGELOG = `# What changed
@@ -34,18 +34,35 @@ Intro.
 `;
 
 describe("release-prep", () => {
-  it("counts the next alpha", () => {
-    assert.equal(nextTag("v0.1.0-alpha.8"), "v0.1.0-alpha.9");
-    assert.equal(nextTag("v0.1.0-alpha.12"), "v0.1.0-alpha.13");
-    assert.throws(() => nextTag("v0.1.0"));
+  it("counts on in the stage of the last tag", () => {
+    assert.equal(resolveTag("v0.1.0-alpha.8"), "v0.1.0-alpha.9");
+    assert.equal(resolveTag("v0.1.0-alpha.12"), "v0.1.0-alpha.13");
+    assert.equal(resolveTag("v0.1.0-beta.1"), "v0.1.0-beta.2");
+    assert.equal(resolveTag("v0.1.0-rc.2"), "v0.1.0-rc.3");
   });
 
-  it("moves on to beta only when asked, and never back", () => {
-    assert.equal(nextTag("v0.1.0-alpha.20", "beta"), "v0.1.0-beta.1");
-    assert.equal(nextTag("v0.1.0-beta.1"), "v0.1.0-beta.2");
-    assert.equal(nextTag("v0.1.0-beta.2", "rc"), "v0.1.0-rc.1");
-    assert.throws(() => nextTag("v0.1.0-beta.2", "alpha"));
-    assert.throws(() => nextTag("v0.1.0-beta.2", "beta"));
+  it("takes a named version, which must be later", () => {
+    assert.equal(resolveTag("v0.1.0-alpha.20", "beta.1"), "v0.1.0-beta.1");
+    assert.equal(resolveTag("v0.1.0-beta.3", "rc.1"), "v0.1.0-rc.1");
+    assert.equal(resolveTag("v0.1.0-beta.1", "beta.4"), "v0.1.0-beta.4");
+    assert.equal(resolveTag("v0.1.0-rc.2", "v0.1.0"), "v0.1.0");
+    assert.equal(resolveTag("v0.1.0-rc.2", "0.1.0"), "v0.1.0");
+    assert.equal(resolveTag("v0.1.0", "v0.2.0-alpha.1"), "v0.2.0-alpha.1");
+    assert.throws(() => resolveTag("v0.1.0-beta.2", "alpha.9"), /only moves forward/);
+    assert.throws(() => resolveTag("v0.1.0-beta.2", "beta.2"), /not later/);
+    assert.throws(() => resolveTag("v0.1.0-beta.2", "beta"), /name the count/);
+    assert.throws(() => resolveTag("v0.1.0", "v0.1.0"), /not later/);
+  });
+
+  it("needs a version named after a final release", () => {
+    assert.throws(() => resolveTag("v0.1.0"), /name the next version/);
+    assert.equal(resolveTag("v0.1.0", "v0.1.1"), "v0.1.1");
+    assert.throws(() => resolveTag("nonsense"));
+  });
+
+  it("labels a version the way the app does", () => {
+    assert.equal(versionLabel("v0.1.0-beta.2"), "beta.2");
+    assert.equal(versionLabel("v0.1.0"), "0.1.0");
   });
 
   it("splits the pull request number off a squash subject", () => {
@@ -107,6 +124,14 @@ describe("release self-check", () => {
     const beta = { guide, changelog, whatsapp: "beta.1 is out", html: markdown(guide) };
     assert.deepEqual(releaseProblems(beta), []);
     assert.equal(releaseProblems({ ...beta, whatsapp: "alpha.20 is out" }).length, 1);
+  });
+
+  it("accepts a final release above the rcs", () => {
+    const changelog = "# What changed\n\n## 0.1.0\n\n**New**\n\n- Done. (#9)\n\n## rc.2 (1 December 2026)\n\n**New**\n\n- Polish. (#8)\n";
+    assert.equal(newestSection(changelog).version, "0.1.0");
+    assert.ok(!releaseNotes(changelog).includes("Polish"));
+    const guide = "# Mah Jong — version 0.1.0\n\nThe label should read **0.1.0**.";
+    assert.deepEqual(releaseProblems({ guide, changelog, whatsapp: "0.1.0 is out", html: markdown(guide) }), []);
   });
 
   it("keeps HTML comments out of the PDF", () => {

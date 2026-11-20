@@ -1,10 +1,11 @@
 /**
  * Everything a release needs to know from git, in one short block.
  *
- *   npm run release-prep [-- beta]
+ *   npm run release-prep [-- <version>]
  *
- * `-- beta` asks for the first beta tag, which moves the project on from alpha
- * for good (a stage only moves forward). It fetches `main` and the tags, then prints: the last tester tag and its
+ * With no version it counts on in the last tag's stage (alpha.20 -> alpha.21);
+ * `-- beta.1`, `-- rc.2` or `-- v0.1.0` (a final) name it, and it must come
+ * later: alpha, beta, rc, final only move forward. It fetches `main` and the tags, then prints: the last tester tag and its
  * date (the date that version gets in the CHANGELOG), the next version, the
  * `main` commit to tag, whether this checkout is clean and level with `main`,
  * whether `docs/CHANGELOG.md` and `docs/TESTING.md` on `main` already name the
@@ -23,24 +24,73 @@ function git(...args: string[]): string {
   return execFileSync("git", args, { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
 }
 
-const STAGES = ["alpha", "beta", "rc"] as const;
+/** Release stages in order; a final release has no suffix (`v0.1.0`). */
+const STAGES = ["alpha", "beta", "rc", "final"] as const;
 type Stage = (typeof STAGES)[number];
 
+export interface Tag {
+  base: string;
+  stage: Stage;
+  /** The count within the stage; 0 for a final. */
+  n: number;
+}
+
+/** `v0.1.0-beta.2` -> base `0.1.0`, beta, 2; `v0.1.0` -> base `0.1.0`, final. */
+export function parseTag(tag: string): Tag {
+  const match = /^v?(\d+\.\d+\.\d+)(?:-(alpha|beta|rc)\.(\d+))?$/.exec(tag);
+  if (!match) throw new Error(`not a release tag (v0.1.0-alpha.N, -beta.N, -rc.N or v0.1.0): ${tag}`);
+  return { base: match[1]!, stage: (match[2] as Stage | undefined) ?? "final", n: Number(match[3] ?? 0) };
+}
+
+export function formatTag(t: Tag): string {
+  return t.stage === "final" ? `v${t.base}` : `v${t.base}-${t.stage}.${t.n}`;
+}
+
+/** What the app, the CHANGELOG and the guide call a version: `beta.2`, or `0.1.0` for a final. */
+export function versionLabel(tag: string): string {
+  const t = parseTag(tag);
+  return t.stage === "final" ? t.base : `${t.stage}.${t.n}`;
+}
+
+function order(t: Tag): (number | string)[] {
+  return [...t.base.split(".").map(Number), STAGES.indexOf(t.stage), t.n];
+}
+
+/** Is `a` a later release than `b`? Base version first, then stage, then count. */
+export function isLater(a: Tag, b: Tag): boolean {
+  const x = order(a);
+  const y = order(b);
+  for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return (x[i] as number) > (y[i] as number);
+  return false;
+}
+
 /**
- * The tag after `tag`: `v0.1.0-alpha.8` -> `v0.1.0-alpha.9`. With `to` it
- * moves to the first of that stage (`v0.1.0-alpha.20`, "beta" ->
- * `v0.1.0-beta.1`); a stage never goes backwards, and `to` may not name the
- * stage the tag is already in.
+ * The tag to release after `last`, from what the owner typed after `/release`:
+ *   (nothing)    the next count in the same stage: alpha.20 -> alpha.21
+ *   beta.1, rc.2 that version of the current base (it must come later)
+ *   v0.1.0       a final release (also 0.1.0)
+ *   v0.2.0-beta.1 a whole tag, to start a new base version
+ * After a final there is no "next", so something must be named.
  */
-export function nextTag(tag: string, to?: Stage): string {
-  const match = /^(v\d+\.\d+\.\d+-)(alpha|beta|rc)\.(\d+)$/.exec(tag);
-  if (!match) throw new Error(`not a tester tag (v0.1.0-alpha.N, -beta.N): ${tag}`);
-  const stage = match[2] as Stage;
-  if (to === undefined) return `${match[1]}${stage}.${Number(match[3]) + 1}`;
-  if (STAGES.indexOf(to) <= STAGES.indexOf(stage)) {
-    throw new Error(`cannot move from ${stage} to ${to}: a stage only moves forward (to start the next ${stage}.N, leave out the stage)`);
+export function resolveTag(last: string, arg?: string): string {
+  const prev = parseTag(last);
+  const given = (arg ?? "").trim();
+  let next: Tag;
+  if (given === "") {
+    if (prev.stage === "final") throw new Error(`${last} is a final release: name the next version (v0.1.1, v0.2.0-alpha.1 ...)`);
+    next = { ...prev, n: prev.n + 1 };
+  } else if (/^(alpha|beta|rc)\.\d+$/.test(given)) {
+    const [stage, n] = given.split(".") as [Stage, string];
+    next = { base: prev.base, stage, n: Number(n) };
+  } else if (/^(alpha|beta|rc)$/.test(given)) {
+    throw new Error(`name the count too: ${given}.1, ${given}.2 ...`);
+  } else {
+    next = parseTag(given);
   }
-  return `${match[1]}${to}.1`;
+  if (!isLater(next, prev)) {
+    throw new Error(`${formatTag(next)} is not later than ${last}: a release only moves forward (alpha, beta, rc, final)`);
+  }
+  return formatTag(next);
 }
 
 /** `<hash> <subject>` lines -> hash, subject without its `(#N)`, and N. */
@@ -58,20 +108,21 @@ export function parseLog(log: string): { hash: string; subject: string; pr: numb
 }
 
 function main(): void {
-  const to = process.argv[2] as Stage | undefined;
-  if (to !== undefined && !STAGES.includes(to)) throw new Error(`unknown stage ${to}; use ${STAGES.join(", ")}`);
+  const arg = process.argv[2];
   try {
     git("fetch", "--quiet", "--tags", "origin", "main");
   } catch {
     console.log("warning: git fetch failed; using what this clone already has");
   }
-  const last = git("describe", "--tags", "--abbrev=0", "--match", "v*-*.*", "origin/main");
-  const next = nextTag(last, to);
-  const stage = next.replace(/^v[\d.]+-/, "");
+  const last = git("describe", "--tags", "--abbrev=0", "--match", "v[0-9]*.[0-9]*.[0-9]*", "origin/main");
+  const next = resolveTag(last, arg);
+  const stage = versionLabel(next);
   const head = git("rev-parse", "--short", "origin/main");
   const dirty = git("status", "--porcelain") !== "";
   const behind = Number(git("rev-list", "--count", "HEAD..origin/main"));
-  const docs = (file: string) => git("show", `origin/main:${file}`).includes(stage);
+  // The label as a whole word: alpha.2 is not in alpha.20, 0.1.0 is not in 0.1.0-beta.1.
+  const named = new RegExp(`(?<![\\w.])${stage.replaceAll(".", "\\.")}(?![\\w-])`);
+  const docs = (file: string) => named.test(git("show", `origin/main:${file}`));
   const commits = parseLog(git("log", "--format=%h %s", `${last}..origin/main`));
   const lines = [
     `last tag   ${last} (${git("log", "-1", "--format=%cs", last)})`,
