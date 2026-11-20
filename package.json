@@ -2,6 +2,7 @@
   "name": "int-maj",
   "version": "0.1.0-dev",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "International mahjong (The Game of Mah Jong Illustrated) on a 3D table, played offline against bots.",
   "engines": {

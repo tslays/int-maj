@@ -111,6 +111,14 @@ and resuming, the offline build, and the table geometry (nothing overlaps).
 `npm run typecheck` checks the types, which Node itself only strips, and
 `npm run smoke` drives the built app in a real browser; CI runs all three.
 
+## Licence and notices
+
+The code is under the [MIT licence](LICENSE). [NOTICE.md](NOTICE.md) lists what
+is not: the page images of the two books (© Patricia A. Thompson and Betty
+Maloney, Kangaroo Press), the third-party tile faces, fonts and sounds, and the
+names and trademarks. int-maj is an independent project, not made or endorsed
+by the books' authors or publisher.
+
 ## Documentation
 
 - [docs/PLAN.md](docs/PLAN.md) - the goal, what is done, the alpha phases

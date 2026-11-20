@@ -2310,6 +2310,32 @@ button.detail-rule {
   font-size: 12px;
   opacity: 0.8;
 }
+.legal-card {
+  width: min(360px, 100%);
+  padding: 18px 22px 16px;
+}
+.legal-card h2 {
+  margin: 0 28px 4px; /* clear of the close button on both sides */
+  text-align: center;
+}
+.legal-card p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.legal-links {
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+  margin-top: 14px;
+  font-size: 14px;
+}
+.legal-links a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .install-card {
   width: min(360px, 100%);
 }
@@ -2539,7 +2565,8 @@ button.detail-rule {
 .guide-down {
   color: #f0907a;
 }
-.guide-tips {
+.guide-tips,
+.guide-legal {
   min-width: 0;
 }
 .guide-tips:disabled {
