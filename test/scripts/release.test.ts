@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import { nextTag, parseLog } from "../../scripts/release-prep.ts";
-import { markdown, newestSection, releaseNotes, releaseProblems } from "../../scripts/tester-guide.ts";
+import { embedImages, markdown, newestSection, releaseNotes, releaseProblems } from "../../scripts/tester-guide.ts";
 
 const CHANGELOG = `# What changed
 
@@ -93,5 +93,17 @@ describe("release self-check", () => {
 
   it("keeps HTML comments out of the PDF", () => {
     assert.equal(markdown("Hello <!-- note --> there"), "<p>Hello there</p>");
+  });
+});
+
+describe("tester guide pictures", () => {
+  it("embed the app icon as a picture in the PDF", async () => {
+    const guide = await embedImages("![The icon](app/assets/icons/icon-512.png)");
+    assert.match(guide, /^!\[The icon\]\(data:image\/png;base64,[A-Za-z0-9+/=]{100,}\)$/);
+    assert.match(markdown(guide), /^<p><img alt="The icon" src="data:image\/png;base64,[A-Za-z0-9+/=]+"><\/p>$/);
+  });
+
+  it("leave text without a picture alone", async () => {
+    assert.equal(await embedImages("Plain **text**."), "Plain **text**.");
   });
 });
