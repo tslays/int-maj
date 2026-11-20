@@ -13,6 +13,7 @@ import { createLocalApi } from "../engine/table/local.js";
 import { playOpening } from "./ceremony.js";
 import { openingPref } from "./opening.js";
 import { clearSelection, goulashKeys, installInput, resetGoulash } from "./input.js";
+import { keysOnChoices } from "./keys.js";
 import { refreshGoulash } from "./goulash.js";
 import { receivedPlan } from "./received.js";
 import { familiar } from "./familiar.js";
@@ -344,6 +345,7 @@ function showChoices({ chime = true } = {}) {
     confirm.disabled = true;
     confirm.id = "goulash-confirm";
     bar.append(confirm);
+    keysOnChoices();
     return;
   }
 
@@ -357,7 +359,11 @@ function showChoices({ chime = true } = {}) {
 
   // Under the house rule "Announce fishing to win" keeping quiet gives up the win (#118): say so.
   const quiet = state.payload.view.winNeedsFish ? "Stay quiet, no win" : "Don't announce";
-  if (pass) bar.append(button(fishing ? quiet : "Pass", "pass", () => void act(pass)));
+  if (pass) {
+    const element = button(fishing ? quiet : "Pass", "pass", () => void act(pass));
+    element.dataset.pass = "true"; // what Esc presses (keys.js)
+    bar.append(element);
+  }
   if (reshuffle) bar.append(button("Reshuffle", "pass", () => void act(reshuffle)));
   const sortTiles = (tiles) => [...tiles].sort((a, b) => tileOrder(a) - tileOrder(b));
   const chows = claims.filter((claim) => claim.kind === "chow");
@@ -371,6 +377,7 @@ function showChoices({ chime = true } = {}) {
   const win = wins[0] ?? mahjongClaim;
   if (win) bar.append(button("Mah Jong", "win", () => void act(win)));
   tipForChoices(legal, { callsOff: state.callsOff });
+  keysOnChoices();
 }
 
 /** `?seed=` pins the first game's seed (tests and bug reports); the next new game is random again. */

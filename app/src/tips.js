@@ -92,7 +92,7 @@ export function showTip(id, text, title = "Tip", { guide = false } = {}) {
     open.textContent = "Guide";
     open.addEventListener("click", () => {
       hideTip();
-      openGuide();
+      openGuide(typeof guide === "string" ? guide : undefined);
     });
     buttons.append(open);
   }
@@ -161,6 +161,15 @@ export function tipForChoices(legal, { callsOff }) {
       "Your turn",
       { guide: true },
     ]);
+    // With a mouse there is likely a keyboard: say once that it plays too, after the first throw.
+    if (!tipPending("throw") && window.matchMedia("(any-hover: hover) and (any-pointer: fine)").matches) {
+      candidates.push([
+        "keys",
+        "Keys work too: ← → lift a tile, Enter throws it. ↑ reaches the buttons, Esc passes.",
+        "Keyboard",
+        { guide: "keyboard" },
+      ]);
+    }
     if ($("#closest") !== null && !$("#closest").hidden) {
       candidates.push(["closest", "Top right: the hands your tiles are nearest to. Tap one to see it.", "Closest hands"]);
     }

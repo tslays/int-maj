@@ -36,8 +36,8 @@ export function resetGoulash() {
   board.lowerAll();
 }
 
-/** Pick a tile for the goulash pass, or put a picked one back. */
-function toggleGoulashPick(entry) {
+/** Pick a tile for the goulash pass, or put a picked one back (a tap, or Space in `keys.js`). */
+export function toggleGoulashPick(entry) {
   const index = goulashPicks.indexOf(entry);
   if (index >= 0) {
     goulashPicks.splice(index, 1);
@@ -59,15 +59,24 @@ export function goulashKeys() {
 }
 
 /** The Discard action for this tile, if you may throw it now: only on your own turn, never while the table runs. */
-function legalDiscard(key) {
+export function legalDiscard(key) {
   if (state.busy || state.payload === null) return null;
   return state.payload.legalActions.find((action) => action.type === "Discard" && action.tile === key) ?? null;
 }
 
 /** The quiet click of a hand tile, pitched by where it sits along the hand. */
-function tickFor(entry) {
+export function tickFor(entry) {
   const at = board.hand.indexOf(entry);
   sound.cue("tick", { pitch: board.hand.length > 1 ? at / (board.hand.length - 1) : 0.5 });
+}
+
+/** Throw a hand tile you may throw now (a tap, a swipe, or Enter in `keys.js`). */
+export function throwTile(entry) {
+  const discard = legalDiscard(entry.key);
+  if (discard === null) return;
+  board.noteThrow(entry);
+  sound.cue("lift");
+  void act(discard);
 }
 
 renderer.domElement.addEventListener("pointerdown", (event) => {
@@ -202,9 +211,7 @@ function endPress(event, cancelled) {
   if (dragging) board.armThrow(entry, false);
   if (dragging && armed && !cancelled && legalDiscard(entry.key) !== null) {
     // Swiped up and let go: the tile is thrown onto the table.
-    board.noteThrow(entry);
-    sound.cue("lift");
-    void act(legalDiscard(entry.key));
+    throwTile(entry);
     return;
   }
   if (dragging) {
@@ -225,9 +232,7 @@ function endPress(event, cancelled) {
       if (touch) void board.lift(entry, false);
       return;
     }
-    board.noteThrow(entry);
-    sound.cue("lift");
-    void act(discard);
+    throwTile(entry);
     return;
   }
   // A second tile tapped while one is lifted: the lift moves to it (to compare

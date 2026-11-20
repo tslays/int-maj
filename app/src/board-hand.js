@@ -164,6 +164,15 @@ export const handMethods = {
     return this.glide(entry, { y: up ? HAND_LIFT : 0 }, 140);
   },
 
+  /**
+   * The keyboard's place in a Goulash pick (`keys.js`): the tile stands half
+   * raised, below a picked one. A picked tile stays as it is.
+   */
+  peek(entry, on) {
+    if (this.raised.has(entry)) return Promise.resolve();
+    return this.glide(entry, { y: on ? HAND_LIFT * 0.45 : 0 }, 140);
+  },
+
   /** Put every picked tile down (a new exchange, or the exchange is over). */
   lowerAll() {
     const work = [...this.raised].map((entry) => this.glide(entry, { y: 0 }, 140));

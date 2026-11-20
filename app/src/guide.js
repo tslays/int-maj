@@ -10,6 +10,7 @@
 import { tipsReset } from "./tips.js";
 import { $, faceChip } from "./shared.js";
 import { chanceBadge } from "./hints.js";
+import { KEY_NOTES, SHORTCUTS } from "./keymap.js";
 
 /* --------------------------------------------------------- pictures */
 
@@ -137,6 +138,26 @@ function bandsPicture() {
   return box;
 }
 
+/** Every key, one row each (the "With a keyboard" card). */
+function keyTable() {
+  const list = el("dl", "guide-keys");
+  for (const [keys, does] of SHORTCUTS) {
+    const term = el("dt");
+    for (const key of keys.split(/ +/)) {
+      if (key === "or" || key === "–") term.append(` ${key} `);
+      else term.append(el("kbd", "", key));
+    }
+    list.append(term, el("dd", "", does));
+  }
+  return list;
+}
+
+/**
+ * A device with a mouse or trackpad, where a keyboard is likely; a phone or
+ * tablet never sees the "With a keyboard" card.
+ */
+const hasKeyboard = () => window.matchMedia("(any-hover: hover) and (any-pointer: fine)").matches;
+
 /* --------------------------------------------------------- the content */
 
 /** Each tab: its name and cards; each card: a title, its text, and a picture. */
@@ -208,6 +229,14 @@ const TABS = [
         title: "Study the discards",
         text: "Tap the middle of the table to see every seat's discards large, from above. Tap again to go back. The newest discard rests on a light plate.",
         picture: () => icon('<circle cx="21" cy="21" r="11"/><path d="M29 29l11 11"/><path d="M17 21h8M21 17v8"/>'),
+      },
+      {
+        id: "keyboard",
+        title: "With a keyboard",
+        text: KEY_NOTES.join(" "),
+        picture: keyTable,
+        wide: true,
+        when: hasKeyboard,
       },
     ],
   },
@@ -374,8 +403,10 @@ function showTab(index) {
   const tab = TABS[index];
   if (tab.intro) body.append(el("p", "guide-intro", tab.intro));
   const grid = el("div", "guide-grid");
-  for (const card of tab.cards) {
+  // A card with `when` shows only where it holds (the keyboard card: only with a mouse).
+  for (const card of tab.cards.filter((item) => item.when === undefined || item.when())) {
     const box = el("section", `guide-card-item${card.wide ? " guide-wide" : ""}`);
+    if (card.id) box.id = `guide-${card.id}`;
     const picture = el("div", "guide-picture");
     picture.append(card.picture());
     box.append(picture, el("h3", "", card.title), el("p", "", card.text));
@@ -415,10 +446,17 @@ function build() {
   });
 }
 
-/** Open the guide, at its first tab. */
-export function openGuide() {
+/**
+ * Open the guide, at its first tab, or at the card whose `id` is given
+ * ("keyboard", from the keyboard tip), scrolled into view. A click handler
+ * passes its event, which opens the first tab.
+ */
+export function openGuide(cardId) {
   build();
-  showTab(0);
+  const id = typeof cardId === "string" ? cardId : null;
+  const at = id === null ? -1 : TABS.findIndex((tab) => tab.cards.some((card) => card.id === id));
+  showTab(Math.max(0, at));
   $("#help-sheet").hidden = false;
   $("#help-close").focus();
+  if (at >= 0) $(`#guide-${id}`)?.scrollIntoView({ block: "nearest" });
 }
