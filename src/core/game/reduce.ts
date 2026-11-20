@@ -43,7 +43,16 @@ import {
   type Seat,
 } from "./state.ts";
 import { type ApplyError, type ApplyResult, type Draft, type Emit, addMeld, countOf, draftOf, draftPlayer, noteFirstDiscardClaim, removeKeys, sameTiles, sortKeys, takeDiscard } from "./draft.ts";
-import { claimOptions, completesAsChow, fishingDeclarationFor, handIsComplete, isFeaturelessHand, winsOnDiscard } from "./hands.ts";
+import {
+  claimOptions,
+  completesAsChow,
+  fishingDeclarationFor,
+  fishingValueFor,
+  handIsComplete,
+  isFeaturelessHand,
+  waitsOf,
+  winsOnDiscard,
+} from "./hands.ts";
 import { drawFrom, replaceBonus } from "./draws.ts";
 import { finishDrawn, finishWin, roundTo100 } from "./settle.ts";
 import { dealHand } from "./deal.ts";
@@ -79,7 +88,28 @@ function advanceTurn(draft: Draft, from: Seat, events: Event[], emit: Emit): voi
   }
 }
 
+/**
+ * A seat that showed the fish and has just thrown: if its tiles no longer
+ * wait, the fish comes down (it may be shown again once the hand waits
+ * anew); if they wait on something else, the record follows the new wait.
+ * Only a throw brings a hand back to 13 tiles, so this is the one place a
+ * wait can be given up or changed.
+ */
+function reviewFish(draft: Draft, seat: Seat, emit: Emit): void {
+  const at = draft.fishing.findIndex((entry) => entry.seat === seat);
+  if (at < 0) return;
+  const wait = waitsOf(draft as GameState, seat);
+  const scored = wait.length === 0 ? null : fishingValueFor(draft as GameState, seat, wait);
+  if (scored === null) {
+    draft.fishing.splice(at, 1);
+    emit({ type: "FishingWithdrawn", seat });
+    return;
+  }
+  draft.fishing[at] = { seat, wait: sortKeys(wait), tier: scored.tier, value: scored.value };
+}
+
 function afterDiscard(draft: Draft, seat: Seat, events: Event[], emit: Emit): void {
+  reviewFish(draft, seat, emit);
   const declaration = fishingDeclarationFor(draft as GameState, seat);
   if (declaration !== null) {
     draft.phase = "announce";

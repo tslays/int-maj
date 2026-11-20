@@ -40,7 +40,7 @@ import type { Wind } from "../core/tiles.ts";
 import type { PageRefs, Tier } from "../core/patterns/types.ts";
 import type { ScoreItem } from "../core/score.ts";
 import { HAND_SET_EXCLUDED, HAND_SETS, PATTERNS, type HandSet } from "../core/patterns/table.ts";
-import { GOULASH_NO_HALF_LIMIT, WIN_NEEDS_FISH, buildHand, fishingAtEnd, fishingDiscards, type FishingDiscard } from "../core/game/hands.ts";
+import { GOULASH_NO_HALF_LIMIT, WIN_NEEDS_FISH, buildHand, fishingDiscards, type FishingDiscard } from "../core/game/hands.ts";
 import { arrangeConcealed } from "../core/arrange.ts";
 
 /**
@@ -264,12 +264,6 @@ export interface OutcomePayload {
   readonly ledger: readonly LedgerEntry[];
   /** Ledger entries whose reason names a fishing settlement. */
   readonly fishing: readonly LedgerEntry[];
-  /**
-   * After a win scored at the Intermediate level: the seats that showed the
-   * fish but no longer waited when the hands were exposed, so their fish
-   * scored nothing (`fishingAtEnd`). Empty otherwise.
-   */
-  readonly fishGivenUp: readonly Seat[];
   readonly totals: Readonly<Record<Seat, number>>;
   readonly unknown: number;
   /** This hand finished the North round, so it finished the game (R-032). */
@@ -606,12 +600,6 @@ function outcomeFor(session: WebSession, view: GameView): OutcomePayload | null 
     patternPages: PATTERN_BY_ID.get(result.patternId ?? "")?.pages ?? null,
     ledger: state.ledger,
     fishing: state.ledger.filter((entry) => entry.reason.startsWith("fishing")),
-    fishGivenUp:
-      result.winner === null || (state.settlement ?? "intermediate") !== "intermediate"
-        ? []
-        : state.fishing
-            .map((entry) => entry.seat)
-            .filter((seat) => seat !== result.winner && fishingAtEnd(state, seat) === null),
     totals: totals.totals,
     unknown: totals.unknown,
   };

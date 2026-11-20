@@ -88,16 +88,6 @@ export function explainSettlement({ outcome, you, dealer, name, fishing, cite = 
     seats[entry.to].push({ dir: "get", text: `Receives ${fmt(entry.points)} from ${who(entry.from)}`, why, points: entry.points });
   }
 
-  // A fish shown and then given up scores nothing: the hands are scored as they are exposed (I p. 21).
-  for (const seat of outcome.fishGivenUp ?? []) {
-    seats[seat].push({
-      dir: "none",
-      text: "Fishing scored nothing",
-      why: plain(`${capital(who(seat))} showed the fish but ${was(seat)} no longer one tile short at the end (Illustrated p. 21).`),
-      points: 0,
-    });
-  }
-
   const winner = outcome.kind === "win" ? outcome.winner : null;
   const drawn = winner === null;
   const fishers = fishing.filter((seat) => seat !== winner);

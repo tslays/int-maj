@@ -64,6 +64,8 @@ export function describeEvent(event: Event): string {
       return `${event.seat} draws the loose tile ${event.tile}`;
     case "FishingDeclared":
       return `${event.seat} announces fishing on ${event.wait.join(" ")} (${event.tier})`;
+    case "FishingWithdrawn":
+      return `${event.seat} takes the fish down`;
     case "WinDeclared":
       return (
         `${event.seat} wins ${event.selfDrawn ? "self-drawn" : `on ${event.from}'s discard`}` +
