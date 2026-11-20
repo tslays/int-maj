@@ -345,7 +345,7 @@ const TABS = [
       },
       {
         title: "Table settings",
-        text: "Settings, Table: sound, large discards (the latest at twice the size), and discards in Rows, which show who threw what, or a Pile like a real table. Game has pace, table animations and the bots' level.",
+        text: "Settings, Table: sound, tile numbers (a large rank or wind letter in each tile's corner, for those who don't read the characters; off gives clean tiles), large discards (the latest at twice the size), and discards in Rows, which show who threw what, or a Pile like a real table. Game has pace, table animations and the bots' level.",
         picture: () => row(ghost("Rows", true), ghost("Pile")),
       },
       {

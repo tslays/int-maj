@@ -13,6 +13,7 @@
 import { refreshHints } from "./hints.js";
 import { hintStyle, HINT_STYLES } from "./hint-style.js";
 import { largeDiscards } from "./large-discards.js";
+import { tileNumbers } from "./tile-numbers.js";
 import { discardLayout } from "./discard-layout.js";
 import { roundLayersWanted } from "./layout.js";
 import { level } from "./level.js";
@@ -125,6 +126,10 @@ function showSound() {
 }
 
 /* Large discards: only a phone shows them, so only a phone offers the switch. */
+function showTileNumbers() {
+  $("#tile-numbers").setAttribute("aria-checked", String(tileNumbers.on));
+}
+
 function showLargeDiscards() {
   $("#large-discards-row").hidden = !roundLayersWanted(viewport.width, viewport.height);
   $("#large-discards").setAttribute("aria-checked", String(largeDiscards.on));
@@ -193,6 +198,7 @@ function resetSettings() {
   hintStyle.reset();
   openingPref.reset();
   largeDiscards.reset();
+  tileNumbers.reset();
   discardLayout.reset();
   appearance.reset();
   sound.setMuted(false);
@@ -203,6 +209,7 @@ function resetSettings() {
   saveRules();
   showSound();
   showLargeDiscards();
+  showTileNumbers();
   showDiscardLayout();
   showPace();
   showHintStyle();
@@ -218,6 +225,7 @@ export function installOptions({ mainMenu }) {
   installStyleOptions();
   showSound();
   showLargeDiscards();
+  showTileNumbers();
   showDiscardLayout();
   showPace();
   showHintStyle();
@@ -228,6 +236,7 @@ export function installOptions({ mainMenu }) {
   $("#options").addEventListener("click", () => {
     showSound();
     showLargeDiscards();
+    showTileNumbers();
     showRules();
     showLevel();
     void nameHands();
@@ -286,6 +295,11 @@ export function installOptions({ mainMenu }) {
     sound.cue("press"); // heard only when sound has just been turned on
   });
 
+  /* Tile numbers: on by default; every face is repainted at once. */
+  $("#tile-numbers").addEventListener("click", () => {
+    tileNumbers.set(!tileNumbers.on);
+    showTileNumbers();
+  });
   /* Large discards: on by default; the table follows at once, mid-round too. */
   $("#large-discards").addEventListener("click", () => {
     largeDiscards.set(!largeDiscards.on);

@@ -9,6 +9,7 @@
 import * as THREE from "three";
 
 import { D, H, TABLE, W } from "./layout.js";
+import { tileNumbers } from "./tile-numbers.js";
 
 export { D, H, TABLE, W };
 const FRONT = 0.5;
@@ -80,6 +81,7 @@ faceGeometry.translate(0, 0, D / 2 + 0.004);
 const FACE_W = 300;
 const FACE_H = Math.round(FACE_W * (H / W));
 const faceMaterials = new Map();
+const faceCanvases = new Map();
 let anisotropy = 1;
 let onFacePainted = () => {};
 
@@ -89,8 +91,10 @@ export function initTiles(renderer, painted) {
 }
 
 /** Corner index: the rank for suits, the wind's letter. Flowers and seasons
- * print their own number and character, as on a real set. */
+ * print their own number and character, as on a real set. None at all when
+ * the player has turned tile numbers off. */
 function indexFor(key) {
+  if (!tileNumbers.on) return null;
   if (/^[bco][1-9]$/.test(key)) return { text: key[1], colour: "#1d2a44" };
   if (key.startsWith("w")) return { text: key[1], colour: "#141414" };
   return null;
@@ -108,9 +112,12 @@ function loadImage(url) {
 async function paintFace(canvas, key) {
   const context = canvas.getContext("2d");
   const index = indexFor(key);
-  // The art fills the face, as on the big apps' tiles; the corner index sits
-  // small in the margin the art leaves at its top left.
-  const box = index === null ? { x: 6, y: 6, w: 288, h: 384 } : { x: 22, y: 26, w: 270, h: 360 };
+  // The art is always centred on the face. With numbers on it shrinks about its
+  // centre to leave the top-left corner to a large index; flowers, seasons and
+  // dragons print no index and fill the face.
+  const clean = !tileNumbers.on || key.startsWith("d") || key.startsWith("f") || key.startsWith("s");
+  const box = clean ? { x: 6, y: 6, w: 288, h: 384 } : { x: 38, y: 50, w: 224, h: 300 };
+  context.clearRect(0, 0, canvas.width, canvas.height);
   if (key === "dW") {
     context.strokeStyle = "#2a5fa8";
     context.lineWidth = 16;
@@ -133,10 +140,15 @@ async function paintFace(canvas, key) {
     }
   }
   if (index !== null) {
-    context.fillStyle = index.colour;
-    context.font = `800 46px -apple-system, "SF Pro Rounded", "Helvetica Neue", Arial, sans-serif`;
+    context.font = `800 72px -apple-system, "SF Pro Rounded", "Helvetica Neue", Arial, sans-serif`;
     context.textBaseline = "top";
-    context.fillText(index.text, 10, 6);
+    // An ivory halo keeps it readable wherever it meets the art.
+    context.lineJoin = "round";
+    context.lineWidth = 8;
+    context.strokeStyle = "#f1efe9";
+    context.strokeText(index.text, 12, 2);
+    context.fillStyle = index.colour;
+    context.fillText(index.text, 12, 2);
   }
 }
 
@@ -160,12 +172,27 @@ function faceMaterial(key) {
     polygonOffsetFactor: -1,
   });
   faceMaterials.set(key, material);
+  faceCanvases.set(key, { canvas, texture });
   void paintFace(canvas, key).then(() => {
     texture.needsUpdate = true;
     onFacePainted();
   });
   return material;
 }
+
+/** Paint every face again (tile numbers switched): the shared textures update in place. */
+function repaintFaces() {
+  const painting = [];
+  for (const [key, { canvas, texture }] of faceCanvases) {
+    painting.push(
+      paintFace(canvas, key).then(() => {
+        texture.needsUpdate = true;
+      }),
+    );
+  }
+  void Promise.all(painting).then(() => onFacePainted());
+}
+tileNumbers.onChange(repaintFaces);
 
 /** Paint every face up front, so no tile ever appears blank mid-game. */
 export function preloadFaces(keys) {
@@ -214,13 +241,18 @@ export function markTile(tile) {
 /* Tiles just received in a Goulash exchange: a steady teal wash and ring,
    unlike the breathing gold of a marked copy, so the two never read alike. */
 const receivedMaterial = new THREE.MeshBasicMaterial({ color: 0x2fd3c4, transparent: true, depthWrite: false, opacity: 0.95 });
-const receivedFillMaterial = new THREE.MeshBasicMaterial({ color: 0x2fd3c4, transparent: true, depthWrite: false, opacity: 0.22 });
+const receivedFillMaterial = new THREE.MeshBasicMaterial({ color: 0x2fd3c4, transparent: true, depthWrite: false, opacity: 0.1 });
+// A slim ring on the ivory border, outside the printed face (the face plane is
+// 0.92 of the tile), so it never covers the art or the corner number.
+const receivedOutline = roundedRect(W * 1.0, H * 1.0, RADIUS);
+receivedOutline.holes.push(new THREE.Path(roundedRect(W * 0.94, H * 0.95, RADIUS * 0.85).getPoints(12).reverse()));
+const receivedGeometry = new THREE.ShapeGeometry(receivedOutline, 8);
 
 /** Mark a hand tile as just received (child named "received"). */
 export function markReceived(tile) {
   const frame = new THREE.Group();
   frame.name = "received";
-  const ring = new THREE.Mesh(markGeometry, receivedMaterial);
+  const ring = new THREE.Mesh(receivedGeometry, receivedMaterial);
   const fill = new THREE.Mesh(markFillGeometry, receivedFillMaterial);
   fill.position.z = ring.position.z = D / 2 + 0.03;
   fill.renderOrder = ring.renderOrder = 5;

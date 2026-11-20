@@ -39,6 +39,7 @@ export interface ReportSettings {
   readonly sound: boolean;
   /** Large discards on: the phone's switch, reported whichever device filed the report. */
   readonly largeDiscards: boolean;
+  readonly tileNumbers: boolean;
   /** Discards laid out in rows or in a pile. */
   readonly discards: string;
   /** The Hints toggle: the closest-hands panel shown. */
@@ -116,7 +117,7 @@ function settingsLines(settings: ReportSettings, inForce: HouseRules): string[] 
     chosen.goulashNoHalfLimit === inForce.goulashNoHalfLimit &&
     chosen.winNeedsFish === inForce.winNeedsFish;
   return [
-    `Settings: bot level ${word(settings.botLevel)}, pace ${word(settings.pace)}, hint style ${word(settings.hintStyle)}, animations ${onOff(settings.animations)}, sound ${onOff(settings.sound)}, large discards ${onOff(settings.largeDiscards)}, discards ${word(settings.discards)}, hints ${onOff(settings.hints)}, tips ${onOff(settings.tips)}, sort ${onOff(settings.sort)}, look ${oneLine(settings.look, 90)}`,
+    `Settings: bot level ${word(settings.botLevel)}, pace ${word(settings.pace)}, hint style ${word(settings.hintStyle)}, animations ${onOff(settings.animations)}, sound ${onOff(settings.sound)}, large discards ${onOff(settings.largeDiscards)}, tile numbers ${onOff(settings.tileNumbers)}, discards ${word(settings.discards)}, hints ${onOff(settings.hints)}, tips ${onOff(settings.tips)}, sort ${onOff(settings.sort)}, look ${oneLine(settings.look, 90)}`,
     `Pinned hands: ${pinned.length === 0 ? "none" : pinned.join(", ")}`,
     `Rules chosen: ${rulesText(chosen)} (${same ? "in force in this hand" : "change starts next hand"})`,
   ];
