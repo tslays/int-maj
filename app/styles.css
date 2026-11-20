@@ -2341,13 +2341,49 @@ button.detail-rule {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+/* Licence and notices: one card with three pages, wide enough that the first
+   page's two rows stay in sight on a landscape phone; the long pages scroll
+   under a bar that stays put. */
 .legal-card {
-  width: min(360px, 100%);
-  padding: 18px 22px 16px;
+  width: min(520px, 100%);
+  padding: 0 22px 16px;
 }
-.legal-card h2 {
-  margin: 0 28px 4px; /* clear of the close button on both sides */
+.legal-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0 -22px;
+  padding: 4px 8px 0;
+  background: #162126;
+}
+.legal-card .legal-bar h2 {
+  flex: 1;
+  margin: 0;
   text-align: center;
+}
+.legal-bar .detail-close,
+.legal-back {
+  position: static;
+  flex: none;
+  width: 36px;
+  height: 36px;
+}
+.legal-back {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+}
+/* Hidden Back still holds its place, so the heading stays centred. */
+.legal-back[hidden] {
+  display: block;
+  visibility: hidden;
 }
 .legal-card p {
   margin: 10px 0 0;
@@ -2355,17 +2391,116 @@ button.detail-rule {
   font-size: 14px;
   line-height: 1.45;
 }
-.legal-links {
+.legal-rows {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+.legal-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+  align-content: center;
+  flex-wrap: wrap;
+}
+.legal-row small {
+  flex: 1;
+  color: var(--muted);
+  font-size: 12px;
+}
+.legal-row::after {
+  content: "\203A";
+  color: var(--muted);
+  font-size: 20px;
+}
+.legal-row:hover,
+.legal-row:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+}
+.legal-text ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.legal-text li + li {
+  margin-top: 4px;
+}
+.legal-card .legal-caps {
+  font-size: 11px;
+  letter-spacing: 0.01em;
+}
+.legal-ask {
   display: flex;
   justify-content: center;
-  gap: 22px;
-  margin-top: 14px;
-  font-size: 14px;
+  width: fit-content;
+  margin: 18px auto 0;
 }
-.legal-links a {
+.legal-card .legal-fine {
+  margin-top: 8px;
+  font-size: 12px;
+  text-align: center;
+  opacity: 0.8;
+}
+.legal-credit {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.legal-credit:last-child {
+  border-bottom: 0;
+}
+.legal-card .legal-credit h3 {
+  margin: 0;
+  font-size: 11px;
+}
+.legal-card .legal-credit p {
+  margin-top: 4px;
+}
+.legal-card .legal-credit b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.legal-card .legal-terms {
+  font-size: 13px;
+}
+.legal-terms a,
+.legal-more {
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+.legal-more {
+  min-height: 32px;
+  margin-left: 6px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+.legal-full {
+  margin-top: 6px;
+  padding: 2px 12px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.22);
+}
+.legal-card .legal-full p {
+  font-size: 12px;
+  white-space: pre-line;
+}
+.legal-full[hidden] {
+  display: none;
 }
 .install-card {
   width: min(360px, 100%);

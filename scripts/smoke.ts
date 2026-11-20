@@ -865,6 +865,22 @@ async function startScreen(browser: Browser, origin: string, shots: string | nul
   await page.click("#start-notice");
   await page.waitForSelector("#legal-sheet:not([hidden])", { timeout: READY_MS });
   assert.match((await page.textContent("#legal-sheet")) ?? "", /All rights reserved/, "start: the licence notice names the licence");
+  await page.click('#legal-sheet .legal-row[data-page="legal-licence"]');
+  await page.waitForSelector("#legal-licence:not([hidden])", { timeout: READY_MS });
+  assert.match((await page.textContent("#legal-licence")) ?? "", /prior written permission/, "start: the Licence page shows the licence");
+  await page.click("#legal-back");
+  await page.click('#legal-sheet .legal-row[data-page="legal-credits"]');
+  await page.waitForSelector("#legal-credits:not([hidden])", { timeout: READY_MS });
+  await page.click('#legal-credits .legal-more[data-licence="ofl"]');
+  assert.match((await page.textContent("#legal-credits")) ?? "", /SIL OPEN FONT LICENSE Version 1\.1/, "start: Credits shows the font's licence");
+  const legalOverflow = await page.evaluate(() => {
+    const card = document.querySelector("#legal-sheet .legal-card")!;
+    return card.scrollWidth - card.clientWidth;
+  });
+  assert.ok(legalOverflow <= 1, "start: the Credits page does not scroll sideways");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#legal-home:not([hidden])", { timeout: READY_MS });
+  assert.equal(await page.locator("#legal-sheet").isVisible(), true, "start: Escape steps back to the first page");
   await page.keyboard.press("Escape");
   await page.waitForSelector("#legal-sheet", { state: "hidden", timeout: READY_MS });
   assert.equal(await page.locator("#start").isVisible(), true, "start: closing the notice leaves the start screen");
