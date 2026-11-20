@@ -112,14 +112,14 @@ def icon() -> str:
 
 
 def title_font() -> None:
-    """A Basic Latin WOFF2 subset of the font, for the title screen."""
+    """A Basic Latin WOFF2 subset of the font, plus the dotless i the title's tile stands on."""
     options = subset.Options()
     options.flavor = "woff2"
     options.layout_features = ["kern", "liga", "calt"]
     options.name_IDs = ["*"]
     font = subset.load_font(str(FONT), options)
     subsetter = subset.Subsetter(options)
-    subsetter.populate(unicodes=range(0x20, 0x7F))
+    subsetter.populate(unicodes=[*range(0x20, 0x7F), 0x131])
     subsetter.subset(font)
     out = ROOT / "app/assets/fonts/InterDisplay-BlackItalic.woff2"
     out.parent.mkdir(parents=True, exist_ok=True)

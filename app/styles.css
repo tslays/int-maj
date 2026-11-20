@@ -5,7 +5,7 @@
  */
 
 /* The title's own font, so the title screen and the app icon (scripts/art/app-icon.py)
-   share their letters on every device: Inter Display Black Italic, Basic Latin only. */
+   share their letters on every device: Inter Display Black Italic, Basic Latin and the dotless i. */
 @font-face {
   font-family: "int-maj title";
   src: url("assets/fonts/InterDisplay-BlackItalic.woff2") format("woff2");
@@ -2618,7 +2618,8 @@ button.detail-rule {
   text-transform: uppercase;
 }
 .start-head h1 {
-  margin: 0 0 4px;
+  /* The tile of the i rises above the line, so the title sits lower to keep its clear space under the kicker. */
+  margin: 0.2em 0 4px;
   font-family: "int-maj title", var(--font);
   font-style: italic;
   font-weight: 900;
@@ -2634,6 +2635,36 @@ button.detail-rule {
 .title-word {
   position: relative;
   display: inline-block;
+}
+/* The title's i: the font's dotless i with a mahjong tile for its dot, as on the app icon.
+   The anchor is an empty box on the baseline, so the tile hangs from the baseline whatever the
+   line height. The numbers are the title font's (2048 units to the em), from
+   scripts/art/app-icon.py: the tile is 1.3 stem widths wide, 1.36 times as tall, set 0.36 widths
+   above the stem, leaning with the italic and turned 8 degrees. */
+.title-anchor {
+  position: relative;
+  display: inline-block;
+  width: 0;
+  height: 0;
+}
+.title-tile {
+  position: absolute;
+  left: 0.0885em;
+  bottom: 0.606em;
+  width: 0.251em;
+  height: 0.3414em;
+  border-radius: 0.05em;
+  background: var(--gold-1);
+  box-shadow: 0 2px 0 #9a5a07, 0 10px 28px rgba(0, 0, 0, 0.6);
+  transform: rotate(8deg) skewX(-9.7deg);
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 .title-glint {
   position: absolute;
@@ -2652,6 +2683,14 @@ button.detail-rule {
   background-position: 100% 0;
   -webkit-background-clip: text;
   background-clip: text;
+  animation: title-glint 5s ease-in-out infinite;
+}
+/* The tile is a box, not text, so the sweep is its own highlight: the same band, on the tile
+   alone (the tile is not clipped to the word). */
+.title-glint .title-tile {
+  box-shadow: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 252, 230, 0.95) 50%, transparent 65%)
+    100% 0 / 300% 100% no-repeat;
   animation: title-glint 5s ease-in-out infinite;
 }
 @keyframes title-glint {
