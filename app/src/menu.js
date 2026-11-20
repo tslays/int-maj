@@ -1,7 +1,7 @@
 /**
  * The menu: the Calls and Sort buttons, and closing the help sheet (the
- * guide itself is `guide.js`). Sound, the house
- * rules, Reset settings and the Help and Report buttons live in `options.js`.
+ * guide itself is `guide.js`). Sound, the house rules, the resets and the
+ * Help and Report rows live in the Settings sheet, `options.js`.
  */
 
 import { openGuide } from "./guide.js";

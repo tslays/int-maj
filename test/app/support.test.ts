@@ -10,7 +10,6 @@ import { describe, it } from "node:test";
 
 const html = readFileSync(new URL("../../app/index.html", import.meta.url), "utf8");
 const code = readFileSync(new URL("../../app/src/support.js", import.meta.url), "utf8");
-const css = readFileSync(new URL("../../app/styles.css", import.meta.url), "utf8");
 
 const section = (open: string, close: string): string => {
   const start = html.indexOf(open);
@@ -19,17 +18,13 @@ const section = (open: string, close: string): string => {
 };
 
 describe("Support int-maj", () => {
-  it("is a link in the Settings footer", () => {
-    assert.match(section('id="option-links"', "</nav>"), /id="support-open"[^>]*>Support int-maj</);
+  it("is a row in Settings' More tab", () => {
+    assert.match(section('id="panel-more"', "</section>"), /id="support-open"[^>]*><span>Support int-maj<\/span>/);
   });
 
   it("is not on the start screen or anywhere else in the page", () => {
     assert.doesNotMatch(section('<section class="start" id="start"', "</section>"), /support|ko-fi/i);
     assert.equal(html.match(/id="support-open"/g)?.length, 1);
-  });
-
-  it("stays in the footer when Settings is opened from the start screen", () => {
-    assert.match(css, /\.option-links\.from-start \.option-link:not\([^)]*#support-open[^)]*\)/);
   });
 
   it("loads nothing from Ko-fi: no frame, the page opens only from its button", () => {

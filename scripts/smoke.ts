@@ -472,6 +472,11 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   }
   await page.click("#options");
   await page.waitForSelector("#options-sheet:not([hidden])", { timeout: 5000 });
+  // Settings has no footer: the places that are not settings are rows in its More tab.
+  assert.equal(await page.locator("#options-sheet footer").count(), 0, "settings: nothing pinned under the tabs");
+  assert.equal(await page.locator("#main-menu").isVisible(), true, "settings: Main menu sits in the header at your table");
+  await page.click("#tab-more");
+  await page.waitForSelector("#panel-more:not([hidden])", { timeout: 5000 });
   await page.click("#help");
   await page.waitForSelector("#help-sheet:not([hidden])", { timeout: 5000 });
   // The guide: tabs of cards, each tab its own cards.
@@ -486,7 +491,7 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   if (nextTop !== 0) throw new Error(`the guide's Next topic opened scrolled to ${nextTop}, not the top`);
   await page.click("#help-close");
   await page.waitForSelector("#help-sheet", { state: "hidden", timeout: 5000 });
-  // Support: a quiet footer link; its sheet's one button opens int-maj's Ko-fi page. Escape closes just the sheet.
+  // Support: a row under More; its sheet's one button opens int-maj's Ko-fi page. Escape closes just the sheet.
   await page.click("#support-open");
   await page.waitForSelector("#support-sheet:not([hidden])", { timeout: 5000 });
   assert.equal(await page.getAttribute("#support-go", "href"), "https://ko-fi.com/int_maj", "support: the int_maj page");
@@ -495,12 +500,18 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.waitForSelector("#support-sheet", { state: "hidden", timeout: 5000 });
   assert.equal(await page.locator("#options-sheet").isVisible(), true, "support: Settings stays open under it");
   // Pace is a device preference that takes effect at once.
+  await page.click("#tab-game");
+  assert.equal(await page.getAttribute("#game-reset", "disabled"), "", "the Game tab's reset rests at the defaults");
   await page.click('#pace [data-pace="faster"]');
   await page.waitForSelector('#pace [data-pace="faster"][aria-checked=true]', { timeout: 5000 });
   if ((await page.evaluate(() => localStorage.getItem("int-maj.pace"))) !== "faster") {
     throw new Error("the pace choice is not remembered on the device");
   }
-  await page.click('#pace [data-pace="normal"]');
+  // Each tab's own reset wakes with a change and puts back only that tab.
+  await page.waitForSelector("#game-reset:not([disabled])", { timeout: 5000 });
+  await page.click("#game-reset");
+  await page.waitForSelector('#pace [data-pace="normal"][aria-checked=true]', { timeout: 5000 });
+  assert.equal(await page.getAttribute("#game-reset", "disabled"), "", "the Game tab's reset rests again");
   // A house rule set mid-hand waits for the next deal; the hand on the table keeps its rules.
   await page.click("#tab-rules");
   await page.waitForSelector("#panel-rules:not([hidden])", { timeout: 5000 });
@@ -572,6 +583,7 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   await page.click("#tab-game");
   await page.click('#pace [data-pace="faster"]');
   await page.click('#level [data-level="hard"]');
+  await page.click("#tab-more");
   await page.click("#reset-settings");
   await page.waitForSelector("#reset-confirm:not([hidden])", { timeout: 5000 });
   await page.click("#reset-keep");
@@ -579,6 +591,7 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   assert.equal(await page.getAttribute('#pace [data-pace="faster"]', "aria-checked"), "true", "keeping the settings changes nothing");
   await page.click("#tab-rules");
   await page.click('#hand-set [data-set="companion"]');
+  await page.click("#tab-more");
   await page.click("#reset-settings");
   await page.click("#reset-go");
   await page.waitForSelector("#reset-confirm", { state: "hidden", timeout: 5000 });
@@ -593,7 +606,7 @@ async function playThrough(browser: Browser, origin: string, shots: string | nul
   assert.equal(await page.getAttribute('#style-bundle [data-bundle="classic"]', "aria-checked"), "true", "reset: the theme is Classic again");
   await page.click("#options-close");
   await page.waitForSelector("#options-sheet", { state: "hidden", timeout: 5000 });
-  console.log("  ok  hints toggle, settings sheet and its tabs, help sheet, hand set choice with Rare, Goulash and fishing rule switches, discard layout, reset settings asks first");
+  console.log("  ok  hints toggle, settings sheet and its tabs, More tab, help sheet, per-tab reset, hand set choice with Rare, Goulash and fishing rule switches, discard layout, reset settings asks first");
 
 
   // The index of all hands: opens, filters by a book heading, searches, opens a hand's sheet.
@@ -865,11 +878,13 @@ async function startScreen(browser: Browser, origin: string, shots: string | nul
   await page.waitForSelector("#start", { state: "visible", timeout: READY_MS });
   await page.waitForSelector("#start-continue", { state: "visible", timeout: READY_MS });
   assert.match((await page.textContent("#start-continue-note")) ?? "", /round · hand \d+ · [\d,]+ points/, "start: Continue names the game");
-  // Settings over the start screen offers only the reset; New game asks before ending the game.
+  // Settings over the start screen has no way out to take, and the same More rows; New game asks
+  // before ending the game.
   await page.click("#start-settings");
   await page.waitForSelector("#options-sheet:not([hidden])", { timeout: READY_MS });
   assert.equal(await page.locator("#main-menu").isVisible(), false, "start: Settings has no Main menu over the main menu");
-  assert.equal(await page.locator("#help").isVisible(), false, "start: Settings has no Help over the main menu");
+  await page.click("#tab-more");
+  assert.equal(await page.locator("#help").isVisible(), true, "start: More still has How to play");
   assert.equal(await page.locator("#reset-settings").isVisible(), true, "start: Settings can still be reset");
   assert.equal(await page.locator("#support-open").isVisible(), true, "start: Settings still has Support int-maj");
   await page.click("#options-close");

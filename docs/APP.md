@@ -240,8 +240,8 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   opens the hand's sheet; Menu, Escape or the phone's back return to the start
   screen. Like the start screen it works upright), `start-note.js` (the
   Continue card's words, pure for Node tests), `options.js` (the
-  Settings sheet in four tabs: Game (Bot level, Pace, Table animations), Table (Sound, Large discards on phones, Discards Rows or Pile), Style (the look, `style-options.js`) and Rules (the house rules), with Reset settings, Main menu (Room while in a room), Help and Report
-  under every tab; opened from the start screen only Reset settings shows) and `report.js` (report a problem). Modules that need the loop (`input`,
+  Settings sheet: four tabs of settings, Game (Bot level, Pace, Hint style, Table animations), Table (Sound, Tile numbers, Large discards on phones, Discards Rows or Pile), Style (the look, `style-options.js`) and Rules (the house rules), each ending in its own reset, and a fifth tab, More,
+  with How to play, Report a problem, Support, Install app, Licence and notices and Reset all settings; Main menu (Room while in a room) sits in the header, and not over the start screen) and `report.js` (report a problem). Modules that need the loop (`input`,
   `result`, `menu`) get its functions from `main.js` through an `installX`
   call, so imports never run in a circle.
 - `app/src/standings.js` ranks the seats by total score for the final standings
@@ -534,8 +534,15 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   (`version`, `stage`, `id`) and `BUILD_LABEL`; import it to put the build in
   a problem report. Unbuilt, the label reads `dev · local`.
 - **Settings and house rules.** The menu's Settings button opens a sheet with
-  four tabs, Game, Table, Style and Rules, and the Reset settings, Main menu, Help and Report buttons
-  under every tab (their sheets open on top of it). Reset settings asks first, then puts every
+  five tabs. Game, Table, Style and Rules hold only settings, and each ends the
+  same way: a quiet reset for that tab alone (Reset game settings, Reset table
+  settings, Reset style, Reset house rules), disabled while the tab already
+  shows its defaults; it does not ask, as it loses little. More lists, as
+  rows, everything that is not a setting: How to play, Report a problem,
+  Support int-maj, Install app (when the device can) and Licence and notices
+  (their sheets open on top of it), then Reset all settings. The way out sits
+  in the header beside the close: Main menu at your own table, Room in an
+  online one, nothing over the start screen. There is no footer. Reset all settings asks first, then puts every
   stored preference (level, pace, hint style, animations, sound, tile numbers, large discards, discard layout,
   Sort, the look) and the house rules back to their defaults. New game is on the start screen, which asks
   "Start over?" when a game is in progress. It reopens on the last
@@ -543,7 +550,7 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   (`int-maj:house-rules`); `houseRules()` in `options.js` is sent with every
   `/api/new` and `/api/next`, and the table fixes a hand's rules at its deal
   (`GameState.excludedHands`), so a change made mid-hand shows "Changes start
-  next hand" in the header and an amber light on the Rules tab until then.
+  next hand" at the top of the Rules tab and an amber light on the tab until then.
   Every payload carries the rules in force (`houseRules`), `/api/house-rules`
   names the hands each hand set leaves out and counts the hands it keeps (as
   the hand index counts them), and a problem report carries the rules so it
@@ -570,14 +577,13 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   Casino set all five at once; any single change afterwards reads as Custom.
   **Reset style**, at the foot of the tab, puts the look alone back to Classic
   and leaves every other setting (it rests, disabled, while the look is
-  Classic); the global Reset settings resets the look along with the rest.
+  Classic); Reset all settings, under More, resets the look along with the rest.
   `appearance-apply.js` paints them: the felt canvas, rail, floor and bounce
   light through `setTableLook` in `stage.js`, every tile through the shared
   materials (`setTileLook` in `tiles.js`), and the CSS tokens `--tile-back`,
   `--tile-front`, `--page-bg`, `--rail`, `--felt-1..3`, `--gold-*`, `--blue-*`
   and `--silver-*`, which the 2D chips, buttons and the tab's preview read.
-- **Report a problem.** The Report button in Settings (accessible name "Report a
-  problem") opens a sheet of that title with an optional one-line note and a
+- **Report a problem.** The Report a problem row in Settings › More opens a sheet of that title with an optional one-line note and a
   Send button (accessible name "Send report"; the keyboard's return key sends
   too). `app/src/report.js` posts the text to `api/report` on its own site,
   and the Worker in front of the static files (`src/worker/`, the only server

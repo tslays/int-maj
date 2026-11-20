@@ -64,7 +64,7 @@ turned sideways. On Android, open the link in Chrome and tap *Install*, or
 
 ## How to report
 
-Open **Options**, tap **Report a problem**, type a line about what you saw
+Open **Settings**, then **More**, tap **Report a problem**, type a line about what you saw
 (optional), add up to three photos if they help, and tap **Send**. It
 reaches us at once and shows you a report number. It holds the version, your
 device and the moves of the game so far, and no name or account. Without a

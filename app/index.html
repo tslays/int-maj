@@ -131,8 +131,10 @@
             <button class="options-tab" id="tab-table" type="button" role="tab" aria-controls="panel-table" aria-selected="false" tabindex="-1" data-tab="table">Table</button>
             <button class="options-tab" id="tab-style" type="button" role="tab" aria-controls="panel-style" aria-selected="false" tabindex="-1" data-tab="style">Style</button>
             <button class="options-tab" id="tab-rules" type="button" role="tab" aria-controls="panel-rules" aria-selected="false" tabindex="-1" data-tab="rules">Rules<span class="tab-dot" id="rules-dot" hidden></span></button>
+            <button class="options-tab" id="tab-more" type="button" role="tab" aria-controls="panel-more" aria-selected="false" tabindex="-1" data-tab="more">More</button>
           </nav>
-          <p class="head-pending" id="hand-set-pending" hidden>Changes start next hand</p>
+          <button class="options-exit" id="main-menu" type="button">Main menu</button>
+          <button class="options-exit" id="room-open" type="button" hidden>Room</button>
           <button class="detail-close" id="options-close" type="button" aria-label="Close">&times;</button>
         </header>
         <div class="options-body">
@@ -170,6 +172,9 @@
                 </div>
               </div>
             </div>
+            <div class="tab-reset">
+              <button class="option-link" id="game-reset" type="button">Reset game settings</button>
+            </div>
           </section>
           <section class="options-panel" id="panel-table" role="tabpanel" aria-labelledby="tab-table" hidden>
             <div class="option-group">
@@ -192,6 +197,9 @@
                   <button type="button" role="radio" aria-checked="false" data-layout="pile">Pile</button>
                 </div>
               </div>
+            </div>
+            <div class="tab-reset">
+              <button class="option-link" id="table-reset" type="button">Reset table settings</button>
             </div>
           </section>
           <section class="options-panel" id="panel-style" role="tabpanel" aria-labelledby="tab-style" hidden>
@@ -224,11 +232,12 @@
                 <div class="swatches" id="style-accent" role="radiogroup" aria-labelledby="style-accent-label" data-aspect="accent"></div>
               </div>
             </div>
-            <div class="style-reset">
+            <div class="tab-reset">
               <button class="option-link" id="style-reset" type="button">Reset style</button>
             </div>
           </section>
           <section class="options-panel" id="panel-rules" role="tabpanel" aria-labelledby="tab-rules" hidden>
+            <p class="rules-pending" id="hand-set-pending" hidden>Changes start next hand</p>
             <div class="option-group">
               <div class="group-head">
                 <h3 id="hand-set-label">Hands in play</h3>
@@ -253,26 +262,30 @@
                 <button class="switch" id="fish-rule" type="button" role="switch" aria-checked="false" aria-labelledby="fish-rule-label"></button>
               </div>
             </div>
+            <div class="tab-reset">
+              <button class="option-link" id="rules-reset" type="button">Reset house rules</button>
+            </div>
+          </section>
+          <section class="options-panel" id="panel-more" role="tabpanel" aria-labelledby="tab-more" hidden>
+            <nav class="more-rows" aria-label="More">
+              <button class="more-row" id="help" type="button"><span>How to play</span><small>The guide, topic by topic</small></button>
+              <button class="more-row" id="report" type="button"><span>Report a problem</span><small>A note, photos and this game's moves</small></button>
+              <button class="more-row" id="support-open" type="button"><span>Support int-maj</span><small>Free with no ads; buy it a coffee</small></button>
+              <button class="more-row" id="install-open" type="button" hidden><span>Install app</span><small>Play offline from your home screen</small></button>
+              <button class="more-row" id="legal-open" type="button"><span>Licence and notices</span><small>Terms and credits</small></button>
+            </nav>
+            <div class="tab-reset" id="reset-all">
+              <button class="option-link option-danger" id="reset-settings" type="button">Reset all settings</button>
+            </div>
+            <div class="option-confirm" id="reset-confirm" role="alertdialog" aria-labelledby="reset-ask" hidden>
+              <p id="reset-ask"><b>Reset all settings?</b> Bot level, pace, sound, table, style and house rules go back to their defaults.</p>
+              <div class="option-confirm-buttons">
+                <button class="option-link" id="reset-keep" type="button">Keep them</button>
+                <button class="option-link option-danger" id="reset-go" type="button">Reset</button>
+              </div>
+            </div>
           </section>
         </div>
-        <footer class="options-foot">
-          <nav class="option-links" id="option-links" aria-label="More">
-            <button class="option-link" id="reset-settings" type="button">Reset settings</button>
-            <button class="option-link" id="main-menu" type="button">Main menu</button>
-            <button class="option-link" id="room-open" type="button" hidden>Room</button>
-            <button class="option-link" id="install-open" type="button" hidden>Install app</button>
-            <button class="option-link" id="help" type="button">Help</button>
-            <button class="option-link" id="support-open" type="button">Support int-maj</button>
-            <button class="option-link" id="report" type="button" aria-label="Report a problem">Report a problem</button>
-          </nav>
-          <div class="option-confirm" id="reset-confirm" role="alertdialog" aria-labelledby="reset-ask" hidden>
-            <p id="reset-ask"><b>Reset all settings?</b> Bot level, pace, sound, table, style and house rules go back to their defaults.</p>
-            <div class="option-confirm-buttons">
-              <button class="option-link" id="reset-keep" type="button">Keep them</button>
-              <button class="option-link option-danger" id="reset-go" type="button">Reset</button>
-            </div>
-          </div>
-        </footer>
       </div>
     </div>
     <div class="hand-detail" id="room-sheet" hidden>
