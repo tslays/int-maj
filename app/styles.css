@@ -4,6 +4,16 @@
  * Loaded by index.html; the 3D scene itself is drawn by src/stage.js.
  */
 
+/* The title's own font, so the title screen and the app icon (scripts/art/app-icon.py)
+   share their letters on every device: Inter Display Black Italic, Basic Latin only. */
+@font-face {
+  font-family: "int-maj title";
+  src: url("assets/fonts/InterDisplay-BlackItalic.woff2") format("woff2");
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
   --strip: 100px;
   --ink: #e9e4d6;
@@ -2609,6 +2619,7 @@ button.detail-rule {
 }
 .start-head h1 {
   margin: 0 0 4px;
+  font-family: "int-maj title", var(--font);
   font-style: italic;
   font-weight: 900;
   font-size: clamp(34px, 7vw, 52px);
