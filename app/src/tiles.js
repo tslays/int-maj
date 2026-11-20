@@ -252,6 +252,62 @@ export function markReceived(tile) {
   return frame;
 }
 
+/**
+ * The fish (C p. 55): an orange fish facing left, painted once on a 256 x 160
+ * canvas and shared by the fish a bot shows beside its melds (`board.js`)
+ * and the fish on your hand tiles (`markFishing`).
+ */
+let fishCanvasTexture = null;
+export function fishTexture() {
+  if (fishCanvasTexture !== null) return fishCanvasTexture;
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 160;
+  const g = canvas.getContext("2d");
+  g.translate(132, 80);
+  g.scale(2.8, 2.8);
+  g.lineJoin = "round";
+  g.lineWidth = 3;
+  g.strokeStyle = "#7a3a06";
+  g.fillStyle = "#ff9a3c";
+  g.beginPath();
+  g.moveTo(14, 0);
+  g.lineTo(36, -17);
+  g.quadraticCurveTo(30, 0, 36, 17);
+  g.closePath();
+  g.fill();
+  g.stroke();
+  g.beginPath();
+  g.ellipse(-6, 0, 26, 16, 0, 0, Math.PI * 2);
+  g.fill();
+  g.stroke();
+  g.fillStyle = "#1b2326";
+  g.beginPath();
+  g.arc(-20, -4, 3.6, 0, Math.PI * 2);
+  g.fill();
+  fishCanvasTexture = new THREE.CanvasTexture(canvas);
+  fishCanvasTexture.colorSpace = THREE.SRGBColorSpace;
+  return fishCanvasTexture;
+}
+
+/* A hand tile whose discard leaves you fishing: a small fish standing just
+   above the tile's top edge, off the face, so it hides neither the art nor
+   the received ring. It rides up with the tile when you lift it. */
+const FISH_MARK_W = W * 0.62;
+const fishMarkGeometry = new THREE.PlaneGeometry(FISH_MARK_W, FISH_MARK_W * (160 / 256));
+let fishMarkMaterial = null;
+
+/** Mark a hand tile as one whose discard leaves you fishing (child named "fishing"). */
+export function markFishing(tile) {
+  fishMarkMaterial ??= new THREE.MeshBasicMaterial({ map: fishTexture(), transparent: true, depthWrite: false });
+  const fish = new THREE.Mesh(fishMarkGeometry, fishMarkMaterial);
+  fish.name = "fishing";
+  fish.position.set(0, H / 2 + FISH_MARK_W * 0.36, D / 2);
+  fish.renderOrder = 6;
+  tile.add(fish);
+  return fish;
+}
+
 /** A tile; `key` null is a tile seen only from the back. */
 export function makeTile(key, { shadows = true } = {}) {
   const tile = new THREE.Group();

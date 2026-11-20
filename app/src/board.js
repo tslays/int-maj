@@ -13,7 +13,7 @@
  */
 
 import * as THREE from "three";
-import { D, H, W, makeTile, roundedRect, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, TABLE } from "./tiles.js";
+import { D, H, W, fishTexture, makeTile, roundedRect, markTile, markMaterial, markFillMaterial, markHaloMaterial, poseFaceUp, poseFaceDown, TABLE } from "./tiles.js";
 import { discardSlot, handTiles, latestPlate, LATEST_MARGIN, meldLayout, pondPad } from "./layout.js";
 import { createPile, PILE, pileReach } from "./pile.js";
 import { discardLayout } from "./discard-layout.js";
@@ -45,41 +45,12 @@ function slideMsFor(run) {
 /**
  * The fish a bot shows once it has announced it is fishing (C p. 55), lying
  * in its claims lane two tiles' room after its last meld, as if it were one
- * more claimed set. A sprite, so it faces the camera from every seat. One
- * shared texture, painted once.
+ * more claimed set. A sprite, so it faces the camera from every seat. The
+ * texture is the one the hand's fish marks use (`fishTexture`).
  */
 let fishMaterial = null;
 function makeFishMarker(scale) {
-  if (fishMaterial === null) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 256;
-    canvas.height = 160;
-    const g = canvas.getContext("2d");
-    g.translate(132, 80);
-    g.scale(2.8, 2.8);
-    g.lineJoin = "round";
-    g.lineWidth = 3;
-    g.strokeStyle = "#7a3a06";
-    g.fillStyle = "#ff9a3c";
-    g.beginPath();
-    g.moveTo(14, 0);
-    g.lineTo(36, -17);
-    g.quadraticCurveTo(30, 0, 36, 17);
-    g.closePath();
-    g.fill();
-    g.stroke();
-    g.beginPath();
-    g.ellipse(-6, 0, 26, 16, 0, 0, Math.PI * 2);
-    g.fill();
-    g.stroke();
-    g.fillStyle = "#1b2326";
-    g.beginPath();
-    g.arc(-20, -4, 3.6, 0, Math.PI * 2);
-    g.fill();
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    fishMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
-  }
+  fishMaterial ??= new THREE.SpriteMaterial({ map: fishTexture(), transparent: true, depthWrite: false });
   const fish = new THREE.Sprite(fishMaterial);
   fish.scale.set(2 * W * scale, 1.25 * W * scale, 1);
   fish.userData.fish = true;

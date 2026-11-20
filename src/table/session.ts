@@ -40,7 +40,7 @@ import type { Wind } from "../core/tiles.ts";
 import type { PageRefs, Tier } from "../core/patterns/types.ts";
 import type { ScoreItem } from "../core/score.ts";
 import { HAND_SET_EXCLUDED, HAND_SETS, PATTERNS, type HandSet } from "../core/patterns/table.ts";
-import { GOULASH_NO_HALF_LIMIT, WIN_NEEDS_FISH, buildHand } from "../core/game/hands.ts";
+import { GOULASH_NO_HALF_LIMIT, WIN_NEEDS_FISH, buildHand, fishingDiscards, type FishingDiscard } from "../core/game/hands.ts";
 import { arrangeConcealed } from "../core/arrange.ts";
 
 /**
@@ -361,6 +361,14 @@ export interface StatePayload {
     readonly draws: number;
   };
   readonly checker: CheckerPayload;
+  /**
+   * On your discard turn, before you have shown the fish: each tile in your
+   * hand whose discard would leave you fishing, and the hand it would be for
+   * (`fishingDiscards`); the table marks them while Hints are on. Empty
+   * otherwise. Here rather than in `viewFor`, which the bots read every step:
+   * it tries each discard in turn, so it costs about a tenth of a second.
+   */
+  readonly fishingDiscards: readonly FishingDiscard[];
   readonly outcome: OutcomePayload | null;
   /**
    * Each seat's running score from the hands finished before this one. The
@@ -619,6 +627,7 @@ export function statePayload(session: WebSession): StatePayload {
       draws: view.drawsLeft,
     },
     checker: checkerFor(view.player, view.excludedHands),
+    fishingDiscards: fishingDiscards(session.state, session.seat),
     outcome: outcomeFor(session, view),
     scoresBefore: session.handStart.scoresBefore,
     houseRules: houseRulesOf(session.state),

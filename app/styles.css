@@ -2138,6 +2138,30 @@ button.detail-rule {
 .tight .report-fine {
   display: none;
 }
+/* Under a lifted hand tile that carries a fish: the hand its throw leaves you fishing for. */
+.fish-note {
+  position: fixed;
+  z-index: 3;
+  left: 50%;
+  /* High enough that the fish on the lifted tile stays in sight under it. */
+  bottom: calc(var(--hand-top, var(--strip)) + 48px);
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid #ff9a3c;
+  background: var(--panel);
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+.fish-note[hidden] {
+  display: none;
+}
+
 .toast {
   position: fixed;
   top: var(--safe-t);

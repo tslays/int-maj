@@ -17,7 +17,8 @@ import { keysOnChoices } from "./keys.js";
 import { refreshGoulash } from "./goulash.js";
 import { receivedPlan } from "./received.js";
 import { familiar } from "./familiar.js";
-import { refreshHints } from "./hints.js";
+import { closestHandsOn, onHintsChange, refreshHints } from "./hints.js";
+import { fishingMarks, fishNoteText } from "./fishing-marks.js";
 import { warmIndex } from "./handbook.js";
 import { installMenu } from "./menu.js";
 import { awaitingNextHand, installOnline, leaveRoom, openRoomSheet, sendAction } from "./online.js";
@@ -104,6 +105,21 @@ function markReceivedTiles(before, next) {
   else if (plan !== null) board.markReceived(plan);
 }
 
+/**
+ * With Hints on, on your discard turn, a fish on each hand tile whose discard
+ * leaves you fishing; lifting one names the hand under the tiles. The offer
+ * itself still comes after the throw.
+ */
+function markFishingTiles() {
+  board.markFishing(fishingMarks(state.payload, closestHandsOn()));
+}
+board.onLiftNote = (hand) => {
+  const note = $("#fish-note");
+  note.textContent = hand === null ? "" : fishNoteText(hand);
+  note.hidden = hand === null;
+};
+onHintsChange(() => markFishingTiles());
+
 /** Hand an answer to the board; announce calls; wait for the animation. */
 async function apply(next, { animated = true, opening = false } = {}) {
   const before = state.payload;
@@ -118,6 +134,7 @@ async function apply(next, { animated = true, opening = false } = {}) {
   refreshClaims();
   refreshGoulash();
   markReceivedTiles(before, next);
+  markFishingTiles();
   const announcements = [];
   for (const call of calls) {
     announcements.push(callOut(call.seat, CALL_WORD[call.kind] ?? call.kind));
@@ -497,6 +514,7 @@ window.mahjong = {
   lifted: () => board.lifted?.key ?? null,
   hand: () => board.hand.map((entry) => entry.key),
   received: () => board.hand.filter((entry) => entry.received).map((entry) => entry.key),
+  fishing: () => board.hand.filter((entry) => entry.fishing).map((entry) => entry.key),
   pile: () => board.pilePoses !== null,
   largeFace: () => (board.round[0] ? `${board.round[0].key}` : null),
   act: (action) => act(action),

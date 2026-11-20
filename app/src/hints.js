@@ -58,6 +58,12 @@ export function onPinsChange(listener) {
   pinListeners.push(listener);
 }
 
+const hintsListeners = [];
+/** Call `listener(on)` whenever the Hints toggle is pressed. */
+export function onHintsChange(listener) {
+  hintsListeners.push(listener);
+}
+
 /**
  * The panel, top right: your pinned hands, then the catalogue hands your
  * tiles are nearest to. Asked for when your own tiles or your pins change and
@@ -851,5 +857,6 @@ $("#hints").addEventListener("click", () => {
     // Private mode: the choice lasts for this visit.
   }
   showHintsButton();
+  for (const listener of hintsListeners) listener(hintsOn);
   void refreshHints(true);
 });

@@ -16,6 +16,7 @@
  */
 
 import { decisionOf, type Action } from "../core/game/actions.ts";
+import { fishingDiscards } from "../core/game/hands.ts";
 import { chooseAction } from "../core/game/bot.ts";
 import type { Event } from "../core/game/events.ts";
 import { isApplyError } from "../core/game/draft.ts";
@@ -99,6 +100,13 @@ const TABLE = {
       view.fishing.some(
         (entry) => entry.seat !== view.seat && (view.opponents.find((other) => other.seat === entry.seat)?.melds.length ?? 0) >= 1,
       ),
+  },
+
+  fishthrow: {
+    title: "Throws that would leave you fishing",
+    // The turn before the "announce" board: the fish sits on the tiles to throw.
+    seed: "offer-announce-v14-4",
+    at: (view, state) => view.phase === "discard" && view.turn === view.seat && fishingDiscards(state, view.seat).length > 0,
   },
 
   announce: {

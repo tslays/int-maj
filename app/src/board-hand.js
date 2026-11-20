@@ -6,7 +6,7 @@
  */
 
 import * as THREE from "three";
-import { W, makeTile, markReceived, tileOrder } from "./tiles.js";
+import { W, makeTile, markFishing, markReceived, tileOrder } from "./tiles.js";
 import { picksStand, planHand } from "./hand-plan.js";
 import { sortPref } from "./sort-pref.js";
 import { HAND_DRAWN_GAP, HAND_GAP, HAND_LIFT, handTileStart, handWidth } from "./layout.js";
@@ -151,6 +151,7 @@ export const handMethods = {
       if (this.lifted === entry) this.lifted = null;
       this.clearMarks();
     }
+    this.noteLift();
     return this.glide(entry, { y: up ? HAND_LIFT : 0 }, 140);
   },
 
@@ -202,6 +203,30 @@ export const handMethods = {
       entry.received = null;
     }
     requestRender();
+  },
+
+  /**
+   * Put a fish on every copy of each tile whose discard leaves you fishing
+   * (`marks`: tile key -> hand, from `fishingMarks`), and take it off the
+   * rest. Every copy, since throwing any one of them is the same throw.
+   */
+  markFishing(marks) {
+    for (const entry of this.hand) {
+      const hand = marks.get(entry.key) ?? null;
+      if (hand !== null && !entry.fishing) entry.fishing = markFishing(entry.tile);
+      if (hand === null && entry.fishing) {
+        entry.fishing.removeFromParent();
+        entry.fishing = null;
+      }
+      entry.fishHand = hand;
+    }
+    this.noteLift();
+    requestRender();
+  },
+
+  /** Tell the table which hand the lifted tile would fish for, if it carries a fish (`onLiftNote`). */
+  noteLift() {
+    this.onLiftNote?.(this.lifted?.fishHand ?? null);
   },
 
   /** Move a hand tile; a newer move of the same tile replaces the one in flight. */

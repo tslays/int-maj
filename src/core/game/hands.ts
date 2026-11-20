@@ -300,6 +300,40 @@ export function fishingDeclarationFor(
   return { wait, tier: scored.tier, value: scored.value, hand: scored.hand };
 }
 
+/** One discard that would leave the seat fishing, and what for. */
+export interface FishingDiscard {
+  readonly tile: string;
+  /** Name of the hand the seat would be fishing for. */
+  readonly hand: string;
+  readonly tier: Tier;
+}
+
+/**
+ * The discards that would leave the turn seat fishing: each distinct tile in
+ * hand whose discard is followed by the Fishing offer (`fishingDeclarationFor`
+ * on the hand without it), in hand order. Empty outside the seat's discard
+ * turn and once the seat has shown the fish. A table-side hint only: the
+ * offer itself still comes after the discard, as the reducer makes it.
+ */
+export function fishingDiscards(state: GameState, seat: Seat): FishingDiscard[] {
+  if (state.phase !== "discard" || state.turn !== seat) return [];
+  if (state.fishing.some((declaration) => declaration.seat === seat)) return [];
+  const player = playerOf(state, seat);
+  if (effectiveCount(player) !== 14) return [];
+  const found: FishingDiscard[] = [];
+  for (const tile of new Set(player.hand)) {
+    const hand = player.hand.slice();
+    hand.splice(hand.indexOf(tile), 1);
+    const after: GameState = {
+      ...state,
+      players: state.players.map((entry) => (entry.seat === seat ? { ...entry, hand } : entry)),
+    };
+    const declaration = fishingDeclarationFor(after, seat);
+    if (declaration !== null) found.push({ tile, hand: declaration.hand, tier: declaration.tier });
+  }
+  return found;
+}
+
 function chowKeys(suit: PlayTile, start: number): string[] {
   if (suit.kind !== "suited") return [];
   return [start, start + 1, start + 2].map((rank) => suitTileKey(suit.suit, rank));

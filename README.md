@@ -19,7 +19,8 @@ The roadmap is [docs/PLAN.md](docs/PLAN.md).
   Goulash, the result card with the book's arithmetic, and the next hand.
 - **Bots that plan.** Each bot aims at concrete target hands and calls only
   when that raises its hand's value. The "closest hands" panel shows you the
-  same plan for your own tiles (the menu's Hints button hides it).
+  same plan for your own tiles (the menu's Hints button hides it). With Hints on,
+  a small fish sits on each hand tile whose discard would leave you fishing.
 - **Plays anywhere.** A static site (its only server code files a problem
   report): it works in airplane mode, saves after
   every move and resumes where you left off. Add it to the home screen from
