@@ -2310,11 +2310,14 @@ button.detail-rule {
   font-size: 12px;
   opacity: 0.8;
 }
-/* The start screen's licence link: there for whoever looks, quiet for everyone else. */
+/* The start screen's licence link: there for whoever looks, quiet for everyone
+   else, in the lower-left corner of the screen in every orientation, below
+   everything else on it (the smoke test checks it overlaps nothing). */
 .start-fine {
-  grid-column: 1 / -1;
+  position: fixed;
+  left: calc(var(--safe-l) - 10px); /* the link's own padding lines its text up with the edge */
+  bottom: max(2px, env(safe-area-inset-bottom));
   margin: 0;
-  text-align: center;
 }
 .start-fine-link {
   min-height: 32px;

@@ -1,5 +1,5 @@
 /**
- * Licence and notices: a quiet link at the foot of the start screen opens a sheet that names
+ * Licence and notices: a quiet link in the start screen's lower-left corner opens a sheet that names
  * the MIT licence, the books the game follows and the publisher's independence
  * from the project. The repository's LICENSE and NOTICE.md must exist, and the
  * sheet's links must point at them.
@@ -26,10 +26,10 @@ const section = (open: string, close: string): string => {
 const REPO = "https://github.com/tslays/int-maj/blob/main";
 
 describe("Licence and notices", () => {
-  it("opens from a quiet link at the foot of the start screen, and nowhere else", () => {
+  it("opens from a quiet link in the start screen's lower-left corner, and nowhere else", () => {
     assert.match(
       section('<section class="start" id="start"', "</section>"),
-      /<p class="start-fine"><button class="start-fine-link" id="start-notice" type="button">Licence and notices<\/button><\/p>/,
+      /<\/div>\s*<p class="start-fine"><button class="start-fine-link" id="start-notice" type="button">Licence and notices<\/button><\/p>/,
     );
     assert.match(start, /import \{ openLegal \} from "\.\/legal\.js"/);
     assert.match(start, /\$\("#start-notice"\)\.addEventListener\("click", openLegal\)/);
@@ -37,7 +37,11 @@ describe("Licence and notices", () => {
     assert.doesNotMatch(section('id="option-links"', "</nav>"), /legal|licen[cs]e/i, "the Settings footer stays short");
   });
 
-  it("stays small and muted: the build label's grey, a fine size, no button look", () => {
+  it("stays small and muted in the lower-left corner: the build label's grey, a fine size, no button look", () => {
+    const place = /\.start-fine \{([^}]*)\}/.exec(css)?.[1] ?? "";
+    assert.match(place, /position: fixed/);
+    assert.match(place, /left: calc\(var\(--safe-l\) - 10px\)/);
+    assert.match(place, /bottom: max\(2px, env\(safe-area-inset-bottom\)\)/);
     const rule = /\.start-fine-link \{([^}]*)\}/.exec(css)?.[1] ?? "";
     assert.match(rule, /font-size: 11px/);
     assert.match(rule, /color: rgba\(255, 255, 255, 0\.38\)/);

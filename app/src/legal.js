@@ -1,5 +1,5 @@
 /**
- * Licence and notices: a small, quiet link at the foot of the start screen
+ * Licence and notices: a small, quiet link in the start screen's lower-left corner
  * opens a short sheet over it. It says what the code is licensed under, whose
  * books the game follows, and that the project is independent of them. Its two
  * links open the full LICENSE and NOTICE.md on GitHub in a new tab; nothing is
