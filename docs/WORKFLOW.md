@@ -182,6 +182,9 @@ Testers send reports in batches. The way that worked for alpha.7 (#118-#122):
    the issue names (up to 3 per issue, with `GET /api/report-photo/<key>`, see
    "Reading a photo back" below). Photos always come with triage: they show
    the problem the note describes, so a report is not sorted without them.
+   `/issue N` (one report) or `/issue` (every open issue) runs this triage
+   step by step (`.claude/skills/issue/SKILL.md`, with `photos.sh` to fetch
+   and check the photos).
 2. **Sort each report** as one of four: *as designed* (answer with the rule's
    page), *needs an owner ruling* (a rule the books leave open, or a design
    choice), *visual*, or *engine*. Ask the owner every ruling up front, in one
