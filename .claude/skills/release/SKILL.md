@@ -22,7 +22,7 @@ that version (`alpha.21`, `beta.1`).
 - Never open a PDF, old or new. The guide is built from `docs/TESTING.md` and
   `docs/CHANGELOG.md`; `npm run tester-guide` checks its own output.
 - Read only the newest CHANGELOG section and the guide in `docs/TESTING.md`
-  (for example `awk '/^## alpha/{n++} n==1' docs/CHANGELOG.md`), never the
+  (for example `awk '/^## /{n++} n==1' docs/CHANGELOG.md`), never the
   whole history.
 - GitHub calls: the smallest `perPage` that answers the question, and only
   the `fields` you need (or `minimal_output`). Never fetch a PR's diff or
