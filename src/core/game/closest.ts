@@ -178,15 +178,15 @@ function anotherOf(need: readonly string[], held: ArrayLike<number>): string[] {
  */
 function insteadOf(
   need: readonly string[],
-  wants: readonly Int8Array[],
+  wants: readonly ArrayLike<number>[],
   held: ArrayLike<number>,
 ): { need: string; or: string[] }[] {
-  const lacking = (want: Int8Array): Map<string, number> => {
+  const lacking = (want: ArrayLike<number>): Map<string, number> => {
     const missing = new Map<string, number>();
-    want.forEach((count, at) => {
-      const short = count - held[at]!;
+    for (let at = 0; at < want.length; at++) {
+      const short = want[at]! - held[at]!;
       if (short > 0) missing.set(KEYS[at]!, short);
-    });
+    }
     return missing;
   };
   const shown = new Map<string, number>();
@@ -484,7 +484,21 @@ function search(view: GameView, limit: number, pinned: ReadonlySet<string>): { f
       .sort((a, b) => a.away - b.away)
       .slice(0, VERSIONS_KEPT)
       .map((version) => version.need);
-    best.set(id, { ...entry, versions, flex: Math.max(1, versions.length) });
+    // Tiles that finish the hand as well as the one shown: the equally near versions that differ by one tile
+    // (tester report #259: Ordinary waiting on a 4, 7 or 8 listed only the 4). Versions the seat cannot play
+    // (every copy in sight, or barred) never reach `offered`, so a dead stand-in is left out.
+    const nearest = (offered.get(id) ?? []).filter((version) => version.away === entry.hand.away).map((version) => version.need);
+    const instead = insteadOf(entry.hand.need, nearest, situation.hand);
+    best.set(id, {
+      ...entry,
+      hand: {
+        ...entry.hand,
+        instead,
+        unseen: unseenOf([...entry.hand.need, ...instead.flatMap((swap) => swap.or)], situation.unseen),
+      },
+      versions,
+      flex: Math.max(1, versions.length),
+    });
   }
 
   // Nearest first, widening the search a tile at a time, and stopping once
