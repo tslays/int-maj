@@ -1,14 +1,15 @@
 /**
  * The look (Settings, Style, `appearance.js`): curated swatches kept on the
  * device, safe with missing, refusing or garbled storage, and themes that set
- * all five at once and read as Custom after any single change.
+ * all six at once and read as Custom after any single change. The tile front
+ * always suits the face set's ink.
  */
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 // @ts-expect-error - a plain browser module without type declarations
-const { ACCENTS, ASPECTS, BACKS, BUNDLES, FELTS, FRONTS, ROOMS, createAppearance, createChoice } = await import("../../app/src/appearance.js");
+const { ACCENTS, ASPECTS, BACKS, BUNDLES, FACE_SETS, FELTS, FRONTS, ROOMS, createAppearance, createChoice, frontsFor } = await import("../../app/src/appearance.js");
 
 function memory(seed: Record<string, string> = {}) {
   const data = new Map<string, string>(Object.entries(seed));
@@ -39,6 +40,20 @@ describe("the look's swatches", () => {
     assert.equal(ROOMS[0].rail, "#2a3236");
     assert.equal(ROOMS[0].floor, "#11191c");
     assert.deepEqual(ACCENTS[0].gold, ["#ffe08a", "#e5a12f"]);
+    assert.equal(FACE_SETS[0].id, "riichi");
+  });
+
+  it("offers fronts of both grounds, and every face set at least one front", () => {
+    for (const front of FRONTS) assert.ok(front.ground === "light" || front.ground === "dark", front.id);
+    for (const faces of FACE_SETS) assert.ok(frontsFor(faces).length > 0, faces.id);
+    assert.deepEqual(frontsFor(FACE_SETS.find((set: any) => set.id === "riichi-dark")).map((front: any) => front.id), ["obsidian", "slate"]);
+  });
+
+  it("gives every theme a front that suits its faces", () => {
+    for (const bundle of BUNDLES) {
+      const faces = FACE_SETS.find((set: any) => set.id === bundle.faces);
+      assert.ok(frontsFor(faces).some((front: any) => front.id === bundle.front), bundle.id);
+    }
   });
 
   it("gives every swatch a unique id, a name and hex colours", () => {
@@ -57,14 +72,17 @@ describe("the look's swatches", () => {
           ...(swatch.gold ?? []),
           ...(swatch.blue ?? []),
           ...(swatch.silver ?? []),
-        ].filter((value) => value !== undefined);
+          swatch.winds,
+          swatch.frame,
+          swatch.index,
+        ].filter((value) => value !== undefined && value !== null);
         assert.ok(colours.length > 0, `${swatch.id} has colours`);
         for (const colour of colours) assert.match(colour, HEX, `${swatch.id}: ${colour}`);
       }
     }
   });
 
-  it("names only real swatches in every theme, Classic being the defaults", () => {
+  it("names only real swatches in every theme, Modern being the defaults", () => {
     for (const bundle of BUNDLES) {
       for (const { aspect, swatches } of ASPECTS) {
         assert.ok(swatches.some((swatch: any) => swatch.id === bundle[aspect]), `${bundle.id}.${aspect}`);
@@ -106,18 +124,19 @@ describe("a swatch choice", () => {
 });
 
 describe("the look as a whole", () => {
-  it("applies a theme to all five and recognises it", () => {
+  it("applies a theme to all six and recognises it", () => {
     const look = createAppearance({ storage: memory() });
-    assert.equal(look.matchingBundle(), "classic");
+    assert.equal(look.matchingBundle(), "modern");
     assert.equal(look.applyBundle("sakura"), true);
     assert.equal(look.felt.id, "plum");
     assert.equal(look.back.id, "coral");
     assert.equal(look.accent.id, "rose");
+    assert.equal(look.faces.id, "chinese");
     assert.equal(look.matchingBundle(), "sakura");
     assert.equal(look.applyBundle("nope"), false);
   });
 
-  it("reads as Custom after any single change, and Reset brings back Classic", () => {
+  it("reads as Custom after any single change, and Reset brings back Modern", () => {
     const store = memory();
     const look = createAppearance({ storage: store });
     look.applyBundle("casino");
@@ -126,8 +145,42 @@ describe("the look as a whole", () => {
     const changed: string[] = [];
     look.onChange((aspect: string) => changed.push(aspect));
     look.reset();
-    assert.equal(look.matchingBundle(), "classic");
-    assert.deepEqual(changed.sort(), ["back", "felt", "front"], "only what differs from Classic changes");
-    assert.equal(createAppearance({ storage: store }).matchingBundle(), "classic", "a reload agrees");
+    assert.equal(look.matchingBundle(), "modern");
+    assert.deepEqual(changed.sort(), ["back", "faces", "felt", "front"], "only what differs from Modern changes");
+    assert.equal(createAppearance({ storage: store }).matchingBundle(), "modern", "a reload agrees");
+  });
+
+  it("is a dark table in Midnight: light-ink faces on a dark front", () => {
+    const look = createAppearance({ storage: memory() });
+    look.applyBundle("midnight");
+    assert.equal(look.faces.id, "riichi-dark");
+    assert.equal(look.front.id, "obsidian");
+    assert.equal(look.matchingBundle(), "midnight");
+    look.applyBundle("modern");
+    assert.equal(look.front.id, "ivory", "and back to a light front");
+  });
+
+  it("switches the front when the faces need the other ground, and only then", () => {
+    const look = createAppearance({ storage: memory() });
+    look.front.set("mint");
+    look.faces.set("chinese");
+    assert.equal(look.front.id, "mint", "a light front suits Classic Chinese");
+    look.faces.set("riichi-dark");
+    assert.equal(look.front.id, "obsidian");
+    look.front.set("slate");
+    look.faces.set("riichi");
+    assert.equal(look.front.id, "ivory");
+  });
+
+  it("mends a stored mix of light ink on a light front at load", () => {
+    const look = createAppearance({ storage: memory({ "int-maj.tile-faces": "riichi-dark", "int-maj.tile-front": "pearl" }) });
+    assert.equal(look.faces.id, "riichi-dark");
+    assert.equal(look.front.id, "obsidian");
+  });
+
+  it("keeps players on Modern who never chose faces", () => {
+    const look = createAppearance({ storage: memory({ "int-maj.felt": "jade" }) });
+    assert.equal(look.faces.id, "riichi");
+    assert.equal(look.matchingBundle(), "modern");
   });
 });

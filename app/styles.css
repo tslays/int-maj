@@ -28,6 +28,7 @@
   /* The look chosen in Settings, Style (appearance-apply.js sets these): tile backs and fronts, the room, the felt. */
   --tile-back: #8ccbea;
   --tile-front: #f8f6f0;
+  --face-frame: #2a5fa8;
   --page-bg: #11191c;
   --rail: #2a3236;
   --felt-1: #1f716d;
@@ -380,7 +381,7 @@ html.pond-zoom .act-claim {
   visibility: hidden;
 }
 .chip-white {
-  outline: 2px solid #2a5fa8;
+  outline: 2px solid var(--face-frame);
   outline-offset: -6px;
 }
 .chip-back {
@@ -1725,6 +1726,24 @@ button.detail-rule {
   border-radius: 6px;
   width: 24px;
   height: 32px;
+}
+/* A face set shows one of its tiles on a front that suits it. */
+.swatch-faces {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  width: 30px;
+  height: 40px;
+}
+.swatch-faces img {
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.swatch[hidden] {
+  display: none;
 }
 .swatch[aria-checked="true"] {
   outline: 2px solid var(--gold-1);

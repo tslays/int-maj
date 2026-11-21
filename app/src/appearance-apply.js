@@ -1,11 +1,13 @@
 /**
  * Paints the look chosen in Settings, Style (`appearance.js`) onto the 3D
  * table, the tiles and the page: the CSS colour tokens, the browser's theme
- * colour, the felt, the rail and the room. Applied once at boot, before the
+ * colour, the felt, the rail and the room, and the face set of the tiles and
+ * of every face picture on the page. Applied once at boot, before the
  * first frame, and again on every change.
  */
 
 import { appearance } from "./appearance.js";
+import { dressFace } from "./shared.js";
 import { setTableLook } from "./stage.js";
 import { setTileLook } from "./tiles.js";
 
@@ -15,8 +17,9 @@ function applyLook() {
   const front = appearance.front.swatch;
   const room = appearance.room.swatch;
   const accent = appearance.accent.swatch;
+  const faces = appearance.faces.swatch;
   setTableLook({ felt, room });
-  setTileLook({ back: back.tile, front: front.tile });
+  setTileLook({ back: back.tile, front: front.tile, faces });
   const tokens = {
     "--tile-back": back.chip,
     "--tile-front": front.chip,
@@ -31,6 +34,7 @@ function applyLook() {
     "--blue-2": accent.blue[1],
     "--silver-1": accent.silver[0],
     "--silver-2": accent.silver[1],
+    "--face-frame": faces.frame ?? "transparent",
   };
   const style = document.documentElement.style;
   for (const [name, value] of Object.entries(tokens)) style.setProperty(name, value);
@@ -40,5 +44,7 @@ function applyLook() {
 /** Dress the table now and follow every change. */
 export function installAppearance() {
   applyLook();
+  // The pictures written into the page itself start in the default set.
+  for (const image of document.querySelectorAll("img[data-face]")) dressFace(image);
   appearance.onChange(applyLook);
 }

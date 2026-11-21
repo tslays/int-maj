@@ -46,7 +46,7 @@ describe("reset settings", () => {
       { make: createTileNumbers, change: (p: any) => p.set(false), read: (p: any) => p.on, fallback: true },
       { make: createDiscardLayout, change: (p: any) => p.set("pile"), read: (p: any) => p.id, fallback: "rows" },
       { make: createSortPref, change: (p: any) => p.set(false), read: (p: any) => p.on, fallback: true },
-      { make: createAppearance, change: (p: any) => p.applyBundle("midnight"), read: (p: any) => p.matchingBundle(), fallback: "classic" },
+      { make: createAppearance, change: (p: any) => p.applyBundle("midnight"), read: (p: any) => p.matchingBundle(), fallback: "modern" },
     ];
     for (const { make, change, read, fallback } of cases) {
       const pref = make({ storage: store });
