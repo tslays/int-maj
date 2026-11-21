@@ -7,7 +7,7 @@ short **WhatsApp message**. How to play is not here: the app teaches itself
 is new, what to try, how to report and what the app cannot do yet.
 
 <!-- guide:start -->
-# Mah Jong — test version alpha.20
+# Mah Jong — test version alpha.21
 
 **Play here:** https://int.mah-jong.workers.dev
 
@@ -16,21 +16,9 @@ International mahjong in your browser, against three bots, by the rules of
 
 ## Getting the new version
 
-**This version has a new icon, so delete the app from your home screen and
-add it again.** The icon on your home screen keeps the logo it was made with,
-so the new one only appears once you add the app again. Press and hold its
-icon, choose to remove or delete the app, then add it again as described
-below. A game in progress may not survive the delete, so finish it first if
-you can.
-
-This is the new icon, a gold *i* on dark teal. When it is on your home screen,
-the update has worked:
-
-![The new int-maj icon: a gold italic i on dark teal](../app/assets/icons/icon-512.png)
-
-Then open the link and reload it once. The small label under the menu, top
-left, should read **alpha.20**. If an update changes the game, the hand you
-were playing starts again with the scores kept.
+Open the link and reload it once. The small label under the menu, top left,
+should read **alpha.21**. If an update changes the game, the hand you were
+playing starts again with the scores kept.
 
 **New to the app?** On an iPhone open the link in Safari, tap Share, then
 *Add to Home Screen*, and play it from the home-screen icon with the phone
@@ -38,28 +26,44 @@ turned sideways. On Android, open the link in Chrome and tap *Install*, or
 *Add to Home screen* in the menu. Everything else, the app shows you: Options
 › **Help**.
 
-## New in alpha.20
+## New in alpha.21
 
-- **Play from the keyboard.** On a computer, ← and → lift a tile and Enter
-  throws it. ↑ moves up to the buttons (Pung, Chow, Mah Jong...), ← → choose
-  one and Enter presses it. Esc passes. The keys are listed in a *With a
-  keyboard* card in the guide's Your turn tab.
-- **A new icon.** The title's italic *i*, gold on felt teal, its dot a mahjong
-  tile. Delete the app and add it again to see it (above). Alpha.19 was not
-  sent to testers, so this is its first announcement.
+- **A Style tab in Settings.** Choose the table's felt, the tile backs and
+  fronts, the room, the button colours and whole themes.
+- **A tile numbers setting.** Show or hide the small numbers on the tiles.
+  Received Goulash tiles also get a slim edge ring, so you can tell them apart.
+- **Fish marks.** With Hints on, a small fish sits above each hand tile whose
+  throw would leave you fishing. Lift it to see which hand you would be
+  fishing for. If a throw leaves a shown fish waiting on nothing, it comes
+  down with a *Fish down* call-out.
+- **The hand sheet lists every tile that completes an Ordinary hand,** so you
+  can see all the winning tiles at once.
+
+## Fixed thanks to your reports
+
+- **Sort no longer switches itself off without a word.** Dragging a tile past
+  a neighbour turned Sort off silently. Now a note appears just above your
+  hand, and on a phone a finger needs a wider sideways drag before it counts
+  as arranging. (Thanks to the report from an iPhone.)
+- **The hand sheet** now lists every tile that completes an Ordinary hand.
+  (Thanks to the report about fishing with three different winning tiles.)
 
 ## What works differently now
 
-- The title screen uses the same font as the icon, so the two match.
-- The licence sheet on the start screen says *all rights reserved*, not MIT.
+- Settings has a More tab in place of the footer, and the reset works the
+  same on every tab.
+- Dragging a tile: the row makes way, and the tile you carry stays in front.
+  A hover no longer stops a tile sliding into its place.
+- The licence and credits are pages in the app, with no links out to GitHub.
 
 ## What to try, and tell us
 
-- Delete the app from your home screen and add it again. Does the icon match
-  the picture above?
-- Open the app. Does the title look like the icon's *i*, in the same font?
-- On a computer, play a few turns with the keyboard only. Do ← and → lift a
-  tile, does Enter throw it, and does Esc pass?
+- Open Settings › Style. Does each choice change the table, the tiles and
+  the buttons, and does it stay after you reload?
+- Turn Hints on and play a few turns. Do the small fish appear above the
+  tiles that would leave you fishing? Does lifting one name the hand?
+- Drag a tile past a neighbour with Sort on. Does the note above your hand
+  say so? On a phone, does a sideways drag with a finger feel right?
 - Anything that broke, looked wrong or surprised you.
 
 ## How to report
@@ -92,12 +96,10 @@ connection it offers to share the report as a message instead.
 ## WhatsApp message
 
 <!-- whatsapp:start -->
-🀄 **Mah Jong test version alpha.20 is out!**
+🀄 **Mah Jong test version alpha.21 is out!**
 
 Play: https://int.mah-jong.workers.dev
 
-**New icon: delete the app from your home screen and add it again.** The new icon is the picture sent with this message: a gold *i* on dark teal. When it is on your home screen, the update has worked. A game in progress may not survive the delete, so finish it first if you can.
-
-This one also carries alpha.19, which we skipped on WhatsApp: the title uses the icon's font, so the two match. New on a computer: the arrow keys lift and throw a tile, and Esc passes. Found something odd? Options › Report a problem.
+Reload the link once; the label under the menu should read alpha.21. New: a Style tab in Settings (felts, tile backs and fronts, room, button colours, whole themes), a tile numbers setting, and fish marks above the tiles that would leave you fishing when Hints are on. Sort no longer turns itself off without a word, and the hand sheet lists every tile that completes an Ordinary hand. Thank you to everyone who sent a report. Found something odd? Options › Report a problem.
 
 <!-- whatsapp:end -->
