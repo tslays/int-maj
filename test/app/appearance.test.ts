@@ -82,7 +82,7 @@ describe("the look's swatches", () => {
     }
   });
 
-  it("names only real swatches in every theme, Classic being the defaults", () => {
+  it("names only real swatches in every theme, Modern being the defaults", () => {
     for (const bundle of BUNDLES) {
       for (const { aspect, swatches } of ASPECTS) {
         assert.ok(swatches.some((swatch: any) => swatch.id === bundle[aspect]), `${bundle.id}.${aspect}`);
@@ -126,7 +126,7 @@ describe("a swatch choice", () => {
 describe("the look as a whole", () => {
   it("applies a theme to all six and recognises it", () => {
     const look = createAppearance({ storage: memory() });
-    assert.equal(look.matchingBundle(), "classic");
+    assert.equal(look.matchingBundle(), "modern");
     assert.equal(look.applyBundle("sakura"), true);
     assert.equal(look.felt.id, "plum");
     assert.equal(look.back.id, "coral");
@@ -136,7 +136,7 @@ describe("the look as a whole", () => {
     assert.equal(look.applyBundle("nope"), false);
   });
 
-  it("reads as Custom after any single change, and Reset brings back Classic", () => {
+  it("reads as Custom after any single change, and Reset brings back Modern", () => {
     const store = memory();
     const look = createAppearance({ storage: store });
     look.applyBundle("casino");
@@ -145,9 +145,9 @@ describe("the look as a whole", () => {
     const changed: string[] = [];
     look.onChange((aspect: string) => changed.push(aspect));
     look.reset();
-    assert.equal(look.matchingBundle(), "classic");
-    assert.deepEqual(changed.sort(), ["back", "faces", "felt", "front"], "only what differs from Classic changes");
-    assert.equal(createAppearance({ storage: store }).matchingBundle(), "classic", "a reload agrees");
+    assert.equal(look.matchingBundle(), "modern");
+    assert.deepEqual(changed.sort(), ["back", "faces", "felt", "front"], "only what differs from Modern changes");
+    assert.equal(createAppearance({ storage: store }).matchingBundle(), "modern", "a reload agrees");
   });
 
   it("is a dark table in Midnight: light-ink faces on a dark front", () => {
@@ -156,7 +156,7 @@ describe("the look as a whole", () => {
     assert.equal(look.faces.id, "riichi-dark");
     assert.equal(look.front.id, "obsidian");
     assert.equal(look.matchingBundle(), "midnight");
-    look.applyBundle("classic");
+    look.applyBundle("modern");
     assert.equal(look.front.id, "ivory", "and back to a light front");
   });
 
@@ -178,9 +178,9 @@ describe("the look as a whole", () => {
     assert.equal(look.front.id, "obsidian");
   });
 
-  it("keeps players on Classic who never chose faces", () => {
+  it("keeps players on Modern who never chose faces", () => {
     const look = createAppearance({ storage: memory({ "int-maj.felt": "jade" }) });
     assert.equal(look.faces.id, "riichi");
-    assert.equal(look.matchingBundle(), "classic");
+    assert.equal(look.matchingBundle(), "modern");
   });
 });

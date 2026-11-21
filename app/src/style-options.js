@@ -4,7 +4,7 @@
  * over a small preview of the table. Only the fronts that suit the chosen
  * faces are offered. The 3D table behind the sheet follows at once.
  * Swatches are named for screen readers only: no tooltips anywhere. Reset
- * style puts the look alone back to Classic, leaving every other setting.
+ * style puts the look alone back to Modern, leaving every other setting.
  */
 
 import { appearance, ASPECTS, BUNDLES, frontsFor } from "./appearance.js";
@@ -131,7 +131,7 @@ export function installStyleOptions() {
   });
   arrowKeys(bundles, pickBundle);
   $("#style-reset").addEventListener("click", () => {
-    // Focus stays in the tab: the button is disabled once the look is Classic.
+    // Focus stays in the tab: the button is disabled once the look is Modern.
     $(`#style-bundle [data-bundle="${BUNDLES[0].id}"]`).focus();
     appearance.reset();
     toast("Style reset");

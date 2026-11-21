@@ -74,11 +74,11 @@ function closeReport() {
   sheet.hidden = true;
 }
 
-/* The look: a theme by name, or the five swatches of a mix of one's own. */
+/* The look: a theme by name, or the six choices of a mix of one's own. */
 function lookNow() {
   const theme = appearance.matchingBundle();
   if (theme !== null) return theme;
-  return `felt ${appearance.felt.id}, backs ${appearance.back.id}, fronts ${appearance.front.id}, room ${appearance.room.id}, buttons ${appearance.accent.id}`;
+  return `felt ${appearance.felt.id}, backs ${appearance.back.id}, fronts ${appearance.front.id}, room ${appearance.room.id}, buttons ${appearance.accent.id}, faces ${appearance.faces.id}`;
 }
 
 /* Every choice the player has stored on this device, so a report shows the

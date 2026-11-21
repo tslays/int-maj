@@ -48,7 +48,7 @@ export interface ReportSettings {
   readonly tips: boolean;
   /** Sort: the game keeps the hand in order; off, the tiles stay where the player put them. */
   readonly sort: boolean;
-  /** The look (Settings, Style): the theme, or the felt, backs, fronts, room and buttons chosen. */
+  /** The look (Settings, Style): the theme, or the felt, backs, fronts, room, buttons and faces chosen. */
   readonly look: string;
   /** The hands pinned to the panel, in pin order. */
   readonly pinned: readonly string[];
@@ -117,7 +117,7 @@ function settingsLines(settings: ReportSettings, inForce: HouseRules): string[] 
     chosen.goulashNoHalfLimit === inForce.goulashNoHalfLimit &&
     chosen.winNeedsFish === inForce.winNeedsFish;
   return [
-    `Settings: bot level ${word(settings.botLevel)}, pace ${word(settings.pace)}, hint style ${word(settings.hintStyle)}, animations ${onOff(settings.animations)}, sound ${onOff(settings.sound)}, large discards ${onOff(settings.largeDiscards)}, tile numbers ${onOff(settings.tileNumbers)}, discards ${word(settings.discards)}, hints ${onOff(settings.hints)}, tips ${onOff(settings.tips)}, sort ${onOff(settings.sort)}, look ${oneLine(settings.look, 90)}`,
+    `Settings: bot level ${word(settings.botLevel)}, pace ${word(settings.pace)}, hint style ${word(settings.hintStyle)}, animations ${onOff(settings.animations)}, sound ${onOff(settings.sound)}, large discards ${onOff(settings.largeDiscards)}, tile numbers ${onOff(settings.tileNumbers)}, discards ${word(settings.discards)}, hints ${onOff(settings.hints)}, tips ${onOff(settings.tips)}, sort ${onOff(settings.sort)}, look ${oneLine(settings.look, 120)}`,
     `Pinned hands: ${pinned.length === 0 ? "none" : pinned.join(", ")}`,
     `Rules chosen: ${rulesText(chosen)} (${same ? "in force in this hand" : "change starts next hand"})`,
   ];

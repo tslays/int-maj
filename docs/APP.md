@@ -594,13 +594,13 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   ground moves the front to the first that suits, and a stored mismatch is
   mended at load. The riichi sets have no flowers or seasons of their own, so
   theirs are Cangjie6's, recoloured to the set's inks
-  (`scripts/art/cangjie-faces.py`). The themes Classic (riichi on ivory, the
+  (`scripts/art/cangjie-faces.py`). The themes Modern (riichi on ivory, the
   defaults), Midnight (Riichi Dark on an obsidian front: the dark theme),
   Sakura and Casino (both Classic Chinese) set all six at once; any single
   change afterwards reads as Custom.
-  **Reset style**, at the foot of the tab, puts the look alone back to Classic
+  **Reset style**, at the foot of the tab, puts the look alone back to Modern
   and leaves every other setting (it rests, disabled, while the look is
-  Classic); Reset all settings, under More, resets the look along with the rest.
+  Modern); Reset all settings, under More, resets the look along with the rest.
   `appearance-apply.js` paints them: the felt canvas, rail, floor and bounce
   light through `setTableLook` in `stage.js`, every tile through the shared
   materials (`setTileLook` in `tiles.js`), and the CSS tokens `--tile-back`,

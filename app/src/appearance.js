@@ -80,7 +80,7 @@ export const ACCENTS = [
 
 /** Themes: one tap sets all six; a single choice changed afterwards makes it Custom. */
 export const BUNDLES = [
-  { id: "classic", name: "Classic", felt: "jade", back: "sky", front: "ivory", room: "slate", accent: "classic", faces: "riichi" },
+  { id: "modern", name: "Modern", felt: "jade", back: "sky", front: "ivory", room: "slate", accent: "classic", faces: "riichi" },
   { id: "midnight", name: "Midnight", felt: "navy", back: "violet", front: "obsidian", room: "midnight", accent: "mono", faces: "riichi-dark" },
   { id: "sakura", name: "Sakura", felt: "plum", back: "coral", front: "pearl", room: "lounge", accent: "rose", faces: "chinese" },
   { id: "casino", name: "Casino", felt: "emerald", back: "crimson", front: "bone", room: "walnut", accent: "classic", faces: "chinese" },
