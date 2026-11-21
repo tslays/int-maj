@@ -19,7 +19,7 @@ function applyLook() {
   const accent = appearance.accent.swatch;
   const faces = appearance.faces.swatch;
   setTableLook({ felt, room });
-  setTileLook({ back: back.tile, front: front.tile, faces });
+  setTileLook({ back: back.tile, front: front.tile, ground: front.ground, faces });
   const tokens = {
     "--tile-back": back.chip,
     "--tile-front": front.chip,

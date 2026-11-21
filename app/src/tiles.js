@@ -41,11 +41,14 @@ let halo = "#f1efe9";
  * colours for the lacquered back and the face; `faces` is the face set whose
  * art lies over the front. A new set or front repaints every face in place.
  */
-export function setTileLook({ back, front, faces }) {
+export function setTileLook({ back, front, ground, faces }) {
   if (back !== undefined) lacquer.color.set(back);
   let repaint = false;
+  if (ground !== undefined) setLayerGround(ground);
   if (front !== undefined) {
     ivory.color.set(front);
+    // The large discard's card is the tile's own front, so light ink stays on a dark ground.
+    layerCard.color.set(front);
     repaint = front !== halo;
     halo = front;
   }
@@ -367,8 +370,8 @@ export function makeTile(key, { shadows = true } = {}) {
   return tile;
 }
 
-/* The round layer (board-round.js): a tile's face printed on a flat ivory
-   card with a thin edge, in the tile's own frame and laid out like its face
+/* The round layer (board-round.js): a tile's face printed on a flat card in
+   the tile's front colour with a thin edge, in the tile's own frame and laid out like its face
    (at z = D / 2), so it can lie on top of the tile and scale about its centre. */
 const layerCardGeometry = new THREE.ShapeGeometry(roundedRect(W, H, RADIUS), 6);
 const layerEdgeGeometry = new THREE.ShapeGeometry(roundedRect(W + 0.08, H + 0.08, RADIUS + 0.04), 6);
@@ -377,6 +380,13 @@ export const layerEdge = {
   plain: new THREE.MeshBasicMaterial({ color: 0x14302c, transparent: true, opacity: 0.55, depthWrite: false }),
   latest: new THREE.MeshBasicMaterial({ color: 0x62f2ea, transparent: true, opacity: 0.9, depthWrite: false }),
 };
+
+/** The plain edge: a dark rim round a light card, a pale one round a dark card, so the card stands off the felt. */
+function setLayerGround(ground) {
+  const dark = ground === "dark";
+  layerEdge.plain.color.set(dark ? 0xc9cfdc : 0x14302c);
+  layerEdge.plain.opacity = dark ? 0.4 : 0.55;
+}
 
 /** A flat face layer for the tile `key`: { group, edge } (the edge's material marks the latest). */
 export function makeFaceLayer(key) {
