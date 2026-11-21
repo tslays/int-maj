@@ -3157,6 +3157,10 @@ button.start-card:hover,
 .start-go:hover {
   border-color: rgba(255, 224, 138, 0.55);
 }
+/* The start screen focuses its first choice for keys (start.js); the ring shows only once one is pressed. */
+body:not(.keys-on) #start :focus {
+  outline: none;
+}
 button.start-card:active,
 .start-go:active {
   translate: 0 1px;

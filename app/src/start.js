@@ -59,6 +59,10 @@ export function hideStart() {
 /** `next.onContinue`, `onNewGame`, `onFriends` and `onPractice` act on the choice. */
 export function installStart(next) {
   hooks = next;
+  // The focus `showStart` gives is for keyboard play: its ring stays hidden until a key is pressed,
+  // so a mouse or touch user never sees a button chosen for them.
+  window.addEventListener("keydown", () => document.body.classList.add("keys-on"), true);
+  window.addEventListener("pointerdown", () => document.body.classList.remove("keys-on"), true);
   $("#start-continue").addEventListener("click", () => {
     hideStart();
     hooks.onContinue();
