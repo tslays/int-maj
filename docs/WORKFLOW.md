@@ -132,7 +132,9 @@ deleting branches or history, changing the Cloudflare token or secrets).
   assets-only Worker `www` (`wrangler.site.jsonc`). `Deploy landing page (www)`
   publishes it on every green push to `main`; it only links to the tester
   site, so it needs no tag. The `Preview (PR link)` job also uploads it, as
-  `https://pr-<number>-www.mah-jong.workers.dev`, shown in the same run summary.
+  `https://pr-<number>-www.mah-jong.workers.dev`, shown in the same run summary. Cloudflare uploads versions only to a Worker that exists, so there is no
+  landing page preview until the first `Deploy landing page (www)` run on `main`
+  has created `www`; until then the summary says so and the job stays green.
 - One build per run: the `Tests and build` job type-checks, tests, builds
   `dist/` and uploads it; the deploy and preview jobs publish exactly that
   folder through `.github/actions/deploy`.

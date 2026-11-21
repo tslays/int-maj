@@ -160,15 +160,26 @@ jobs:
             echo "Commit \`${GITHUB_SHA::7}\`. Updated on every push; the tester site is not affected."
           } >> "$GITHUB_STEP_SUMMARY"
       # The landing page's own preview (https://pr-<number>-www.<account>.workers.dev).
-      - uses: ./.github/actions/deploy
+      # Cloudflare uploads a version only to a Worker that exists, and `www` is
+      # created by the first deploy-site run on main; until then this step fails
+      # and the summary says so, without failing the game's preview above.
+      - id: site-preview
+        continue-on-error: true
+        uses: ./.github/actions/deploy
         with:
           token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           artifact: dist-site
           command: versions upload -c wrangler.site.jsonc --preview-alias pr-${{ github.event.pull_request.number }} --message PR-${{ github.event.pull_request.number }}-${{ github.sha }}
       - name: Show the landing page's preview link
+        env:
+          SITE_PREVIEW: ${{ steps.site-preview.outcome }}
         run: |
           url=$(grep -oE 'https://pr-[A-Za-z0-9.-]+\.workers\.dev' wrangler.log 2>/dev/null | head -1 || true)
-          if [ -z "$url" ]; then echo "::notice::No landing page preview link to show."; exit 0; fi
+          if [ "$SITE_PREVIEW" != "success" ] || [ -z "$url" ]; then
+            echo "::notice::No landing page preview: the www Worker is created by its first deploy from main."
+            { echo; echo "### Landing page preview"; echo; echo "None yet: the \`www\` Worker is created by its first deploy from main."; } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           { echo; echo "### Landing page preview"; echo; echo "$url"; } >> "$GITHUB_STEP_SUMMARY"
 
   # The built app in a real browser: every review board opens and draws, and
