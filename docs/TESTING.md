@@ -1,4 +1,4 @@
-# Testing the alpha
+# Testing the beta
 
 What testers get with each test version: the **tester guide** (sent as a PDF,
 built from this file and `CHANGELOG.md` by `npm run tester-guide`) and a
@@ -7,17 +7,20 @@ short **WhatsApp message**. How to play is not here: the app teaches itself
 is new, what to try, how to report and what the app cannot do yet.
 
 <!-- guide:start -->
-# Mah Jong — test version alpha.21
+# Mah Jong — test version beta.1
 
 **Play here:** https://int.mah-jong.workers.dev
 
 International mahjong in your browser, against three bots, by the rules of
 *The Game of Mah Jong Illustrated*.
 
+**This is the beta.** The game is feature-complete: from now on we are
+looking for bugs and rough edges, not new features. Every report helps.
+
 ## Getting the new version
 
 Open the link and reload it once. The small label under the menu, top left,
-should read **alpha.21**. If an update changes the game, the hand you were
+should read **beta.1**. If an update changes the game, the hand you were
 playing starts again with the scores kept.
 
 **New to the app?** On an iPhone open the link in Safari, tap Share, then
@@ -26,44 +29,30 @@ turned sideways. On Android, open the link in Chrome and tap *Install*, or
 *Add to Home screen* in the menu. Everything else, the app shows you: Options
 › **Help**.
 
-## New in alpha.21
+## New in beta.1
 
-- **A Style tab in Settings.** Choose the table's felt, the tile backs and
-  fronts, the room, the button colours and whole themes.
-- **A tile numbers setting.** Show or hide the small numbers on the tiles.
-  Received Goulash tiles also get a slim edge ring, so you can tell them apart.
-- **Fish marks.** With Hints on, a small fish sits above each hand tile whose
-  throw would leave you fishing. Lift it to see which hand you would be
-  fishing for. If a throw leaves a shown fish waiting on nothing, it comes
-  down with a *Fish down* call-out.
-- **The hand sheet lists every tile that completes an Ordinary hand,** so you
-  can see all the winning tiles at once.
-
-## Fixed thanks to your reports
-
-- **Sort no longer switches itself off without a word.** Dragging a tile past
-  a neighbour turned Sort off silently. Now a note appears just above your
-  hand, and on a phone a finger needs a wider sideways drag before it counts
-  as arranging. (Thanks to the report from an iPhone.)
-- **The hand sheet** now lists every tile that completes an Ordinary hand.
-  (Thanks to the report about fishing with three different winning tiles.)
+- **More tile faces, and a Modern theme.** Settings › Style now offers the
+  Riichi, Riichi Dark and Classic Chinese tile faces, and a Modern theme.
+- **A landing page** at www.mah-jong.workers.dev, with screenshots and Play
+  buttons to this test site.
 
 ## What works differently now
 
-- Settings has a More tab in place of the footer, and the reset works the
-  same on every tab.
-- Dragging a tile: the row makes way, and the tile you carry stays in front.
-  A hover no longer stops a tile sliding into its place.
-- The licence and credits are pages in the app, with no links out to GitHub.
+- The start screen shows no focus ring until you press a key, so a mouse
+  visit no longer draws a blue ring on Continue.
+- On Midnight, the large discard card takes the tile front colour, so dark
+  faces keep their contrast.
 
 ## What to try, and tell us
 
-- Open Settings › Style. Does each choice change the table, the tiles and
-  the buttons, and does it stay after you reload?
-- Turn Hints on and play a few turns. Do the small fish appear above the
-  tiles that would leave you fishing? Does lifting one name the hand?
-- Drag a tile past a neighbour with Sort on. Does the note above your hand
-  say so? On a phone, does a sideways drag with a finger feel right?
+- Open Settings › Style. Try the new tile faces and the Modern theme. Does
+  each change the tiles, and does it stay after you reload?
+- Play on Midnight and discard a tile. Does the large discard card read
+  clearly?
+- Open the start screen with the mouse. Is there no blue ring on Continue
+  until you press a key?
+- Open www.mah-jong.workers.dev on a phone. Do the screenshots and Play
+  buttons work?
 - Anything that broke, looked wrong or surprised you.
 
 ## How to report
@@ -96,10 +85,12 @@ connection it offers to share the report as a message instead.
 ## WhatsApp message
 
 <!-- whatsapp:start -->
-🀄 **Mah Jong test version alpha.21 is out!**
+🀄 **Mah Jong test version beta.1 is out!**
+
+This is the beta: the game is feature-complete, so we want bugs and rough edges now, not new features.
 
 Play: https://int.mah-jong.workers.dev
 
-Reload the link once; the label under the menu should read alpha.21. New: a Style tab in Settings (felts, tile backs and fronts, room, button colours, whole themes), a tile numbers setting, and fish marks above the tiles that would leave you fishing when Hints are on. Sort no longer turns itself off without a word, and the hand sheet lists every tile that completes an Ordinary hand. Thank you to everyone who sent a report. Found something odd? Options › Report a problem.
+Reload the link once; the label under the menu should read beta.1. New: Riichi, Riichi Dark and Classic Chinese tile faces in Settings › Style, and a Modern theme. A landing page at www.mah-jong.workers.dev now shows the game with Play buttons. Fixed: the large discard card on Midnight keeps its contrast, and the start screen shows no blue focus ring until you press a key. Thanks for testing. Found something odd? Options › Report a problem.
 
 <!-- whatsapp:end -->
