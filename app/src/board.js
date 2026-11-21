@@ -92,6 +92,7 @@ export class Board {
     this.seats = {};
     this.wall = null;
     this.handGroup = new THREE.Group();
+    this.handGroup.userData.handRow = true; // its raised tiles turn to face the hand camera (stage.js)
     handScene.add(this.handGroup);
     this.hand = []; // { key, tile, drawn }
     this.carried = null; // the hand tile under your pointer: no animation moves it

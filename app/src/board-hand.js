@@ -287,10 +287,12 @@ export const handMethods = {
   dragTo(entry, event, reorder = true) {
     const x = this.handX(event);
     if (x === null) return;
-    const { places, total } = this.handPlaces();
+    const { places } = this.handPlaces();
     this.carried = entry;
     entry.glide += 1; // the pointer owns this tile now
-    entry.tile.position.x = Math.max(-total / 2, Math.min(total / 2, x));
+    // Never past the row's first or last place: a tile carried there hung half off the row.
+    const ends = [...places.values()];
+    entry.tile.position.x = Math.max(Math.min(...ends), Math.min(Math.max(...ends), x));
     entry.tile.position.y = HAND_LIFT;
     let target = this.hand.indexOf(entry);
     let best = Infinity;
