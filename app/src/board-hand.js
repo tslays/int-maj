@@ -267,7 +267,7 @@ export const handMethods = {
     this.hand[i] = b;
     this.hand[j] = a;
     [a.drawn, b.drawn] = [b.drawn, a.drawn];
-    sortPref.set(false); // your own order now: the game stops sorting (#213)
+    sortPref.set(false, "arranged"); // your own order now: the game stops sorting (#213, #269)
     sound.cue("swap");
   },
 
