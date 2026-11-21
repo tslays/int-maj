@@ -4,7 +4,26 @@ Newest first. Written for players: what you will see, what was fixed, and
 what now works differently. Each version is a tag (`v0.1.0-alpha.N`, then `-beta.N`, `-rc.N`, and finally `v0.1.0`) on `main`;
 testers get it at https://int.mah-jong.workers.dev.
 
-## alpha.20
+## alpha.21
+
+**New**
+
+- **A Style tab in Settings.** Choose the table's felt, the tile backs and fronts, the room, the button colours and whole themes. (#263)
+- **A tile numbers setting.** Show or hide the small numbers on the tiles. Received Goulash tiles also get a slim edge ring, so you can tell them apart. (#261)
+- **Fish marks.** With Hints on, a small fish sits above each hand tile whose throw would leave you fishing. Lift it to see which hand you would be fishing for. If a throw leaves a shown fish waiting on nothing, it comes down with a *Fish down* call-out, and it may show again once the hand waits anew. (#267)
+- **The hand sheet lists every tile that completes an Ordinary hand,** so you can see all the winning tiles at once. (#259 → #264)
+
+**Changed**
+
+- **Settings has a More tab in place of the footer,** and the reset works the same on every tab. (#268)
+- **Drag sort: the row makes way, and the tile you carry stays in front.** Neighbours slide aside as you drag, and a raised tile comes forward over them. A hover no longer stops a tile sliding into its place. (#271)
+- **Licence and Credits are pages in the app,** with no links out to GitHub. (#260)
+
+**Fixed**
+
+- **Sort no longer switches itself off without a word.** Dragging a tile past a neighbour used to turn Sort off silently. Now a note appears just above your hand, and on a phone a finger needs a wider sideways drag before it counts as arranging. (#269 → #270)
+
+## alpha.20 (20 November 2026)
 
 **New**
 
