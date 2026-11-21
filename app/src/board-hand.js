@@ -79,9 +79,34 @@ export const handMethods = {
     return { places, total };
   },
 
+  /**
+   * Move the tiles beside a carried tile out of its way. The carried tile
+   * follows the pointer, but the row only reorders when it passes a tile's
+   * middle, so it would cover up to half a neighbour: instead each tile on
+   * either side keeps at least a tile's width from it, pushing the next one on.
+   */
+  pushAside(places, carried) {
+    const at = this.hand.indexOf(carried);
+    const pitch = W + HAND_GAP;
+    const x = carried.tile.position.x;
+    let edge = x;
+    for (let index = at + 1; index < this.hand.length; index++) {
+      const entry = this.hand[index];
+      edge = Math.max(places.get(entry), edge + pitch);
+      places.set(entry, edge);
+    }
+    edge = x;
+    for (let index = at - 1; index >= 0; index--) {
+      const entry = this.hand[index];
+      edge = Math.min(places.get(entry), edge - pitch);
+      places.set(entry, edge);
+    }
+  },
+
   layoutHand(fresh, animated, skip = null) {
     const { places, total } = this.handPlaces();
     setHandRowWidth(total);
+    if (skip !== null && skip === this.carried && this.sorting) this.pushAside(places, skip);
     const work = [];
     for (const entry of this.hand) {
       if (entry === skip) continue;
@@ -303,8 +328,9 @@ export const handMethods = {
         target = index;
       }
     });
+    this.sorting = reorder;
     let at = this.hand.indexOf(entry);
-    if (!reorder || at === target) return;
+    if (!reorder) return;
     while (at !== target) {
       const step = target > at ? 1 : -1;
       this.swap(entry, this.hand[at + step]);
@@ -326,6 +352,7 @@ export const handMethods = {
   settle() {
     this.clearMarks();
     this.carried = null;
+    this.sorting = false;
     this.lifted = null;
     return this.layoutHand(new Set(), true);
   },
@@ -335,6 +362,7 @@ export const handMethods = {
     this.lastThrowX = entry.tile.position.x;
     this.thrown = entry; // this copy leaves the hand, not another of the same face
     this.carried = null;
+    this.sorting = false;
     this.lifted = null;
   },
 };

@@ -692,13 +692,17 @@ function stepTweens(now) {
  * neighbours hide it, but a raised or carried tile stands clear of them, and
  * its side (ivory with the blue back) showed as a slab hanging beside it. As a
  * tile rises it turns to face the hand camera, so the side runs along the line
- * of sight and stays hidden; it turns back as it settles.
+ * of sight and stays hidden; it turns back as it settles. Turning swings one
+ * edge back into the row, so it also comes forward, never behind a neighbour.
  */
 function faceHandCamera() {
   for (const group of handScene.children) {
     if (!group.userData.handRow) continue;
     for (const tile of group.children) {
       const up = Math.min(1, Math.max(0, tile.position.y / HAND_LIFT));
+      // Turned, its edge swings up to a sixth of a tile back into the row: it
+      // comes forward by more than that, so it always stands in front.
+      tile.position.z = up * 0.25;
       tile.rotation.y = up * Math.atan2(handCamera.position.x - tile.position.x, handCamera.position.z - tile.position.z);
     }
   }
