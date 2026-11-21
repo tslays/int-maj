@@ -84,8 +84,10 @@ export function companionRules() {
   return handSetInForce() !== "all";
 }
 
-export function toast(text) {
+/** `{ byHand: true }` puts it right above your hand, where a drag has your eyes (#269). */
+export function toast(text, { byHand = false } = {}) {
   const element = $("#toast");
+  element.classList.toggle("by-hand", byHand);
   element.textContent = text;
   element.hidden = false;
   clearTimeout(toast.timer);

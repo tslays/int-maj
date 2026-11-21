@@ -25,7 +25,7 @@ export function installMenu({ run }) {
   sortPref.onChange((on, reason) => {
     showSort(on);
     // Dragging a tile turns Sort off by itself: say so, so it is never a silent change (#269).
-    if (!on && reason === "arranged") toast("Sort off: your order stays");
+    if (!on && reason === "arranged") toast("Sort off: your order stays", { byHand: true });
   });
   showSort(sortPref.on);
 
