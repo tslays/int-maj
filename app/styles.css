@@ -2281,6 +2281,18 @@ button.detail-rule {
   font-size: 13px;
 }
 
+/* A toast about the hand: just above the tiles, on the left (the decisions are on the right,
+   the fish note in the middle), where a dragging finger has the eyes. */
+.toast.by-hand {
+  top: auto;
+  bottom: calc(var(--hand-top, var(--strip)) + 10px);
+  left: var(--safe-l);
+  transform: none;
+  max-width: calc(50vw - var(--safe-l));
+  z-index: 3;
+  pointer-events: none;
+}
+
 .rotate {
   display: none;
 }

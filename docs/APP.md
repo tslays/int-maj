@@ -198,8 +198,10 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   default, holding across hands and games. On, the hand lies in order with the
   drawn tile apart at the end. Off, the game never re-orders the hand by itself
   (not at the deal, not after a Goulash exchange, not on a draw): tiles keep
-  their places and new ones join at the end. Dragging a tile sideways turns it
-  off; the Sort button toggles it, and turning it on sorts the hand at once.
+  their places and new ones join at the end. Dragging a tile sideways past a
+  neighbour turns it off and says so in a toast (#269; a finger must travel
+  further than a mouse before it counts); the Sort button toggles it, and
+  turning it on sorts the hand at once.
   The problem report lists it in its Settings line.
 - `app/src/main.js` is the boot, the turn loop (bots one decision per beat,
   automatic draws and passes), the decision buttons and call-outs, and the

@@ -105,7 +105,7 @@ renderer.domElement.addEventListener("pointerdown", (event) => {
   if (legal.some((action) => action.type === "GoulashExchange")) {
     // The pick happens on release: a press that turns into a sideways drag arranges the hand instead.
     if (state.busy || entry === null) return;
-    press = { entry, goulash: true, x: event.clientX, y: event.clientY, dragging: false, id: event.pointerId };
+    press = { entry, goulash: true, touch: event.pointerType === "touch", x: event.clientX, y: event.clientY, dragging: false, id: event.pointerId };
     renderer.domElement.setPointerCapture?.(event.pointerId);
     return;
   }
@@ -135,6 +135,9 @@ renderer.domElement.addEventListener("pointerdown", (event) => {
 const DRAG_SLOP = 6;
 /** Sideways travel (css px), more than the rise, before a drag counts as re-arranging the hand. */
 const SORT_SLOP = 28;
+/** The same for a finger: wider, as a thumb wobbles and the tiles are small (#269). */
+const SORT_SLOP_TOUCH = 44;
+const sortSlop = (press) => (press.touch ? SORT_SLOP_TOUCH : SORT_SLOP);
 /** A carried tile swiped this far up (css px), more up than sideways, is thrown on release. */
 const THROW_RISE = 56;
 
@@ -173,7 +176,7 @@ renderer.domElement.addEventListener("pointermove", (event) => {
     // Only a clearly sideways drag arranges; nothing is thrown in an exchange.
     if (!press.dragging) {
       const across = Math.abs(event.clientX - press.x);
-      if (across < SORT_SLOP || across <= Math.abs(event.clientY - press.y)) return;
+      if (across < sortSlop(press) || across <= Math.abs(event.clientY - press.y)) return;
       press.dragging = true;
     }
     board.dragTo(press.entry, event, true);
@@ -194,7 +197,7 @@ renderer.domElement.addEventListener("pointermove", (event) => {
   // Re-arranging (which turns auto sort off) starts only once the drag is clearly
   // sideways; a swipe up that merely drifts left or right must not reorder.
   const across = Math.abs(event.clientX - press.x);
-  if (!press.sideways && across >= SORT_SLOP && across > press.y - event.clientY) press.sideways = true;
+  if (!press.sideways && across >= sortSlop(press) && across > press.y - event.clientY) press.sideways = true;
   board.dragTo(press.entry, event, press.sideways === true && !armed);
 });
 

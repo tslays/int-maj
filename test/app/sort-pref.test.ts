@@ -55,4 +55,14 @@ describe("Sort preference", () => {
     sort.set(true);
     assert.deepEqual(heard, [false, true]);
   });
+
+  it("says why it changed, so a drag that turns it off can be announced (#269)", () => {
+    const sort = createSortPref({ storage: memory() });
+    const heard: string[] = [];
+    sort.onChange((_on: boolean, reason: string) => heard.push(reason));
+    sort.set(false, "arranged");
+    sort.set(false, "arranged"); // every further swap of the same drag: no second change
+    sort.set(true);
+    assert.deepEqual(heard, ["arranged", "button"]);
+  });
 });
