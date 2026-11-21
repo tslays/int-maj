@@ -9,10 +9,10 @@
 
 :root {
   color-scheme: dark;
-  --bg: #0c1315;
-  --bg-2: #11191c;
-  --panel: #162126;
-  --line: #26323a;
+  --bg: #15272b;
+  --bg-2: #1a2f33;
+  --panel: #1d3237;
+  --line: #2d454b;
   --felt: #1f6f68;
   --felt-2: #2a8a80;
   --ink: #eef4f2;
@@ -39,8 +39,9 @@ html {
 body {
   margin: 0;
   background:
-    radial-gradient(1200px 600px at 75% -10%, rgba(42, 138, 128, 0.35), transparent 60%),
-    radial-gradient(900px 500px at -10% 20%, rgba(31, 111, 104, 0.25), transparent 60%),
+    radial-gradient(1200px 700px at 75% -10%, rgba(52, 160, 148, 0.45), transparent 65%),
+    radial-gradient(900px 600px at -10% 25%, rgba(42, 138, 128, 0.32), transparent 65%),
+    radial-gradient(1000px 700px at 90% 70%, rgba(31, 111, 104, 0.25), transparent 65%),
     var(--bg);
   color: var(--ink);
   font: 16px/1.55 var(--font);
@@ -83,7 +84,7 @@ button:focus-visible {
   align-items: center;
   gap: 16px;
   padding: 10px max(var(--gutter), env(safe-area-inset-left));
-  background: rgba(12, 19, 21, 0.82);
+  background: rgba(21, 39, 43, 0.85);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
@@ -98,6 +99,10 @@ button:focus-visible {
 }
 .brand img {
   border-radius: 8px;
+}
+/* The header's small wordmark gets the same tile dot, with a lighter shadow. */
+.brand .tile {
+  box-shadow: 0 1px 0 var(--gold-deep);
 }
 .top-nav {
   display: flex;
@@ -447,7 +452,7 @@ cite {
   margin: 32px auto 0;
   padding: 28px var(--gutter) max(40px, env(safe-area-inset-bottom));
   border-top: 1px solid rgba(255, 255, 255, 0.07);
-  color: #7f9395;
+  color: #93a9aa;
   font-size: 13.5px;
 }
 .foot p {
