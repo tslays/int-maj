@@ -26,6 +26,12 @@ export const BORROWED = [
   "assets/icons/icon.svg",
   "assets/icons/apple-touch-icon.png",
   "assets/icons/LICENSE.md",
+  // The tiles that float around the hero screenshot (CC0, see the licence note).
+  "assets/faces/riichi/dR.svg",
+  "assets/faces/riichi/b1.svg",
+  "assets/faces/riichi/o5.svg",
+  "assets/faces/riichi/wE.svg",
+  "assets/faces/riichi/LICENSE.md",
 ] as const;
 
 function parseOut(argv: readonly string[]): string {
