@@ -79,9 +79,34 @@ export const handMethods = {
     return { places, total };
   },
 
+  /**
+   * Move the tiles beside a carried tile out of its way. The carried tile
+   * follows the pointer, but the row only reorders when it passes a tile's
+   * middle, so it would cover up to half a neighbour: instead each tile on
+   * either side keeps at least a tile's width from it, pushing the next one on.
+   */
+  pushAside(places, carried) {
+    const at = this.hand.indexOf(carried);
+    const pitch = W + HAND_GAP;
+    const x = carried.tile.position.x;
+    let edge = x;
+    for (let index = at + 1; index < this.hand.length; index++) {
+      const entry = this.hand[index];
+      edge = Math.max(places.get(entry), edge + pitch);
+      places.set(entry, edge);
+    }
+    edge = x;
+    for (let index = at - 1; index >= 0; index--) {
+      const entry = this.hand[index];
+      edge = Math.min(places.get(entry), edge - pitch);
+      places.set(entry, edge);
+    }
+  },
+
   layoutHand(fresh, animated, skip = null) {
     const { places, total } = this.handPlaces();
     setHandRowWidth(total);
+    if (skip !== null && skip === this.carried && this.sorting) this.pushAside(places, skip);
     const work = [];
     for (const entry of this.hand) {
       if (entry === skip) continue;
@@ -100,7 +125,11 @@ export const handMethods = {
       const position = entry.tile.position;
       if (Math.abs(position.x - x) > 1e-3 || Math.abs(position.y - y) > 1e-3) {
         if (animated) work.push(this.glide(entry, { x, y }, 220));
-        else position.set(x, y, 0);
+        else {
+          entry.glide += 1; // put straight there: no glide in flight may move it on
+          entry.aim = null;
+          position.set(x, y, 0);
+        }
       }
     }
     return work;
@@ -229,16 +258,24 @@ export const handMethods = {
     this.onLiftNote?.(this.lifted?.fishHand ?? null);
   },
 
-  /** Move a hand tile; a newer move of the same tile replaces the one in flight. */
+  /**
+   * Move a hand tile; a newer move of the same tile replaces the one in
+   * flight, but keeps where that one was taking it on the axis it leaves
+   * alone. A tile lifted by the hover while it slides along the row still
+   * reaches its place, instead of stopping half-way on top of its neighbour.
+   */
   glide(entry, to, ms) {
     const id = (entry.glide = (entry.glide ?? 0) + 1);
     const position = entry.tile.position;
     const from = { x: position.x, y: position.y };
+    const aim = { x: to.x ?? entry.aim?.x, y: to.y ?? entry.aim?.y };
+    entry.aim = aim;
     return animate(ms, (t) => {
       if (entry.glide !== id) return;
       const k = easeOutCubic(t);
-      if (to.x !== undefined) position.x = from.x + (to.x - from.x) * k;
-      if (to.y !== undefined) position.y = from.y + (to.y - from.y) * k;
+      if (aim.x !== undefined) position.x = from.x + (aim.x - from.x) * k;
+      if (aim.y !== undefined) position.y = from.y + (aim.y - from.y) * k;
+      if (t >= 1) entry.aim = null;
     });
   },
 
@@ -287,10 +324,13 @@ export const handMethods = {
   dragTo(entry, event, reorder = true) {
     const x = this.handX(event);
     if (x === null) return;
-    const { places, total } = this.handPlaces();
+    const { places } = this.handPlaces();
     this.carried = entry;
     entry.glide += 1; // the pointer owns this tile now
-    entry.tile.position.x = Math.max(-total / 2, Math.min(total / 2, x));
+    entry.aim = null;
+    // Never past the row's first or last place: a tile carried there hung half off the row.
+    const ends = [...places.values()];
+    entry.tile.position.x = Math.max(Math.min(...ends), Math.min(Math.max(...ends), x));
     entry.tile.position.y = HAND_LIFT;
     let target = this.hand.indexOf(entry);
     let best = Infinity;
@@ -301,8 +341,9 @@ export const handMethods = {
         target = index;
       }
     });
+    this.sorting = reorder;
     let at = this.hand.indexOf(entry);
-    if (!reorder || at === target) return;
+    if (!reorder) return;
     while (at !== target) {
       const step = target > at ? 1 : -1;
       this.swap(entry, this.hand[at + step]);
@@ -324,6 +365,7 @@ export const handMethods = {
   settle() {
     this.clearMarks();
     this.carried = null;
+    this.sorting = false;
     this.lifted = null;
     return this.layoutHand(new Set(), true);
   },
@@ -333,6 +375,7 @@ export const handMethods = {
     this.lastThrowX = entry.tile.position.x;
     this.thrown = entry; // this copy leaves the hand, not another of the same face
     this.carried = null;
+    this.sorting = false;
     this.lifted = null;
   },
 };

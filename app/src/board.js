@@ -92,9 +92,11 @@ export class Board {
     this.seats = {};
     this.wall = null;
     this.handGroup = new THREE.Group();
+    this.handGroup.userData.handRow = true; // its raised tiles turn to face the hand camera (stage.js)
     handScene.add(this.handGroup);
     this.hand = []; // { key, tile, drawn }
     this.carried = null; // the hand tile under your pointer: no animation moves it
+    this.sorting = false; // the carried tile is being dragged into a new order: its neighbours make way
     this.lifted = null; // the hand tile you have raised (hover or tap): it stays up, and marked, while the table moves
     this.raised = new Set(); // tiles picked for a Goulash pass: up together, unmarked
     this.thrown = null; // the hand tile you just threw: that copy leaves the hand
@@ -268,6 +270,7 @@ export class Board {
     this.handGroup.clear();
     this.hand = [];
     this.carried = null;
+    this.sorting = false;
     this.lifted = null;
     this.raised.clear();
     this.thrown = null;

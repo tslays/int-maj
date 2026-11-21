@@ -11,7 +11,7 @@
 import * as THREE from "three";
 import { RoomEnvironment } from "../vendor/three/RoomEnvironment.js";
 import { HAND_FOV, fitHandCamera, fitPondCamera, fitTableCamera, handLeftAtLane } from "./camera.js";
-import { WALL_INNER, pondExtent } from "./layout.js";
+import { HAND_LIFT, WALL_INNER, pondExtent } from "./layout.js";
 import { FELTS, ROOMS } from "./appearance.js";
 import { pace } from "./pace.js";
 import { D, H, TABLE } from "./tiles.js";
@@ -687,6 +687,27 @@ function stepTweens(now) {
   }
 }
 
+/**
+ * Hand tiles off the screen's centre show a sliver of their side. At rest the
+ * neighbours hide it, but a raised or carried tile stands clear of them, and
+ * its side (ivory with the blue back) showed as a slab hanging beside it. As a
+ * tile rises it turns to face the hand camera, so the side runs along the line
+ * of sight and stays hidden; it turns back as it settles. Turning swings one
+ * edge back into the row, so it also comes forward, never behind a neighbour.
+ */
+function faceHandCamera() {
+  for (const group of handScene.children) {
+    if (!group.userData.handRow) continue;
+    for (const tile of group.children) {
+      const up = Math.min(1, Math.max(0, tile.position.y / HAND_LIFT));
+      // Turned, its edge swings up to a sixth of a tile back into the row: it
+      // comes forward by more than that, so it always stands in front.
+      tile.position.z = up * 0.25;
+      tile.rotation.y = up * Math.atan2(handCamera.position.x - tile.position.x, handCamera.position.z - tile.position.z);
+    }
+  }
+}
+
 let renderQueued = false;
 export function requestRender() {
   if (renderQueued) return;
@@ -709,6 +730,7 @@ function render(now) {
     renderer.setViewport(0, sunk, width, strip);
     renderer.setScissor(0, 0, width, Math.max(1, strip + sunk));
     renderer.setScissorTest(true);
+    faceHandCamera();
     renderer.render(handScene, handCamera);
     renderer.setScissorTest(false);
   }
