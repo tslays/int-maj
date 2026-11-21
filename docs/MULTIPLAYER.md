@@ -106,7 +106,7 @@ room -> client: `seated`, `state`, `events`, `left`, `error`). It adds
 per-IP rate limit on room creation like the report limit. Tests drive the
 handler with a fake socket and storage.
 
-**M3 - Lobby and online play in the app (visual). Built (2026-11-18):**
+**M3 - Lobby and online play in the app (visual). Done (2026-11-18, released in alpha.16):**
 `app/src/online.js` (Options › Play with friends, the room sheet, the turn
 pill, rejoin after a reload); the time to move is 15 (default), 30 or 60
 seconds, or off. The plan as written: A "Play with friends"
@@ -126,6 +126,17 @@ network, room expiry (rooms with no one connected for a day are deleted),
 version mismatch (a phone on an older build is told to reload), and the
 house rules chosen by the room's creator. Settle on the timer defaults after
 the owner's group tries it.
+
+## Status (2026-11-21)
+
+All four slices are released (alpha.16). A two-browser check on the main of
+2026-11-21 (`wrangler dev -c wrangler.jsonc -c wrangler.rooms.jsonc`, which runs
+both Workers and the Durable Object locally) created a room, joined it by
+link, dealt, played moves from both phones and rejoined after a reload.
+
+Known gap: the two-page smoke test planned for M3 is not in `npm run smoke`,
+because `npm run dev` serves the app without the rooms Worker. It would need
+the smoke run to start `wrangler dev` as above.
 
 ## Out of scope for now
 

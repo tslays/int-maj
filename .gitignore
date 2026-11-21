@@ -7,8 +7,9 @@ rules/
 scans/
 
 
-# The offline build: `npm run build` regenerates it.
+# The offline build: `npm run build` regenerates it; the landing page: `npm run build:site`.
 dist/
+dist-site/
 
 # Wrangler's local cache from `npm run deploy`.
 .wrangler/

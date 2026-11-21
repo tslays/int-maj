@@ -50,6 +50,14 @@ jobs:
           path: dist
           retention-days: 7
           if-no-files-found: error
+      # The landing page (site/), published by deploy-site.
+      - run: npm run build:site
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-site
+          path: dist-site
+          retention-days: 7
+          if-no-files-found: error
 
   # Every push to main that passes the tests goes to the development site
   # (int-dev), so work done in any session can be looked at by pushing.
@@ -73,6 +81,26 @@ jobs:
           photo-token: ${{ secrets.REPORT_PHOTO_TOKEN }}
           rooms: deploy -c wrangler.rooms.jsonc --env dev
           command: deploy --env dev
+
+  # The landing page (https://www.mah-jong.workers.dev, wrangler.site.jsonc):
+  # every green push to main. It only links to the tester site, so it does not
+  # wait for a tag.
+  deploy-site:
+    name: Deploy landing page (www)
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: deploy-site
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/deploy
+        with:
+          token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          artifact: dist-site
+          command: deploy -c wrangler.site.jsonc
 
   # The tester site (int) changes only when a tag v* is pushed, or when this
   # workflow is run by hand against a tag (to re-deploy or roll back). The
@@ -131,6 +159,28 @@ jobs:
             echo
             echo "Commit \`${GITHUB_SHA::7}\`. Updated on every push; the tester site is not affected."
           } >> "$GITHUB_STEP_SUMMARY"
+      # The landing page's own preview (https://pr-<number>-www.<account>.workers.dev).
+      # Cloudflare uploads a version only to a Worker that exists, and `www` is
+      # created by the first deploy-site run on main; until then this step fails
+      # and the summary says so, without failing the game's preview above.
+      - id: site-preview
+        continue-on-error: true
+        uses: ./.github/actions/deploy
+        with:
+          token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          artifact: dist-site
+          command: versions upload -c wrangler.site.jsonc --preview-alias pr-${{ github.event.pull_request.number }} --message PR-${{ github.event.pull_request.number }}-${{ github.sha }}
+      - name: Show the landing page's preview link
+        env:
+          SITE_PREVIEW: ${{ steps.site-preview.outcome }}
+        run: |
+          url=$(grep -oE 'https://pr-[A-Za-z0-9.-]+\.workers\.dev' wrangler.log 2>/dev/null | head -1 || true)
+          if [ "$SITE_PREVIEW" != "success" ] || [ -z "$url" ]; then
+            echo "::notice::No landing page preview: the www Worker is created by its first deploy from main."
+            { echo; echo "### Landing page preview"; echo; echo "None yet: the \`www\` Worker is created by its first deploy from main."; } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          { echo; echo "### Landing page preview"; echo; echo "$url"; } >> "$GITHUB_STEP_SUMMARY"
 
   # The built app in a real browser: every review board opens and draws, and
   # a game is played by touch (scripts/smoke.ts). Software rendering makes it

@@ -88,7 +88,9 @@ src/cli/      the console table
 bin/          command-line entry points: check, play, replay
 scripts/      build, preview, smoke test, release tools (release-prep,
               tester-guide) and art generators (scripts/art/)
-test/         core/, table/, cli/, app/, scripts/, helpers/ - mirroring the source
+site/         the landing page (www): one static page and its screenshots,
+              built by scripts/build-site.ts into dist-site/
+test/         core/, table/, cli/, app/, scripts/, site/, helpers/ - mirroring the source
 docs/         PLAN, APP and ENGINE references
 ```
 
@@ -144,7 +146,11 @@ The full workflow is `docs/WORKFLOW.md`. The rules every session follows:
     `/release` (`.claude/skills/release/SKILL.md`).
   Sites: green pushes to `main` deploy to https://int-dev.mah-jong.workers.dev
   (`Deploy dev (int-dev)`); testers are on https://int.mah-jong.workers.dev,
-  which changes only on a `v*` tag (`Deploy testers (int)`). This relies on
+  which changes only on a `v*` tag (`Deploy testers (int)`). The landing page
+  https://www.mah-jong.workers.dev (`site/`, `Deploy landing page (www)`)
+  follows `main` and its Play button opens the tester site; a pull request
+  that touches it gets `https://pr-<number>-www.mah-jong.workers.dev` too.
+  This relies on
   owner settings "Allow auto-merge" and a `main` ruleset requiring
   `Tests and build`.
 - **Keep tool output small:** `git log --oneline` with a range or `| head`;

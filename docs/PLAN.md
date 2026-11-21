@@ -83,6 +83,16 @@ sample hand first); the index opens at once; a Pace choice in Options (Slower,
 Normal, Faster); Play this hand again on the result card; and the hand can be
 arranged while the bots play, with a throw only on your turn.
 
+**Multiplayer: online rooms (alpha.16, 2026-11-18).** Options › Play with
+friends: a room on Cloudflare Durable Objects (free plan, no accounts), joined
+by a four-letter code or link, up to four phones with bots in the empty seats,
+a turn timer, and rejoin after a phone locks. Playing over the same Wi-Fi is
+the same thing. Slices M1-M4 are in `docs/MULTIPLAYER.md`.
+
+**The landing page (2026-11-21).** https://www.mah-jong.workers.dev shows
+what the game offers and opens the tester site from its Play button
+(`site/`, its own Worker `www`).
+
 Testers: https://int.mah-jong.workers.dev (changes only on a `v*` tag).
 Development: https://int-dev.mah-jong.workers.dev (every green push to `main`).
 
@@ -97,11 +107,6 @@ as **candidates, not commitments**:
   uses intermediate today.
 - Bot tuning, including Crazy Chows being a common way for the bots to win
   (over a quarter of bot wins in the soak).
-
-**After alpha-1: multiplayer (owner, 2026-11-18).** Online rooms on
-Cloudflare Durable Objects (free plan, no accounts). Playing over the same
-Wi-Fi is the same thing: friends join one room code. Plan and slices M1-M4:
-`docs/MULTIPLAYER.md`.
 
 ## Known follow-ups
 
