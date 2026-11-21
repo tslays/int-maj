@@ -431,7 +431,7 @@ describe("the offline build", () => {
 
   it("pre-caches every file the page needs", async () => {
     const worker = await readFile(join(outDir, "sw.js"), "utf8");
-    for (const file of ["index.html", "src/main.js", "src/board.js", "engine/table/local.js", "assets/faces/dR.svg", "vendor/three/three.module.min.js"]) {
+    for (const file of ["index.html", "src/main.js", "src/board.js", "engine/table/local.js", "assets/faces/riichi/dR.svg", "assets/faces/chinese/dR.svg", "vendor/three/three.module.min.js"]) {
       assert.ok(worker.includes(`"${file}"`), `${file} is cached`);
     }
     assert.match(worker, /cache: "reload"/, "install bypasses the HTTP cache");

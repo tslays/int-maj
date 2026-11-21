@@ -5,9 +5,9 @@ The app icon (`icon.svg`, `icon-192.png`, `icon-512.png`,
 of third-party material, each under its own terms:
 
 - **The tile** on the dot of the `i` is drawn from the red dragon face
-  `app/assets/faces/dR.svg`, from riichi-mahjong-tiles by FluffyStuff,
+  `app/assets/faces/riichi/dR.svg`, from riichi-mahjong-tiles by FluffyStuff,
   [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). See
-  `app/assets/faces/LICENSE.md`.
+  `app/assets/faces/riichi/LICENSE.md`.
 - **The `i`** is the outline of the dotless i from Inter Display Black
   Italic by The Inter Project Authors, under the
   [SIL Open Font License 1.1](https://openfontlicense.org/). See

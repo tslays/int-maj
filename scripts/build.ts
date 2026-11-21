@@ -38,7 +38,11 @@ const APP_FILES = ["styles.css"] as const;
 const APP_DIRS = [
   { dir: "src", pattern: /\.js$/ },
   { dir: "vendor/three", pattern: /\.(js|md)$|^LICENSE$/ },
-  { dir: "assets/faces", pattern: /\.(svg|md)$/ },
+  { dir: "assets/faces", pattern: /\.md$/ },
+  // One folder per face set (Settings, Style); app/src/appearance.js lists them.
+  { dir: "assets/faces/riichi", pattern: /\.(svg|md)$/ },
+  { dir: "assets/faces/riichi-dark", pattern: /\.(svg|md)$/ },
+  { dir: "assets/faces/chinese", pattern: /\.(svg|md)$/ },
   { dir: "assets/icons", pattern: /\.(png|svg)$/ },
   { dir: "assets/fonts", pattern: /\.(woff2|md)$/ },
   { dir: "assets/sounds", pattern: /\.(mp3|md)$/ },

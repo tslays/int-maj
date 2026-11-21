@@ -1,12 +1,13 @@
 /**
  * Settings, Style: the theme chips and a row of swatches for the felt, the
- * tile backs and fronts, the room and the buttons (`appearance.js`), over a
- * small preview of the table. The 3D table behind the sheet follows at once.
+ * tile backs, faces and fronts, the room and the buttons (`appearance.js`),
+ * over a small preview of the table. Only the fronts that suit the chosen
+ * faces are offered. The 3D table behind the sheet follows at once.
  * Swatches are named for screen readers only: no tooltips anywhere. Reset
  * style puts the look alone back to Classic, leaving every other setting.
  */
 
-import { appearance, ASPECTS, BUNDLES } from "./appearance.js";
+import { appearance, ASPECTS, BUNDLES, frontsFor } from "./appearance.js";
 import { $, faceChip, toast } from "./shared.js";
 
 /** What each swatch shows: the colour, or the colours, the choice makes. */
@@ -16,7 +17,11 @@ const PAINT = {
   front: (swatch) => swatch.chip,
   room: (swatch) => `linear-gradient(135deg, ${swatch.rail} 0 50%, ${swatch.floor} 50% 100%)`,
   accent: (swatch) => `linear-gradient(135deg, ${swatch.gold[1]} 0 34%, ${swatch.blue[1]} 34% 67%, ${swatch.silver[1]} 67% 100%)`,
+  faces: (swatch) => frontsFor(swatch)[0].chip,
 };
+
+/** The tile a face set's swatch shows: the five circles differ most between sets. */
+const FACES_SAMPLE = "o5";
 
 function radio(label, checked) {
   const button = document.createElement("button");
@@ -37,6 +42,12 @@ function buildSwatches() {
         button.className = `swatch swatch-${aspect}`;
         button.dataset.swatch = swatch.id;
         button.style.setProperty("--swatch", PAINT[aspect](swatch));
+        if (aspect === "faces") {
+          const image = document.createElement("img");
+          image.src = `assets/faces/${swatch.id}/${FACES_SAMPLE}.svg`;
+          image.alt = "";
+          button.append(image);
+        }
         return button;
       }),
     );
@@ -74,6 +85,8 @@ export function showStyle() {
     check($(`#style-${aspect}`), "[data-swatch]", (button) => button.dataset.swatch === choice.id);
     $(`#style-${aspect}-name`).textContent = choice.swatch.name;
   }
+  const suited = new Set(frontsFor(appearance.faces.swatch).map((front) => front.id));
+  for (const button of $("#style-front").querySelectorAll("[data-swatch]")) button.hidden = !suited.has(button.dataset.swatch);
   const bundle = appearance.matchingBundle();
   check($("#style-bundle"), "[data-bundle]", (button) => button.dataset.bundle === bundle);
   $("#style-bundle-note").textContent = bundle === null ? "Custom: your own mix" : "Sets everything below at once";
@@ -89,7 +102,7 @@ function arrowKeys(group, pick) {
     if (move === undefined) return;
     event.preventDefault();
     event.stopPropagation();
-    const buttons = [...group.querySelectorAll("[role=radio]")];
+    const buttons = [...group.querySelectorAll("[role=radio]")].filter((button) => !button.hidden);
     const at = Math.max(0, buttons.indexOf(document.activeElement));
     const next = buttons[(at + move + buttons.length) % buttons.length];
     pick(next);

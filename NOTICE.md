@@ -29,15 +29,16 @@ beside the files, as listed here.
 
 | Material | Where | Licence |
 | --- | --- | --- |
-| Tile faces `b1`-`b9`, `c1`-`c9`, `o1`-`o9`, the winds and the three dragons | `app/assets/faces/` | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/), from [riichi-mahjong-tiles](https://github.com/FluffyStuff/riichi-mahjong-tiles) by FluffyStuff |
-| Flower and season faces `f1`-`f4`, `s1`-`s4` | `app/assets/faces/` | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), by Cangjie6 on Wikimedia Commons |
+| Tile faces of the Riichi and Riichi Dark sets: the suits, winds and dragons | `app/assets/faces/riichi/`, `app/assets/faces/riichi-dark/` | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/), from [riichi-mahjong-tiles](https://github.com/FluffyStuff/riichi-mahjong-tiles) by FluffyStuff |
+| Tile faces of the Classic Chinese set, and the flower and season faces `f1`-`f4`, `s1`-`s4` of all three sets | `app/assets/faces/chinese/`, and those eight faces in `riichi/` and `riichi-dark/` | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), by Cangjie6 on Wikimedia Commons |
 | Inter Display Black Italic (title font, and the `i` in the app icon) | `app/assets/fonts/` | [SIL Open Font License 1.1](https://openfontlicense.org/), by The Inter Project Authors |
 | Dice sounds `dice-1` to `dice-4` | `app/assets/sounds/` | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/), from freesound.org |
 | Three.js 0.170 | `app/vendor/three/` | [MIT](app/vendor/three/LICENSE), © three.js authors |
 
 The app icon (`app/assets/icons/`) is drawn from the CC0 red-dragon tile and
-the OFL font's `i`. The per-folder licence files (`app/assets/*/LICENSE.md`)
-give the exact sources and modifications.
+the OFL font's `i`. The per-folder licence files (`app/assets/*/LICENSE.md`,
+and `app/assets/faces/*/LICENSE.md` for each face set) give the exact sources
+and modifications.
 
 ## Names and trademarks
 

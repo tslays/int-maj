@@ -3,6 +3,7 @@
  * game state, the board, storage, the transport and a few small helpers.
  */
 
+import { appearance } from "./appearance.js";
 import { Board } from "./board.js";
 
 export const SEATS = ["E", "S", "W", "N"];
@@ -59,6 +60,26 @@ export function scores() {
   return result;
 }
 
+/** The picture of one face in the chosen face set (Settings, Style). */
+export function faceUrl(key) {
+  return `assets/faces/${appearance.faces.id}/${key}.svg`;
+}
+
+/**
+ * Point a face picture at the chosen set: its `data-face` names the tile. A
+ * set whose art leaves the white dragon blank gets the drawn frame instead.
+ */
+export function dressFace(image) {
+  const key = image.dataset.face;
+  image.src = faceUrl(key);
+  image.parentElement?.classList.toggle("chip-white", key === "dW" && appearance.faces.swatch.frame !== null);
+}
+
+/** Every face picture on the page follows a change of face set. */
+appearance.faces.onChange(() => {
+  for (const image of document.querySelectorAll("img[data-face]")) dressFace(image);
+});
+
 export function faceChip(key) {
   const chip = document.createElement("span");
   chip.className = "chip";
@@ -67,10 +88,10 @@ export function faceChip(key) {
     return chip;
   }
   const image = document.createElement("img");
-  image.src = `assets/faces/${key}.svg`;
+  image.dataset.face = key;
   image.alt = key;
-  if (key === "dW") chip.classList.add("chip-white");
   chip.append(image);
+  dressFace(image);
   return chip;
 }
 

@@ -107,16 +107,28 @@ npm run dev        # build, then serve dist/ on http://127.0.0.1:8091/
   `rules/archive/ASSUMPTIONS.md`, "Wall draw animation"). The lane for melds
   ends at the highest wall slot still standing; `test/app/layout.test.ts`
   pins the order and proves no meld touches a wall.
-- `app/src/tiles.js` models a tile: a rounded off-white front, a sky-blue
-  lacquered back, and the face printed on it with a large corner index
+- `app/src/tiles.js` models a tile: a rounded front and a lacquered back in
+  the Style colours, and the face printed on it with a large corner index
   (suits and winds; flowers and seasons print their own number) when the
   **Tile numbers** setting is on (default; `app/src/tile-numbers.js`, key
   `int-maj.tile-numbers`), or the plain art alone when it is off. The art
   stays centred on the tile either way, shrinking about its centre to leave
   the corner free; switching repaints every shared face texture in place. The
-  flat chips in the handbook and results never print numbers. The faces
-  are the public-domain riichi set plus Cangjie6's traditional flowers and
-  seasons (CC BY-SA 4.0) in `app/assets/faces/` (see its `LICENSE.md`).
+  flat chips in the handbook and results never print numbers. The art comes
+  from the face set chosen in Settings › Style (below): one folder of 42 SVGs
+  per set under `app/assets/faces/<set>/`, each with its own `LICENSE.md`
+  (the index is `app/assets/faces/LICENSE.md`). Each set's paint rules sit in
+  `FACE_SETS` (`appearance.js`): whether the winds are repainted in black
+  (the riichi art draws them blue), whether the table draws the white
+  dragon's frame (the riichi art leaves it blank), and the corner index's
+  ink; the index's halo is the front's colour. Faces are painted on a canvas
+  300 wide at 1x, larger on big screens (`app/src/face-scale.js`: by the
+  screen's longest side in device pixels, about 1.5x on a retina laptop, 2x on
+  4K, at most 2.5x and within the GPU's texture limit), so the art stays sharp
+  on a television; a change of set or front repaints every texture in place,
+  and an older paint that finishes late draws nothing. The flat chips are the
+  SVGs themselves (`faceChip`/`dressFace` in `shared.js`; every
+  `img[data-face]` on the page follows a change of set).
 - `app/src/stage.js` holds the renderer, the felt, the centre console, the
   table camera (solved for any screen shape) and your hand's own long-lens
   pass, plus promise-based tweens with a timer fallback, so a hidden page
@@ -570,21 +582,31 @@ browser runs the same engine, bots and API routes as the tests. It copies the
   in the three Companion sets (Companion, Pictured, Rare) the hand sheet and result card name only Companion
   pages (`pages.js`) and the payment explanations drop their Illustrated page
   citations (`explainSettlement({ cite: false })`).
-- **Style.** Settings › Style changes only the look, never the game. Five
+- **Style.** Settings › Style changes only the look, never the game. Six
   curated swatch rows each make a device preference (`app/src/appearance.js`):
-  the felt (`int-maj.felt`), the tile backs (`int-maj.tile-back`) and fronts
-  (`int-maj.tile-front`, all light so the faces stay legible), the room's rail,
-  floor and page background (`int-maj.room`), and the buttons' accent colours
-  (`int-maj.accent`). The themes Classic (the defaults), Midnight, Sakura and
-  Casino set all five at once; any single change afterwards reads as Custom.
+  the felt (`int-maj.felt`), the tile backs (`int-maj.tile-back`), the tile
+  faces (`int-maj.tile-faces`: Riichi, the default; Riichi Dark, light ink for
+  a dark front; Classic Chinese, Cangjie6's traditional set), the fronts
+  (`int-maj.tile-front`), the room's rail, floor and page background
+  (`int-maj.room`), and the buttons' accent colours (`int-maj.accent`). Each
+  front has a `ground`, light or dark, and only the fronts that suit the
+  faces' ink are offered (`frontsFor`); choosing faces that need the other
+  ground moves the front to the first that suits, and a stored mismatch is
+  mended at load. The riichi sets have no flowers or seasons of their own, so
+  theirs are Cangjie6's, recoloured to the set's inks
+  (`scripts/art/cangjie-faces.py`). The themes Classic (riichi on ivory, the
+  defaults), Midnight (Riichi Dark on an obsidian front: the dark theme),
+  Sakura and Casino (both Classic Chinese) set all six at once; any single
+  change afterwards reads as Custom.
   **Reset style**, at the foot of the tab, puts the look alone back to Classic
   and leaves every other setting (it rests, disabled, while the look is
   Classic); Reset all settings, under More, resets the look along with the rest.
   `appearance-apply.js` paints them: the felt canvas, rail, floor and bounce
   light through `setTableLook` in `stage.js`, every tile through the shared
   materials (`setTileLook` in `tiles.js`), and the CSS tokens `--tile-back`,
-  `--tile-front`, `--page-bg`, `--rail`, `--felt-1..3`, `--gold-*`, `--blue-*`
-  and `--silver-*`, which the 2D chips, buttons and the tab's preview read.
+  `--tile-front`, `--page-bg`, `--rail`, `--felt-1..3`, `--gold-*`, `--blue-*`,
+  `--silver-*` and `--face-frame` (the white dragon chip's frame), which the
+  2D chips, buttons and the tab's preview read.
 - **Report a problem.** The Report a problem row in Settings › More opens a sheet of that title with an optional one-line note and a
   Send button (accessible name "Send report"; the keyboard's return key sends
   too). `app/src/report.js` posts the text to `api/report` on its own site,

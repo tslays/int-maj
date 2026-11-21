@@ -1,6 +1,7 @@
 /**
  * Tile models: a rounded ivory front, a lacquered coloured back, and the face
- * printed on top (the riichi art from `assets/faces/` plus a corner index).
+ * printed on top (the chosen set's art from `assets/faces/<set>/` plus a
+ * corner index).
  *
  * One unit is a tile's width. A tile's local frame has its face towards +z and
  * the top of the face towards +y; callers turn it to stand, lie or face down.
@@ -9,6 +10,7 @@
 import * as THREE from "three";
 
 import { D, H, TABLE, W } from "./layout.js";
+import { faceScaleFor } from "./face-scale.js";
 import { tileNumbers } from "./tile-numbers.js";
 
 export { D, H, TABLE, W };
@@ -29,13 +31,29 @@ const lacquer = new THREE.MeshPhysicalMaterial({
   clearcoatRoughness: 0.18,
 });
 
+/** The face set the art comes from (an entry of FACE_SETS in appearance.js). */
+let faceSet = { id: "riichi", winds: "#141414", frame: "#2a5fa8", index: "#1d2a44" };
+/** The front's colour: the halo round the corner index, so it reads over the art. */
+let halo = "#f1efe9";
+
 /**
- * Colour every tile at once (Settings, Style): `back` and `front` are hex
- * colours for the lacquered back and the face; the face art lies over the front.
+ * Dress every tile at once (Settings, Style): `back` and `front` are hex
+ * colours for the lacquered back and the face; `faces` is the face set whose
+ * art lies over the front. A new set or front repaints every face in place.
  */
-export function setTileLook({ back, front }) {
+export function setTileLook({ back, front, faces }) {
   if (back !== undefined) lacquer.color.set(back);
-  if (front !== undefined) ivory.color.set(front);
+  let repaint = false;
+  if (front !== undefined) {
+    ivory.color.set(front);
+    repaint = front !== halo;
+    halo = front;
+  }
+  if (faces !== undefined && faces.id !== faceSet.id) {
+    faceSet = faces;
+    repaint = true;
+  }
+  if (repaint) repaintFaces();
 }
 
 export function roundedRect(width, height, radius) {
@@ -80,6 +98,8 @@ faceGeometry.translate(0, 0, D / 2 + 0.004);
 
 const FACE_W = 300;
 const FACE_H = Math.round(FACE_W * (H / W));
+/** How much larger than FACE_W x FACE_H the faces are painted on this screen (`face-scale.js`). */
+let faceScale = 1;
 const faceMaterials = new Map();
 const faceCanvases = new Map();
 let anisotropy = 1;
@@ -88,6 +108,12 @@ let onFacePainted = () => {};
 export function initTiles(renderer, painted) {
   anisotropy = renderer.capabilities.getMaxAnisotropy();
   onFacePainted = painted;
+  faceScale = faceScaleFor({
+    width: window.screen?.width ?? window.innerWidth,
+    height: window.screen?.height ?? window.innerHeight,
+    pixelRatio: window.devicePixelRatio || 1,
+    maxTexture: renderer.capabilities.maxTextureSize,
+  });
 }
 
 /** Corner index: the rank for suits, the wind's letter. Flowers and seasons
@@ -95,8 +121,8 @@ export function initTiles(renderer, painted) {
  * the player has turned tile numbers off. */
 function indexFor(key) {
   if (!tileNumbers.on) return null;
-  if (/^[bco][1-9]$/.test(key)) return { text: key[1], colour: "#1d2a44" };
-  if (key.startsWith("w")) return { text: key[1], colour: "#141414" };
+  if (/^[bco][1-9]$/.test(key)) return { text: key[1], colour: faceSet.index };
+  if (key.startsWith("w")) return { text: key[1], colour: faceSet.winds ?? faceSet.index };
   return null;
 }
 
@@ -109,17 +135,27 @@ function loadImage(url) {
   });
 }
 
+/** The latest paint asked of each canvas: an older one that finishes later draws nothing. */
+const paintTurns = new WeakMap();
+
 async function paintFace(canvas, key) {
+  const turn = (paintTurns.get(canvas) ?? 0) + 1;
+  paintTurns.set(canvas, turn);
+  const set = faceSet;
+  const image = key === "dW" && set.frame !== null ? null : await loadImage(`assets/faces/${set.id}/${key}.svg`);
+  if (paintTurns.get(canvas) !== turn) return;
   const context = canvas.getContext("2d");
+  context.setTransform(faceScale, 0, 0, faceScale, 0, 0);
   const index = indexFor(key);
   // The art is always centred on the face. With numbers on it shrinks about its
   // centre to leave the top-left corner to a large index; flowers, seasons and
   // dragons print no index and fill the face.
   const clean = !tileNumbers.on || key.startsWith("d") || key.startsWith("f") || key.startsWith("s");
   const box = clean ? { x: 6, y: 6, w: 288, h: 384 } : { x: 38, y: 50, w: 224, h: 300 };
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  if (key === "dW") {
-    context.strokeStyle = "#2a5fa8";
+  context.clearRect(0, 0, FACE_W, FACE_H);
+  if (image === null) {
+    // The art leaves the white dragon blank: draw its frame, as on a real set.
+    context.strokeStyle = set.frame;
     context.lineWidth = 16;
     context.beginPath();
     context.roundRect(box.x + 36, box.y + 40, box.w - 72, box.h - 80, 18);
@@ -129,13 +165,12 @@ async function paintFace(canvas, key) {
     context.roundRect(box.x + 58, box.y + 62, box.w - 116, box.h - 124, 10);
     context.stroke();
   } else {
-    const image = await loadImage(`assets/faces/${key}.svg`);
     context.drawImage(image, box.x, box.y, box.w, box.h);
-    if (key.startsWith("w")) {
-      // Winds print in black ink, like a real set; the source art is blue.
+    if (key.startsWith("w") && set.winds !== null) {
+      // Winds print in black ink, like a real set; the riichi art draws them blue.
       context.globalCompositeOperation = "source-in";
-      context.fillStyle = "#141414";
-      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = set.winds;
+      context.fillRect(0, 0, FACE_W, FACE_H);
       context.globalCompositeOperation = "source-over";
     }
   }
@@ -145,7 +180,7 @@ async function paintFace(canvas, key) {
     // An ivory halo keeps it readable wherever it meets the art.
     context.lineJoin = "round";
     context.lineWidth = 8;
-    context.strokeStyle = "#f1efe9";
+    context.strokeStyle = halo;
     context.strokeText(index.text, 12, 2);
     context.fillStyle = index.colour;
     context.fillText(index.text, 12, 2);
@@ -156,8 +191,8 @@ function faceMaterial(key) {
   let material = faceMaterials.get(key);
   if (material !== undefined) return material;
   const canvas = document.createElement("canvas");
-  canvas.width = FACE_W;
-  canvas.height = FACE_H;
+  canvas.width = Math.round(FACE_W * faceScale);
+  canvas.height = Math.round(FACE_H * faceScale);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = anisotropy;
@@ -180,7 +215,7 @@ function faceMaterial(key) {
   return material;
 }
 
-/** Paint every face again (tile numbers switched): the shared textures update in place. */
+/** Paint every face again (tile numbers, face set or front switched): the shared textures update in place. */
 function repaintFaces() {
   const painting = [];
   for (const [key, { canvas, texture }] of faceCanvases) {

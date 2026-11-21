@@ -1,7 +1,8 @@
 /**
  * The look of the table (Settings, Style): the felt, the tile backs and
- * fronts, the room around the table and the accent colours of the buttons,
- * each a curated swatch, plus themes that set all five at once. Device
+ * fronts, the room around the table, the accent colours of the buttons and
+ * the art printed on the tiles, each a curated choice, plus themes that set
+ * all six at once. Device
  * preferences like the sound and the pace, safe with missing, refusing or
  * garbled storage; they change only how the table looks, never the game.
  *
@@ -33,12 +34,32 @@ export const BACKS = [
   { id: "ink", name: "Ink", tile: "#23272e", chip: "#3a404a" },
 ];
 
-/** Tile fronts: all light, so every face's ink stays easy to read. */
+/**
+ * Tile fronts: light ones for faces printed in dark ink and dark ones for
+ * faces printed in light ink (`ground`), so the ink always stands out. Only
+ * the fronts that suit the chosen faces are offered.
+ */
 export const FRONTS = [
-  { id: "ivory", name: "Ivory", tile: "#f1efe9", chip: "#f8f6f0" },
-  { id: "bone", name: "Bone", tile: "#efe3c8", chip: "#f4ead4" },
-  { id: "pearl", name: "Pearl", tile: "#f4f6fa", chip: "#fbfcfe" },
-  { id: "mint", name: "Mint", tile: "#e2f0e6", chip: "#ecf6ef" },
+  { id: "ivory", name: "Ivory", tile: "#f1efe9", chip: "#f8f6f0", ground: "light" },
+  { id: "bone", name: "Bone", tile: "#efe3c8", chip: "#f4ead4", ground: "light" },
+  { id: "pearl", name: "Pearl", tile: "#f4f6fa", chip: "#fbfcfe", ground: "light" },
+  { id: "mint", name: "Mint", tile: "#e2f0e6", chip: "#ecf6ef", ground: "light" },
+  { id: "obsidian", name: "Obsidian", tile: "#1e1e1e", chip: "#262626", ground: "dark" },
+  { id: "slate", name: "Slate", tile: "#262b33", chip: "#2e343d", ground: "dark" },
+];
+
+/**
+ * Tile faces: the art printed on the tiles, one folder each under
+ * `assets/faces/` with all 42 faces (credits in each folder's LICENSE.md).
+ * `ground` is the kind of front the ink needs; `winds` repaints the winds in
+ * that ink (the riichi art draws them blue), or null to keep the art's own;
+ * `frame` is the ink of the white dragon's frame where the art leaves it
+ * blank, or null where the art draws it; `index` the ink of the corner number.
+ */
+export const FACE_SETS = [
+  { id: "riichi", name: "Riichi", ground: "light", winds: "#141414", frame: "#2a5fa8", index: "#1d2a44" },
+  { id: "riichi-dark", name: "Riichi Dark", ground: "dark", winds: null, frame: "#f0a023", index: "#ffffff" },
+  { id: "chinese", name: "Classic Chinese", ground: "light", winds: null, frame: null, index: "#1d2a44" },
 ];
 
 /** The room: the table's rail, and the floor and backdrop around it (the page behind the menus too). */
@@ -57,22 +78,28 @@ export const ACCENTS = [
   { id: "mono", name: "Mono", gold: ["#ffffff", "#b8bec4"], blue: ["#e2e8ee", "#7c8892"], silver: ["#f3f6f8", "#a6b2bb"] },
 ];
 
-/** Themes: one tap sets all five; a single swatch changed afterwards makes it Custom. */
+/** Themes: one tap sets all six; a single choice changed afterwards makes it Custom. */
 export const BUNDLES = [
-  { id: "classic", name: "Classic", felt: "jade", back: "sky", front: "ivory", room: "slate", accent: "classic" },
-  { id: "midnight", name: "Midnight", felt: "navy", back: "ink", front: "pearl", room: "midnight", accent: "mono" },
-  { id: "sakura", name: "Sakura", felt: "plum", back: "coral", front: "pearl", room: "lounge", accent: "rose" },
-  { id: "casino", name: "Casino", felt: "emerald", back: "crimson", front: "bone", room: "walnut", accent: "classic" },
+  { id: "classic", name: "Classic", felt: "jade", back: "sky", front: "ivory", room: "slate", accent: "classic", faces: "riichi" },
+  { id: "midnight", name: "Midnight", felt: "navy", back: "violet", front: "obsidian", room: "midnight", accent: "mono", faces: "riichi-dark" },
+  { id: "sakura", name: "Sakura", felt: "plum", back: "coral", front: "pearl", room: "lounge", accent: "rose", faces: "chinese" },
+  { id: "casino", name: "Casino", felt: "emerald", back: "crimson", front: "bone", room: "walnut", accent: "classic", faces: "chinese" },
 ];
 
-/** The five aspects: the bundle field, its storage key and its swatches (the default first). */
+/** The six aspects: the bundle field, its storage key and its swatches (the default first). */
 export const ASPECTS = [
   { aspect: "felt", key: "int-maj.felt", swatches: FELTS },
   { aspect: "back", key: "int-maj.tile-back", swatches: BACKS },
   { aspect: "front", key: "int-maj.tile-front", swatches: FRONTS },
   { aspect: "room", key: "int-maj.room", swatches: ROOMS },
   { aspect: "accent", key: "int-maj.accent", swatches: ACCENTS },
+  { aspect: "faces", key: "int-maj.tile-faces", swatches: FACE_SETS },
 ];
+
+/** The fronts that suit a face set: its ink stands out on them. */
+export function frontsFor(faces) {
+  return FRONTS.filter((front) => front.ground === faces.ground);
+}
 
 /** One swatch kept on the device: an id from `swatches`, the first by default. */
 export function createChoice({ key, swatches, storage = browserStorage }) {
@@ -109,23 +136,33 @@ export function createChoice({ key, swatches, storage = browserStorage }) {
   };
 }
 
-/** All five choices together, with the themes over them. */
+/** All six choices together, with the themes over them. */
 export function createAppearance({ storage = browserStorage } = {}) {
   const choices = Object.fromEntries(ASPECTS.map(({ aspect, key, swatches }) => [aspect, createChoice({ key, swatches, storage })]));
+  // The front always suits the faces: light ink never lands on a light front.
+  const suitFront = () => {
+    const suited = frontsFor(choices.faces.swatch);
+    if (!suited.some((front) => front.id === choices.front.id)) choices.front.set(suited[0].id);
+  };
+  suitFront();
+  choices.faces.onChange(suitFront);
   return {
     ...choices,
     /** Set every aspect from a theme; false for an unknown one. */
     applyBundle(id) {
       const bundle = BUNDLES.find((entry) => entry.id === id);
       if (bundle === undefined) return false;
+      // The faces first, so the theme's own front is the one that stays.
+      choices.faces.set(bundle.faces);
       for (const { aspect } of ASPECTS) choices[aspect].set(bundle[aspect]);
       return true;
     },
-    /** The theme the five choices make up, or null: Custom. */
+    /** The theme the six choices make up, or null: Custom. */
     matchingBundle() {
       return BUNDLES.find((bundle) => ASPECTS.every(({ aspect }) => choices[aspect].id === bundle[aspect]))?.id ?? null;
     },
     reset() {
+      choices.faces.reset();
       for (const { aspect } of ASPECTS) choices[aspect].reset();
     },
     /** Called once for any change, with the aspect that changed. */
