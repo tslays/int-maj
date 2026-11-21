@@ -1,5 +1,6 @@
 # One Cloudflare deploy step, shared by the dev, tester and preview jobs:
-# fetch the `dist` the test job built and hand it to wrangler. Without a
+# fetch the build the test job made (`dist`, or the landing page's
+# `dist-site`) and hand it to wrangler. Without a
 # token it does nothing and says so, so a fork or a fresh repository stays
 # green. The job must have checked the repository out (for wrangler.jsonc).
 name: Deploy dist with wrangler
@@ -11,6 +12,12 @@ inputs:
   command:
     description: The wrangler arguments, for example "deploy --env dev".
     required: true
+  artifact:
+    description: >-
+      The build artifact to deploy and the folder it lands in: "dist" (the
+      game) or "dist-site" (the landing page).
+    required: false
+    default: dist
   rooms:
     description: >-
       The wrangler arguments that deploy the rooms Worker first (for example
@@ -42,8 +49,8 @@ runs:
     - uses: actions/download-artifact@v8
       if: inputs.token != ''
       with:
-        name: dist
-        path: dist
+        name: ${{ inputs.artifact }}
+        path: ${{ inputs.artifact }}
     - uses: actions/setup-node@v7
       if: inputs.token != ''
       with:

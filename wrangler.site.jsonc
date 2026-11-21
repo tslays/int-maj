@@ -1,0 +1,13 @@
+// The landing page, https://www.mah-jong.workers.dev: the static `dist-site/`
+// folder from `npm run build:site`, served as assets with no Worker code. Its
+// Play button opens the tester site (int). Deployed on every green push to
+// main; each pull request gets a preview (pr-<number>-www.<account>.workers.dev).
+{
+  "name": "www",
+  // Not a secret: it names the account; the API token is the secret.
+  "account_id": "8dff3ba1767be52478763587743e143b",
+  "compatibility_date": "2026-11-04",
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": { "directory": "./dist-site" }
+}

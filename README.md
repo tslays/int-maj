@@ -1,13 +1,15 @@
 # International Mahjong
 
-International mahjong, on a 3D table in the browser against three bots. It runs
-offline, saves after every move and installs on a phone's home screen.
+International mahjong, on a 3D table in the browser: against three bots, or
+with friends in an online room. It runs offline, saves after every move and
+installs on a phone's home screen.
 
 **Play:** https://int.mah-jong.workers.dev (landscape; add `?phone` to see the
-phone layout on a laptop).
+phone layout on a laptop). **About the game:** https://www.mah-jong.workers.dev,
+the landing page.
 
-**Status:** alpha. Whole games play end to end; the next step is a test by the
-owner's mahjong group, each player alone against the bots on their own phone.
+**Status:** alpha. Whole games play end to end, alone against the bots or with
+friends; the owner's mahjong group is testing it, each on their own phone.
 The roadmap is [docs/PLAN.md](docs/PLAN.md).
 
 ## What you get
@@ -21,10 +23,15 @@ The roadmap is [docs/PLAN.md](docs/PLAN.md).
   when that raises its hand's value. The "closest hands" panel shows you the
   same plan for your own tiles (the menu's Hints button hides it). With Hints on,
   a small fish sits on each hand tile whose discard would leave you fishing.
-- **Plays anywhere.** A static site (its only server code files a problem
-  report): it works in airplane mode, saves after
-  every move and resumes where you left off. Add it to the home screen from
-  Safari to install it.
+- **Play with friends.** Options › Play with friends opens a room: share its
+  four-letter code or link, and up to four people play one table, each on
+  their own phone. Bots take the empty seats and the seat of anyone who drops
+  out, a turn timer keeps the table moving, and a phone that locks rejoins
+  (`docs/MULTIPLAYER.md`).
+- **Plays anywhere.** A static site: a game against the bots runs in the
+  browser, works in airplane mode, saves after every move and resumes where you
+  left off. Add it to the home screen from Safari to install it. The only server
+  code files a problem report and hosts the online rooms.
 
 ## How work gets done
 
@@ -75,12 +82,14 @@ src/
   table/            the table service: games, bots, saving, the API the app calls
   cli/              the console table behind `npm run play`
 bin/              command-line entry points: check, play, replay
-scripts/          build (into dist/), preview, smoke test, soaks and art generators
-test/             core/, table/, cli/, app/ and shared helpers/
+site/             the landing page (https://www.mah-jong.workers.dev)
+scripts/          build (into dist/ and dist-site/), preview, smoke test, soaks and art generators
+test/             core/, table/, cli/, app/, site/ and shared helpers/
 docs/             PLAN, WORKFLOW, APP and ENGINE references
 examples/         a recorded hand for the replay tool
 .github/          CI: type check, tests, build and smoke test on every push and
-                  PR; deploy to int-dev on main and to the tester site on a tag
+                  PR; deploy to int-dev and the landing page on main, and to
+                  the tester site on a tag
 .claude/          Claude Code settings: the startup hook (Node 24, dev tools)
 ```
 
