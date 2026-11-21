@@ -4,7 +4,19 @@ Newest first. Written for players: what you will see, what was fixed, and
 what now works differently. Each version is a tag (`v0.1.0-alpha.N`, then `-beta.N`, `-rc.N`, and finally `v0.1.0`) on `main`;
 testers get it at https://int.mah-jong.workers.dev.
 
-## alpha.21
+## beta.1
+
+**New**
+
+- **More tile faces, and a Modern theme.** Settings › Style now offers the Riichi, Riichi Dark and Classic Chinese tile faces, and a Modern theme. (#273)
+- **A landing page** at www.mah-jong.workers.dev, with real screenshots and Play buttons to the test site. (#276)
+
+**Fixed**
+
+- **On Midnight, the large discard card keeps its contrast.** It takes the chosen tile front colour, so dark faces stay readable. (#274)
+- **The start screen shows no focus ring until you press a key.** A mouse visit no longer draws a blue ring on Continue or Play vs bots. (#275)
+
+## alpha.21 (21 November 2026)
 
 **New**
 
